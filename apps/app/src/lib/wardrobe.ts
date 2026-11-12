@@ -38,7 +38,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,colors'),
     supabase.from('wears').select('item_id').eq('worn_on', today),
-    supabase.from('outfit_plans').select('outfit_id, outfit_items:outfit_items!inner(item_id)').eq('plan_date', today),
+    supabase.from('outfit_plans').select('outfit_id, outfits(outfit_items(item_id))').eq('plan_date', today),
   ]);
   for (const r of [persons, items, images, wears, plans]) if (r.error) throw r.error;
   const colorsBy = new Map<string, string>();
@@ -68,7 +68,8 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   }));
   const todayIds = new Set<string>();
   for (const x of wears.data ?? []) todayIds.add(x.item_id);
-  for (const p of (plans.data ?? []) as { outfit_items: { item_id: string }[] }[]) for (const oi of p.outfit_items) todayIds.add(oi.item_id);
+  for (const p of (plans.data ?? []) as unknown as { outfits: { outfit_items: { item_id: string }[] } | null }[])
+    for (const oi of p.outfits?.outfit_items ?? []) todayIds.add(oi.item_id);
   return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, today: [...todayIds] };
 }
 
