@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
-import { Icons } from './Icon';
+import { ScrollView } from 'react-native';
+import { Icons, Silhouette } from './Icon';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 
 /** Kopfzeile: Hilfe links, Schriftzug „valet“ mittig, Ansicht-Einstellungen rechts */
@@ -26,11 +27,12 @@ export function RoundButton({ children, label, onPress, size = 40 }: { children:
 }
 
 /** Filter-Chip; ausgewählt = gefüllt in ink (ein einheitlicher Stil für „ausgewählt“) */
-export function Chip({ label, count, selected, onPress, dot }: { label: string; count?: number; selected?: boolean; onPress?: () => void; dot?: string }) {
+export function Chip({ label, count, selected, onPress, dot, icon }: { label: string; count?: number; selected?: boolean; onPress?: () => void; dot?: string; icon?: React.ReactNode }) {
   const t = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
       style={[s.chip, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }]}>
+      {icon}
       {dot && <View style={[s.dot, { backgroundColor: dot }]} />}
       <Text style={[s.chipText, { color: selected ? t.bg : t.ink }]}>{label}</Text>
       {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }]}>{count}</Text>}
@@ -50,15 +52,23 @@ export function SearchField({ value, onChange, onClose }: { value: string; onCha
   );
 }
 
-/** Gelbe Leiste „Heute“ über dem Schrank */
-export function TodayBar({ text, action, onPress }: { text: string; action?: string; onPress?: () => void }) {
+/** Gelbe Leiste „Heute“ über dem Schrank: leer mit „Outfit planen“, sonst die Teile von heute */
+export function TodayBar({ items, onPress }: { items: { id: string; category: string; hex: string | null }[]; onPress?: () => void }) {
   return (
     <Pressable onPress={onPress} style={s.today} accessibilityRole="button">
       <View>
         <Text style={s.todayTitle}>Heute</Text>
-        <Text style={s.todaySub}>{text}</Text>
+        <Text style={s.todaySub}>{items.length ? `${items.length} ${items.length === 1 ? 'Teil' : 'Teile'}` : 'noch nichts geplant'}</Text>
       </View>
-      {action && <Text style={s.todayAction}>{action} ›</Text>}
+      {items.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1, marginLeft: space.sm }} contentContainerStyle={{ gap: 6 }}>
+          {items.map((i) => (
+            <View key={i.id} style={s.todayThumb}><Silhouette category={i.category} color={i.hex ?? '#8e8e93'} /></View>
+          ))}
+        </ScrollView>
+      ) : (
+        <Text style={s.todayAction}>Outfit planen ›</Text>
+      )}
     </Pressable>
   );
 }
@@ -110,9 +120,10 @@ const s = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 40, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: 14, flex: 1 },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 0 },
-  today: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FBF1C2', borderColor: '#F9E58A', borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm },
+  today: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 64, backgroundColor: '#FBF1C2', borderColor: '#F9E58A', borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm },
   todayTitle: { fontFamily: DISPLAY, fontSize: 18, color: '#2a1a1d' },
   todaySub: { fontSize: 13, color: '#6e5e60' },
+  todayThumb: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(42,26,29,0.08)' },
   todayAction: { fontSize: 15, fontWeight: '600', color: '#B8430F' },
   fab: { position: 'absolute', zIndex: 10, right: space.md, width: 56, height: 56, borderRadius: 28, backgroundColor: '#FF641F', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(42,26,29,0.22)' },
   toast: { position: 'absolute', zIndex: 20, alignSelf: 'center', backgroundColor: '#2a1a1d', borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, boxShadow: '0 6px 20px rgba(42,26,29,0.2)' },
