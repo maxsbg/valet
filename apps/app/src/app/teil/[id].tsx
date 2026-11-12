@@ -1,3 +1,4 @@
+import { useBottomInset } from '@/lib/bottomInset';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -38,7 +39,8 @@ export default function Teil() {
   const [lentTo, setLentTo] = useState('');
   const [pickLent, setPickLent] = useState(false);
   const [more, setMore] = useState(false);
-  const toast = useToast(insets.bottom + space.lg);
+  const bottom = useBottomInset();
+  const toast = useToast(bottom + space.lg);
 
   const load = useCallback(() => { loadItem(id).then(setD).catch((e) => setErr(e.message ?? String(e))); }, [id]);
   useFocusEffect(load);
@@ -101,7 +103,7 @@ export default function Teil() {
 
   return (
     <View style={[s.page, { backgroundColor: t.bg }]}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: insets.bottom + space.xxl, alignItems: 'center' }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + space.xxl, alignItems: 'center' }}>
         <View style={s.col}>
           <TopBar onBack={back} onEdit={() => router.push(`/bearbeiten/${id}`)} />
 
