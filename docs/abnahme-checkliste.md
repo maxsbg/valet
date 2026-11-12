@@ -85,3 +85,17 @@ Der Import in Phase 1 muss genau diese Zahlen wieder ergeben.
 ## Bekannte Fehler, die nicht mitwandern sollen
 - [ ] Doppelter Schlüssel `repair` in der STATUS-Liste
 - [ ] Einzelne Test-Teile mit Namen wie „j“ oder „k“ beim Import prüfen und ggf. aufräumen
+
+## Ergänzt nach der Bildschirmaufnahme (12.11.2026)
+- [ ] Bestellung auslesen (Preise zu vorhandenen Teilen)
+- [ ] Mehrere Produktbilder auf einmal importieren, Daten später nachtragen
+- [ ] Kachelfarben neu scannen, Teile analysieren
+- [ ] Kachelgröße im Mosaik pro Teil
+- [ ] Ansicht: Kachelrand (ohne / Hauptfarbe / grau), Farbverlauf an/aus, Teile anderer Personen markieren / nicht markieren / ausblenden
+- [ ] Bild exportieren (freigestellt, durchsichtiger Hintergrund)
+- [ ] Outfit des Tages: aus welchem Schrank (Max / Paul / Beide), „Andere Cap“ / „Ohne Cap“, optionale Cap antippen, Farbpunkte mit Wada-Nummer
+- [ ] Wunschliste: Geschenkliste, „Lohnt sich das?“, „Im Outfit ansehen“, Prioritäten Grail / Next Cop / Watchlist / Someday, Bedenkzeit-Ring auf der Kachel
+- [ ] Trageweise (von Claude geschätzt), Beschreibung für Vorschläge (leer = Claude schreibt sie)
+- [ ] Statistik: gespart ggü. Listenpreis, teuerste Teile, Lieblingsteile, Ausgaben nach Kaufjahr
+- [ ] Personen: „Das bin ich“, Person hinzufügen
+- [ ] Vor dem Umstieg: frischer Import aus dem alten Valet (dort wird weiter gepflegt)
