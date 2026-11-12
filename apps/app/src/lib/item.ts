@@ -50,3 +50,15 @@ export async function setStatus(itemId: string, status: ItemRow['status'], lentT
     .eq('id', itemId);
   if (r.error) throw r.error;
 }
+
+export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'owner_id' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible'>>;
+
+export async function updateItem(id: string, change: ItemChange) {
+  const r = await supabase.from('items').update(change).eq('id', id);
+  if (r.error) throw r.error;
+}
+
+export async function deleteItem(id: string) {
+  const r = await supabase.from('items').delete().eq('id', id);
+  if (r.error) throw r.error;
+}
