@@ -16,6 +16,7 @@ function Gate() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="teil/[id]" />
+      <Stack.Screen name="bearbeiten/[id]" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

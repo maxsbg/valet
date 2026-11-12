@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categoryLabel, formatEur } from '@valet/core';
 import { Icons, Silhouette } from '@/components/Icon';
@@ -41,7 +41,7 @@ export default function Teil() {
   const toast = useToast(insets.bottom + space.lg);
 
   const load = useCallback(() => { loadItem(id).then(setD).catch((e) => setErr(e.message ?? String(e))); }, [id]);
-  useEffect(load, [load]);
+  useFocusEffect(load);
 
   const tileInfo = wardrobe?.items.find((i) => i.id === id);
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
@@ -103,7 +103,7 @@ export default function Teil() {
     <View style={[s.page, { backgroundColor: t.bg }]}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: insets.bottom + space.xxl, alignItems: 'center' }}>
         <View style={s.col}>
-          <TopBar onBack={back} onEdit={() => toast.show('Bearbeiten kommt als Nächstes.')} />
+          <TopBar onBack={back} onEdit={() => router.push(`/bearbeiten/${id}`)} />
 
           {/* Bild */}
           <View style={[s.hero, { boxShadow: `inset 0 0 28px 4px ${hex}73, 0 2px 8px rgba(42,26,29,0.10)` }]}>

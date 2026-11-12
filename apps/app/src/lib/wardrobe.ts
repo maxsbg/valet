@@ -73,7 +73,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, today: [...todayIds] };
 }
 
-const NAMED: Record<string, string> = {
+export const NAMED: Record<string, string> = {
   schwarz: '#1c1c1e', anthrazit: '#3a3a3c', grau: '#8e8e93', hellgrau: '#c7c7cc', weiß: '#e8e6e1', creme: '#efe6d2',
   beige: '#d6c3a5', camel: '#c19a6b', braun: '#6b4a34', navy: '#1f2a44', blau: '#2f5bd3', hellblau: '#9cc3e6',
   petrol: '#1f6f78', grün: '#3f7d4a', oliv: '#6b6b3a', khaki: '#a39a6b', rot: '#c62f3a', burgunder: '#6d1f2c',
