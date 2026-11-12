@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CATEGORIES } from '@valet/core';
@@ -98,7 +99,7 @@ export default function Schrank() {
           ) : shown.length === 0 ? (
             <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff oder Filter." />
           ) : (
-            <Mosaic items={shown} width={scr.content} ownerOf={ownerOf} onPress={(i) => toast.show(`${i.name}${i.brand ? ' · ' + i.brand : ''}`)} />
+            <Mosaic items={shown} width={scr.content} ownerOf={ownerOf} onPress={(i) => router.push(`/teil/${i.id}`)} />
           )}
         </View>
         {wardrobe && (

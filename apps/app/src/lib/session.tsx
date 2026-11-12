@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
-import { loadWardrobe, type Wardrobe } from './wardrobe';
+import { loadWardrobe, type Tile, type Wardrobe } from './wardrobe';
 
 type Ctx = {
   session: Session | null;
@@ -10,8 +10,11 @@ type Ctx = {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
+  /** Teil lokal ändern, ohne neu zu laden */
+  patch: (id: string, change: Partial<Tile>) => void;
+  setToday: (ids: string[]) => void;
 };
-const C = createContext<Ctx>({ session: null, ready: false, wardrobe: null, loading: false, error: null, reload: async () => {} });
+const C = createContext<Ctx>({ session: null, ready: false, wardrobe: null, loading: false, error: null, reload: async () => {}, patch: () => {}, setToday: () => {} });
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -35,7 +38,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { if (session) reload(); else setWardrobe(null); }, [session?.user.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <C.Provider value={{ session, ready, wardrobe, loading, error, reload }}>{children}</C.Provider>;
+  const patch = useCallback((id: string, change: Partial<Tile>) =>
+    setWardrobe((w) => (w ? { ...w, items: w.items.map((i) => (i.id === id ? { ...i, ...change } : i)) } : w)), []);
+  const setToday = useCallback((ids: string[]) => setWardrobe((w) => (w ? { ...w, today: ids } : w)), []);
+
+  return <C.Provider value={{ session, ready, wardrobe, loading, error, reload, patch, setToday }}>{children}</C.Provider>;
 }
 
 export const useSession = () => useContext(C);

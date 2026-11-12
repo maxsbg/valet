@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatEur } from '@valet/core';
@@ -33,7 +34,7 @@ export default function Wunschliste() {
             <Text style={{ color: t.inkMuted, fontSize: 13 }}>Bedenkzeit: {WAIT} Tage</Text>
           </View>
           {wishes.length ? (
-            <Mosaic items={wishes} width={scr.content} ownerOf={ownerOf} daysLeft={daysLeft} onPress={(i) => toast.show(i.name)} />
+            <Mosaic items={wishes} width={scr.content} ownerOf={ownerOf} daysLeft={daysLeft} onPress={(i) => router.push(`/teil/${i.id}`)} />
           ) : (
             <Empty title="Noch keine Wünsche" text="Teile, die du dir überlegst, landen hier mit 14 Tagen Bedenkzeit." />
           )}

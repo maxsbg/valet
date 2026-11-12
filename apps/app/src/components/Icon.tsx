@@ -20,6 +20,12 @@ export const Icons = {
   sliders: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M4 7h10M18 7h2M4 17h4M12 17h8" {...stroke(color)} /><Circle cx={16} cy={7} r={2} {...stroke(color)} /><Circle cx={10} cy={17} r={2} {...stroke(color)} /></Svg>),
   sort: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M8 4v16M4 16l4 4 4-4M16 20V4M12 8l4-4 4 4" {...stroke(color)} /></Svg>),
   filter: ({ size = 18, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M4 7h16M7 12h10M10 17h4" {...stroke(color)} /></Svg>),
+  back: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M15 5 8 12l7 7" {...stroke(color, 2.4)} /></Svg>),
+  pencil: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M4 20h4L19 9l-4-4L4 16Z" {...stroke(color)} /></Svg>),
+  check: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="m5 12.5 4.5 4.5L19 7" {...stroke(color, 2.4)} /></Svg>),
+  calendar: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Rect x={4} y={5} width={16} height={15} rx={3} {...stroke(color)} /><Path d="M4 10h16M9 3v4M15 3v4" {...stroke(color)} /></Svg>),
+  closet: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Rect x={5} y={3} width={14} height={18} rx={2} {...stroke(color)} /><Path d="M12 3v18M10 12h.01M14 12h.01" {...stroke(color)} /></Svg>),
+  chevron: ({ size = 16, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="m9 6 6 6-6 6" {...stroke(color)} /></Svg>),
   help: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14" {...stroke(color)} /><Circle cx={12} cy={17.5} r={1.1} fill={color} /></Svg>),
 };
 
