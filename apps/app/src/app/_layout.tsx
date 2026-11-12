@@ -1,4 +1,4 @@
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Gloock_400Regular } from '@expo-google-fonts/gloock';
 import { ActivityIndicator, View } from 'react-native';
@@ -11,7 +11,13 @@ function Gate() {
   const { session, ready } = useSession();
   const t = useTheme();
   if (!ready) return <View style={{ flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={t.accent} /></View>;
-  return session ? <Slot /> : <Login />;
+  if (!session) return <Login />;
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="teil/[id]" />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
