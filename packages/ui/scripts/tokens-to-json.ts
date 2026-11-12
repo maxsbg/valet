@@ -1,5 +1,5 @@
 // Erzeugt tokens.json im Format des Design-System-Artifacts aus src/tokens.ts (eine Quelle, keine Abschrift)
-import { colors, status, space, radius, fonts, type, shadow, brand } from '../src/tokens';
+import { colors, status, person, space, radius, fonts, type, shadow, brand } from '../src/tokens';
 
 const usage: Record<string, string> = {
   bg: 'Seitenhintergrund (Warm Ivory).',
@@ -27,6 +27,7 @@ const colorTokens = Object.keys(colors.light).map((k) => ({
   usage: usage[k] ?? '',
 }));
 for (const [k, v] of Object.entries(status.light)) colorTokens.push({ name: `status-${k}`, value: { light: v.toLowerCase(), dark: status.dark[k as keyof typeof status.dark].toLowerCase() }, usage: `Status-Punkt „${k}“. Nur als Punkt/Symbol (≥ 3:1), Text daneben in ink.` });
+for (const [k, v] of Object.entries(person.light)) colorTokens.push({ name: `person-${k}`, value: { light: v.toLowerCase(), dark: person.dark[k as keyof typeof person.dark].toLowerCase() }, usage: `Personenfarbe „${k}“: Buchstabe auf der Kachel-Plakette, Punkt in Personen-Chips, Balken in der Statistik (≥ 3:1 auf surface).` });
 for (const [k, v] of Object.entries(brand)) colorTokens.push({ name: `brand-${k}`, value: { light: v.toLowerCase(), dark: v.toLowerCase() }, usage: 'Markenfarbe (Rohwert). In Oberflächen die Rollen-Tokens oben verwenden.' });
 
 const styles = Object.entries(type).filter(([k]) => k !== 'wordmark').map(([k, v]) => ({
@@ -49,7 +50,7 @@ const out = {
     ],
   },
   spacing: { tokens: Object.entries(space).map(([k, v]) => ({ name: `space-${k}`, value: `${v}px`, usage: ({ xxs: 'Abstand Symbol zu Text.', xs: 'Abstand zwischen Kacheln im Mosaik, Chip-Innenabstand.', sm: 'Innenabstand kleiner Elemente, Zeilen-Abstand.', md: 'Seitenrand, Karten-Innenabstand.', lg: 'Abstand zwischen Abschnitten.', xl: 'Großer Abschnittsabstand.', xxl: 'Freiraum über großen Titeln.' } as Record<string, string>)[k] ?? '' })) },
-  radius: { tokens: Object.entries(radius).map(([k, v]) => ({ name: `radius-${k}`, value: `${v}px`, usage: { sm: 'Knöpfe, Chips, Eingabefelder.', md: 'Karten, Kleidungs-Kacheln.', lg: 'Sheets, große Glasflächen.', pill: 'Segment-Steuerung, Tab-Leiste, Status-Plaketten.' }[k] ?? '' })) },
-  shadow: { tokens: Object.entries(shadow).map(([k, v]) => ({ name: `shadow-${k}`, value: v, usage: k === 'float' ? 'Schwebende Knöpfe und Tab-Leiste.' : 'Sheets.' })) },
+  radius: { tokens: Object.entries(radius).map(([k, v]) => ({ name: `radius-${k}`, value: `${v}px`, usage: { sm: 'Knöpfe, Chips, Eingabefelder.', md: 'Karten, Eingabefelder in Sheets.', lg: 'Kleidungs-Kacheln, Outfit-Karten, Sheets.', pill: 'Segment-Steuerung, Tab-Leiste, Status-Plaketten.' }[k] ?? '' })) },
+  shadow: { tokens: Object.entries(shadow).map(([k, v]) => ({ name: `shadow-${k}`, value: v, usage: ({ float: 'Schwebende Knöpfe und Tab-Leiste.', sheet: 'Sheets.', tile: 'Kleidungs-Kacheln und Kachel-Plaketten.' } as Record<string, string>)[k] ?? '' })) },
 };
 process.stdout.write(JSON.stringify(out, null, 2) + '\n');

@@ -6,10 +6,10 @@ Die Werte stammen aus einer einzigen Quelle im Code (`packages/ui/src/tokens.ts`
 
 ## Grundsätze
 
-1. **Die Kleidung ist der Star.** Kacheln sind flach und hell (`surface`), ohne Verlauf oder getönten Hintergrund. Alle Produkte erscheinen gleich groß mit gleichem Rand.
+1. **Die Kleidung ist der Star.** Kacheln sind weiß und tragen keinen Text; ein weicher Farbschein in der Hauptfarbe des Teils und kleine runde Plaketten (Person, Status, Wendeteil, Set) sagen alles Nötige. Kacheln, Mosaik und Outfit-Karten sind aus dem alten Valet übernommen.
 2. **Glas nur für die Bedien-Ebene.** Tab-Leiste, Kopfleisten beim Scrollen, Sheets, schwebende Knöpfe und Hinweise sind gläsern (`glass` + Unschärfe). Inhalte – Kacheln, Listen, Text – liegen auf festen Flächen.
 3. **Eine Hauptaktion je Bildschirm** in Orange (`action`). Oxblood (`accent`) ist die Stimme der Marke: Schriftzug, aktive Tabs, Links, Bestätigen.
-4. **Pink und Gelb sind Gewürze.** Pink (`blush`) für Personen und Markierungen, Gelb (`highlight`) nur für „Heute“. Nie als große Flächen.
+4. **Pink und Gelb sind Gewürze.** Pink (`blush`) für Markierungen wie den Bedenkzeit-Ring; Personen haben eigene Farben (`person-pink` Max, `person-red` Paul). Gelb (`highlight`) nur für „Heute“. Nie als große Flächen.
 5. **Text bleibt lesbar.** Jede Kombination erreicht mindestens 4,5:1 (Text) bzw. 3:1 (Symbole, Rahmen) – im hellen und im dunklen Thema. Farbe trägt nie allein eine Bedeutung: Status hat immer ein Wort.
 
 ## Inhalt und Ton
@@ -24,7 +24,7 @@ Die Werte stammen aus einer einzigen Quelle im Code (`packages/ui/src/tokens.ts`
 | Rolle | Hell | Dunkel | Einsatz |
 | --- | --- | --- | --- |
 | `bg` | Warm Ivory `#f5f0e8` | `#17110f` | Seitenhintergrund |
-| `surface` | `#fffcf7` | `#221a18` | Kacheln, Karten |
+| `surface` | `#fffcf7` | `#221a18` | Karten, Listen (Kacheln sind immer weiß) |
 | `ink` | `#2a1a1d` | Ivory | Text |
 | `accent` | Oxblood `#722638` | `#e8899f` | Marke, aktiv, bestätigen |
 | `action` | Orange `#ff641f` | Orange | Hauptaktion (Fläche) – Schrift darauf dunkel (`on-action`) |
@@ -40,8 +40,8 @@ Orange erscheint nie als Schrift auf Ivory (2,6:1); dafür gibt es `action-text`
 
 ## Form und Raster
 
-- Abstände im 4er-Raster: `space-xs` 8 zwischen Kacheln, `space-md` 16 als Seitenrand, `space-lg` 24 zwischen Abschnitten.
-- Ecken: `radius-sm` 10 (Knöpfe, Felder), `radius-md` 16 (Kacheln, Karten), `radius-lg` 22 (Sheets), `radius-pill` (Tab-Leiste, Chips, Plaketten).
+- Abstände im 4er-Raster: 10 px zwischen Kacheln im Mosaik, `space-md` 16 als Seitenrand, `space-lg` 24 zwischen Abschnitten.
+- Ecken: `radius-sm` 10 (Knöpfe, Felder), `radius-md` 16 (Karten), `radius-lg` 22 (Kacheln, Outfit-Karten, Sheets), `radius-pill` (Tab-Leiste, Chips, Plaketten).
 - Tippflächen mindestens 44 × 44 px.
 
 ## Bewegung
@@ -65,7 +65,7 @@ Orange erscheint nie als Schrift auf Ivory (2,6:1); dafür gibt es `action-text`
 
 ## Komponenten
 
-16 Grundbausteine, jeweils mit Vorschau und Regeln: Button, IconButton, Chip, SegmentedControl, ItemTile, StatusBadge, OutfitCard, TabBar, Header, Sheet, ListRow, TextField, Switch, Toast, WeekStrip, TodayBar. Die Vorschauen zeigen Silhouetten als Platzhalter; in der App stehen dort die freigestellten Produktfotos.
+17 Grundbausteine, jeweils mit Vorschau und Regeln: Button, IconButton, Chip, SegmentedControl, ItemTile, WishTile, StatusBadge, OutfitCard, TabBar, Header, Sheet, ListRow, TextField, Switch, Toast, WeekStrip, TodayBar. Die Vorschauen zeigen Silhouetten als Platzhalter; in der App stehen dort die freigestellten Produktfotos.
 
 ## Was die Komponenten brauchen
 

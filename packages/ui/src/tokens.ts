@@ -60,6 +60,23 @@ export const status = {
   dark: { wash: '#6FA4DB', repair: '#9C9C9C', lent: '#D9A04A', out: '#A39C90', sold: '#D0687E' },
 } as const;
 
+/** Personenfarben (wie im alten Valet: Max rosa, Paul rot). Buchstabe auf der Kachel-Plakette; im Dunklen aufgehellt. */
+export const person = {
+  light: { pink: '#D9668E', red: '#C8102E' },
+  dark: { pink: '#EF91B0', red: '#EF6B7E' },
+} as const;
+
+/** Kachel im Mosaik (aus dem alten Valet übernommen) */
+export const tile = {
+  radius: 22,
+  gap: 10,
+  /** Farbschein am Rand in der Hauptfarbe des Teils: Weichzeichnung und Breite in px, Deckkraft 0–1 */
+  glow: { blur: 22, spread: 3, opacity: 0.45 },
+  badge: 26,
+  /** Zeilenhöhe des Mosaiks; Kacheln belegen je nach Kategorie 2–4 Zeilen */
+  row: 44,
+} as const;
+
 /** Abstände (4er-Raster) */
 export const space = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 
@@ -101,6 +118,7 @@ export const glass = {
 export const shadow = {
   float: '0 6px 20px rgba(42, 26, 29, 0.16)',
   sheet: '0 -8px 32px rgba(42, 26, 29, 0.14)',
+  tile: '0 2px 8px rgba(42, 26, 29, 0.10)',
 } as const;
 
 /** Bewegung (Werte orientiert an den Messungen in docs/research.md, Abschnitt 2.3) */
@@ -112,5 +130,5 @@ export const motion = {
   spring: { damping: 22, stiffness: 260 },
 } as const;
 
-export const tokens = { brand, colors, status, space, radius, hitTarget, fonts, type, glass, shadow, motion };
+export const tokens = { brand, colors, status, person, tile, space, radius, hitTarget, fonts, type, glass, shadow, motion };
 export default tokens;
