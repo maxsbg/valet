@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
 import { ScrollView } from 'react-native';
 import { Icons, Silhouette } from './Icon';
+import { FIXED } from './Page';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 
 /** Kopfzeile: Hilfe links, Schriftzug „valet“ mittig, Ansicht-Einstellungen rechts */
@@ -77,7 +78,7 @@ export function TodayBar({ items, onPress }: { items: { id: string; category: st
 export function Fab({ onPress, bottom }: { onPress?: () => void; bottom: number }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel="Teil hinzufügen" onPress={onPress}
-      style={({ pressed }) => [s.fab, { bottom, transform: [{ scale: pressed ? 0.94 : 1 }] }]}>
+      style={({ pressed }) => [s.fab, FIXED, { bottom, transform: [{ scale: pressed ? 0.94 : 1 }] }]}>
       <Icons.plus color="#2a1a1d" size={26} />
     </Pressable>
   );
@@ -94,8 +95,8 @@ export function useToast(bottom: number) {
     return () => clearTimeout(id);
   }, [msg, op]);
   const node = msg ? (
-    <Animated.View pointerEvents="none" style={[s.toast, { bottom, opacity: op }]}>
-      <Text style={s.toastText}>{msg}</Text>
+    <Animated.View pointerEvents="none" style={[FIXED, { left: 0, right: 0, bottom, alignItems: 'center', zIndex: 20, opacity: op }]}>
+      <View style={s.toast}><Text style={s.toastText}>{msg}</Text></View>
     </Animated.View>
   ) : null;
   return { show: setMsg, node };
@@ -126,6 +127,6 @@ const s = StyleSheet.create({
   todayThumb: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(42,26,29,0.08)' },
   todayAction: { fontSize: 15, fontWeight: '600', color: '#B8430F' },
   fab: { position: 'absolute', zIndex: 10, right: space.md, width: 56, height: 56, borderRadius: 28, backgroundColor: '#FF641F', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(42,26,29,0.22)' },
-  toast: { position: 'absolute', zIndex: 20, alignSelf: 'center', backgroundColor: '#2a1a1d', borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, boxShadow: '0 6px 20px rgba(42,26,29,0.2)' },
+  toast: { backgroundColor: '#2a1a1d', borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, boxShadow: '0 6px 20px rgba(42,26,29,0.2)' },
   toastText: { color: '#F5F0E8', fontSize: 15, fontWeight: '500' },
 });

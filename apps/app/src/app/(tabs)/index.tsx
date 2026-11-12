@@ -1,3 +1,4 @@
+import { Page, useRestoreScroll } from '@/components/Page';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -37,6 +38,7 @@ export default function Schrank() {
     return (wardrobe?.items ?? []).filter((i) => ids.has(i.id));
   }, [wardrobe]);
   const nFilters = filterCount(filters);
+  useRestoreScroll('schrank', !!wardrobe);
   const toggle = (k: keyof Filters, v: string) =>
     setDraft((d) => ({ ...d, [k]: d[k].includes(v) ? d[k].filter((x) => x !== v) : [...d[k], v] }));
 
@@ -61,8 +63,7 @@ export default function Schrank() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView
-        style={{ flex: 1 }}
+      <Page
         contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
         stickyHeaderIndices={[1]}
@@ -107,7 +108,7 @@ export default function Schrank() {
             <Text style={{ color: t.inkMuted, fontSize: 13 }}>Abmelden</Text>
           </Pressable>
         )}
-      </ScrollView>
+      </Page>
       <Fab bottom={scr.fabBottom} onPress={soon} />
       <Sheet open={sheet === 'sort'} onClose={() => setSheet(null)} title="Sortieren"
         footer={sort === 'random' ? <SheetButton label="Neu mischen" onPress={() => { setSeed(seed + 1); setSheet(null); }} /> : undefined}>

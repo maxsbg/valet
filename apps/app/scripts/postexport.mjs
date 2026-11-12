@@ -12,8 +12,8 @@ let h = readFileSync(f, 'utf8')
     '<link rel="apple-touch-icon" href="/valet/apple-touch-icon.png">',
     '<meta name="theme-color" content="#F5F0E8" media="(prefers-color-scheme: light)">',
     '<meta name="theme-color" content="#17110F" media="(prefers-color-scheme: dark)">',
-    // App läuft bis unter die Safari-Leiste (100lvh); Bedienelemente hebt die App per JavaScript darüber
-    '<style>html,body{background:#F5F0E8;height:100%;overflow:hidden;overscroll-behavior:none}@media (prefers-color-scheme:dark){html,body{background:#17110F}}#root{position:fixed;top:0;left:0;right:0;height:100lvh}</style>',
+    // Das Dokument selbst scrollt, damit der Inhalt in Safari unter der durchscheinenden Adressleiste weiterläuft
+    '<style>html,body{background:#F5F0E8;height:auto;min-height:100%;overflow-x:clip;overflow-y:visible}@media (prefers-color-scheme:dark){html,body{background:#17110F}}#root{height:auto;min-height:100svh}</style>',
     '</head>',
   ].join(''));
 h = h.replace('content="width=device-width, initial-scale=1, shrink-to-fit=no"', 'content="width=device-width, initial-scale=1, viewport-fit=cover"');

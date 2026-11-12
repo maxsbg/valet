@@ -1,3 +1,4 @@
+import { Page } from '@/components/Page';
 import { ScrollView, View } from 'react-native';
 import { Header, Empty } from '@/components/ui';
 import { useTheme, space } from '@/lib/theme';
@@ -8,10 +9,10 @@ export default function Statistik() {
   const scr = useScreen();
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}>
+      <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}>
         <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
         <Empty title="Statistik" text="Ausgaben, Getragen und Bestand kommen nach den Outfits." />
-      </ScrollView>
+      </Page>
     </View>
   );
 }

@@ -1,4 +1,5 @@
-import { Stack } from 'expo-router';
+import { Slot, Stack } from 'expo-router';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Gloock_400Regular } from '@expo-google-fonts/gloock';
 import { ActivityIndicator, View } from 'react-native';
@@ -12,6 +13,8 @@ function Gate() {
   const t = useTheme();
   if (!ready) return <View style={{ flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={t.accent} /></View>;
   if (!session) return <Login />;
+  // Web: ohne gestapelte Karten, damit das Dokument selbst scrollt (Inhalt läuft unter der Safari-Leiste weiter)
+  if (Platform.OS === 'web') return <Slot />;
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
       <Stack.Screen name="(tabs)" />

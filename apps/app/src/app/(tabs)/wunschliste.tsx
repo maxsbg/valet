@@ -1,3 +1,4 @@
+import { Page, useRestoreScroll } from '@/components/Page';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -16,6 +17,7 @@ export default function Wunschliste() {
   const { wardrobe } = useSession();
   const toast = useToast(scr.barTop + space.sm);
   const wishes = useMemo(() => (wardrobe?.items ?? []).filter((i) => i.isWish).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [wardrobe]);
+  useRestoreScroll('wunschliste', !!wardrobe);
   const total = wishes.reduce((n, i) => n + (i.price ?? 0), 0);
   const persons = new Map((wardrobe?.persons ?? []).map((p) => [p.id, p]));
   const ownerOf = (i: Tile) => {
@@ -25,7 +27,7 @@ export default function Wunschliste() {
   const daysLeft = (i: Tile) => WAIT - Math.floor((Date.now() - new Date(i.createdAt).getTime()) / 86400000);
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}>
+      <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}>
         <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
         <View style={{ width: scr.content, gap: space.sm }}>
           <View style={[s.card, { backgroundColor: t.surface, borderColor: t.hairline }]}>
@@ -39,7 +41,7 @@ export default function Wunschliste() {
             <Empty title="Noch keine Wünsche" text="Teile, die du dir überlegst, landen hier mit 14 Tagen Bedenkzeit." />
           )}
         </View>
-      </ScrollView>
+      </Page>
       <Fab bottom={scr.fabBottom} onPress={() => toast.show('Kommt in einem der nächsten Schritte.')} />
       {toast.node}
     </View>
