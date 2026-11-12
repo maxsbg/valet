@@ -15,10 +15,13 @@ export type Tile = {
   isWish: boolean;
   price: number | null;
   createdAt: string;
+  purchaseDate: string | null;
+  seasons: string[];
+  style: string | null;
   /** Hauptfarbe für den Farbschein (aus der Farbanalyse des Bildes, sonst aus dem Farbnamen) */
   hex: string | null;
 };
-export type Wardrobe = { id: string; name: string; persons: Person[]; items: Tile[] };
+export type Wardrobe = { id: string; name: string; persons: Person[]; items: Tile[]; /** heute getragen oder fürs heutige Outfit geplant */ today: string[] };
 
 /** Lädt den ersten Kleiderschrank, in dem der angemeldete Nutzer Mitglied ist. */
 export async function loadWardrobe(): Promise<Wardrobe | null> {
@@ -26,15 +29,18 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   if (e1) throw e1;
   const w = ws?.[0];
   if (!w) return null;
-  const [persons, items, images] = await Promise.all([
+  const today = todayLocal();
+  const [persons, items, images, wears, plans] = await Promise.all([
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,color,owner_id,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,created_at')
+      .select('id,name,brand,category,color,owner_id,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,colors'),
+    supabase.from('wears').select('item_id').eq('worn_on', today),
+    supabase.from('outfit_plans').select('outfit_id, outfit_items:outfit_items!inner(item_id)').eq('plan_date', today),
   ]);
-  for (const r of [persons, items, images]) if (r.error) throw r.error;
+  for (const r of [persons, items, images, wears, plans]) if (r.error) throw r.error;
   const colorsBy = new Map<string, string>();
   for (const im of images.data ?? []) {
     const c = Array.isArray(im.colors) ? (im.colors as { h: string; s: number }[]) : [];
@@ -55,9 +61,15 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     isWish: !!i.is_wish,
     price: i.price_paid ?? i.list_price ?? null,
     createdAt: i.created_at,
+    purchaseDate: i.purchase_date,
+    seasons: i.seasons ?? [],
+    style: i.style,
     hex: colorsBy.get(`${i.id}:${(i.main_side ?? 'A').trim()}`) ?? colorsBy.get(`${i.id}:A`) ?? nameToHex(i.color),
   }));
-  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles };
+  const todayIds = new Set<string>();
+  for (const x of wears.data ?? []) todayIds.add(x.item_id);
+  for (const p of (plans.data ?? []) as { outfit_items: { item_id: string }[] }[]) for (const oi of p.outfit_items) todayIds.add(oi.item_id);
+  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, today: [...todayIds] };
 }
 
 const NAMED: Record<string, string> = {
@@ -74,4 +86,9 @@ export function nameToHex(name: string | null): string | null {
 /** Personenfarbe aus dem gespeicherten Namen („Rosa“, „Rot“) */
 export function personKey(color: string | null): 'pink' | 'red' {
   return color && /rot|red/i.test(color) ? 'red' : 'pink';
+}
+
+/** Heutiges Datum (lokale Zeit) als YYYY-MM-DD */
+export function todayLocal(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

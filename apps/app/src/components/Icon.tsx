@@ -18,6 +18,8 @@ export const Icons = {
   search: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Circle cx={11} cy={11} r={6.5} {...stroke(color)} /><Path d="m16 16 4 4" {...stroke(color)} /></Svg>),
   close: ({ size = 18, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M6 6l12 12M18 6 6 18" {...stroke(color)} /></Svg>),
   sliders: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M4 7h10M18 7h2M4 17h4M12 17h8" {...stroke(color)} /><Circle cx={16} cy={7} r={2} {...stroke(color)} /><Circle cx={10} cy={17} r={2} {...stroke(color)} /></Svg>),
+  sort: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M8 4v16M4 16l4 4 4-4M16 20V4M12 8l4-4 4 4" {...stroke(color)} /></Svg>),
+  filter: ({ size = 18, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M4 7h16M7 12h10M10 17h4" {...stroke(color)} /></Svg>),
   help: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14" {...stroke(color)} /><Circle cx={12} cy={17.5} r={1.1} fill={color} /></Svg>),
 };
 
