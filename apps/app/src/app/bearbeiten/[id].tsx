@@ -1,3 +1,4 @@
+import { useBottomInset } from '@/lib/bottomInset';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, KeyboardAvoidingView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -48,7 +49,8 @@ export default function Bearbeiten() {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const toast = useToast(insets.bottom + 90);
+  const bottom = useBottomInset();
+  const toast = useToast(bottom + 90);
 
   useEffect(() => { loadItem(id).then((d) => { setOrig(d.item); setF(toForm(d.item)); }).catch((e) => toast.show(e.message)); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -109,7 +111,7 @@ export default function Bearbeiten() {
         <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>Bearbeiten</Text>
         <Pressable onPress={save} disabled={saving} hitSlop={10}><Text style={{ fontSize: 17, fontWeight: '700', color: t.dark ? t.accent : '#722638', opacity: saving ? 0.4 : 1 }}>{saving ? 'Speichert …' : 'Sichern'}</Text></Pressable>
       </View>
-      <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: insets.bottom + space.xxl }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
         <View style={s.col}>
           {/* Das Wichtigste */}
           {Field({ label: 'Name', k: 'name', placeholder: 'z. B. Wollmantel' })}
