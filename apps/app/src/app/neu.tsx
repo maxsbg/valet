@@ -156,7 +156,7 @@ export default function Neu() {
           {step === 'review' && (
             <View style={{ gap: space.md, marginTop: space.md }}>
               {picture ? (
-                <View style={[s.stage, { backgroundColor: '#fff', boxShadow: `inset 0 0 28px 4px ${glow}73, 0 2px 8px rgba(42,26,29,0.10)` }]}>
+                <View style={[s.stage, { backgroundColor: '#1d1b1e', boxShadow: `inset 0 0 28px 4px ${glow}55, 0 2px 8px rgba(42,26,29,0.18)` }]}>
                   <Image source={{ uri: picture.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} />
                 </View>
               ) : (
