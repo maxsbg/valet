@@ -42,11 +42,10 @@ export function emptyForm(ownerId: string | null): ItemForm {
   };
 }
 
-/** Prüft die Eingaben; liefert die Änderung für die Datenbank oder eine Fehlermeldung */
+/** Prüft die Eingaben (Pflicht ist nur der Name; ohne Kategorie → „Sonstiges“); liefert die Änderung für die Datenbank oder eine Fehlermeldung */
 export function readForm(f: ItemForm) {
   const fail = (error: string) => ({ error }) as const;
   if (!f.name.trim()) return fail('Bitte einen Namen eingeben.');
-  if (!f.category) return fail('Bitte eine Kategorie wählen.');
   const date = toIso(f.date);
   if (date === undefined) return fail('Kaufdatum bitte als TT.MM.JJJJ eingeben.');
   const price = parseAmount(f.price); const list = parseAmount(f.list);
@@ -54,10 +53,11 @@ export function readForm(f: ItemForm) {
   if (f.list.trim() && list == null) return fail('Listenpreis ist keine Zahl.');
   return {
     change: {
-      name: f.name.trim(), brand: f.brand.trim() || null, category: f.category, owner_id: f.owner_id, price_paid: price,
-      qty: Math.max(1, parseInt(f.qty, 10) || 1), color: f.colors.join('/') || null, size: f.size.trim() || null, list_price: list,
-      purchase_date: date, shop: f.shop.trim() || null, link: f.link.trim() || null, seasons: f.seasons, style: f.style,
-      material: f.material.trim() || null, reversible: f.reversible, notes: f.notes.trim() || null,
+      // Textfelder sind in der Datenbank „not null default ''“ → leer statt null speichern
+      name: f.name.trim(), brand: f.brand.trim(), category: f.category || 'sonstiges', owner_id: f.owner_id, price_paid: price,
+      qty: Math.max(1, parseInt(f.qty, 10) || 1), color: f.colors.join('/'), size: f.size.trim(), list_price: list,
+      purchase_date: date, shop: f.shop.trim(), link: f.link.trim(), seasons: f.seasons, style: f.style ?? '',
+      material: f.material.trim(), reversible: f.reversible, notes: f.notes.trim(),
     } satisfies ItemChange,
   };
 }
@@ -89,10 +89,10 @@ export function ItemFormFields({ f, onChange, persons, open, onOpen }: Props) {
   return (
     <>
       {/* Das Wichtigste */}
-      {Field({ label: 'Name', k: 'name', placeholder: 'z. B. Wollmantel' })}
+      {Field({ label: 'Name (Pflicht)', k: 'name', placeholder: 'z. B. Wollmantel' })}
       {Field({ label: 'Marke', k: 'brand', placeholder: 'z. B. COS' })}
-      <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Kategorie</Text>
-      <View style={s.wrap}>{CATEGORIES.map((c) => <Chip key={c.id} label={c.label} selected={f.category === c.id} onPress={() => set('category', c.id)} />)}</View>
+      <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Kategorie <Text style={{ fontWeight: '400' }}>· optional, sonst „Sonstiges“</Text></Text>
+      <View style={s.wrap}>{CATEGORIES.map((c) => <Chip key={c.id} label={c.label} selected={f.category === c.id} onPress={() => set('category', f.category === c.id ? '' : c.id)} />)}</View>
       <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Gehört</Text>
       <View style={s.wrap}>
         {persons.map((p) => (
