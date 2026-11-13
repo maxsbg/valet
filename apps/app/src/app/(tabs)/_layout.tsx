@@ -1,6 +1,6 @@
+import { useBottomInset } from '@/lib/bottomInset';
 import { Tabs, TabList, TabTrigger, TabSlot, type TabTriggerSlotProps } from 'expo-router/ui';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icons } from '@/components/Icon';
 import { useTheme, TAB_BAR } from '@/lib/theme';
 
@@ -20,12 +20,12 @@ function TabButton({ label, icon, isFocused, ref, ...props }: Btn) {
 
 export default function TabLayout() {
   const t = useTheme();
-  const insets = useSafeAreaInsets();
+  const bottom = useBottomInset();
   return (
     <Tabs style={{ flex: 1, backgroundColor: t.bg }}>
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
-        <View style={StyleSheet.flatten([s.bar, { bottom: Math.max(insets.bottom, 10), backgroundColor: t.glass, borderColor: t.glassBorder },
+        <View style={StyleSheet.flatten([s.bar, { bottom: Math.max(bottom, 10), backgroundColor: t.glass, borderColor: t.glassBorder },
           Platform.OS === 'web' ? ({ backdropFilter: 'blur(24px) saturate(1.6)', WebkitBackdropFilter: 'blur(24px) saturate(1.6)' } as object) : null])}>
           <TabTrigger name="schrank" href="/" asChild><TabButton label="Schrank" icon="hanger" /></TabTrigger>
           <TabTrigger name="outfits" href="/outfits" asChild><TabButton label="Outfits" icon="layers" /></TabTrigger>
