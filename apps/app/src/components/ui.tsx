@@ -75,9 +75,9 @@ export function TodayBar({ items, onPress }: { items: { id: string; category: st
 }
 
 /** Orangefarbener Plus-Knopf unten rechts */
-export function Fab({ onPress, bottom }: { onPress?: () => void; bottom: number }) {
+export function Fab({ onPress, bottom, label = 'Teil hinzufügen' }: { onPress?: () => void; bottom: number; label?: string }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel="Teil hinzufügen" onPress={onPress}
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
       style={({ pressed }) => [s.fab, { bottom, transform: [{ scale: pressed ? 0.94 : 1 }] }]}>
       <Icons.plus color="#2a1a1d" size={26} />
     </Pressable>

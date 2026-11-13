@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { loadWardrobe, type Tile, type Wardrobe } from './wardrobe';
+import { loadOutfits, todayIds } from './outfits';
 
 type Ctx = {
   session: Session | null;
@@ -13,8 +14,10 @@ type Ctx = {
   /** Teil lokal ändern, ohne neu zu laden */
   patch: (id: string, change: Partial<Tile>) => void;
   setToday: (ids: string[]) => void;
+  /** Outfits, Planungen und Trage-Tage neu laden (nach Änderungen an Outfits) */
+  reloadOutfits: () => Promise<void>;
 };
-const C = createContext<Ctx>({ session: null, ready: false, wardrobe: null, loading: false, error: null, reload: async () => {}, patch: () => {}, setToday: () => {} });
+const C = createContext<Ctx>({ session: null, ready: false, wardrobe: null, loading: false, error: null, reload: async () => {}, patch: () => {}, setToday: () => {}, reloadOutfits: async () => {} });
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -42,7 +45,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setWardrobe((w) => (w ? { ...w, items: w.items.map((i) => (i.id === id ? { ...i, ...change } : i)) } : w)), []);
   const setToday = useCallback((ids: string[]) => setWardrobe((w) => (w ? { ...w, today: ids } : w)), []);
 
-  return <C.Provider value={{ session, ready, wardrobe, loading, error, reload, patch, setToday }}>{children}</C.Provider>;
+  const wid = wardrobe?.id;
+  const reloadOutfits = useCallback(async () => {
+    if (!wid) return;
+    const r = await loadOutfits(wid);
+    setWardrobe((w) => {
+      if (!w) return w;
+      const ids = new Set(w.items.map((i) => i.id));
+      const wears = r.wears.filter((x) => ids.has(x.itemId));
+      return { ...w, outfits: r.outfits, wears, today: todayIds(r.outfits, wears) };
+    });
+  }, [wid]);
+
+  return <C.Provider value={{ session, ready, wardrobe, loading, error, reload, patch, setToday, reloadOutfits }}>{children}</C.Provider>;
 }
 
 export const useSession = () => useContext(C);

@@ -10,11 +10,12 @@ type Props = {
   ownerOf: (t: Tile) => { letter: string; color: 'pink' | 'red' } | null;
   look?: TileStyle;
   daysLeft?: (t: Tile) => number | undefined;
+  selected?: (t: Tile) => boolean;
   onPress?: (t: Tile) => void;
 };
 
 /** Mosaik mit 3 Spalten: jede Kachel kommt in die gerade kürzeste Spalte (Reihenfolge bleibt von links oben nach rechts unten). */
-export function Mosaic({ items, width, ownerOf, look, daysLeft, onPress }: Props) {
+export function Mosaic({ items, width, ownerOf, look, daysLeft, selected, onPress }: Props) {
   const colW = (width - 2 * tile.gap) / 3;
   const cols = useMemo(() => {
     const c: Tile[][] = [[], [], []];
@@ -31,7 +32,7 @@ export function Mosaic({ items, width, ownerOf, look, daysLeft, onPress }: Props
       {cols.map((col, ci) => (
         <View key={ci} style={{ width: colW, gap: tile.gap }}>
           {col.map((it) => (
-            <ItemTile key={it.id} item={it} width={colW} owner={ownerOf(it)} look={look} daysLeft={daysLeft?.(it)} onPress={() => onPress?.(it)} />
+            <ItemTile key={it.id} item={it} width={colW} owner={ownerOf(it)} look={look} daysLeft={daysLeft?.(it)} selected={selected?.(it)} onPress={() => onPress?.(it)} />
           ))}
         </View>
       ))}

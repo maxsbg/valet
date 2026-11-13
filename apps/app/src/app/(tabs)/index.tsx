@@ -70,7 +70,7 @@ export default function Schrank() {
         <View style={{ width: scr.content + 2 * space.md }}>
           <Header onHelp={soon} onSettings={soon} />
           <View style={{ paddingHorizontal: space.md, paddingBottom: space.sm }}>
-            <TodayBar items={today} onPress={soon} />
+            <TodayBar items={today} onPress={() => router.push('/outfits')} />
           </View>
         </View>
         <View style={[s.filters, { backgroundColor: t.bg, width: scr.content + 2 * space.md }]}>

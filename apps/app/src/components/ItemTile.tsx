@@ -25,14 +25,16 @@ type Props = {
   look?: TileStyle;
   /** Wunschliste: verbleibende Tage Bedenkzeit */
   daysLeft?: number;
+  /** im Outfit-Baukasten ausgewählt */
+  selected?: boolean;
   onPress?: () => void;
 };
 
-function Badge({ style, children }: { style: object; children: React.ReactNode }) {
+function Badge({ style, children }: { style: object | object[]; children: React.ReactNode }) {
   return <View style={[s.badge, style]}>{children}</View>;
 }
 
-export function ItemTile({ item, width, owner, look = 'glow', daysLeft, onPress }: Props) {
+export function ItemTile({ item, width, owner, look = 'glow', daysLeft, selected, onPress }: Props) {
   const height = tileHeight(item.category, width);
   const c = item.hex ?? '#d8d2c8';
   const glow = owner === null && item.isWish ? 'flat' : look;
@@ -46,15 +48,18 @@ export function ItemTile({ item, width, owner, look = 'glow', daysLeft, onPress 
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityState={selected != null ? { selected } : undefined}
       accessibilityLabel={[item.name, item.brand].filter(Boolean).join(', ')}
       style={({ pressed }) => [s.tile, { width, height, boxShadow: shadow, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
       <View style={s.img}>
         <ItemPicture uri={item.thumb} category={item.category} color={c} />
       </View>
-      {StatusIcon && !item.isWish && (
+      {selected ? (
+        <Badge style={[s.tl, s.sel]}><Icons.check color="#fff" size={16} /></Badge>
+      ) : StatusIcon && !item.isWish ? (
         <Badge style={s.tl}><StatusIcon color={INK} /></Badge>
-      )}
+      ) : null}
       {item.isWish && daysLeft != null ? (
         <View style={[s.badge, s.tr, s.ring]}>
           <Svg width={26} height={26} viewBox="0 0 26 26" style={s.ringSvg}>
@@ -75,6 +80,7 @@ export function ItemTile({ item, width, owner, look = 'glow', daysLeft, onPress 
       {owner && (
         <Badge style={s.br}><Text style={[s.owner, { color: PERSON[owner.color] }]}>{owner.letter}</Text></Badge>
       )}
+      {selected && <View pointerEvents="none" style={s.selRing} />}
     </Pressable>
   );
 }
@@ -90,5 +96,7 @@ const s = StyleSheet.create({
   ringSvg: { position: 'absolute', top: 2, left: 2 },
   ringText: { fontSize: 11, fontWeight: '600', color: INK },
   price: { position: 'absolute', left: 7, bottom: 7, backgroundColor: '#fff', borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10, boxShadow: '0 1px 4px rgba(42,26,29,0.16)' },
+  sel: { backgroundColor: '#722638' },
+  selRing: { ...StyleSheet.absoluteFill, borderRadius: tile.radius, borderWidth: 3, borderColor: '#722638' },
   priceText: { fontSize: 13, fontWeight: '600', color: INK },
 });
