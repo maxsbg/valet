@@ -417,8 +417,8 @@ async function cutout(file, mode, onStep) {
   catch (e) { if (e && e.gpuLost) { onStep && onStep('Grafikchip ausgefallen – rechne mit Prozessor …', 0); return cutout1(file, mode, onStep); } throw e; }
 }
 async function cutout1(file, mode, onStep) {
-  const neu = mode === 'neu', info = { mode, t: {} }, T = () => performance.now();
-  let t = T(); const { c, ow, oh } = await toCanvas(file, neu ? 1600 : 2000); info.t.lesen = T() - t;
+  const neu = mode !== 'alt', maxE = mode === 'k1024' ? 1024 : neu ? 1600 : 2000, info = { mode, t: {} }, T = () => performance.now();
+  let t = T(); const { c, ow, oh } = await toCanvas(file, maxE); info.t.lesen = T() - t;
   const W = c.width, H = c.height, d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data, A = new Float32Array(W * H);
   info.eingang = `${ow}×${oh}`; info.arbeit = `${W}×${H}`; info.S = modelSize(); info.engine = engineName();
   t = T(); onStep && onStep('1. Durchgang …', 0);
