@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import { CATEGORIES } from '@valet/core';
 import { Header, Chip, Fab, Empty, glass } from '@/components/ui';
@@ -62,7 +62,11 @@ export default function Schrank() {
     })),
   ];
   // Milchglas erst, wenn die Leiste oben klebt (Kopfzeile weggescrollt)
-  const stuck = scrollY.interpolate({ inputRange: [headH - 1, headH], outputRange: [0, 1], extrapolate: 'clamp' });
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => setStuck(value >= headH));
+    return () => scrollY.removeListener(id);
+  }, [scrollY, headH]);
   const web = Platform.OS === 'web';
 
   return (
@@ -77,11 +81,12 @@ export default function Schrank() {
         <View style={{ width: barW }} onLayout={(e) => setHeadH(e.nativeEvent.layout.height)}>
           <Header />
         </View>
-        {/* klebt beim Scrollen oben; reicht bis unter die Statusleiste, Kacheln laufen darunter durch */}
+        {/* klebt beim Scrollen oben; reicht bis unter die Statusleiste, Kacheln laufen darunter durch.
+            Hintergrund sitzt direkt auf der klebenden Fläche: Safari tönt danach den Bereich hinter der Uhr
+            (oben durchsichtig → Seitenfarbe, geklebt → Milchglas). Weichzeichner nur beim Kleben, sonst würde er den Kopf verwischen. */}
         <View pointerEvents="box-none" style={[{ alignSelf: 'stretch', alignItems: 'center', zIndex: 10, marginTop: -scr.top, paddingTop: scr.top },
+          stuck ? [...glass(t), { borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth }] : { backgroundColor: 'transparent' },
           web ? ({ position: 'sticky', top: 0 } as object) : null]}>
-          {/* Milchglas in Seitenfarbe: oben sieht man keinen Unterschied (Safari tönt danach die Statusleiste), über den Kacheln milchig */}
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, ...glass(t), { backgroundColor: t.bg + 'B8', borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth, opacity: stuck }]} />
           <ClosetBar width={barW} query={query} onQuery={setQuery} chips={chips} filterActive={nFilters > 0}
             onFilter={() => { setDraft(filters); setSheet('filter'); }} onSort={() => setSheet('sort')} />
         </View>
