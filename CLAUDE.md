@@ -28,12 +28,15 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 ## Supabase
 - Projekt `jocjisrmmzzvfnijosgg` (eu-west-1), Publishable Key in `src/lib/supabase.ts`.
 - Zugriff über RLS mit `is_member(wardrobe_id)`. Schrank „Max & Paul“: `e3601e23-…`.
-- Tabellen: wardrobes, wardrobe_members, wardrobe_invites, persons (color 'Rosa'/'Rot', item_order), wishlists, items, item_images (colors jsonb `[{h,s}]`), wears (PK item_id+worn_on), outfits, outfit_items, outfit_plans, reservations, daily_suggestions, cutout_feedback.
+- Tabellen: wardrobes, wardrobe_members, wardrobe_invites, persons (color 'Rosa'/'Rot', item_order), wishlists, items (Besitzer in `owner_ids uuid[]`, mehrere möglich, kein „gemeinsam“; `owner_id` nur Spiegel für die Statistik: genau einer → dessen ID, sonst null; `highlight_color`), item_images (colors jsonb `[{h,s}]`), wears (PK item_id+worn_on), outfits, outfit_items, outfit_plans, reservations, daily_suggestions, cutout_feedback.
 - `outfit_plans` hat **keine** direkte Verbindung zu `outfit_items` → über `outfits(outfit_items(item_id))` laden. Abfragen immer gegen die echte DB prüfen.
 - Testkonto `claude-test@valet.invalid` (Schrank `c9fcb483-…`) kann gelöscht werden.
 
 ## Design
-- Kacheln aus dem alten Valet **genau** übernehmen: Schrank- und Wunschlisten-Kacheln mit allen Badges, Mosaik, Outfit-Karten.
+- **Schrank-Kachel** (neu, 13.11.2026): verbindlich `docs/design/kachel/VALET_KACHEL_SPEC.md` + `valet-kachel-referenz.html` (bei Widerspruch gilt die HTML). Werte in `packages/ui/src/tokens.ts` (`itemTile`), Logik in `packages/core/src/tile.ts` (glowFor, ownersFor, countLabel, topRightFor), Komponente `src/components/ItemTile.tsx` + `components/tile/`. Das Designsystem auf claude.ai ist bei der Kachel veraltet.
+  - Prüfseite gehört **nicht** in die App: `node docs/design/kachel/pruefung/erstellen.mjs` erzeugt `kachel-pruefung.html` (eigenständig, gleiche Fälle wie die Referenz).
+  - Offen (Max fragen, nicht selbst entscheiden): Set-Plakette, Wunschlisten-Plaketten (Preis, Bedenkzeit), eingelagert vs. aussortiert, Highlight-Farbe automatisch/manuell, Auswahl im Outfit-Baukasten (vorerst alt). Personen ohne Farbe → Monogramm/Bügel schwarz (ink). iOS: Blur (expo-blur), Grau-Filter, Text-Versatz nachmessen.
+- Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
 - Web: Das Dokument selbst scrollt, damit Inhalte unter der Safari-Leiste durchlaufen. Feste Leisten über `position: fixed` (Web) und `src/lib/bottomInset.ts` (misst, wie viel die Browserleiste unten verdeckt). Web nutzt `Slot` statt `Stack`.
 

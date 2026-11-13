@@ -8,7 +8,6 @@ import { Mosaic } from '@/components/Mosaic';
 import { useSession } from '@/lib/session';
 import { useTheme, space } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
-import { personKey, type Tile } from '@/lib/wardrobe';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
 import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, STATUS_FILTERS, SEASON_FILTERS, STYLE_FILTERS, type SortId, type Filters } from '@/lib/sort';
 import { usePersisted } from '@/lib/usePersisted';
@@ -52,11 +51,6 @@ export default function Schrank() {
       (!q || [i.name, i.brand, i.color].some((f) => f?.toLowerCase().includes(q))));
   }, [inCloset, cat, query]);
 
-  const persons = new Map((wardrobe?.persons ?? []).map((p) => [p.id, p]));
-  const ownerOf = (i: Tile) => {
-    const p = i.ownerId ? persons.get(i.ownerId) : null;
-    return p ? { letter: p.name.slice(0, 1).toUpperCase(), color: personKey(p.color) } : null;
-  };
   const soon = () => toast.show('Kommt in einem der nächsten Schritte.');
 
   return (
@@ -99,7 +93,7 @@ export default function Schrank() {
           ) : shown.length === 0 ? (
             <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff oder Filter." />
           ) : (
-            <Mosaic items={shown} width={scr.content} ownerOf={ownerOf} onPress={(i) => router.push(`/teil/${i.id}`)} />
+            <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
           )}
         </View>
         {wardrobe && (

@@ -14,7 +14,7 @@ export type Outfit = {
   pieces: OutfitPiece[];
   plans: OutfitPlan[];
 };
-export type Wear = { itemId: string; date: string };
+export type Wear = { itemId: string; date: string; personId: string | null };
 
 /** Anlässe, die es immer gibt (wie im alten Valet) */
 export const OCCASIONS = ['Uni', 'Arbeit', 'Training/Sport', 'Abend/Ausgehen'];
@@ -32,7 +32,7 @@ export async function loadOutfits(wardrobeId: string): Promise<{ outfits: Outfit
     supabase.from('outfits')
       .select('id,name,occasions,owner_id,created_at,updated_at, outfit_items(item_id,position,x,y,z), outfit_plans(id,plan_date,person_id,created_at)')
       .eq('wardrobe_id', wardrobeId),
-    supabase.from('wears').select('item_id,worn_on'),
+    supabase.from('wears').select('item_id,worn_on,person_id'),
   ]);
   if (os.error) throw os.error;
   if (ws.error) throw ws.error;
@@ -46,7 +46,7 @@ export async function loadOutfits(wardrobeId: string): Promise<{ outfits: Outfit
     pieces: [...o.outfit_items].sort((a, b) => a.position - b.position).map((p) => ({ id: p.item_id, x: p.x, y: p.y, z: p.z })),
     plans: o.outfit_plans.map((p) => ({ id: p.id, date: p.plan_date, personId: p.person_id, createdAt: p.created_at })),
   }));
-  const wears = (ws.data ?? []).map((w) => ({ itemId: w.item_id as string, date: w.worn_on as string }));
+  const wears = (ws.data ?? []).map((w) => ({ itemId: w.item_id as string, date: w.worn_on as string, personId: (w.person_id as string | null) ?? null }));
   return { outfits, wears };
 }
 
@@ -55,6 +55,14 @@ export function todayIds(outfits: Outfit[], wears: Wear[], today = todayLocal())
   const s = new Set(wears.filter((w) => w.date === today).map((w) => w.itemId));
   for (const o of outfits) if (o.plans.some((p) => p.date === today)) for (const p of o.pieces) s.add(p.id);
   return [...s];
+}
+
+/** Wer trägt ein Teil heute (eingetragen) bzw. hat es fürs heutige Outfit geplant? Eingetragen hat Vorrang. */
+export function todayWho(outfits: Outfit[], wears: Wear[], today = todayLocal()): Record<string, string | null> {
+  const by: Record<string, string | null> = {};
+  for (const o of outfits) for (const p of o.plans) if (p.date === today) for (const x of o.pieces) if (!(x.id in by) || by[x.id] == null) by[x.id] = p.personId;
+  for (const w of wears) if (w.date === today) by[w.itemId] = w.personId ?? by[w.itemId] ?? null;
+  return by;
 }
 
 /** Planungen eines Tages, in der Reihenfolge des Eintragens (morgens → abends) */

@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
-import { loadOutfits, todayIds, type Outfit, type Wear } from './outfits';
+import { personText } from '@valet/ui';
+import { loadOutfits, todayIds, todayWho, type Outfit, type Wear } from './outfits';
+import type { PersonLook } from '@/components/ItemTile';
 
 export type Person = { id: string; name: string; color: string | null; user_id: string | null; item_order: string[] | null };
 export type Tile = {
@@ -8,7 +10,10 @@ export type Tile = {
   brand: string | null;
   category: string;
   color: string | null;
+  /** Spiegel von owner_id für Auswertungen: genau ein Besitzer → dessen ID, sonst null */
   ownerId: string | null;
+  /** Besitzer (Personen-IDs) */
+  owners: string[];
   status: 'wash' | 'repair' | 'lent' | 'out' | 'sold' | null;
   qty: number;
   reversible: boolean;
@@ -26,6 +31,8 @@ export type Tile = {
   style: string | null;
   /** Hauptfarbe für den Farbschein (aus der Farbanalyse des Bildes, sonst aus dem Farbnamen) */
   hex: string | null;
+  /** Highlight-Farbe (zweite, auffällige Farbe am Teil) für den Innenschein */
+  highlight: string | null;
   /** Vorschaubild (400 px) für Kacheln */
   thumb: string | null;
   /** Hauptbild (freigestellt oder Original) für die Detailseite */
@@ -38,6 +45,8 @@ export type Wardrobe = {
   wears: Wear[];
   /** heute getragen oder fürs heutige Outfit geplant */
   today: string[];
+  /** wer ein Teil heute trägt bzw. für heute reserviert hat (Teil-ID → Person-ID) */
+  todayBy: Record<string, string | null>;
 };
 
 /** Lädt den ersten Kleiderschrank, in dem der angemeldete Nutzer Mitglied ist. */
@@ -50,7 +59,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,color,owner_id,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,color,owner_id,owner_ids,highlight_color,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
     loadOutfits(w.id),
@@ -75,6 +84,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     category: i.category ?? 'sonstiges',
     color: i.color,
     ownerId: i.owner_id,
+    owners: i.owner_ids ?? [],
     status: i.status,
     qty: i.qty ?? 1,
     reversible: !!i.reversible,
@@ -91,12 +101,13 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     seasons: i.seasons ?? [],
     style: i.style,
     hex: pick(colorsBy, i.id, i.main_side) ?? nameToHex(i.color),
+    highlight: i.highlight_color ?? null,
     thumb: pick(thumbBy, i.id, i.main_side),
     image: pick(imageBy, i.id, i.main_side),
   }));
   const ids = new Set(tiles.map((t) => t.id));
   const wears = rest.wears.filter((x) => ids.has(x.itemId));
-  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, outfits: rest.outfits, wears, today: todayIds(rest.outfits, wears) };
+  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, outfits: rest.outfits, wears, today: todayIds(rest.outfits, wears), todayBy: todayWho(rest.outfits, wears) };
 }
 
 /** Seite eines Bildes ('a'/'b'); ältere Daten hatten Großbuchstaben oder Leerzeichen */
@@ -131,6 +142,25 @@ export function hexToName(hex: string): string | null {
     if (d < bestD) { bestD = d; best = name; }
   }
   return best && best[0].toUpperCase() + best.slice(1);
+}
+
+/** Personenfarbe auf der Kachel: „Rosa“/„Rot“, sonst keine (→ ink/schwarz) */
+export function personTone(color: string | null): 'pink' | 'red' | null {
+  if (!color) return null;
+  if (/rot|red/i.test(color)) return 'red';
+  if (/rosa|pink/i.test(color)) return 'pink';
+  return null;
+}
+
+/** Darstellung einer Person auf der Kachel-Plakette (Plaketten sind immer hell → helle Personenfarben) */
+export function personLook(p: Person, ink: string, tones: { pink: string; red: string }): PersonLook {
+  const tone = personTone(p.color);
+  return {
+    name: p.name,
+    letter: p.name.trim().slice(0, 1).toUpperCase(),
+    stroke: tone ? tones[tone] : ink,
+    text: tone ? personText[tone] : ink,
+  };
 }
 
 /** Personenfarbe aus dem gespeicherten Namen („Rosa“, „Rot“) */

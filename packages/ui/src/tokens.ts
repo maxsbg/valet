@@ -66,6 +66,85 @@ export const person = {
   dark: { pink: '#EF91B0', red: '#EF6B7E' },
 } as const;
 
+/**
+ * Monogramm-Buchstaben auf der Kachel: dunklere Textvariante der Personenfarbe.
+ * Plaketten sind immer hell (Milchglas auf weißer Kachel) → kein Dunkel-Wert.
+ * Personen ohne Farbe: ink (schwarz).
+ */
+export const personText = { pink: '#A8325F', red: '#B00E28' } as const;
+
+const radiusTile = 14;
+const insetBadge = 4;
+
+/**
+ * Schrank-Kachel (ItemTile) – Spezifikation docs/design/kachel/VALET_KACHEL_SPEC.md, Abschnitt 7.
+ * Die Kachel ist immer weiß, auch im dunklen Modus. Alle Maße in px.
+ */
+export const itemTile = {
+  bg: '#FFFFFF',
+  /** radius-tile */
+  radius: radiusTile,
+  /** tile-edge: feine 1-px-Kante innen, als Overlay über allem */
+  edge: 'rgba(42,26,29,0.09)',
+  edgeWidth: 1,
+  /** Innenabstand des Fotos rundum */
+  photoInset: 10,
+  /** abwesende Teile (verliehen, Reparatur, eingelagert, verkauft): Foto abblenden */
+  away: { opacity: 0.42, grayscale: 0.5 },
+  /** Innenschein: inset 0 0 blur spread rgba(farbe, alpha) */
+  glow: {
+    blur: 22,          // glow-blur
+    spread: 3,         // glow-spread
+    alphaStrong: 0.52, // glow-alpha-strong
+    alphaSoft: 0.28,   // glow-alpha-soft
+    fallback: '#D8D2C8', // glow-fallback: ohne Hauptfarbe oder zu hell
+    /** Grenzen der Farbregel (HSV): neutral = s < satMin oder v < valMin; „sehr hell“ = v > valLight */
+    satMin: 0.25,
+    valMin: 0.2,
+    valLight: 0.85,
+  },
+  badge: {
+    /** size-badge: Durchmesser der runden Plakette */
+    size: 20,
+    /** inset-badge: Abstand zum Kachelrand */
+    inset: insetBadge,
+    /** radius-badge = radius-tile − inset-badge (konzentrisch) */
+    radius: radiusTile - insetBadge,
+    /** size-count-h: Höhe der Anzahl-Kapsel unter Wendbar (Breite = size) */
+    countHeight: 14,
+    /** gap-badge-stack: Wendbar ↔ Anzahl */
+    stackGap: 3,
+    /** overlap-owner: Überlappung der Besitzer-Plaketten (Monogramm und „+N“ gleich) */
+    ownerOverlap: 3,
+    pill: 999,
+    /** badge-glass */
+    glass: 'rgba(255,255,255,0.62)',
+    blur: 10,
+    saturate: 1.8,
+    shadow: 'inset 0 0.5px 0 #fff, inset 0 0 0 0.5px rgba(255,255,255,0.7), 0 0 0 0.5px rgba(42,26,29,0.10), 0 2px 6px rgba(42,26,29,0.12)',
+    ink: '#2A1A1D',
+    /** Symbole (24er-Raster): gerenderte Größe und Strichstärke */
+    icon: { size: 11, stroke: 2.2 },
+    /**
+     * Bügel: Form liegt im 24er-Raster nicht mittig (Inhalt y 3,1…17,4 → Mitte 10,25 statt 12).
+     * offsetY schiebt ihn optisch in die Mitte: (12 − 10,25) / 24 × 12 px = 0,875 px. Bei neuem Symbol neu rechnen.
+     */
+    hanger: { size: 12, stroke: 2.4, offsetY: 0.875 },
+    /** font-badge-num: Ziffern (Anzahl, „+N“) */
+    num: { size: 8.5, weight: '700', letterSpacing: -0.3 },
+    /** font-badge-sym: Beizeichen × und + */
+    sym: { size: 6.5, weight: '600', raiseEm: 0.12 },
+    /** Monogramm in Gloock */
+    mono: { size: 11, weight: '400' },
+    /**
+     * Optische Zentrierung (Spec 5.5). Web: text-box trim (aus den Schriftmetriken), kein Versatz nötig.
+     * Native (kein text-box): fester Versatz je Schrift in px, translateY. NOCH AUF iOS NACHMESSEN (Ziel ≤ 0,25 px).
+     */
+    numOffsetY: 0,
+    monoOffsetY: 0,
+  },
+} as const;
+
 /** Kachel im Mosaik (aus dem alten Valet übernommen) */
 export const tile = {
   radius: 22,
@@ -75,6 +154,8 @@ export const tile = {
   badge: 26,
   /** Zeilenhöhe des Mosaiks; Kacheln belegen je nach Kategorie 2–4 Zeilen */
   row: 44,
+  /** Auswahl im Outfit-Baukasten (vorläufig wie bisher – Darstellung auf der neuen Kachel noch offen) */
+  select: { ring: 3, color: brand.oxblood, on: '#FFFFFF' },
 } as const;
 
 /** Abstände (4er-Raster) */
@@ -130,5 +211,5 @@ export const motion = {
   spring: { damping: 22, stiffness: 260 },
 } as const;
 
-export const tokens = { brand, colors, status, person, tile, space, radius, hitTarget, fonts, type, glass, shadow, motion };
+export const tokens = { brand, colors, status, person, personText, itemTile, tile, space, radius, hitTarget, fonts, type, glass, shadow, motion };
 export default tokens;

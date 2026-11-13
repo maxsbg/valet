@@ -61,7 +61,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
 
   const chosen = ids.map((id) => byId.get(id)).filter((i): i is Tile => !!i);
   const value = chosen.filter((i) => !i.isWish).reduce((s, i) => s + (i.pricePaid ?? 0), 0);
-  const inSrc = (i: Tile) => src === 'all' || i.ownerId === src;
+  const inSrc = (i: Tile) => src === 'all' || i.owners.includes(src);
   const pool = wardrobe.items.filter((i) => !i.isWish && i.status !== 'out' && i.status !== 'sold' && inSrc(i));
   const counts = new Map<string, number>();
   for (const i of pool) counts.set(i.category, (counts.get(i.category) ?? 0) + 1);
@@ -70,10 +70,6 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
     .filter((i) => (!cat || i.category === cat) && (!q || [i.name, i.brand, i.color].some((f) => f?.toLowerCase().includes(q))))
     .sort((a, b) => catIndex(a.category) - catIndex(b.category) || a.name.localeCompare(b.name, 'de'));
   const toggle = (i: Tile) => setIds((xs) => (xs.includes(i.id) ? xs.filter((x) => x !== i.id) : [...xs, i.id]));
-  const ownerOf = (i: Tile) => {
-    const o = persons.find((x) => x.id === i.ownerId);
-    return o ? { letter: o.name.slice(0, 1).toUpperCase(), color: personKey(o.color) } : null;
-  };
   const occList = [...new Set([...allOccasions(wardrobe.outfits), ...occ])];
 
   async function save() {
@@ -179,7 +175,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
 
         <View style={{ width, marginTop: space.xs }}>
           {shown.length ? (
-            <Mosaic items={shown} width={width} ownerOf={ownerOf} selected={(i) => ids.includes(i.id)} onPress={toggle} />
+            <Mosaic items={shown} width={width} selected={(i) => ids.includes(i.id)} onPress={toggle} />
           ) : <Empty title="Keine Teile" text="Probier eine andere Kategorie oder Suche." />}
           {old && (
             <Pressable onPress={() => setConfirmDelete(true)} style={[s.delete, { borderColor: t.hairline, backgroundColor: t.surface }]} accessibilityRole="button">

@@ -1,102 +1,184 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
-import { Icons } from './Icon';
+import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { glowFor, isAway, ownersFor, tileA11yLabel, topRightFor, TILE_STATUS, type ItemStatus } from '@valet/core';
+import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
-import { tile, DISPLAY } from '@/lib/theme';
-import type { Tile } from '@/lib/wardrobe';
+import { Glass, Mono, Num } from './tile/TileBadge';
+import { TileIcon } from './tile/TileIcons';
+import { Icons } from './Icon';
 
-const INK = '#2a1a1d';
-const PERSON = { pink: '#D9668E', red: '#C8102E' } as const; // Plakette ist immer weiß → helle Werte
+// Schrank-Kachel – verbindlich: docs/design/kachel/VALET_KACHEL_SPEC.md + valet-kachel-referenz.html.
+// Kein Text auf der Kachel (außer Monogramm und Zahlen), weiß auch im dunklen Modus, alle Maße aus den Tokens.
+//
+//  ┌──────────────────────┐
+//  │ [Status]     [Wend.] │  oben rechts: Wendbar, darunter Anzahl-Kapsel; ohne Wendbar Anzahl als Kreis
+//  │              [ 2× ]  │
+//  │        Foto          │
+//  │ [Bügel]     [P][M]   │  unten rechts: eigenes Monogramm in der Ecke, obenauf
+//  └──────────────────────┘
+//
+// Offen (Spec 10, mit Max klären – nicht selbst entscheiden):
+//  - Sets: früher Bügel unten links. Der Bügel heißt jetzt „heute“. Eine Set-Plakette gibt es derzeit nicht;
+//    mögliche Option für später (eigenes Zeichen, Platz noch offen).
+//  - Eingelagert vs. aussortiert: beide Kiste (Status „out“).
+//  - Farben für Person 3+: Personen ohne Farbe → Monogramm und Bügel in ink (schwarz).
+//  - Highlight-Farbe: automatisch aus dem Foto oder manuell im Teil.
 
-/** Standard-Bedenkzeit der Wunschliste in Tagen */
-export const WAIT = 14;
-const RING = 2 * Math.PI * 11;
-
-export type TileStyle = 'glow' | 'edge' | 'grey' | 'flat';
+const T = itemTile;
+const B = T.badge;
+const web = Platform.OS === 'web';
 
 /** Seitenverhältnis (Höhe : Breite) im Mosaik je Kategorie – wie im alten Valet. */
 export const RATIO: Record<string, number> = { mantel: 1.6, hose: 1.45, jacke: 1.2, pullover: 1.15, oberteil: 1.1, sport: 1.1, shorts: 0.95, tasche: 0.95, schuhe: 0.72, accessoire: 0.72 };
 export const tileHeight = (category: string, width: number) => Math.round(width * (RATIO[category] ?? 0.9));
 
-type Props = {
-  item: Tile;
-  width: number;
-  owner?: { letter: string; color: 'pink' | 'red' } | null;
-  look?: TileStyle;
-  /** Wunschliste: verbleibende Tage Bedenkzeit */
-  daysLeft?: number;
-  /** im Outfit-Baukasten ausgewählt */
-  selected?: boolean;
-  onPress?: () => void;
+/** Standard-Bedenkzeit der Wunschliste in Tagen */
+export const WAIT = 14;
+
+/** Darstellung einer Person auf der Kachel */
+export type PersonLook = {
+  name: string;
+  /** Monogramm-Buchstabe */
+  letter: string;
+  /** Strichfarbe des Bügels (Personenfarbe) */
+  stroke: string;
+  /** Farbe des Monogramm-Buchstabens (dunklere Textvariante) */
+  text: string;
 };
 
-function Badge({ style, children }: { style: object | object[]; children: React.ReactNode }) {
-  return <View style={[s.badge, style]}>{children}</View>;
-}
+export type TileItem = {
+  name: string;
+  category: string;
+  /** Hauptfarbe (Farbanalyse) */
+  hex: string | null;
+  /** zweite, auffällige Farbe am Teil */
+  highlight: string | null;
+  status: ItemStatus | null;
+  reversible: boolean;
+  qty: number;
+  thumb: string | null;
+  /** Besitzer (Personen-IDs) */
+  owners: string[];
+  isWish: boolean;
+};
 
-export function ItemTile({ item, width, owner, look = 'glow', daysLeft, selected, onPress }: Props) {
-  const height = tileHeight(item.category, width);
-  const c = item.hex ?? '#d8d2c8';
-  const glow = owner === null && item.isWish ? 'flat' : look;
-  const shadow =
-    glow === 'glow' ? `inset 0 0 ${tile.glow.blur}px ${tile.glow.spread}px ${c}73, 0 2px 8px rgba(42,26,29,0.10)`
-    : glow === 'edge' ? `inset 0 0 0 2px ${c}, 0 2px 8px rgba(42,26,29,0.10)`
-    : glow === 'grey' ? `inset 0 0 0 1px rgba(42,26,29,0.12), 0 2px 8px rgba(42,26,29,0.10)`
-    : '0 2px 8px rgba(42,26,29,0.10)';
-  const StatusIcon = item.status ? Icons[item.status] : null;
+type Props = {
+  item: TileItem;
+  width: number;
+  /** ohne Angabe: Höhe aus der Kategorie (Mosaik) */
+  height?: number;
+  /** angemeldete Person – ihr Monogramm sitzt rechts in der Ecke und liegt obenauf */
+  me: string | null;
+  person: (id: string) => PersonLook | undefined;
+  /** Teil wird heute getragen bzw. ist für heute reserviert – von dieser Person (null = Person unbekannt → Bügel in ink) */
+  today?: { person: string | null } | null;
+  /**
+   * Outfit-Baukasten: Teil ausgewählt.
+   * TODO offen (mit Max klären): Wie die Auswahl auf der neuen Kachel aussieht. Bis dahin unverändert wie bisher
+   * (Häkchen oben links statt Status, Rahmen) – das ist NICHT Teil der Kachel-Spec.
+   */
+  selected?: boolean;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  /** Nur Prüfseite: Fotos mit weißem Hintergrund wie in der Referenz-HTML einblenden. In der App nicht nötig (freigestellt). */
+  photoBlend?: 'multiply';
+};
+
+export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend }: Props) {
+  const h = height ?? tileHeight(item.category, width);
+  const glow = glowFor(item.hex, item.highlight);
+  const away = isAway(item.status);
+  const tr = topRightFor(item.reversible, item.qty);
+  const owners = ownersFor(item.owners.filter((id) => person(id)), me);
+  const todayP = today ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
+  const label = tileA11yLabel({
+    name: item.name,
+    status: item.status,
+    reversible: item.reversible,
+    qty: item.qty,
+    today: todayP,
+    owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
+  });
+
+  // TODO Wunschliste (mit Max klären): Inhalt der Wunsch-Plaketten nachtragen, z. B. Preis-Plakette und
+  // Bedenkzeit-Plakette (früher Preis-Pille unten links, Bedenkzeit-Ring oben rechts). Aufbau, Schein und
+  // Plaketten sind bereits die der neuen Kachel; die Wunsch-Inhalte bleiben bis dahin leer.
+
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={selected != null ? { selected } : undefined}
-      accessibilityLabel={[item.name, item.brand].filter(Boolean).join(', ')}
-      style={({ pressed }) => [s.tile, { width, height, boxShadow: shadow, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+      style={({ pressed }) => [
+        s.tile,
+        { width, height: h, boxShadow: `inset 0 0 ${T.glow.blur}px ${T.glow.spread}px ${glow.css}`, transform: [{ scale: pressed ? 0.97 : 1 }] },
+      ]}
     >
-      <View style={s.img}>
-        <ItemPicture uri={item.thumb} category={item.category} color={c} />
+      <View style={[StyleSheet.absoluteFill, away && s.away, away && awayWeb, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null]}>
+        <ItemPicture uri={item.thumb} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
       </View>
+
+      {/* oben links: Status (bzw. vorläufig Auswahl im Baukasten) */}
       {selected ? (
-        <Badge style={[s.tl, s.sel]}><Icons.check color="#fff" size={16} /></Badge>
-      ) : StatusIcon && !item.isWish ? (
-        <Badge style={s.tl}><StatusIcon color={INK} /></Badge>
+        <View style={s.tl}><Glass style={s.sel}><Icons.check color={tile.select.on} size={B.icon.size} /></Glass></View>
+      ) : item.status ? (
+        <View style={s.tl}><Glass label={TILE_STATUS[item.status].label}><TileIcon name={item.status} color={B.ink} /></Glass></View>
       ) : null}
-      {item.isWish && daysLeft != null ? (
-        <View style={[s.badge, s.tr, s.ring]}>
-          <Svg width={26} height={26} viewBox="0 0 26 26" style={s.ringSvg}>
-            <Circle cx={13} cy={13} r={11} fill="none" stroke="#e9e2d8" strokeWidth={2.5} />
-            <Circle cx={13} cy={13} r={11} fill="none" stroke="#EF91B0" strokeWidth={2.5} strokeLinecap="round"
-              strokeDasharray={`${(RING * Math.max(0, Math.min(daysLeft, WAIT))) / WAIT} ${RING}`} transform="rotate(-90 13 13)" />
-          </Svg>
-          <Text style={s.ringText}>{Math.max(0, daysLeft)}</Text>
+
+      {/* oben rechts: Wendbar, Anzahl */}
+      {tr && (
+        <View style={s.tr}>
+          {tr.reversible && <Glass label="Wendbar"><TileIcon name="reversible" color={B.ink} /></Glass>}
+          {tr.count && (
+            <Glass shape={tr.count.shape} label={`${tr.count.n} Stück`}>
+              <Num num={tr.count.num} sym={tr.count.sym} />
+            </Glass>
+          )}
         </View>
-      ) : item.reversible ? (
-        <Badge style={s.tr}><Icons.reversible color={INK} /></Badge>
-      ) : null}
-      {item.qty > 1 && <Text style={[s.qty, { top: item.reversible ? 37 : 10 }]}>×{item.qty}</Text>}
-      {item.setId && !item.isWish && <Badge style={s.bl}><Icons.hanger color={INK} /></Badge>}
-      {item.isWish && item.price != null && (
-        <View style={s.price}><Text style={s.priceText}>{item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</Text></View>
       )}
-      {owner && (
-        <Badge style={s.br}><Text style={[s.owner, { color: PERSON[owner.color] }]}>{owner.letter}</Text></Badge>
+
+      {/* unten links: Bügel = heute getragen oder für heute reserviert */}
+      {todayP && (
+        <View style={s.bl}><Glass label={todayP.name ? `heute: ${todayP.name}` : 'heute getragen'}><TileIcon name="hanger" color={todayP.stroke} /></Glass></View>
       )}
+
+      {/* unten rechts: Besitzer, links → rechts, rechts liegt obenauf */}
+      {owners.length > 0 && (
+        <View style={s.br}>
+          {owners.map((o, i) => (
+            <View key={'more' in o ? '+' : o.person} style={[s.owner, i > 0 && s.overlap, { zIndex: i + 1 }]}>
+              {'more' in o ? (
+                <Glass label={`${o.more} weitere`}><Num num={String(o.more)} sym="+" symFirst /></Glass>
+              ) : (
+                <Glass label={person(o.person)!.name}><Mono letter={person(o.person)!.letter} color={person(o.person)!.text} /></Glass>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* feine Kante innen, über allem */}
+      <View pointerEvents="none" style={s.edge} />
       {selected && <View pointerEvents="none" style={s.selRing} />}
     </Pressable>
   );
 }
 
+const awayWeb = web ? ({ filter: `grayscale(${T.away.grayscale})` } as object) : null;
+// TODO iOS: grayscale-Filter gibt es nativ nicht → dort nur Abblenden über opacity (oder Bild vorab entsättigen).
+
 const s = StyleSheet.create({
-  tile: { backgroundColor: '#fff', borderRadius: tile.radius, overflow: 'hidden' },
-  img: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', width: tile.badge, height: tile.badge, borderRadius: tile.badge / 2, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(42,26,29,0.16)' },
-  tl: { top: 7, left: 7 }, tr: { top: 7, right: 7 }, bl: { bottom: 7, left: 7 }, br: { bottom: 7, right: 7 },
-  owner: { fontFamily: DISPLAY, fontSize: 15, lineHeight: 18, paddingTop: 2 },
-  qty: { position: 'absolute', right: 9, fontSize: 11, fontWeight: '700', color: INK },
-  ring: { width: 30, height: 30, borderRadius: 15 },
-  ringSvg: { position: 'absolute', top: 2, left: 2 },
-  ringText: { fontSize: 11, fontWeight: '600', color: INK },
-  price: { position: 'absolute', left: 7, bottom: 7, backgroundColor: '#fff', borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10, boxShadow: '0 1px 4px rgba(42,26,29,0.16)' },
-  sel: { backgroundColor: '#722638' },
-  selRing: { ...StyleSheet.absoluteFill, borderRadius: tile.radius, borderWidth: 3, borderColor: '#722638' },
-  priceText: { fontSize: 13, fontWeight: '600', color: INK },
+  tile: { backgroundColor: T.bg, borderRadius: T.radius, overflow: 'hidden' },
+  away: { opacity: T.away.opacity },
+  edge: { ...StyleSheet.absoluteFill, borderRadius: T.radius, boxShadow: `inset 0 0 0 ${T.edgeWidth}px ${T.edge}` },
+  tl: { position: 'absolute', top: B.inset, left: B.inset },
+  tr: { position: 'absolute', top: B.inset, right: B.inset, flexDirection: 'column', alignItems: 'center', gap: B.stackGap },
+  bl: { position: 'absolute', bottom: B.inset, left: B.inset },
+  br: { position: 'absolute', bottom: B.inset, right: B.inset, flexDirection: 'row', alignItems: 'center' },
+  owner: { position: 'relative', flexDirection: 'row' },
+  overlap: { marginLeft: -B.ownerOverlap },
+  // vorläufig (Baukasten-Auswahl, wie bisher): Oxblood
+  sel: { backgroundColor: tile.select.color },
+  selRing: { ...StyleSheet.absoluteFill, borderRadius: T.radius, borderWidth: tile.select.ring, borderColor: tile.select.color },
 });
