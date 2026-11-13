@@ -17,8 +17,9 @@ MODEL_DIR = os.environ.get('MODEL_DIR', '/model')
 SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://jocjisrmmzzvfnijosgg.supabase.co')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'sb_publishable_pByxxOf_ZahUWgiat-lXZQ_ynSsvUgZ')  # öffentlicher Schlüssel
 ORIGINS = os.environ.get('ORIGINS', 'https://maxsbg.github.io,http://localhost:8081').split(',')
-MAX_SIDE = int(os.environ.get('MAX_SIDE', '768'))  # längste Seite beim Rechnen: 768 ≈ 4x schneller als 1024, kaum sichtbarer Unterschied
+MAX_SIDE = int(os.environ.get('MAX_SIDE', '1024' if torch.cuda.is_available() else '768'))  # längste Seite beim Rechnen: 768 ≈ 4x schneller als 1024, kaum sichtbarer Unterschied
 torch.set_num_threads(int(os.environ.get('THREADS', str(os.cpu_count() or 2))))
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'  # Grafikkarte (Modal) oder Prozessor (Space)
 MEAN = np.array([0.485, 0.456, 0.406], np.float32); STD = np.array([0.229, 0.224, 0.225], np.float32)
 
 app = FastAPI()
@@ -56,7 +57,8 @@ def model():
     with _load_lock:
         if _model is None:
             t = time.time()
-            _model = AutoModelForImageSegmentation.from_pretrained(MODEL_DIR, trust_remote_code=True).float().eval()
+            _model = AutoModelForImageSegmentation.from_pretrained(MODEL_DIR, trust_remote_code=True).float().eval().to(DEVICE)
+            if DEVICE == 'cuda': _model.half()
             print(f'Modell geladen in {time.time() - t:.1f}s', flush=True)
     return _model
 
@@ -82,7 +84,9 @@ def cutout(img: Image.Image) -> Image.Image:
     x = cv2.resize(rgb, (rw, rh), interpolation=cv2.INTER_AREA)
     x = ((x - MEAN) / STD).transpose(2, 0, 1)[None].astype(np.float32)
     with _lock, torch.inference_mode():
-        m = model()(torch.from_numpy(x))[-1].sigmoid()[0, 0].numpy()
+        t = torch.from_numpy(x).to(DEVICE)
+        if DEVICE == 'cuda': t = t.half()
+        m = model()(t)[-1].sigmoid()[0, 0].float().cpu().numpy()
     a = cv2.resize(m, (w, h), interpolation=cv2.INTER_LINEAR)
     fg = refine_foreground(rgb, a)
     ys, xs = np.where(a > 0.02)
@@ -95,7 +99,7 @@ def cutout(img: Image.Image) -> Image.Image:
 @app.get('/health')
 def health():
     model()
-    return {'ok': True}
+    return {'ok': True, 'device': DEVICE}
 
 
 @app.post('/freistellen')
