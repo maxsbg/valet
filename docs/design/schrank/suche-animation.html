@@ -5,7 +5,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Gloock&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#17110F;--ink:#F5F0E8;--muted:#A8999A;--hair:rgba(245,240,232,.14);--accent:#E8899F;--pink:#EF91B0;--d:420ms;--e:cubic-bezier(.22,.8,.24,1)}
-.slow{--d:1600ms}
+.slow{--d:1700ms}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#0c0908;color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;padding:24px 0 60px}
 .intro{max-width:390px;margin:0 auto 18px;padding:0 20px}
@@ -70,6 +70,18 @@ h1{font:400 30px Gloock,Georgia,serif;color:var(--accent)}
 .fab svg{width:22px;height:22px}
 .safari{position:absolute;left:14px;right:14px;bottom:22px;height:56px;display:flex;gap:10px;z-index:25}
 .safari div{border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:15px}
+
+/* Choreografie: Öffnen = erst runter, dann seitlich; Schließen = erst Suchfeld zu + seitlich, dann hoch */
+.sbox{transition:width calc(var(--d)*.6) var(--e),background-color calc(var(--d)*.6) var(--e),border-color calc(var(--d)*.6) var(--e)}
+.open .sbox{transition:width var(--d) var(--e) calc(var(--d)*.32),background-color var(--d) var(--e) calc(var(--d)*.32),border-color var(--d) var(--e) calc(var(--d)*.32)}
+.chips{transition:left calc(var(--d)*.7) var(--e),right calc(var(--d)*.7) var(--e),top var(--d) var(--e) calc(var(--d)*.4)}
+.scroll{transition:padding calc(var(--d)*.7) var(--e)}
+.grid{transition:transform var(--d) var(--e) calc(var(--d)*.4)}
+.bar{transition:height var(--d) var(--e) calc(var(--d)*.4)}
+.open .chips{transition:top var(--d) var(--e),left var(--d) var(--e) calc(var(--d)*.3),right var(--d) var(--e) calc(var(--d)*.3)}
+.open .scroll{transition:padding var(--d) var(--e) calc(var(--d)*.3)}
+.open .grid{transition:transform var(--d) var(--e)}
+.open .bar{transition:height var(--d) var(--e)}
 /* Maßlinien */
 .guide .m{display:block}
 .m{display:none;position:absolute;z-index:40;pointer-events:none}
