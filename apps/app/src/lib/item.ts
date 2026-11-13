@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { todayLocal } from './wardrobe';
+import { imageUrl, todayLocal } from './wardrobe';
 import type { Picture } from './cutout';
 
 export type ItemRow = {
@@ -65,6 +65,19 @@ export async function deleteItem(id: string) {
   if (r.error) throw r.error;
   const paths = (imgs.data ?? []).map((x) => x.storage_path as string);
   if (paths.length) await supabase.storage.from('items').remove(paths); // Bilder aufräumen, Fehler egal
+}
+
+/** Aktuelle Bilder je Seite (Vorschaubild, sonst Hauptbild) – für die Bearbeiten-Seite */
+export async function loadPictures(itemId: string): Promise<Record<'a' | 'b', string | null>> {
+  const r = await supabase.from('item_images').select('side,kind,storage_path').eq('item_id', itemId).in('kind', ['thumb', 'cutout', 'original']);
+  if (r.error) throw r.error;
+  const out: Record<'a' | 'b', string | null> = { a: null, b: null };
+  const rank = (k: string) => (k === 'thumb' ? 0 : k === 'cutout' ? 1 : 2);
+  for (const x of [...(r.data ?? [])].sort((p, q) => rank(q.kind) - rank(p.kind))) {
+    const side = (x.side ?? 'a').trim().toLowerCase() === 'b' ? 'b' : 'a';
+    out[side] = imageUrl(x.storage_path as string);
+  }
+  return out;
 }
 
 export type NewItem = ItemChange & { name: string; category: string };
