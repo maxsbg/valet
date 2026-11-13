@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Page } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatEur } from '@valet/core';
@@ -112,7 +113,7 @@ export default function OutfitDetail() {
 
   return (
     <View style={[s.page, { backgroundColor: t.bg }]}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + space.xxl, alignItems: 'center' }}>
+      <Page contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + space.xxl, alignItems: 'center' }}>
         <View style={s.col}>
           <TopBar onBack={back} onEdit={() => router.push(`/outfit-bauen?id=${o.id}`)} />
           <View style={[s.boardWrap, { borderColor: t.hairline }]}>
@@ -171,7 +172,7 @@ export default function OutfitDetail() {
             ))}
           </ScrollView>
         </View>
-      </ScrollView>
+      </Page>
 
       <Sheet open={planning} onClose={() => setPlanning(false)} title="Für Tag planen"
         footer={<>

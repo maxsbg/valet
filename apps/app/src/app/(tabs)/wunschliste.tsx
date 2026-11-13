@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Page } from '@/components/Page';
 import { formatEur } from '@valet/core';
 import { Header, Empty, Fab, useToast } from '@/components/ui';
 import { Mosaic } from '@/components/Mosaic';
@@ -18,7 +19,7 @@ export default function Wunschliste() {
   const total = wishes.reduce((n, i) => n + (i.price ?? 0), 0);
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}>
+      <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}>
         <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
         <View style={{ width: scr.content, gap: space.sm }}>
           <View style={[s.card, { backgroundColor: t.surface, borderColor: t.hairline }]}>
@@ -33,7 +34,7 @@ export default function Wunschliste() {
             <Empty title="Noch keine Wünsche" text="Teile, die du dir überlegst, landen hier mit 14 Tagen Bedenkzeit." />
           )}
         </View>
-      </ScrollView>
+      </Page>
       <Fab bottom={scr.fabBottom} onPress={() => toast.show('Kommt in einem der nächsten Schritte.')} />
       {toast.node}
     </View>

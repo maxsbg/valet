@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Page } from '@/components/Page';
 import { categoryLabel, closetStats, formatEur, spendStats, wearStats, type StatItem, type WearLog, type Outfit as CoreOutfit } from '@valet/core';
 import { Header, Chip, Empty } from '@/components/ui';
 import { Icons } from '@/components/Icon';
@@ -173,7 +174,7 @@ export default function Statistik() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}>
+      <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}>
         <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
         <View style={{ width: scr.content }}>
           {persons.length > 0 && (
@@ -204,7 +205,7 @@ export default function Statistik() {
             </Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </Page>
     </View>
   );
 }

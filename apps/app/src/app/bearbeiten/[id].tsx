@@ -1,6 +1,7 @@
 import { useBottomInset } from '@/lib/bottomInset';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View, KeyboardAvoidingView } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, KeyboardAvoidingView } from 'react-native';
+import { Page, STICKY } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
@@ -70,12 +71,12 @@ export default function Bearbeiten() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
-      <View style={[s.bar, { paddingTop: insets.top + space.xs, borderBottomColor: t.hairline }]}>
+      <View style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
         <Pressable onPress={close} hitSlop={10}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
         <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>Bearbeiten</Text>
         <Pressable onPress={save} disabled={saving} hitSlop={10}><Text style={{ fontSize: 17, fontWeight: '700', color: t.dark ? t.accent : '#722638', opacity: saving ? 0.4 : 1 }}>{saving ? 'Speichert …' : 'Sichern'}</Text></Pressable>
       </View>
-      <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
+      <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
         <View style={s.col}>
           <View style={{ gap: space.md, marginBottom: space.xs }}>
             <PictureEdit title={f.reversible ? 'Seite A' : undefined} current={current.a} value={pics.a} onChange={(p) => setPics((x) => ({ ...x, a: p }))}
@@ -91,7 +92,7 @@ export default function Bearbeiten() {
             <Text style={{ fontSize: 16, color: t.dark ? '#F2B8B5' : '#B3261E' }}>Teil löschen</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </Page>
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Teil löschen?"
         footer={<><SheetButton label="Abbrechen" onPress={() => setConfirmDelete(false)} /><SheetButton primary label="Löschen" onPress={remove} /></>}>
         <Text style={{ fontSize: 16, color: t.ink }}>„{orig.name}“ wird mit allen Tragetagen und aus allen Outfits entfernt. Das lässt sich nicht rückgängig machen.</Text>

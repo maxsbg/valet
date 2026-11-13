@@ -1,7 +1,7 @@
-import { Stack } from 'expo-router';
+import { Slot, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Gloock_400Regular } from '@expo-google-fonts/gloock';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '@/lib/session';
 import { useTheme } from '@/lib/theme';
@@ -20,7 +20,8 @@ function Gate() {
   if (!session) return <Login />;
   return (
     <>
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
+    {/* Web: einfache Seiten ohne Stapel, damit die Seite selbst scrollt (Stack legt jede Seite in einen abgeschnittenen Rahmen) */}
+    {Platform.OS === 'web' ? <Slot /> : <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="teil/[id]" />
       <Stack.Screen name="bearbeiten/[id]" options={{ presentation: 'modal' }} />
@@ -28,7 +29,7 @@ function Gate() {
       <Stack.Screen name="bilder-zuordnen" options={{ presentation: 'modal' }} />
       <Stack.Screen name="outfit/[id]" />
       <Stack.Screen name="outfit-bauen" options={{ presentation: 'modal' }} />
-    </Stack>
+    </Stack>}
     <Join token={invite} />
     </>
   );

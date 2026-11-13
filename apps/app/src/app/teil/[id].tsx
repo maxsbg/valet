@@ -1,6 +1,7 @@
 import { useBottomInset } from '@/lib/bottomInset';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
+import { Page } from '@/components/Page';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categoryLabel, formatEur } from '@valet/core';
@@ -110,7 +111,7 @@ export default function Teil() {
 
   return (
     <View style={[s.page, { backgroundColor: t.bg }]}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + space.xxl, alignItems: 'center' }}>
+      <Page contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + space.xxl, alignItems: 'center' }}>
         <View style={s.col}>
           <TopBar onBack={back} onEdit={() => router.push(`/bearbeiten/${id}`)} />
 
@@ -209,7 +210,7 @@ export default function Teil() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Page>
 
       <Sheet open={sheet} onClose={() => { setSheet(false); setPickLent(false); }} title={pickLent ? 'An wen verliehen?' : 'Status'}
         footer={pickLent ? <>

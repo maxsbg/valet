@@ -12,9 +12,9 @@ let h = readFileSync(f, 'utf8')
     '<link rel="apple-touch-icon" href="/valet/apple-touch-icon.png">',
     '<meta name="theme-color" content="#F5F0E8" media="(prefers-color-scheme: light)">',
     '<meta name="theme-color" content="#17110F" media="(prefers-color-scheme: dark)">',
-    // App läuft bis unter die Safari-Leiste (100lvh); Bedienelemente hebt die App per JavaScript darüber.
-    // Als Web-App vom Home-Bildschirm gibt es keine Leiste: dort genau so hoch wie das Fenster (100lvh ragte sonst unten hinaus).
-    '<style>html,body{background:#F5F0E8;height:100%;overflow:hidden;overscroll-behavior:none}@media (prefers-color-scheme:dark){html,body{background:#17110F}}#root{position:fixed;top:0;left:0;right:0;height:100lvh}@media (display-mode:standalone){#root{height:auto;bottom:0}}</style>',
+    // Die Seite selbst scrollt (nicht ein Kasten darin): nur so zeigt Safari den Inhalt auch unter seiner Leiste.
+    // Feste Leisten (Tab-Leiste, Plus) hängen per position:fixed am Bildschirm.
+    '<style>html,body{background:#F5F0E8;height:auto!important;min-height:100%;overflow:visible!important;overscroll-behavior-y:none}@media (prefers-color-scheme:dark){html,body{background:#17110F}}#root{height:auto!important;min-height:100dvh}</style>',
     '</head>',
   ].join(''));
 h = h.replace('content="width=device-width, initial-scale=1, shrink-to-fit=no"', 'content="width=device-width, initial-scale=1, viewport-fit=cover"');

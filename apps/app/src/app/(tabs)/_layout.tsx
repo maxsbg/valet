@@ -26,7 +26,8 @@ export default function TabLayout() {
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
         <View style={StyleSheet.flatten([s.bar, { bottom, backgroundColor: t.glass, borderColor: t.glassBorder },
-          Platform.OS === 'web' ? ({ backdropFilter: 'blur(24px) saturate(1.6)', WebkitBackdropFilter: 'blur(24px) saturate(1.6)' } as object) : null])}>
+          // Web: fest am Bildschirm, die Seite scrollt darunter
+          Platform.OS === 'web' ? ({ position: 'fixed', zIndex: 30, backdropFilter: 'blur(24px) saturate(1.6)', WebkitBackdropFilter: 'blur(24px) saturate(1.6)' } as object) : null])}>
           <TabTrigger name="schrank" href="/" asChild><TabButton label="Schrank" icon="hanger" /></TabTrigger>
           <TabTrigger name="outfits" href="/outfits" asChild><TabButton label="Outfits" icon="layers" /></TabTrigger>
           <TabTrigger name="wunschliste" href="/wunschliste" asChild><TabButton label="Wunschliste" icon="heart" /></TabTrigger>

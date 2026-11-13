@@ -1,6 +1,7 @@
 import { useBottomInset } from '@/lib/bottomInset';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Page, STICKY } from '@/components/Page';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categoryLabel } from '@valet/core';
@@ -110,7 +111,7 @@ export default function BilderZuordnen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <View style={[s.bar, { paddingTop: insets.top + space.xs, borderBottomColor: t.hairline }]}>
+      <View style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
         <Pressable onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Fertig</Text></Pressable>
         <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>Bilder zuordnen</Text>
         <View style={[s.barSide, { alignItems: 'flex-end' }]}>
@@ -118,7 +119,7 @@ export default function BilderZuordnen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
+      <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
         <View style={s.col}>
           {Platform.OS !== 'web' && <Text style={[s.small, { color: t.inkMuted }]}>Geht vorerst nur in der Web-App.</Text>}
 
@@ -174,7 +175,7 @@ export default function BilderZuordnen() {
             </>
           )}
         </View>
-      </ScrollView>
+      </Page>
       {toast.node}
     </View>
   );

@@ -1,6 +1,7 @@
 import { useBottomInset } from '@/lib/bottomInset';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Page, STICKY } from '@/components/Page';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
@@ -101,7 +102,7 @@ export default function Neu() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
-      <View style={[s.bar, { paddingTop: insets.top + space.xs, borderBottomColor: t.hairline }]}>
+      <View style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
         <Pressable onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
         <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>Neues Teil</Text>
         <View style={[s.barSide, { alignItems: 'flex-end' }]}>
@@ -113,7 +114,7 @@ export default function Neu() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
+      <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
         <View style={s.col}>
           {step === 'start' && (
             <>
@@ -198,7 +199,7 @@ export default function Neu() {
             </>
           )}
         </View>
-      </ScrollView>
+      </Page>
       {toast.node}
     </KeyboardAvoidingView>
   );
