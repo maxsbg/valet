@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useCallback } from 'react';
 import { Animated, Platform, View, type ScrollViewProps } from 'react-native';
-import { usePathname } from 'expo-router';
+import { useFocusEffect, usePathname } from 'expo-router';
 
 type Props = ScrollViewProps & { children: React.ReactNode; scrollY?: Animated.Value };
 
@@ -27,19 +27,17 @@ export function Page({ children, scrollY, contentContainerStyle, ...rest }: Prop
 
 function WebPage({ children, scrollY, style }: { children: React.ReactNode; scrollY?: Animated.Value; style: ScrollViewProps['contentContainerStyle'] }) {
   const path = usePathname();
-  useLayoutEffect(() => {
+  // Nur die sichtbare Seite hört aufs Scrollen; beim Zurückkommen (auch Tab-Wechsel) Stand wiederherstellen
+  useFocusEffect(useCallback(() => {
     const y = memory.get(path) ?? 0;
     window.scrollTo(0, y);
-    // Inhalte (Bilder, Daten) können später nachwachsen → kurz danach nochmal
-    const id = setTimeout(() => { if (y && Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); }, 120);
-    return () => clearTimeout(id);
-  }, [path]);
-  useEffect(() => {
-    const f = () => { memory.set(path, window.scrollY); scrollY?.setValue(window.scrollY); };
     scrollY?.setValue(window.scrollY);
+    const f = () => { memory.set(path, window.scrollY); scrollY?.setValue(window.scrollY); };
+    // Inhalte (Bilder, Daten) können später nachwachsen → kurz danach nochmal
+    const id = setTimeout(() => { if (y && Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); scrollY?.setValue(window.scrollY); }, 120);
     window.addEventListener('scroll', f, { passive: true });
-    return () => window.removeEventListener('scroll', f);
-  }, [path, scrollY]);
+    return () => { clearTimeout(id); window.removeEventListener('scroll', f); };
+  }, [path, scrollY]));
   return <View style={style}>{children}</View>;
 }
 

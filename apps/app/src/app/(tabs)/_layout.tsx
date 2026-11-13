@@ -39,7 +39,7 @@ export default function TabLayout() {
 }
 
 const s = StyleSheet.create({
-  bar: { position: 'absolute', left: TAB_SIDE, right: TAB_SIDE, height: TAB_BAR, borderRadius: 999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, boxShadow: '0 6px 20px rgba(42,26,29,0.16)' },
+  bar: { position: 'absolute', left: TAB_SIDE, right: TAB_SIDE, height: TAB_BAR, borderRadius: 999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6 },
   btn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, height: '100%' },
   label: { fontSize: 10 },
 });
