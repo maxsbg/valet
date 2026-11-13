@@ -1,8 +1,8 @@
-import { useBottomInset } from '@/lib/bottomInset';
+import { useTabBarBottom } from '@/lib/bottomInset';
 import { Tabs, TabList, TabTrigger, TabSlot, type TabTriggerSlotProps } from 'expo-router/ui';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icons } from '@/components/Icon';
-import { useTheme, TAB_BAR } from '@/lib/theme';
+import { useTheme, TAB_BAR, TAB_SIDE } from '@/lib/theme';
 
 type Btn = TabTriggerSlotProps & { label: string; icon: keyof typeof Icons };
 
@@ -20,12 +20,12 @@ function TabButton({ label, icon, isFocused, ref, ...props }: Btn) {
 
 export default function TabLayout() {
   const t = useTheme();
-  const bottom = useBottomInset();
+  const bottom = useTabBarBottom();
   return (
     <Tabs style={{ flex: 1, backgroundColor: t.bg }}>
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
-        <View style={StyleSheet.flatten([s.bar, { bottom: Math.max(bottom, 10), backgroundColor: t.glass, borderColor: t.glassBorder },
+        <View style={StyleSheet.flatten([s.bar, { bottom, backgroundColor: t.glass, borderColor: t.glassBorder },
           Platform.OS === 'web' ? ({ backdropFilter: 'blur(24px) saturate(1.6)', WebkitBackdropFilter: 'blur(24px) saturate(1.6)' } as object) : null])}>
           <TabTrigger name="schrank" href="/" asChild><TabButton label="Schrank" icon="hanger" /></TabTrigger>
           <TabTrigger name="outfits" href="/outfits" asChild><TabButton label="Outfits" icon="layers" /></TabTrigger>
@@ -38,7 +38,7 @@ export default function TabLayout() {
 }
 
 const s = StyleSheet.create({
-  bar: { position: 'absolute', left: 12, right: 12, height: TAB_BAR, borderRadius: 999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, boxShadow: '0 6px 20px rgba(42,26,29,0.16)' },
+  bar: { position: 'absolute', left: TAB_SIDE, right: TAB_SIDE, height: TAB_BAR, borderRadius: 999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, boxShadow: '0 6px 20px rgba(42,26,29,0.16)' },
   btn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, height: '100%' },
-  label: { fontSize: 11 },
+  label: { fontSize: 10 },
 });
