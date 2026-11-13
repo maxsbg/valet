@@ -100,7 +100,6 @@ export default function BilderZuordnen() {
       .map((x) => x.m);
   }, [missing, q, current?.pic]);
 
-  const glow = current?.pic?.colors[0]?.h ?? '#d8d2c8';
   const picker = (label: string, primary?: boolean) => (
     <PhotoPicker onPickMany={add} label={label}>
       <View style={[s.btn, { backgroundColor: primary ? accent : t.surface, borderColor: primary ? accent : t.hairline }]}>
@@ -140,7 +139,7 @@ export default function BilderZuordnen() {
 
           {current && (
             <>
-              <View style={[s.stage, { backgroundColor: '#1d1b1e', boxShadow: `inset 0 0 28px 4px ${glow}55, 0 2px 8px rgba(42,26,29,0.18)` }]}>
+              <View style={[s.stage, { backgroundColor: '#000', boxShadow: '0 2px 8px rgba(42,26,29,0.18)' }]}>
                 {current.pic ? <Image source={{ uri: current.pic.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} />
                   : <Text style={[s.small, { color: '#ff9a8f' }]}>Foto ließ sich nicht öffnen: {current.error}</Text>}
               </View>
