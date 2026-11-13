@@ -33,29 +33,19 @@ export function sortTiles(items: Tile[], sort: SortId, seed: number, order: stri
   }
 }
 
-export type Filters = { status: string[]; seasons: string[]; styles: string[] };
-export const NO_FILTERS: Filters = { status: [], seasons: [], styles: [] };
-export const filterCount = (f: Filters) => f.status.length + f.seasons.length + f.styles.length;
+/** Filter im Schrank: eine Person (oder alle) und Saisons. Aussortierte und verkaufte Teile sind im Schrank nie sichtbar. */
+export type Filters = { person: string | null; seasons: string[] };
+export const NO_FILTERS: Filters = { person: null, seasons: [] };
+export const filterCount = (f: Filters) => (f.person ? 1 : 0) + f.seasons.length;
 
-export const STATUS_FILTERS = [
-  { id: 'wash', label: 'Wäsche' },
-  { id: 'repair', label: 'Reparatur' },
-  { id: 'lent', label: 'Verliehen' },
-  { id: 'gone', label: 'Aussortiert & verkauft' },
-] as const;
 export const SEASON_FILTERS = ['Sommer', 'Übergang', 'Winter'];
-export const STYLE_FILTERS = ['Casual', 'Streetwear', 'Sport', 'Schick', 'Business'];
 
-/** Ohne Status-Filter: nur Teile im Schrank (ohne aussortiert/verkauft). Innerhalb einer Gruppe „oder“, zwischen Gruppen „und“. */
+/** Innerhalb der Saisons „oder“, zwischen Person und Saison „und“. */
 export function applyFilters(items: Tile[], f: Filters): Tile[] {
   return items.filter((i) => {
-    const gone = i.status === 'out' || i.status === 'sold';
-    if (f.status.length) {
-      const ok = f.status.some((s) => (s === 'gone' ? gone : i.status === s));
-      if (!ok) return false;
-    } else if (gone) return false;
+    if (i.status === 'out' || i.status === 'sold') return false;
+    if (f.person && !i.owners.includes(f.person)) return false;
     if (f.seasons.length && !f.seasons.some((s) => i.seasons.includes(s))) return false;
-    if (f.styles.length && !(i.style && f.styles.includes(i.style))) return false;
     return true;
   });
 }

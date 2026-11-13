@@ -1,15 +1,16 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import { CATEGORIES } from '@valet/core';
-import { Header, Chip, SearchField, TodayBar, Fab, RoundButton, Empty, useToast } from '@/components/ui';
-import { Icons } from '@/components/Icon';
+import { Header, Chip, Fab, Empty, glass } from '@/components/ui';
+import { ClosetBar } from '@/components/ClosetBar';
 import { Mosaic } from '@/components/Mosaic';
 import { useSession } from '@/lib/session';
 import { useTheme, space } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
-import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, STATUS_FILTERS, SEASON_FILTERS, STYLE_FILTERS, type SortId, type Filters } from '@/lib/sort';
+import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, SEASON_FILTERS, type SortId, type Filters } from '@/lib/sort';
+import { personKey } from '@/lib/wardrobe';
 import { usePersisted } from '@/lib/usePersisted';
 
 export default function Schrank() {
@@ -18,8 +19,8 @@ export default function Schrank() {
   const { wardrobe, loading, error, reload, session } = useSession();
   const [cat, setCat] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [searching, setSearching] = useState(false);
-  const toast = useToast(scr.barTop + space.sm);
+  const [headH, setHeadH] = useState(60);
+  const scrollY = useRef(new Animated.Value(0)).current;
   const [sort, setSort] = usePersisted<SortId>('valet.sort', 'random');
   const [seed, setSeed] = usePersisted<number>('valet.seed', 1);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
@@ -31,13 +32,9 @@ export default function Schrank() {
     () => sortTiles(applyFilters((wardrobe?.items ?? []).filter((i) => !i.isWish), filters), sort, seed, me?.item_order ?? []),
     [wardrobe, me, filters, sort, seed],
   );
-  const today = useMemo(() => {
-    const ids = new Set(wardrobe?.today ?? []);
-    return (wardrobe?.items ?? []).filter((i) => ids.has(i.id));
-  }, [wardrobe]);
   const nFilters = filterCount(filters);
-  const toggle = (k: keyof Filters, v: string) =>
-    setDraft((d) => ({ ...d, [k]: d[k].includes(v) ? d[k].filter((x) => x !== v) : [...d[k], v] }));
+  const toggleSeason = (v: string) =>
+    setDraft((d) => ({ ...d, seasons: d.seasons.includes(v) ? d.seasons.filter((x) => x !== v) : [...d.seasons, v] }));
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -51,39 +48,37 @@ export default function Schrank() {
       (!q || [i.name, i.brand, i.color].some((f) => f?.toLowerCase().includes(q))));
   }, [inCloset, cat, query]);
 
-  const soon = () => toast.show('Kommt in einem der nächsten Schritte.');
+  const barW = scr.content + 2 * space.md;
+  const chips = [
+    { key: 'alle', label: 'Alle', count: inCloset.length, selected: !cat, onPress: () => setCat(null) },
+    ...CATEGORIES.filter((c) => counts.get(c.id)).map((c) => ({
+      key: c.id, label: c.label, count: counts.get(c.id), selected: cat === c.id, onPress: () => setCat(cat === c.id ? null : c.id),
+    })),
+  ];
+  // Milchglas erst, wenn die Leiste oben klebt (Kopfzeile weggescrollt)
+  const stuck = scrollY.interpolate({ inputRange: [headH - 1, headH], outputRange: [0, 1], extrapolate: 'clamp' });
+  const web = Platform.OS === 'web';
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView
+      <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
-        stickyHeaderIndices={[1]}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+        stickyHeaderIndices={web ? undefined : [1]}
       >
-        <View style={{ width: scr.content + 2 * space.md }}>
-          <Header onHelp={soon} onSettings={soon} />
-          <View style={{ paddingHorizontal: space.md, paddingBottom: space.sm }}>
-            <TodayBar items={today} onPress={() => router.push('/outfits')} />
-          </View>
+        <View style={{ width: barW }} onLayout={(e) => setHeadH(e.nativeEvent.layout.height)}>
+          <Header />
         </View>
-        <View style={[s.filters, { backgroundColor: t.bg, width: scr.content + 2 * space.md }]}>
-          {searching ? (
-            <SearchField value={query} onChange={setQuery} onClose={() => { setSearching(false); setQuery(''); }} />
-          ) : (
-            <>
-              <RoundButton label="Suchen" onPress={() => setSearching(true)}><Icons.search color={t.ink} /></RoundButton>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: space.xs, paddingRight: space.xs }}>
-                <Chip label="Filter" icon={<Icons.filter color={nFilters ? t.bg : t.ink} />} count={nFilters || undefined} selected={nFilters > 0}
-                  onPress={() => { setDraft(filters); setSheet('filter'); }} />
-                <Chip label="Alle" count={inCloset.length} selected={!cat} onPress={() => setCat(null)} />
-                {CATEGORIES.filter((c) => counts.get(c.id)).map((c) => (
-                  <Chip key={c.id} label={c.label} count={counts.get(c.id)} selected={cat === c.id} onPress={() => setCat(cat === c.id ? null : c.id)} />
-                ))}
-              </ScrollView>
-              <RoundButton label="Sortieren" onPress={() => setSheet('sort')}><Icons.sort color={t.ink} /></RoundButton>
-            </>
-          )}
+        {/* klebt beim Scrollen oben; reicht bis unter die Statusleiste, Kacheln laufen darunter durch */}
+        <View pointerEvents="box-none" style={[{ alignSelf: 'stretch', alignItems: 'center', zIndex: 10, marginTop: -scr.top, paddingTop: scr.top },
+          web ? ({ position: 'sticky', top: 0 } as object) : null]}>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, ...glass(t), { borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth, opacity: stuck }]} />
+          <ClosetBar width={barW} query={query} onQuery={setQuery} chips={chips} filterActive={nFilters > 0}
+            onFilter={() => { setDraft(filters); setSheet('filter'); }} onSort={() => setSheet('sort')} />
         </View>
         <View style={{ width: scr.content, marginTop: space.xs }}>
           {error ? (
@@ -96,12 +91,7 @@ export default function Schrank() {
             <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
           )}
         </View>
-        {wardrobe && (
-          <Pressable onPress={() => import('@/lib/supabase').then((m) => m.supabase.auth.signOut())} style={{ marginTop: space.xl }}>
-            <Text style={{ color: t.inkMuted, fontSize: 13 }}>Abmelden</Text>
-          </Pressable>
-        )}
-      </ScrollView>
+      </Animated.ScrollView>
       <Fab bottom={scr.fabBottom} onPress={() => router.push('/neu')} />
       <Sheet open={sheet === 'sort'} onClose={() => setSheet(null)} title="Sortieren"
         footer={sort === 'random' ? <SheetButton label="Neu mischen" onPress={() => { setSeed(seed + 1); setSheet(null); }} /> : undefined}>
@@ -114,19 +104,21 @@ export default function Schrank() {
           <SheetButton label="Zurücksetzen" onPress={() => setDraft(NO_FILTERS)} />
           <SheetButton primary label="Fertig" onPress={() => { setFilters(draft); setSheet(null); }} />
         </>}>
-        <SectionLabel>Status</SectionLabel>
-        <View style={s.wrap}>{STATUS_FILTERS.map((f) => <Chip key={f.id} label={f.label} selected={draft.status.includes(f.id)} onPress={() => toggle('status', f.id)} />)}</View>
+        <SectionLabel>Person</SectionLabel>
+        <View style={s.wrap}>
+          <Chip label="Alle" selected={!draft.person} onPress={() => setDraft((d) => ({ ...d, person: null }))} />
+          {(wardrobe?.persons ?? []).map((p) => (
+            <Chip key={p.id} label={p.name} dot={t.person[personKey(p.color)]} selected={draft.person === p.id}
+              onPress={() => setDraft((d) => ({ ...d, person: d.person === p.id ? null : p.id }))} />
+          ))}
+        </View>
         <SectionLabel>Saison</SectionLabel>
-        <View style={s.wrap}>{SEASON_FILTERS.map((f) => <Chip key={f} label={f} selected={draft.seasons.includes(f)} onPress={() => toggle('seasons', f)} />)}</View>
-        <SectionLabel>Stil</SectionLabel>
-        <View style={s.wrap}>{STYLE_FILTERS.map((f) => <Chip key={f} label={f} selected={draft.styles.includes(f)} onPress={() => toggle('styles', f)} />)}</View>
+        <View style={s.wrap}>{SEASON_FILTERS.map((f) => <Chip key={f} label={f} selected={draft.seasons.includes(f)} onPress={() => toggleSeason(f)} />)}</View>
       </Sheet>
-      {toast.node}
     </View>
   );
 }
 
 const s = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-  filters: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md, paddingVertical: space.xs },
 });
