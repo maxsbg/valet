@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
+import type { Picture } from './cutout';
 
 export type ItemRow = {
   id: string; wardrobe_id: string; owner_id: string | null; name: string; brand: string | null; category: string;
@@ -59,6 +60,55 @@ export async function updateItem(id: string, change: ItemChange) {
 }
 
 export async function deleteItem(id: string) {
+  const imgs = await supabase.from('item_images').select('storage_path').eq('item_id', id);
   const r = await supabase.from('items').delete().eq('id', id);
   if (r.error) throw r.error;
+  const paths = (imgs.data ?? []).map((x) => x.storage_path as string);
+  if (paths.length) await supabase.storage.from('items').remove(paths); // Bilder aufräumen, Fehler egal
 }
+
+export type NewItem = ItemChange & { name: string; category: string };
+
+/**
+ * Legt ein Teil an und lädt (falls vorhanden) Bild + Vorschaubild in den Bucket „items“.
+ * Schlägt das Hochladen fehl, wird das Teil wieder entfernt, damit kein halbes Teil übrig bleibt.
+ */
+export async function createItem(wardrobeId: string, data: NewItem, picture?: Picture | null): Promise<string> {
+  const ins = await supabase.from('items').insert({ ...data, wardrobe_id: wardrobeId }).select('id').single();
+  if (ins.error) throw ins.error;
+  const id = ins.data.id as string;
+  if (picture) {
+    try { await saveImage(wardrobeId, id, 'a', picture); }
+    catch (e) { await supabase.from('items').delete().eq('id', id); throw e; }
+  }
+  return id;
+}
+
+const ext = (b: Blob) => (b.type === 'image/png' ? 'png' : b.type === 'image/jpeg' ? 'jpg' : 'webp');
+
+/** Speichert Bild + Vorschaubild einer Seite. Neuer Dateiname bei jedem Speichern, damit der Browser-Zwischenspeicher nie ein altes Bild zeigt. */
+export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 'b', p: Picture) {
+  const stamp = Date.now().toString(36);
+  const base = `${wardrobeId}/${itemId}/${side}-${stamp}`;
+  const mainPath = `${base}.${ext(p.main)}`;
+  const thumbPath = `${base}-thumb.${ext(p.thumb)}`;
+  const bucket = supabase.storage.from('items');
+  const opts = (b: Blob) => ({ contentType: b.type, cacheControl: '31536000', upsert: false });
+  const [m, t] = await Promise.all([bucket.upload(mainPath, p.main, opts(p.main)), bucket.upload(thumbPath, p.thumb, opts(p.thumb))]);
+  const upErr = m.error ?? t.error;
+  if (upErr) {
+    await bucket.remove([mainPath, thumbPath]);
+    throw new Error(/bucket not found/i.test(upErr.message) ? 'Bildspeicher fehlt noch (Bucket „items“ in Supabase anlegen).' : `Bild hochladen fehlgeschlagen: ${upErr.message}`);
+  }
+  // Ein Bild je Seite: vorheriges Hauptbild/Vorschaubild ersetzen
+  const old = await supabase.from('item_images').select('storage_path').eq('item_id', itemId).eq('side', side).in('kind', ['cutout', 'original', 'thumb']);
+  await supabase.from('item_images').delete().eq('item_id', itemId).eq('side', side).in('kind', ['cutout', 'original', 'thumb']);
+  const r = await supabase.from('item_images').insert([
+    { item_id: itemId, side, kind: p.kind, storage_path: mainPath, colors: p.colors },
+    { item_id: itemId, side, kind: 'thumb', storage_path: thumbPath, colors: null },
+  ]);
+  if (r.error) { await bucket.remove([mainPath, thumbPath]); throw r.error; }
+  const stale = (old.data ?? []).map((x) => x.storage_path as string);
+  if (stale.length) await bucket.remove(stale); // aufräumen, Fehler egal
+}
+

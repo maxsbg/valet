@@ -4,7 +4,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categoryLabel, formatEur } from '@valet/core';
-import { Icons, Silhouette } from '@/components/Icon';
+import { Icons } from '@/components/Icon';
+import { ItemPicture } from '@/components/ItemPicture';
 import { RoundButton, Empty, useToast } from '@/components/ui';
 import { Sheet, OptionRow, SheetButton } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
@@ -109,7 +110,7 @@ export default function Teil() {
 
           {/* Bild */}
           <View style={[s.hero, { boxShadow: `inset 0 0 28px 4px ${hex}73, 0 2px 8px rgba(42,26,29,0.10)` }]}>
-            <View style={{ width: '70%', height: '80%', alignItems: 'center', justifyContent: 'center' }}><Silhouette category={it.category} color={hex} /></View>
+            <View style={{ width: '82%', height: '88%', alignItems: 'center', justifyContent: 'center' }}><ItemPicture uri={tileInfo?.image ?? tileInfo?.thumb} inset={0} category={it.category} color={hex} /></View>
             {owner && (
               <View style={s.ownerBadge}><Text style={{ fontFamily: DISPLAY, fontSize: 20, color: PERSON[personKey(owner.color)] }}>{owner.name.slice(0, 1)}</Text></View>
             )}
@@ -163,7 +164,7 @@ export default function Teil() {
                 {setMates.map((m) => (
                   <Pressable key={m.id} onPress={() => router.push(`/teil/${m.id}`)} accessibilityLabel={m.name}
                     style={[s.mini, { boxShadow: `inset 0 0 14px 2px ${(m.hex ?? '#d8d2c8')}73, 0 1px 4px rgba(42,26,29,0.10)` }]}>
-                    <Silhouette category={m.category} color={m.hex ?? '#8e8e93'} />
+                    <ItemPicture uri={m.thumb} inset={6} category={m.category} color={m.hex ?? '#8e8e93'} />
                   </Pressable>
                 ))}
               </ScrollView>
@@ -279,7 +280,7 @@ const s = StyleSheet.create({
   actions: { flexDirection: 'row', marginTop: space.lg },
   actBtn: { width: 56, height: 56, borderRadius: 28, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   sectionTitle: { fontFamily: DISPLAY, fontSize: 20, marginBottom: space.xs },
-  mini: { width: 76, height: 76, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  mini: { width: 76, height: 76, borderRadius: 18, overflow: 'hidden', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   list: { borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, paddingVertical: space.sm },
   moreHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg, marginBottom: space.xs, minHeight: 44 },

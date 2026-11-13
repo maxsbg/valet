@@ -108,7 +108,7 @@ export default function Schrank() {
           </Pressable>
         )}
       </ScrollView>
-      <Fab bottom={scr.fabBottom} onPress={soon} />
+      <Fab bottom={scr.fabBottom} onPress={() => router.push('/neu')} />
       <Sheet open={sheet === 'sort'} onClose={() => setSheet(null)} title="Sortieren"
         footer={sort === 'random' ? <SheetButton label="Neu mischen" onPress={() => { setSeed(seed + 1); setSheet(null); }} /> : undefined}>
         {SORTS.map((o, n) => (
