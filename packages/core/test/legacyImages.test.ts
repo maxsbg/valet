@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateRawSync } from 'node:zlib';
 import { listZip, readZipEntry, imageType } from '../src/import/zip';
-import { parseImageCsv, planImageImport, zipImages, type DbImage } from '../src/import/legacyImages';
+import { parseImageCsv, parseTransferPaths, planImageImport, zipImages, type DbImage } from '../src/import/legacyImages';
 
 // ZIP wie im alten Valet (makeZip), wahlweise mit Deflate
 function makeZip(files: { name: string; data: Uint8Array; deflate?: boolean }[]): Blob {
@@ -74,7 +74,7 @@ test('Plan: DB-Zeilen, Vorschaubild vorhanden, fehlend, Rückgriff über CSV', (
     { file: '', imageId: 'hose', side: 'a' as const, legacyItemId: 'iHose' },
     { file: '', imageId: 'fremd', side: 'a' as const, legacyItemId: 'gibtsNicht' },
   ];
-  const p = planImageImport(names, csv, items, images);
+  const p = planImageImport(zipImages(names), csv, items, images);
   assert.deepEqual(p.jobs.map((j) => [j.itemId, j.side, j.legacyImageId, j.kind]), [
     ['H', 'a', 'hose', 'cutout'], ['S', 'a', 'shirtA', 'cutout'], ['S', 'b', 'shirtB', 'cutout'], ['N', 'a', 'neu', null],
   ]);
@@ -90,8 +90,17 @@ test('Plan ist wiederholbar: nach dem Import gibt es nichts mehr zu tun', () => 
     { item_id: 'H', side: 'a', kind: 'cutout', legacy_id: 'hose', colors: null },
     { item_id: 'H', side: 'a', kind: 'thumb', legacy_id: 'hose', colors: null },
   ];
-  const p = planImageImport(['bilder/hose.png'], [], [{ id: 'H', legacy_id: 'iHose' }], images);
+  const p = planImageImport(zipImages(['bilder/hose.png']), [], [{ id: 'H', legacy_id: 'iHose' }], images);
   assert.equal(p.jobs.length, 0);
   assert.equal(p.done, 1);
   assert.deepEqual(p.unmatched, []);
+});
+
+test('Direktübertragung: Zuordnung aus dem Dateinamen', () => {
+  const w = 'e3601e23-c683-4c16-b88f-547194bc2cf6';
+  const { files, csv } = parseTransferPaths([`${w}/legacy/a@iShirt@blobA.png`, `${w}/legacy/b@iShirt@blobB.webp`, `${w}/legacy/kaputt.png`]);
+  assert.deepEqual([...files.entries()], [['blobA', `${w}/legacy/a@iShirt@blobA.png`], ['blobB', `${w}/legacy/b@iShirt@blobB.webp`]]);
+  assert.deepEqual(csv.map((c) => [c.side, c.legacyItemId, c.imageId]), [['a', 'iShirt', 'blobA'], ['b', 'iShirt', 'blobB']]);
+  const p = planImageImport(files, csv, [{ id: 'S', legacy_id: 'iShirt' }], [{ item_id: 'S', side: 'a', kind: 'cutout', legacy_id: 'blobA', colors: null }]);
+  assert.deepEqual(p.jobs.map((j) => [j.side, j.legacyImageId, j.kind]), [['a', 'blobA', 'cutout'], ['b', 'blobB', null]]);
 });

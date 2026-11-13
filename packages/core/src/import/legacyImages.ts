@@ -95,9 +95,9 @@ const colorsOf = (v: unknown): { h: string; s: number }[] | null => {
  * 1. Bildzeilen aus dem Datenimport (item_images mit legacy_id) bekommen ihr Bild, falls die Seite noch kein Vorschaubild hat.
  * 2. Teile, die beim Datenimport kein Bild bekamen, werden über bilder.csv (alte Teil-ID + Seite) gefunden.
  * Seiten mit Vorschaubild werden nie angefasst – der Import kann also gefahrlos wiederholt werden.
+ * files: alte Bild-ID → Datei (Name im ZIP bzw. Pfad im Bildspeicher), siehe zipImages / parseTransferPaths.
  */
-export function planImageImport(zipNames: string[], csv: CsvImage[], items: DbItem[], images: DbImage[]): ImagePlan {
-  const files = zipImages(zipNames);
+export function planImageImport(files: Map<string, string>, csv: CsvImage[], items: DbItem[], images: DbImage[]): ImagePlan {
   const key = (item: string, side: Side) => `${item}:${side}`;
   const hasThumb = new Set<string>();
   const hasMain = new Set<string>();
@@ -138,4 +138,22 @@ export function planImageImport(zipNames: string[], csv: CsvImage[], items: DbIt
 
   const unmatched = [...files.keys()].filter((id) => !used.has(id));
   return { jobs, done: done.size, missing: [...missing], unmatched };
+}
+
+/**
+ * Direktübertragung aus dem alten Valet in den Bildspeicher (Bucket „items“):
+ *   <Schrank>/legacy/<Seite a|b>@<alte Teil-ID>@<alte Bild-ID>.<png|webp|jpg>
+ * Die Zuordnung steckt im Dateinamen, weil der Bucket nur Bilder annimmt (keine CSV).
+ */
+export function parseTransferPaths(paths: string[]): { files: Map<string, string>; csv: CsvImage[] } {
+  const files = new Map<string, string>();
+  const csv: CsvImage[] = [];
+  for (const path of paths) {
+    const m = /^([ab])@([^@/]+)@([^@/]+)\.(png|webp|jpe?g)$/i.exec(path.split('/').pop() ?? '');
+    if (!m) continue;
+    const [, side, legacyItemId, imageId] = m as unknown as [string, string, string, string];
+    if (!files.has(imageId)) files.set(imageId, path);
+    csv.push({ file: path, imageId, side: side.toLowerCase() as Side, legacyItemId });
+  }
+  return { files, csv };
 }

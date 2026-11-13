@@ -6,14 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
-import { prepare, runImport, type Prepared } from '@/lib/legacyImages';
+import { cleanupTransfer, prepareStorage, prepareZip, runImport, type Prepared } from '@/lib/legacyImages';
 
 type Step = 'start' | 'reading' | 'ready' | 'running' | 'done';
 const MAROON = '#722638';
 
 /**
  * Bilder aus dem alten Valet übernehmen.
- * Ablauf: im alten Valet „Alle Bilder (ZIP)“ exportieren → hier die ZIP-Datei wählen → Übersicht → Übernehmen.
+ * Ablauf: im alten Valet „Direkt in die neue App übertragen“ → hier „Übertragene Bilder übernehmen“ → Übersicht → Übernehmen.
+ * Ausweichweg: ZIP-Export aus dem alten Valet wählen (nur, wenn dort das Speichern als Datei geht).
  * Seiten, die schon ein Vorschaubild haben, bleiben unverändert; der Import kann also wiederholt werden.
  */
 export default function BilderImport() {
@@ -34,12 +35,13 @@ export default function BilderImport() {
 
   const close = () => (step === 'running' ? (stop.current = true) : router.canGoBack() ? router.back() : router.replace('/'));
 
-  async function pick(file: File) {
-    if (!wardrobe) return;
+  async function load(how: () => Promise<Prepared>) {
     setError(null); setPrep(null); setResult(null); setStep('reading');
-    try { setPrep(await prepare(wardrobe.id, file)); setStep('ready'); }
+    try { setPrep(await how()); setStep('ready'); }
     catch (e) { setError((e as Error)?.message || String(e)); setStep('start'); }
   }
+  const fromStorage = () => wardrobe && load(() => prepareStorage(wardrobe.id));
+  const pick = (file: File) => wardrobe && load(() => prepareZip(wardrobe.id, file));
 
   async function start() {
     if (!wardrobe || !prep) return;
@@ -49,6 +51,7 @@ export default function BilderImport() {
     try {
       const r = await runImport(wardrobe.id, prep, (done, total, failed) => setProgress({ done, total, failed }), () => stop.current);
       setResult({ ok: r.ok, failed: r.failed.map((f) => ({ name: f.job.legacyImageId, error: f.error })) });
+      if (prep.source === 'storage' && r.ok) await cleanupTransfer(wardrobe.id).catch(() => 0); // Zwischendateien weg
       await reload();
     } catch (e) { setError((e as Error)?.message || String(e)); }
     finally { lock?.release().catch(() => {}); setStep('done'); }
@@ -74,14 +77,16 @@ export default function BilderImport() {
               <Text style={[s.text, { color: t.ink }]}>Übernimmt die Bilder aus dem alten Valet und legt für jedes Teil ein Vorschaubild für die Kacheln an.</Text>
               <View style={[s.card, { backgroundColor: t.surface, borderColor: t.hairline }]}>
                 <Text style={[s.h, { color: t.ink }]}>So geht’s</Text>
-                <Text style={[s.text, { color: t.ink }]}>1. Im alten Valet: Zahnrad → „Kleiderschrank exportieren“ → „Alle Bilder (ZIP)“.</Text>
-                <Text style={[s.text, { color: t.ink }]}>2. Die Datei in „Dateien“ sichern (Teilen → „In Dateien sichern“).</Text>
-                <Text style={[s.text, { color: t.ink }]}>3. Hier die ZIP-Datei wählen.</Text>
+                <Text style={[s.text, { color: t.ink }]}>1. Im alten Valet: Zahnrad → „Kleiderschrank exportieren“ → „Direkt in die neue App übertragen“ (mit deinem Login der neuen App).</Text>
+                <Text style={[s.text, { color: t.ink }]}>2. Wenn dort „Fertig“ steht: hier „Übertragene Bilder übernehmen“.</Text>
               </View>
               {Platform.OS === 'web' ? (
-                <PhotoPicker onPick={pick} label="ZIP-Datei wählen" accept=".zip,application/zip,application/x-zip-compressed">
-                  <Btn primary label={step === 'reading' ? 'Wird gelesen …' : 'ZIP-Datei wählen'} />
-                </PhotoPicker>
+                <>
+                  <Btn primary label={step === 'reading' ? 'Wird geprüft …' : 'Übertragene Bilder übernehmen'} onPress={step === 'reading' ? undefined : fromStorage} />
+                  <PhotoPicker onPick={pick} label="Stattdessen ZIP-Datei wählen" accept=".zip,application/zip,application/x-zip-compressed">
+                    <Btn label="Stattdessen ZIP-Datei wählen" />
+                  </PhotoPicker>
+                </>
               ) : (
                 <Text style={[s.small, { color: t.inkMuted }]}>Der Import geht vorerst nur in der Web-App.</Text>
               )}
@@ -93,14 +98,14 @@ export default function BilderImport() {
           {step === 'ready' && prep && plan && (
             <>
               <View style={[s.card, { backgroundColor: t.surface, borderColor: t.hairline }]}>
-                <Row label="Bilder in der Datei" value={prep.imageCount} />
+                <Row label={prep.source === 'zip' ? 'Bilder in der Datei' : 'Übertragene Bilder'} value={prep.imageCount} />
                 <Row label="Werden übernommen" value={plan.jobs.length} strong />
                 <Row label="Schon vorhanden" value={plan.done} />
-                {plan.missing.length > 0 && <Row label="Fehlen in der Datei" value={plan.missing.length} />}
+                {plan.missing.length > 0 && <Row label="Fehlen" value={plan.missing.length} />}
                 {plan.unmatched.length > 0 && <Row label="Ohne passendes Teil" value={plan.unmatched.length} />}
               </View>
               {plan.missing.length > 0 && (
-                <Text style={[s.small, { color: t.inkMuted }]}>„Fehlen in der Datei“: Diese Teile verweisen auf Bilder, die im Export nicht enthalten sind (z. B. im alten Valet nicht mehr ladbar). Sie zeigen weiter die Silhouette.</Text>
+                <Text style={[s.small, { color: t.inkMuted }]}>„Fehlen“: Diese Teile verweisen auf Bilder, die nicht übertragen wurden (z. B. im alten Valet nicht mehr ladbar). Sie zeigen weiter die Silhouette.</Text>
               )}
               {plan.unmatched.length > 0 && (
                 <Text style={[s.small, { color: t.inkMuted }]}>„Ohne passendes Teil“: Teile, die nach dem letzten Datenimport im alten Valet angelegt wurden. Sie kommen mit dem frischen Datenimport vor dem Umstieg.</Text>
@@ -113,9 +118,7 @@ export default function BilderImport() {
               ) : (
                 <Text style={[s.text, { color: t.ink, textAlign: 'center' }]}>Es gibt nichts zu übernehmen – alle passenden Teile haben schon ein Bild.</Text>
               )}
-              <PhotoPicker onPick={pick} label="Andere ZIP-Datei wählen" accept=".zip,application/zip,application/x-zip-compressed">
-                <Btn label="Andere Datei wählen" />
-              </PhotoPicker>
+              <Btn label="Zurück" onPress={() => setStep('start')} />
             </>
           )}
 
@@ -145,7 +148,7 @@ export default function BilderImport() {
                 </View>
               )}
               {prep && (result?.failed.length || (result && result.ok < prep.plan.jobs.length)) ? (
-                <Btn primary label="Nochmal versuchen" onPress={() => wardrobe && prepare(wardrobe.id, prep.zip).then((p) => { setPrep(p); setStep('ready'); }, (e) => setError((e as Error).message))} />
+                <Btn primary label="Nochmal versuchen" onPress={() => setStep('start')} />
               ) : null}
               <Btn label="Zum Schrank" onPress={() => router.replace('/')} />
             </>
