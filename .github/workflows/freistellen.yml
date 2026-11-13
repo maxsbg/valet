@@ -1,0 +1,51 @@
+# Baut den Freistell-Server (BiRefNet General-dynamic) und spielt ihn in Azure Container Apps ein.
+# Voraussetzung (einmalig): Secret AZURE_CREDENTIALS (Service Principal mit Zugriff auf die Ressourcengruppe „valet“).
+name: Freistell-Server einspielen
+on:
+  push:
+    branches: [main, freistellen]
+    paths: ['services/freistellen/**', '.github/workflows/freistellen.yml']
+  workflow_dispatch:
+concurrency:
+  group: freistellen
+  cancel-in-progress: false
+env:
+  RG: valet
+  LOCATION: germanywestcentral
+  ACR: valetfs${{ github.repository_owner }}
+  ENVNAME: valet-env
+  APP: freistellen
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Container-Registry (einmalig anlegen)
+        run: |
+          az acr show -n "$ACR" -g "$RG" >/dev/null 2>&1 || az acr create -n "$ACR" -g "$RG" -l "$LOCATION" --sku Standard --admin-enabled true -o none
+          az acr login -n "$ACR"
+      - name: Image bauen und hochladen
+        run: |
+          IMG="$ACR.azurecr.io/$APP:${GITHUB_SHA::7}"
+          docker build -t "$IMG" services/freistellen
+          docker push "$IMG"
+          echo "IMG=$IMG" >> "$GITHUB_ENV"
+      - name: Container App anlegen oder aktualisieren
+        run: |
+          az extension add -n containerapp -y --only-show-errors
+          az containerapp env show -n "$ENVNAME" -g "$RG" >/dev/null 2>&1 || az containerapp env create -n "$ENVNAME" -g "$RG" -l "$LOCATION" --logs-destination none -o none
+          PW=$(az acr credential show -n "$ACR" --query 'passwords[0].value' -o tsv)
+          if az containerapp show -n "$APP" -g "$RG" >/dev/null 2>&1; then
+            az containerapp update -n "$APP" -g "$RG" --image "$IMG" -o none
+          else
+            az containerapp create -n "$APP" -g "$RG" --environment "$ENVNAME" --image "$IMG" \
+              --registry-server "$ACR.azurecr.io" --registry-username "$ACR" --registry-password "$PW" \
+              --cpu 4 --memory 8Gi --min-replicas 0 --max-replicas 1 \
+              --ingress external --target-port 8000 \
+              --env-vars THREADS=4 \
+              -o none
+          fi
+          echo "Adresse: https://$(az containerapp show -n "$APP" -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)"
