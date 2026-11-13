@@ -46,6 +46,6 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 
 ## Nächste Schritte
 1. ~~Teil hinzufügen~~ (Seite `src/app/neu.tsx`, Formular gemeinsam mit Bearbeiten in `src/components/ItemForm.tsx`). Bucket `items` per `supabase/migrations/0002_storage_items.sql` (öffentlich lesbar, Schreiben nur Mitglieder). Ablage `<wardrobe>/<item>/<seite>-<stempel>.webp` + `-thumb.webp`; in `item_images` je Seite eine Zeile `cutout`/`original` (mit Farben) und eine `thumb`. Kacheln zeigen nur `thumb`-Zeilen, sonst Silhouette.
-2. Alte Bilder aus dem alten Valet importieren (dabei auch `thumb`-Zeilen + Vorschaubilder anlegen).
+2. ~~Alte Bilder importieren~~ (Seite `src/app/bilder-import.tsx`, erreichbar über Statistik). Altes Valet: Zahnrad → „Kleiderschrank exportieren“ → „Alle Bilder (ZIP)“ (`exportAllZip`, ZIP ohne Kompression: `bilder/<alte Bild-ID>.png`, `bilder.csv`, `valet-daten.json`). Am iPhone über Teilen → „In Dateien sichern“, weil die Fähigkeit `downloads` im alten Artifact nicht freigeschaltet ist. Neue App liest das ZIP stückweise (`packages/core/src/import/zip.ts`), ordnet über `item_images.legacy_id` bzw. `bilder.csv` (alte Teil-ID + Seite) zu (`legacyImages.ts`) und speichert mit `saveImage` (WebP 1200 px + Vorschaubild 400 px). Seiten mit `thumb`-Zeile werden übersprungen → wiederholbar, auch nach dem frischen Datenimport.
 3. Outfits-Seite, Statistik, Paul einladen.
 4. Frischer Datenimport vor dem Umstieg.

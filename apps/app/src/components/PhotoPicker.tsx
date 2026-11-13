@@ -5,14 +5,14 @@ import { Platform, View, type ViewStyle } from 'react-native';
  * Fläche, die beim Antippen die Foto-Auswahl öffnet (iPhone: Kamera, Mediathek oder Datei).
  * Im Web liegt ein unsichtbares Datei-Feld über dem Inhalt – so öffnet Safari die Auswahl zuverlässig.
  */
-export function PhotoPicker({ onPick, children, style, label }: { onPick: (file: File) => void; children: React.ReactNode; style?: ViewStyle; label: string }) {
+export function PhotoPicker({ onPick, children, style, label, accept = 'image/*' }: { onPick: (file: File) => void; children: React.ReactNode; style?: ViewStyle; label: string; accept?: string }) {
   if (Platform.OS !== 'web') return <View style={style}>{children}</View>;
   return (
     <View style={[{ position: 'relative' }, style]}>
       {children}
       {createElement('input', {
         type: 'file',
-        accept: 'image/*',
+        accept,
         'aria-label': label,
         onChange: (e: { target: HTMLInputElement }) => {
           const file = e.target.files?.[0];

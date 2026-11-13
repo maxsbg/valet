@@ -18,6 +18,7 @@ function Gate() {
       <Stack.Screen name="teil/[id]" />
       <Stack.Screen name="bearbeiten/[id]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="neu" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="bilder-import" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
