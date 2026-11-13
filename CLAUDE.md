@@ -36,6 +36,13 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - **Schrank-Kachel** (neu, 13.11.2026): verbindlich `docs/design/kachel/VALET_KACHEL_SPEC.md` + `valet-kachel-referenz.html` (bei Widerspruch gilt die HTML). Werte in `packages/ui/src/tokens.ts` (`itemTile`), Logik in `packages/core/src/tile.ts` (glowFor, ownersFor, countLabel, topRightFor), Komponente `src/components/ItemTile.tsx` + `components/tile/`. Das Designsystem auf claude.ai ist bei der Kachel veraltet.
   - Prüfseite gehört **nicht** in die App: `node docs/design/kachel/pruefung/erstellen.mjs` erzeugt `kachel-pruefung.html` (eigenständig, gleiche Fälle wie die Referenz).
   - Offen (Max fragen, nicht selbst entscheiden): Set-Plakette, Wunschlisten-Plaketten (Preis, Bedenkzeit), eingelagert vs. aussortiert, Highlight-Farbe automatisch/manuell, Auswahl im Outfit-Baukasten (vorerst alt). Personen ohne Farbe → Monogramm/Bügel schwarz (ink). iOS: Blur (expo-blur), Grau-Filter, Text-Versatz nachmessen.
+- **Schrank-Seite (entschieden und umgesetzt 13.11.2026):** Leiste in `src/components/ClosetBar.tsx`, Kopfzeile mit Profil-/Einstellungs-Blatt in `ui.tsx` (`Header`), Filter in `src/lib/sort.ts`. Entwürfe `docs/design/schrank/schrank-entwuerfe.html` (6 Zustände) und `suche-animation.html` (Animation, verbindlich).
+  - Heute-Karte entfällt. Kopf: links Profil-Monogramm (Personenfarbe, ersetzt „?“), Mitte Logo, rechts Zahnrad (Einstellungen).
+  - Zeile darunter: Lupe · Kategorie-Chips (wischbar, rechts weicher Verlauf) · Sortieren. Klebt beim Scrollen oben als Milchglas, Kacheln laufen darunter durch.
+  - Lupe antippen: Suchfeld wächst aus dem Knopf (gleiche Höhe 44), rechts dreht Sortieren zu Filter. Chips rutschen 12 px darunter und gehen dort bis an beide Bildschirmränder (kein Verlauf, Padding nur im Inhalt). Choreografie: Öffnen = Chips erst runter, dann seitlich, Feld leicht verzögert; Schließen = Feld schnell zu + Chips seitlich, dann hoch. Nie überlappen.
+  - Filter nur noch Person (Alle/Max/Paul) und Saison; Stil entfällt. Aktiver Filter bei geschlossener Suche = rosa Punkt an der Lupe.
+  - Plus-Knopf kleiner (48) im Milchglas mit rosa Plus. Mosaik bleibt bei jeder Sortierung.
+- Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
 - Web: Das Dokument selbst scrollt, damit Inhalte unter der Safari-Leiste durchlaufen. Feste Leisten über `position: fixed` (Web) und `src/lib/bottomInset.ts` (misst, wie viel die Browserleiste unten verdeckt). Web nutzt `Slot` statt `Stack`.
