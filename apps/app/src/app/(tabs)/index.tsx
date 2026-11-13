@@ -80,7 +80,8 @@ export default function Schrank() {
         {/* klebt beim Scrollen oben; reicht bis unter die Statusleiste, Kacheln laufen darunter durch */}
         <View pointerEvents="box-none" style={[{ alignSelf: 'stretch', alignItems: 'center', zIndex: 10, marginTop: -scr.top, paddingTop: scr.top },
           web ? ({ position: 'sticky', top: 0 } as object) : null]}>
-          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, ...glass(t), { borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth, opacity: stuck }]} />
+          {/* Milchglas in Seitenfarbe: oben sieht man keinen Unterschied (Safari tönt danach die Statusleiste), über den Kacheln milchig */}
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, ...glass(t), { backgroundColor: t.bg + 'B8', borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth, opacity: stuck }]} />
           <ClosetBar width={barW} query={query} onQuery={setQuery} chips={chips} filterActive={nFilters > 0}
             onFilter={() => { setDraft(filters); setSheet('filter'); }} onSort={() => setSheet('sort')} />
         </View>
