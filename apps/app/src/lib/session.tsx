@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { loadWardrobe, type Tile, type Wardrobe } from './wardrobe';
-import { loadOutfits, todayIds } from './outfits';
+import { loadOutfits, todayIds, todayWho } from './outfits';
 
 type Ctx = {
   session: Session | null;
@@ -13,7 +13,8 @@ type Ctx = {
   reload: () => Promise<void>;
   /** Teil lokal ändern, ohne neu zu laden */
   patch: (id: string, change: Partial<Tile>) => void;
-  setToday: (ids: string[]) => void;
+  /** Teil heute getragen (bzw. nicht mehr) – lokal, ohne neu zu laden */
+  setToday: (itemId: string, personId: string | null, worn: boolean) => void;
   /** Outfits, Planungen und Trage-Tage neu laden (nach Änderungen an Outfits) */
   reloadOutfits: () => Promise<void>;
 };
@@ -43,7 +44,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const patch = useCallback((id: string, change: Partial<Tile>) =>
     setWardrobe((w) => (w ? { ...w, items: w.items.map((i) => (i.id === id ? { ...i, ...change } : i)) } : w)), []);
-  const setToday = useCallback((ids: string[]) => setWardrobe((w) => (w ? { ...w, today: ids } : w)), []);
+  const setToday = useCallback((itemId: string, personId: string | null, worn: boolean) => setWardrobe((w) => {
+    if (!w) return w;
+    const today = w.today.filter((x) => x !== itemId);
+    const todayBy = { ...w.todayBy };
+    if (worn) { today.push(itemId); todayBy[itemId] = personId; } else delete todayBy[itemId];
+    return { ...w, today, todayBy };
+  }), []);
 
   const wid = wardrobe?.id;
   const reloadOutfits = useCallback(async () => {
@@ -53,7 +60,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!w) return w;
       const ids = new Set(w.items.map((i) => i.id));
       const wears = r.wears.filter((x) => ids.has(x.itemId));
-      return { ...w, outfits: r.outfits, wears, today: todayIds(r.outfits, wears) };
+      return { ...w, outfits: r.outfits, wears, today: todayIds(r.outfits, wears), todayBy: todayWho(r.outfits, wears) };
     });
   }, [wid]);
 

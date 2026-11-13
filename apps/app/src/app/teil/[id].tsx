@@ -48,7 +48,8 @@ export default function Teil() {
 
   const tileInfo = wardrobe?.items.find((i) => i.id === id);
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
-  const owner = wardrobe?.persons.find((p) => p.id === d?.item.owner_id);
+  const ownerList = (wardrobe?.persons ?? []).filter((p) => (d?.item.owner_ids ?? (d?.item.owner_id ? [d.item.owner_id] : [])).includes(p.id));
+  const owner = ownerList.length === 1 ? ownerList[0] : undefined;
   const today = todayLocal();
   const days = useMemo(() => (d ? wornDays(d) : []), [d]);
   const wornToday = days.includes(today);
@@ -76,9 +77,7 @@ export default function Teil() {
     try {
       await setWornToday(id, me?.id ?? null, !wornToday);
       setD((x) => x && { ...x, wears: wornToday ? x.wears.filter((w) => w !== today) : [...x.wears, today] });
-      const ids = new Set(wardrobe?.today ?? []);
-      if (wornToday) ids.delete(id); else ids.add(id);
-      setToday([...ids]);
+      setToday(id, me?.id ?? null, !wornToday);
       reloadOutfits().catch(() => {}); // Statistik und Wochenleiste aktuell halten
       toast.show(wornToday ? 'Heute getragen entfernt.' : 'Als heute getragen eingetragen.');
     } catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
@@ -127,7 +126,7 @@ export default function Teil() {
           <View style={{ gap: 4, marginTop: space.md }}>
             <Text style={[s.title, { color: t.ink }]}>{it.name}</Text>
             <Text style={{ fontSize: 15, color: t.inkMuted }}>
-              {[it.brand, paid != null ? formatEur(paid) : null, owner ? `gehört ${owner.name}` : null].filter(Boolean).join(' · ')}
+              {[it.brand, paid != null ? formatEur(paid) : null, ownerList.length ? `gehört ${ownerList.map((p) => p.name).join(' und ')}` : null].filter(Boolean).join(' · ')}
             </Text>
           </View>
 

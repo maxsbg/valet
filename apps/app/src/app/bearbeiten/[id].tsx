@@ -53,7 +53,7 @@ export default function Bearbeiten() {
       const tile = wardrobe?.items.find((i) => i.id === id);
       const colorChanged = color !== orig!.color;
       patch(id, {
-        name: change.name, brand: change.brand, category: change.category, ownerId: change.owner_id, price: price ?? list,
+        name: change.name, brand: change.brand, category: change.category, ownerId: change.owner_id, owners: change.owner_ids, price: price ?? list,
         qty, reversible: change.reversible, seasons: change.seasons, style: change.style, purchaseDate: date, color,
         hex: colorChanged ? nameToHex(color) ?? tile?.hex ?? null : tile?.hex ?? null,
       });

@@ -21,14 +21,14 @@ function toIso(de: string): string | null | undefined {
 }
 
 export type ItemForm = {
-  name: string; brand: string; category: string; owner_id: string | null; price: string; qty: string;
+  name: string; brand: string; category: string; owners: string[]; price: string; qty: string;
   colors: string[]; size: string; list: string; date: string; shop: string; link: string;
   seasons: string[]; style: string | null; material: string; reversible: boolean; notes: string;
 };
 
 export function toForm(i: ItemRow): ItemForm {
   return {
-    name: i.name ?? '', brand: i.brand ?? '', category: i.category, owner_id: i.owner_id, price: eur(i.price_paid),
+    name: i.name ?? '', brand: i.brand ?? '', category: i.category, owners: i.owner_ids ?? (i.owner_id ? [i.owner_id] : []), price: eur(i.price_paid),
     qty: String(i.qty ?? 1), colors: (i.color ?? '').split('/').map((c) => c.trim()).filter(Boolean), size: i.size ?? '',
     list: eur(i.list_price), date: toDe(i.purchase_date), shop: i.shop ?? '', link: i.link ?? '',
     seasons: i.seasons ?? [], style: i.style, material: i.material ?? '', reversible: !!i.reversible, notes: i.notes ?? '',
@@ -37,7 +37,7 @@ export function toForm(i: ItemRow): ItemForm {
 
 export function emptyForm(ownerId: string | null): ItemForm {
   return {
-    name: '', brand: '', category: '', owner_id: ownerId, price: '', qty: '1', colors: [], size: '', list: '', date: '',
+    name: '', brand: '', category: '', owners: ownerId ? [ownerId] : [], price: '', qty: '1', colors: [], size: '', list: '', date: '',
     shop: '', link: '', seasons: [], style: null, material: '', reversible: false, notes: '',
   };
 }
@@ -54,7 +54,9 @@ export function readForm(f: ItemForm) {
   return {
     change: {
       // Textfelder sind in der Datenbank „not null default ''“ → leer statt null speichern
-      name: f.name.trim(), brand: f.brand.trim(), category: f.category || 'sonstiges', owner_id: f.owner_id, price_paid: price,
+      name: f.name.trim(), brand: f.brand.trim(), category: f.category || 'sonstiges',
+      // mehrere Besitzer; owner_id bleibt Spiegel für die Statistik (genau einer → dessen ID, sonst null)
+      owner_ids: f.owners, owner_id: f.owners.length === 1 ? f.owners[0]! : null, price_paid: price,
       qty: Math.max(1, parseInt(f.qty, 10) || 1), color: f.colors.join('/'), size: f.size.trim(), list_price: list,
       purchase_date: date, shop: f.shop.trim(), link: f.link.trim(), seasons: f.seasons, style: f.style ?? '',
       material: f.material.trim(), reversible: f.reversible, notes: f.notes.trim(),
@@ -93,12 +95,13 @@ export function ItemFormFields({ f, onChange, persons, open, onOpen }: Props) {
       {Field({ label: 'Marke', k: 'brand', placeholder: 'z. B. COS' })}
       <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Kategorie <Text style={{ fontWeight: '400' }}>· optional, sonst „Sonstiges“</Text></Text>
       <View style={s.wrap}>{CATEGORIES.map((c) => <Chip key={c.id} label={c.label} selected={f.category === c.id} onPress={() => set('category', f.category === c.id ? '' : c.id)} />)}</View>
-      <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Gehört</Text>
+      <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Gehört <Text style={{ fontWeight: '400' }}>· mehrere möglich</Text></Text>
       <View style={s.wrap}>
-        {persons.map((p) => (
-          <Chip key={p.id} label={p.name} dot={PERSON[personKey(p.color)]} selected={f.owner_id === p.id} onPress={() => set('owner_id', p.id)} />
-        ))}
-        <Chip label="Niemand" selected={!f.owner_id} onPress={() => set('owner_id', null)} />
+        {persons.map((p) => {
+          const on = f.owners.includes(p.id);
+          return <Chip key={p.id} label={p.name} dot={PERSON[personKey(p.color)]} selected={on}
+            onPress={() => set('owners', on ? f.owners.filter((x) => x !== p.id) : [...f.owners, p.id])} />;
+        })}
       </View>
       <View style={s.row}>
         {Field({ label: 'Bezahlt (€ pro Stück)', k: 'price', placeholder: '0,00', keyboardType: 'decimal-pad' })}

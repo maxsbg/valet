@@ -3,7 +3,7 @@ import { imageUrl, todayLocal } from './wardrobe';
 import type { Picture } from './cutout';
 
 export type ItemRow = {
-  id: string; wardrobe_id: string; owner_id: string | null; name: string; brand: string | null; category: string;
+  id: string; wardrobe_id: string; owner_id: string | null; owner_ids: string[] | null; highlight_color: string | null; name: string; brand: string | null; category: string;
   color: string | null; alt_color: string | null; size: string | null; material: string | null; style: string | null;
   seasons: string[] | null; qty: number | null; price_paid: number | null; list_price: number | null; purchase_date: string | null;
   shop: string | null; link: string | null; notes: string | null; status: 'wash' | 'repair' | 'lent' | 'out' | 'sold' | null;
@@ -52,7 +52,7 @@ export async function setStatus(itemId: string, status: ItemRow['status'], lentT
   if (r.error) throw r.error;
 }
 
-export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'owner_id' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible'>>;
+export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'owner_id' | 'owner_ids' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible'>>;
 
 export async function updateItem(id: string, change: ItemChange) {
   const r = await supabase.from('items').update(change).eq('id', id);

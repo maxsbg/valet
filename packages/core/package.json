@@ -8,5 +8,8 @@
   "scripts": {
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@valet/ui": "workspace:*"
   }
 }
