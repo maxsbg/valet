@@ -140,9 +140,9 @@ export default function BilderZuordnen() {
 
           {current && (
             <>
-              <View style={[s.stage, { backgroundColor: '#fff', boxShadow: `inset 0 0 28px 4px ${glow}73, 0 2px 8px rgba(42,26,29,0.10)` }]}>
+              <View style={[s.stage, { backgroundColor: '#1d1b1e', boxShadow: `inset 0 0 28px 4px ${glow}55, 0 2px 8px rgba(42,26,29,0.18)` }]}>
                 {current.pic ? <Image source={{ uri: current.pic.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} />
-                  : <Text style={[s.small, { color: '#b23a3a' }]}>Foto ließ sich nicht öffnen: {current.error}</Text>}
+                  : <Text style={[s.small, { color: '#ff9a8f' }]}>Foto ließ sich nicht öffnen: {current.error}</Text>}
               </View>
               <Text style={[s.small, { color: t.inkMuted }]}>
                 {current.pic ? (current.pic.kind === 'cutout' ? 'Freigestellt' : 'Original') : 'Fehler'} · noch {photos.length} Fotos{pending ? `, ${pending} in Arbeit${step ? ` (${step.replace(/ …$/, '')})` : ''}` : ''}
