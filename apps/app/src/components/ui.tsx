@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
 import { ScrollView } from 'react-native';
-import { Icons, Silhouette } from './Icon';
+import { Icons } from './Icon';
+import { ItemPicture } from './ItemPicture';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 
 /** Kopfzeile: Hilfe links, Schriftzug „valet“ mittig, Ansicht-Einstellungen rechts */
@@ -53,7 +54,7 @@ export function SearchField({ value, onChange, onClose }: { value: string; onCha
 }
 
 /** Gelbe Leiste „Heute“ über dem Schrank: leer mit „Outfit planen“, sonst die Teile von heute */
-export function TodayBar({ items, onPress }: { items: { id: string; category: string; hex: string | null }[]; onPress?: () => void }) {
+export function TodayBar({ items, onPress }: { items: { id: string; category: string; hex: string | null; thumb: string | null }[]; onPress?: () => void }) {
   return (
     <Pressable onPress={onPress} style={s.today} accessibilityRole="button">
       <View>
@@ -63,7 +64,7 @@ export function TodayBar({ items, onPress }: { items: { id: string; category: st
       {items.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1, marginLeft: space.sm }} contentContainerStyle={{ gap: 6 }}>
           {items.map((i) => (
-            <View key={i.id} style={s.todayThumb}><Silhouette category={i.category} color={i.hex ?? '#8e8e93'} /></View>
+            <View key={i.id} style={s.todayThumb}><ItemPicture uri={i.thumb} inset={4} category={i.category} color={i.hex ?? '#8e8e93'} /></View>
           ))}
         </ScrollView>
       ) : (
@@ -123,7 +124,7 @@ const s = StyleSheet.create({
   today: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 64, backgroundColor: '#FBF1C2', borderColor: '#F9E58A', borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm },
   todayTitle: { fontFamily: DISPLAY, fontSize: 18, color: '#2a1a1d' },
   todaySub: { fontSize: 13, color: '#6e5e60' },
-  todayThumb: { width: 46, height: 46, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(42,26,29,0.08)' },
+  todayThumb: { width: 46, height: 46, overflow: 'hidden', borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(42,26,29,0.08)' },
   todayAction: { fontSize: 15, fontWeight: '600', color: '#B8430F' },
   fab: { position: 'absolute', zIndex: 10, right: space.md, width: 56, height: 56, borderRadius: 28, backgroundColor: '#FF641F', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(42,26,29,0.22)' },
   toast: { position: 'absolute', zIndex: 20, alignSelf: 'center', backgroundColor: '#2a1a1d', borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, boxShadow: '0 6px 20px rgba(42,26,29,0.2)' },

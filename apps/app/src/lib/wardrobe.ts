@@ -20,6 +20,10 @@ export type Tile = {
   style: string | null;
   /** Hauptfarbe für den Farbschein (aus der Farbanalyse des Bildes, sonst aus dem Farbnamen) */
   hex: string | null;
+  /** Vorschaubild (400 px) für Kacheln */
+  thumb: string | null;
+  /** Hauptbild (freigestellt oder Original) für die Detailseite */
+  image: string | null;
 };
 export type Wardrobe = { id: string; name: string; persons: Person[]; items: Tile[]; /** heute getragen oder fürs heutige Outfit geplant */ today: string[] };
 
@@ -36,16 +40,22 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
       .from('items')
       .select('id,name,brand,category,color,owner_id,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
-    supabase.from('item_images').select('item_id,side,colors'),
+    supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
     supabase.from('wears').select('item_id').eq('worn_on', today),
     supabase.from('outfit_plans').select('outfit_id, outfits(outfit_items(item_id))').eq('plan_date', today),
   ]);
   for (const r of [persons, items, images, wears, plans]) if (r.error) throw r.error;
   const colorsBy = new Map<string, string>();
+  const thumbBy = new Map<string, string>();
+  const imageBy = new Map<string, string>();
   for (const im of images.data ?? []) {
+    const key = `${im.item_id}:${side(im.side)}`;
+    if (im.kind === 'thumb') { thumbBy.set(key, imageUrl(im.storage_path)); continue; }
+    // freigestelltes Bild hat Vorrang vor dem Original
+    if (im.kind === 'cutout' || !imageBy.has(key)) imageBy.set(key, imageUrl(im.storage_path));
     const c = Array.isArray(im.colors) ? (im.colors as { h: string; s: number }[]) : [];
     const top = [...c].sort((a, b) => b.s - a.s)[0];
-    if (top?.h) colorsBy.set(`${im.item_id}:${(im.side ?? 'A').trim()}`, top.h);
+    if (top?.h) colorsBy.set(key, top.h);
   }
   const tiles: Tile[] = (items.data ?? []).map((i) => ({
     id: i.id,
@@ -64,7 +74,9 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     purchaseDate: i.purchase_date,
     seasons: i.seasons ?? [],
     style: i.style,
-    hex: colorsBy.get(`${i.id}:${(i.main_side ?? 'A').trim()}`) ?? colorsBy.get(`${i.id}:A`) ?? nameToHex(i.color),
+    hex: pick(colorsBy, i.id, i.main_side) ?? nameToHex(i.color),
+    thumb: pick(thumbBy, i.id, i.main_side),
+    image: pick(imageBy, i.id, i.main_side),
   }));
   const todayIds = new Set<string>();
   for (const x of wears.data ?? []) todayIds.add(x.item_id);
@@ -72,6 +84,14 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     for (const oi of p.outfits?.outfit_items ?? []) todayIds.add(oi.item_id);
   return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, today: [...todayIds] };
 }
+
+/** Seite eines Bildes ('a'/'b'); ältere Daten hatten Großbuchstaben oder Leerzeichen */
+const side = (v: string | null) => (v ?? 'a').trim().toLowerCase();
+/** Wert für die Hauptseite eines Teils, sonst Seite A */
+const pick = (m: Map<string, string>, id: string, main: string | null) => m.get(`${id}:${side(main)}`) ?? m.get(`${id}:a`) ?? null;
+
+/** Öffentliche Adresse eines Bildes im Bucket „items“ (kein Netzaufruf) */
+export const imageUrl = (path: string) => supabase.storage.from('items').getPublicUrl(path).data.publicUrl;
 
 export const NAMED: Record<string, string> = {
   schwarz: '#1c1c1e', anthrazit: '#3a3a3c', grau: '#8e8e93', hellgrau: '#c7c7cc', weiß: '#e8e6e1', creme: '#efe6d2',
@@ -82,6 +102,21 @@ export const NAMED: Record<string, string> = {
 export function nameToHex(name: string | null): string | null {
   const first = name?.split('/')[0]?.trim().toLowerCase();
   return first ? NAMED[first] ?? null : null;
+}
+
+/** Nächstliegender Farbname zu einer Hex-Farbe (Vorschlag beim Anlegen) */
+export function hexToName(hex: string): string | null {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [r, g, b] = rgb(hex);
+  if ([r, g, b].some(Number.isNaN)) return null;
+  let best: string | null = null, bestD = Infinity;
+  for (const [name, h] of Object.entries(NAMED)) {
+    const [r2, g2, b2] = rgb(h);
+    // gewichteter Abstand (Auge reagiert stärker auf Grün)
+    const d = 2 * (r - r2) ** 2 + 4 * (g - g2) ** 2 + 3 * (b - b2) ** 2;
+    if (d < bestD) { bestD = d; best = name; }
+  }
+  return best && best[0].toUpperCase() + best.slice(1);
 }
 
 /** Personenfarbe aus dem gespeicherten Namen („Rosa“, „Rot“) */

@@ -45,7 +45,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - Verworfen: Kantenfilter/Farbsaum (zeichnet Kanten unpassend nach), BiRefNet im Browser (iPhone stürzt ab), Server-Lösungen (ZeroGPU-Kontingent, Azure nicht berechtigt, Modal ohne Karte nur 1 $). Testseite: `/valet/freistell-rmbg.html`.
 
 ## Nächste Schritte
-1. **Teil hinzufügen**: Foto → Freistellen (alt2) → „Passt / Original behalten / Nochmal“ → Formular → Bild + Vorschaubild in Supabase-Bucket `items` (Bucket + Regeln noch anlegen) → Kacheln zeigen echte Bilder.
-2. Alte Bilder aus dem alten Valet importieren.
+1. ~~Teil hinzufügen~~ (Seite `src/app/neu.tsx`, Formular gemeinsam mit Bearbeiten in `src/components/ItemForm.tsx`). Bucket `items` per `supabase/migrations/0002_storage_items.sql` (öffentlich lesbar, Schreiben nur Mitglieder). Ablage `<wardrobe>/<item>/<seite>-<stempel>.webp` + `-thumb.webp`; in `item_images` je Seite eine Zeile `cutout`/`original` (mit Farben) und eine `thumb`. Kacheln zeigen nur `thumb`-Zeilen, sonst Silhouette.
+2. Alte Bilder aus dem alten Valet importieren (dabei auch `thumb`-Zeilen + Vorschaubilder anlegen).
 3. Outfits-Seite, Statistik, Paul einladen.
 4. Frischer Datenimport vor dem Umstieg.

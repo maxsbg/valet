@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Icons, Silhouette } from './Icon';
+import { Icons } from './Icon';
+import { ItemPicture } from './ItemPicture';
 import { tile, DISPLAY } from '@/lib/theme';
 import type { Tile } from '@/lib/wardrobe';
 
@@ -49,7 +50,7 @@ export function ItemTile({ item, width, owner, look = 'glow', daysLeft, onPress 
       style={({ pressed }) => [s.tile, { width, height, boxShadow: shadow, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
       <View style={s.img}>
-        <Silhouette category={item.category} color={c} />
+        <ItemPicture uri={item.thumb} category={item.category} color={c} />
       </View>
       {StatusIcon && !item.isWish && (
         <Badge style={s.tl}><StatusIcon color={INK} /></Badge>
