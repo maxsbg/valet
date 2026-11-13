@@ -46,6 +46,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 
 ## Nächste Schritte
 1. ~~Teil hinzufügen~~ (Seite `src/app/neu.tsx`, Formular gemeinsam mit Bearbeiten in `src/components/ItemForm.tsx`). Bucket `items` per `supabase/migrations/0002_storage_items.sql` (öffentlich lesbar, Schreiben nur Mitglieder). Ablage `<wardrobe>/<item>/<seite>-<stempel>.webp` + `-thumb.webp`; in `item_images` je Seite eine Zeile `cutout`/`original` (mit Farben) und eine `thumb`. Kacheln zeigen nur `thumb`-Zeilen, sonst Silhouette.
-2. Alte Bilder aus dem alten Valet importieren (dabei auch `thumb`-Zeilen + Vorschaubilder anlegen).
+2. ~~Alte Bilder~~ → **manuell zuordnen**: Seite `src/app/bilder-zuordnen.tsx` (über Statistik). Mehrere Fotos wählen → nacheinander freistellen (PNG mit durchsichtigem Rand wird direkt übernommen) → je Bild ein Teil ohne Bild antippen (ähnliche Farbe zuerst, Suche) → `saveImage`. Logik in `src/lib/assign.ts`.
+   Automatisch aus dem alten Artifact geht **nicht** (getestet): kein Datei-Download (`downloads` nicht freigeschaltet, freischalten geht nicht, weil Paul dort mitschreibt), kein Teilen-Menü, kein Netz (fetch zu Supabase: „Failed to fetch“); auch die Artifact-Tools (list_assets usw.) verweigern den Zugriff. Was geht: Bild gedrückt halten → „Zu Fotos hinzufügen“ (Teil öffnen → Export-Symbol am Bild).
 3. Outfits-Seite, Statistik, Paul einladen.
 4. Frischer Datenimport vor dem Umstieg.

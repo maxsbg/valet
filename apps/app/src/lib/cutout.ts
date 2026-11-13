@@ -73,6 +73,28 @@ export async function original(file: Blob): Promise<Picture> {
   return { kind: 'original', main, thumb, preview: URL.createObjectURL(main), colors: [] };
 }
 
+/**
+ * Bild aus dem alten Valet übernehmen: verkleinern, Vorschaubild erzeugen, Farben übernehmen oder berechnen.
+ * kind = null → am Bild entscheiden: durchsichtiger Rand = freigestellt.
+ */
+export async function legacyPicture(file: Blob, kind: 'cutout' | 'original' | null, colors: Picture['colors'] | null): Promise<Picture> {
+  const c = await fileToCanvas(file, MAIN_EDGE);
+  const k = kind ?? (transparentEdge(c) ? 'cutout' : 'original');
+  const main = await toWebp(c, MAIN_EDGE, 0.9);
+  const thumb = await toWebp(c, THUMB_EDGE, 0.85);
+  return { kind: k, main, thumb, preview: '', colors: colors ?? (k === 'cutout' ? mainColors(c) : []) };
+}
+
+/** true, wenn der Bildrand überwiegend durchsichtig ist (freigestelltes Teil) */
+function transparentEdge(c: HTMLCanvasElement): boolean {
+  const d = c.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, c.width, c.height).data;
+  let n = 0, t = 0;
+  const at = (x: number, y: number) => { n++; if (d[(y * c.width + x) * 4 + 3] < 128) t++; };
+  for (let x = 0; x < c.width; x += 2) { at(x, 0); at(x, c.height - 1); }
+  for (let y = 0; y < c.height; y += 2) { at(0, y); at(c.width - 1, y); }
+  return n > 0 && t / n > 0.5;
+}
+
 async function fileToCanvas(file: Blob, maxEdge: number): Promise<HTMLCanvasElement> {
   const url = URL.createObjectURL(file);
   try {

@@ -87,7 +87,7 @@ export async function createItem(wardrobeId: string, data: NewItem, picture?: Pi
 const ext = (b: Blob) => (b.type === 'image/png' ? 'png' : b.type === 'image/jpeg' ? 'jpg' : 'webp');
 
 /** Speichert Bild + Vorschaubild einer Seite. Neuer Dateiname bei jedem Speichern, damit der Browser-Zwischenspeicher nie ein altes Bild zeigt. */
-export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 'b', p: Picture) {
+export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 'b', p: Picture, legacyId: string | null = null) {
   const stamp = Date.now().toString(36);
   const base = `${wardrobeId}/${itemId}/${side}-${stamp}`;
   const mainPath = `${base}.${ext(p.main)}`;
@@ -104,8 +104,8 @@ export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 
   const old = await supabase.from('item_images').select('storage_path').eq('item_id', itemId).eq('side', side).in('kind', ['cutout', 'original', 'thumb']);
   await supabase.from('item_images').delete().eq('item_id', itemId).eq('side', side).in('kind', ['cutout', 'original', 'thumb']);
   const r = await supabase.from('item_images').insert([
-    { item_id: itemId, side, kind: p.kind, storage_path: mainPath, colors: p.colors },
-    { item_id: itemId, side, kind: 'thumb', storage_path: thumbPath, colors: null },
+    { item_id: itemId, side, kind: p.kind, storage_path: mainPath, colors: p.colors, legacy_id: legacyId },
+    { item_id: itemId, side, kind: 'thumb', storage_path: thumbPath, colors: null, legacy_id: legacyId },
   ]);
   if (r.error) { await bucket.remove([mainPath, thumbPath]); throw r.error; }
   const stale = (old.data ?? []).map((x) => x.storage_path as string);
