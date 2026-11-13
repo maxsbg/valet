@@ -21,4 +21,6 @@ export { tile, space, radius, fonts };
 export const DISPLAY = 'Gloock_400Regular';
 
 /** Höhe der schwebenden Tab-Leiste (für Abstände am Seitenende) */
-export const TAB_BAR = 64;
+/** Tab-Leiste (Maße wie Apple Music, iOS 26): Höhe und Abstand links/rechts */
+export const TAB_BAR = 58;
+export const TAB_SIDE = 21;

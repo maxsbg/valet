@@ -7,8 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
  * Die App ist auf dem Web so hoch wie der größtmögliche Bildschirm (100lvh), damit der Inhalt
  * hinter der durchscheinenden Leiste sichtbar ist. Was unten bedienbar sein muss, wird um diesen Wert angehoben.
  */
+/** Als Web-App vom Home-Bildschirm geöffnet (ohne Safari-Leisten) */
+export function isStandalone(): boolean {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+  return (navigator as { standalone?: boolean }).standalone === true || window.matchMedia?.('(display-mode: standalone)').matches === true;
+}
+
 function browserBar(): number {
-  if (Platform.OS !== 'web' || typeof document === 'undefined') return 0;
+  if (Platform.OS !== 'web' || typeof document === 'undefined' || isStandalone()) return 0;
   const probe = document.createElement('div');
   probe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:100lvh;visibility:hidden;pointer-events:none';
   document.body.appendChild(probe);
@@ -31,4 +37,15 @@ export function useBottomInset(): number {
     return () => { window.removeEventListener('resize', f); window.visualViewport?.removeEventListener('resize', f); clearTimeout(id); };
   }, []);
   return bar > 0 ? bar : insets.bottom;
+}
+
+/**
+ * Abstand der schwebenden Tab-Leiste zum unteren Rand, wie bei Apple Music:
+ * im Browser direkt über der Safari-Leiste, sonst 25 pt über dem Bildschirmrand (mit Home-Indikator), ohne Indikator 12 pt.
+ */
+export function useTabBarBottom(): number {
+  const insets = useSafeAreaInsets();
+  const bar = useBottomInset();
+  if (Platform.OS === 'web' && bar > insets.bottom) return bar;
+  return insets.bottom > 0 ? Math.max(insets.bottom - 9, 12) : 12;
 }
