@@ -413,7 +413,7 @@ async function toCanvas(file, maxE) {
 function blob(c, type, q) { return new Promise(r => c.toBlob(r, type, q)); }
 
 // Ganzer Ablauf. mode: 'alt' (wie im alten Valet) oder 'neu' (verbessert)
-async function cutout(file, mode, onStep) {
+async function cutout(file, mode = 'alt2', onStep) {
   try { return await cutout1(file, mode, onStep); }
   catch (e) { if (e && e.gpuLost) { onStep && onStep('Grafikchip ausgefallen – rechne mit Prozessor …', 0); return cutout1(file, mode, onStep); } throw e; }
 }
