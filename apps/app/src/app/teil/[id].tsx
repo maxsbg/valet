@@ -32,7 +32,7 @@ export default function Teil() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { wardrobe, session, patch, setToday } = useSession();
+  const { wardrobe, session, patch, setToday, reloadOutfits } = useSession();
   const [d, setD] = useState<ItemDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,6 +55,12 @@ export default function Teil() {
   const setMates = useMemo(() => (d?.item.set_id ? (wardrobe?.items ?? []).filter((i) => i.setId === d.item.set_id && i.id !== id) : []), [d, wardrobe, id]);
 
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  /** Outfits haben meist keinen Namen: „Outfit mit Jeans, Cap“ aus den anderen Teilen */
+  const outfitLabel = (oid: string) => {
+    const others = (wardrobe?.outfits.find((x) => x.id === oid)?.pieces ?? []).filter((p) => p.id !== id)
+      .map((p) => wardrobe?.items.find((i) => i.id === p.id)?.name).filter(Boolean);
+    return others.length ? `mit ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` +${others.length - 2}` : ''}` : 'Outfit';
+  };
 
   if (err) return <View style={[s.page, { backgroundColor: t.bg, paddingTop: insets.top }]}><TopBar onBack={back} /><Empty title="Nicht gefunden" text={err} /></View>;
   if (!d) return <View style={[s.page, { backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' }]}><ActivityIndicator color={t.accent} /></View>;
@@ -73,6 +79,7 @@ export default function Teil() {
       const ids = new Set(wardrobe?.today ?? []);
       if (wornToday) ids.delete(id); else ids.add(id);
       setToday([...ids]);
+      reloadOutfits().catch(() => {}); // Statistik und Wochenleiste aktuell halten
       toast.show(wornToday ? 'Heute getragen entfernt.' : 'Als heute getragen eingetragen.');
     } catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
     finally { setBusy(false); }
@@ -150,8 +157,8 @@ export default function Teil() {
           <View style={s.actions}>
             <Action label={wornToday ? 'Heute getragen' : 'Heute tragen'} active={wornToday} disabled={busy} onPress={toggleWorn}
               icon={(c) => <Icons.check color={c} />} />
-            <Action label="Outfit damit" onPress={() => toast.show('Kommt mit der Outfit-Seite.')} icon={(c) => <Icons.layers color={c} size={22} />} />
-            <Action label="Reservieren" onPress={() => toast.show('Kommt mit der Outfit-Seite.')} icon={(c) => <Icons.calendar color={c} />} />
+            <Action label="Outfit damit" onPress={() => router.push(`/outfit-bauen?item=${id}`)} icon={(c) => <Icons.layers color={c} size={22} />} />
+            <Action label="Reservieren" onPress={() => toast.show('Einzelne Teile reservieren kommt später. Outfits planen reserviert die Teile schon.')} icon={(c) => <Icons.calendar color={c} />} />
             <Action label="Status" active={!!it.status} onPress={() => { setLentTo(it.lent_to ?? ''); setSheet(true); }} icon={(c) => <Icons.closet color={c} />} />
           </View>
 
@@ -176,10 +183,12 @@ export default function Teil() {
             {d.outfits.length > 0 && (
               <View style={[s.list, { backgroundColor: t.surface, borderColor: t.hairline }]}>
                 {d.outfits.map((o, n) => (
-                  <View key={o.id} style={[s.listRow, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
-                    <Text style={{ flex: 1, fontSize: 16, color: t.ink }} numberOfLines={1}>{o.name || 'Outfit'}</Text>
+                  <Pressable key={o.id} onPress={() => router.push(`/outfit/${o.id}`)} accessibilityRole="button"
+                    style={({ pressed }) => [s.listRow, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }, { opacity: pressed ? 0.6 : 1 }]}>
+                    <Text style={{ flex: 1, fontSize: 16, color: t.ink }} numberOfLines={1}>{o.name || outfitLabel(o.id)}</Text>
                     {!!o.occasions?.length && <Text style={{ fontSize: 13, color: t.inkMuted }}>{o.occasions.join(', ')}</Text>}
-                  </View>
+                    <Icons.chevron color={t.inkMuted} />
+                  </Pressable>
                 ))}
               </View>
             )}

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { loadOutfits, todayIds, type Outfit, type Wear } from './outfits';
 
 export type Person = { id: string; name: string; color: string | null; user_id: string | null; item_order: string[] | null };
 export type Tile = {
@@ -14,6 +15,11 @@ export type Tile = {
   setId: string | null;
   isWish: boolean;
   price: number | null;
+  pricePaid: number | null;
+  listPrice: number | null;
+  soldPrice: number | null;
+  payers: { personId: string | null; amount: number | null }[] | null;
+  material: string | null;
   createdAt: string;
   purchaseDate: string | null;
   seasons: string[];
@@ -25,7 +31,14 @@ export type Tile = {
   /** Hauptbild (freigestellt oder Original) für die Detailseite */
   image: string | null;
 };
-export type Wardrobe = { id: string; name: string; persons: Person[]; items: Tile[]; /** heute getragen oder fürs heutige Outfit geplant */ today: string[] };
+export type Wardrobe = {
+  id: string; name: string; persons: Person[]; items: Tile[];
+  outfits: Outfit[];
+  /** einzeln eingetragene Trage-Tage */
+  wears: Wear[];
+  /** heute getragen oder fürs heutige Outfit geplant */
+  today: string[];
+};
 
 /** Lädt den ersten Kleiderschrank, in dem der angemeldete Nutzer Mitglied ist. */
 export async function loadWardrobe(): Promise<Wardrobe | null> {
@@ -33,18 +46,16 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   if (e1) throw e1;
   const w = ws?.[0];
   if (!w) return null;
-  const today = todayLocal();
-  const [persons, items, images, wears, plans] = await Promise.all([
+  const [persons, items, images, rest] = await Promise.all([
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,color,owner_id,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,color,owner_id,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
-    supabase.from('wears').select('item_id').eq('worn_on', today),
-    supabase.from('outfit_plans').select('outfit_id, outfits(outfit_items(item_id))').eq('plan_date', today),
+    loadOutfits(w.id),
   ]);
-  for (const r of [persons, items, images, wears, plans]) if (r.error) throw r.error;
+  for (const r of [persons, items, images]) if (r.error) throw r.error;
   const colorsBy = new Map<string, string>();
   const thumbBy = new Map<string, string>();
   const imageBy = new Map<string, string>();
@@ -70,6 +81,11 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     setId: i.set_id,
     isWish: !!i.is_wish,
     price: i.price_paid ?? i.list_price ?? null,
+    pricePaid: i.price_paid,
+    listPrice: i.list_price,
+    soldPrice: i.sold_price,
+    payers: Array.isArray(i.payers) ? (i.payers as { person_id?: string | null; amount?: number | null }[]).map((p) => ({ personId: p.person_id ?? null, amount: p.amount ?? null })) : null,
+    material: i.material,
     createdAt: i.created_at,
     purchaseDate: i.purchase_date,
     seasons: i.seasons ?? [],
@@ -78,11 +94,9 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     thumb: pick(thumbBy, i.id, i.main_side),
     image: pick(imageBy, i.id, i.main_side),
   }));
-  const todayIds = new Set<string>();
-  for (const x of wears.data ?? []) todayIds.add(x.item_id);
-  for (const p of (plans.data ?? []) as unknown as { outfits: { outfit_items: { item_id: string }[] } | null }[])
-    for (const oi of p.outfits?.outfit_items ?? []) todayIds.add(oi.item_id);
-  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, today: [...todayIds] };
+  const ids = new Set(tiles.map((t) => t.id));
+  const wears = rest.wears.filter((x) => ids.has(x.itemId));
+  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, outfits: rest.outfits, wears, today: todayIds(rest.outfits, wears) };
 }
 
 /** Seite eines Bildes ('a'/'b'); ältere Daten hatten Großbuchstaben oder Leerzeichen */
