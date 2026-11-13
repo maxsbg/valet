@@ -88,7 +88,10 @@ export function ClosetBar({ width: W, query, onQuery, chips, filterActive, onFil
       { scale: v.sw.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
     ],
   };
-  const fade = Platform.OS === 'web' ? ({ backgroundImage: `linear-gradient(90deg, ${t.bg}00, ${t.bg})` } as object) : null;
+  // Rechter Verlauf zu Sortieren: im Web als Maske (passt auf Seitenfarbe und Milchglas), sonst als Fläche in Seitenfarbe
+  const web = Platform.OS === 'web';
+  const mask = 'linear-gradient(90deg, #000 calc(100% - 28px), transparent)';
+  const fade = { backgroundImage: `linear-gradient(90deg, ${t.bg}00, ${t.bg})` } as object;
 
   return (
     <Animated.View style={{ width: W, height: v.cy.interpolate({ inputRange: [0, 1], outputRange: [BTN + 2 * ROW_PAD, BTN + 2 * ROW_PAD + DROP] }) }}>
@@ -98,7 +101,7 @@ export function ClosetBar({ width: W, query, onQuery, chips, filterActive, onFil
         top: v.cy.interpolate({ inputRange: [0, 1], outputRange: [ROW_PAD, ROW_PAD + DROP] }),
         left: v.cx.interpolate({ inputRange: [0, 1], outputRange: [PAD + BTN + GAP, 0] }),
         width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [W - 2 * (PAD + BTN + GAP), W] }),
-      }]}>
+      }, web && !open ? ({ maskImage: mask, WebkitMaskImage: mask } as object) : null]}>
         <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: GAP }}>
           <Animated.View style={{ width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [0, PAD - GAP] }) }} />
           {chips.map((c) => (
@@ -108,7 +111,7 @@ export function ClosetBar({ width: W, query, onQuery, chips, filterActive, onFil
           ))}
           <View style={{ width: PAD - GAP + 12 }} />
         </ScrollView>
-        <Animated.View pointerEvents="none" style={[s.fade, fade, { opacity: v.cx.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]} />
+        {!web && <Animated.View pointerEvents="none" style={[s.fade, fade, { opacity: v.cx.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]} />}
       </Animated.View>
 
       {/* Lupe → Suchfeld */}
