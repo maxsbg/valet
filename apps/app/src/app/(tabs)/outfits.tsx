@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Page } from '@/components/Page';
 import { Header, Chip, Empty, Fab, useToast } from '@/components/ui';
 import { Icons } from '@/components/Icon';
 import { OutfitCard } from '@/components/OutfitCard';
@@ -85,7 +86,7 @@ export default function Outfits() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
+      <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
         <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
 
@@ -144,7 +145,7 @@ export default function Outfits() {
             <Empty title="Noch keine Outfits" text="Stell dir aus deinen Teilen ein Outfit zusammen und speichere es." />
           )}
         </View>
-      </ScrollView>
+      </Page>
       <Fab bottom={scr.fabBottom} label="Neues Outfit" onPress={() => router.push('/outfit-bauen')} />
 
       {/* Tag: geplante Outfits, Outfit wählen */}

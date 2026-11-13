@@ -45,7 +45,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
-- Web: Das Dokument selbst scrollt, damit Inhalte unter der Safari-Leiste durchlaufen. Feste Leisten über `position: fixed` (Web) und `src/lib/bottomInset.ts` (misst, wie viel die Browserleiste unten verdeckt). Web nutzt `Slot` statt `Stack`.
+- Web: Das Dokument selbst scrollt (kein innerer Scroll-Kasten), nur so zeigt Safari den Inhalt auch unter seiner Leiste. Seiten nutzen `src/components/Page.tsx` (iOS: ScrollView, Web: normaler Fluss + Scroll-Stand je Seite gemerkt); klebende Leisten über `STICKY`, feste (Tab-Leiste, Plus, Hinweise) über `position: fixed` (`FIXED` in `ui.tsx`). Abstände unten aus `src/lib/bottomInset.ts`. Web nutzt `Slot` statt `Stack` (Stack schneidet jede Seite in einen Rahmen) → Seiten werden beim Wechsel abgebaut, Zustand wie Kategorie/Filter bei Bedarf modulweit merken.
 
 ## Freistellen (entschieden)
 - Modell **RMBG-1.4 von BRIA** (nur nicht-kommerziell!), im Browser auf dem Grafikchip (WebGPU, 1024 px), sonst Prozessor (512 px).

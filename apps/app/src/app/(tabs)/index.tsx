@@ -4,6 +4,7 @@ import { ActivityIndicator, Animated, Platform, RefreshControl, StyleSheet, View
 import { CATEGORIES } from '@valet/core';
 import { Header, Chip, Fab, Empty, glass } from '@/components/ui';
 import { ClosetBar } from '@/components/ClosetBar';
+import { Page } from '@/components/Page';
 import { Mosaic } from '@/components/Mosaic';
 import { useSession } from '@/lib/session';
 import { useTheme, space } from '@/lib/theme';
@@ -13,17 +14,22 @@ import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, SEASON_FILTERS
 import { personKey } from '@/lib/wardrobe';
 import { usePersisted } from '@/lib/usePersisted';
 
+const kept: { cat: string | null; filters: Filters } = { cat: null, filters: NO_FILTERS };
+
 export default function Schrank() {
   const t = useTheme();
   const scr = useScreen();
   const { wardrobe, loading, error, reload, session } = useSession();
-  const [cat, setCat] = useState<string | null>(null);
+  // Web: Seite wird beim Öffnen eines Teils abgebaut → Kategorie und Filter für die Rückkehr merken
+  const [cat, setCatState] = useState<string | null>(kept.cat);
+  const setCat = (c: string | null) => { kept.cat = c; setCatState(c); };
   const [query, setQuery] = useState('');
   const [headH, setHeadH] = useState(60);
   const scrollY = useRef(new Animated.Value(0)).current;
   const [sort, setSort] = usePersisted<SortId>('valet.sort', 'random');
   const [seed, setSeed] = usePersisted<number>('valet.seed', 1);
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [filters, setFiltersState] = useState<Filters>(kept.filters);
+  const setFilters = (f: Filters) => { kept.filters = f; setFiltersState(f); };
   const [draft, setDraft] = useState<Filters>(NO_FILTERS);
   const [sheet, setSheet] = useState<'sort' | 'filter' | null>(null);
 
@@ -61,13 +67,11 @@ export default function Schrank() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <Animated.ScrollView
-        style={{ flex: 1 }}
+      <Page
         contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
         keyboardShouldPersistTaps="handled"
-        scrollEventThrottle={16}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+        scrollY={scrollY}
         stickyHeaderIndices={web ? undefined : [1]}
       >
         <View style={{ width: barW }} onLayout={(e) => setHeadH(e.nativeEvent.layout.height)}>
@@ -91,7 +95,7 @@ export default function Schrank() {
             <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
           )}
         </View>
-      </Animated.ScrollView>
+      </Page>
       <Fab bottom={scr.fabBottom} onPress={() => router.push('/neu')} />
       <Sheet open={sheet === 'sort'} onClose={() => setSheet(null)} title="Sortieren"
         footer={sort === 'random' ? <SheetButton label="Neu mischen" onPress={() => { setSeed(seed + 1); setSheet(null); }} /> : undefined}>

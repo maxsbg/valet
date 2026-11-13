@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Page, STICKY } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORIES, SIDE_CATEGORIES, formatEur } from '@valet/core';
@@ -40,6 +41,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
   const old = p.id ? wardrobe?.outfits.find((o) => o.id === p.id) : undefined;
   const byId = useMemo(() => new Map((wardrobe?.items ?? []).map((i) => [i.id, i] as [string, Tile])), [wardrobe]);
 
+  const [barH, setBarH] = useState(0);
   const [ids, setIds] = useState<string[]>(() => old ? old.pieces.map((x) => x.id) : p.item ? [p.item] : []);
   const [occ, setOcc] = useState<string[]>(() => old?.occasions ?? []);
   const [src, setSrc] = useState<string>(() => {
@@ -109,14 +111,14 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <View style={[s.bar, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
+      <View onLayout={(e) => setBarH(e.nativeEvent.layout.height)} style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
         <Pressable onPress={close} hitSlop={8}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
         <Text style={[s.title, { color: t.ink }]}>{old ? 'Outfit bearbeiten' : 'Neues Outfit'}</Text>
         <Pressable onPress={save} disabled={saving} hitSlop={8}>
           <Text style={{ fontSize: 17, fontWeight: '700', color: saving ? t.inkMuted : t.accent }}>{saving ? 'Speichert …' : 'Speichern'}</Text>
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled" stickyHeaderIndices={[1]}>
+      <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled" stickyHeaderIndices={[1]}>
         <View style={{ width, paddingTop: space.sm }}>
           {persons.length > 1 && (
             <>
@@ -157,7 +159,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
           </View>
         </View>
 
-        <View style={[s.filters, { backgroundColor: t.bg, width: width + 2 * space.md }]}>
+        <View style={[s.filters, { backgroundColor: t.bg, width: width + 2 * space.md }, Platform.OS === 'web' ? ({ position: 'sticky', top: barH, zIndex: 15 } as object) : null]}>
           {searching ? (
             <SearchField value={query} onChange={setQuery} onClose={() => { setSearching(false); setQuery(''); }} />
           ) : (
@@ -183,7 +185,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
             </Pressable>
           )}
         </View>
-      </ScrollView>
+      </Page>
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Outfit löschen?"
         footer={<><SheetButton label="Abbrechen" onPress={() => setConfirmDelete(false)} /><SheetButton primary label="Löschen" onPress={remove} /></>}>
         <Text style={{ fontSize: 15, color: t.inkMuted }}>Das Outfit und seine geplanten Tage werden entfernt. Die Teile bleiben im Schrank.</Text>

@@ -10,6 +10,9 @@ import { personKey } from '@/lib/wardrobe';
 
 type Theme = ReturnType<typeof useTheme>;
 
+/** Web: fest am Bildschirm statt an der Seite (die Seite selbst scrollt) */
+export const FIXED = (Platform.OS === 'web' ? { position: 'fixed' } : {}) as object;
+
 /** Milchglas für die Bedien-Ebene (Tab-Leiste, Plus-Knopf, klebende Leisten) */
 export function glass(t: Theme): object[] {
   return [
@@ -88,7 +91,7 @@ export function Fab({ onPress, bottom, label = 'Teil hinzufügen' }: { onPress?:
   const t = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
-      style={({ pressed }) => [s.fab, ...glass(t), { bottom, transform: [{ scale: pressed ? 0.94 : 1 }] }]}>
+      style={({ pressed }) => [s.fab, ...glass(t), FIXED, { bottom, transform: [{ scale: pressed ? 0.94 : 1 }] }]}>
       <Icons.plus color={t.dark ? t.accent : '#722638'} size={22} />
     </Pressable>
   );
@@ -105,8 +108,8 @@ export function useToast(bottom: number) {
     return () => clearTimeout(id);
   }, [msg, op]);
   const node = msg ? (
-    <Animated.View pointerEvents="none" style={[s.toast, { bottom, opacity: op }]}>
-      <Text style={s.toastText}>{msg}</Text>
+    <Animated.View pointerEvents="none" style={[s.toastWrap, FIXED, { bottom, opacity: op }]}>
+      <View style={s.toast}><Text style={s.toastText}>{msg}</Text></View>
     </Animated.View>
   ) : null;
   return { show: setMsg, node };
@@ -135,6 +138,7 @@ const s = StyleSheet.create({
   chipCount: { fontSize: 13 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   fab: { position: 'absolute', zIndex: 10, right: space.md + 4, width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,0,0,0.28)' },
-  toast: { position: 'absolute', zIndex: 20, alignSelf: 'center', backgroundColor: '#2a1a1d', borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, boxShadow: '0 6px 20px rgba(42,26,29,0.2)' },
+  toastWrap: { position: 'absolute', zIndex: 40, left: 0, right: 0, alignItems: 'center' },
+  toast: { backgroundColor: '#2a1a1d', borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, boxShadow: '0 6px 20px rgba(42,26,29,0.2)' },
   toastText: { color: '#F5F0E8', fontSize: 15, fontWeight: '500' },
 });
