@@ -331,7 +331,7 @@ function box(src, W, H, k) {
 }
 
 // Nachbearbeitung („Verbessert“): A wird verändert, Rückgabe: Farben ohne Saum (RGB 0..1, nur im Ausschnitt R)
-function refine(d, A, W, H, up, info) {
+function refine(d, A, W, H, up, info, edges = true) {
   const N = W * H;
   // 1) einfarbiger Shop-Hintergrund: vom Rand aus zusammenhängende Fläche in Hintergrundfarbe sicher entfernen
   const hist = [new Uint32Array(256), new Uint32Array(256), new Uint32Array(256)], bp = [];
@@ -370,6 +370,7 @@ function refine(d, A, W, H, up, info) {
     const km = new Float32Array(N); for (let i = 0; i < N; i++) km[i] = keep[lab[i]] ? 1 : 0;
     const kd = box(km, W, H, 5); for (let i = 0; i < N; i++) if (kd[i] <= 0) A[i] = 0;
   }
+  info.kanten = edges; if (!edges) return null;
   // ab hier nur im Bereich ums Teil rechnen (spart Speicher und Zeit)
   const b = bbox(A, W, H, 0.02); if (!b) return null;
   const r1 = Math.max(15, Math.round(90 * Math.max(W, H) / 1024)), mg = r1;
@@ -417,12 +418,12 @@ async function cutout(file, mode, onStep) {
   catch (e) { if (e && e.gpuLost) { onStep && onStep('Grafikchip ausgefallen – rechne mit Prozessor …', 0); return cutout1(file, mode, onStep); } throw e; }
 }
 async function cutout1(file, mode, onStep) {
-  const neu = mode !== 'alt', win = mode === 'k1024', maxE = win ? 2400 : neu ? 1600 : 2000, info = { mode, t: {} }, T = () => performance.now();
+  const neu = mode !== 'alt', light = mode === 'alt2' || mode === 'alt2f', area = mode === 'neu' || mode === 'k1024', win = mode === 'k1024' || mode === 'alt2f', maxE = win ? 2400 : (neu && !light) ? 1600 : 2000, info = { mode, t: {} }, T = () => performance.now();
   let t = T(); const { c, ow, oh } = await toCanvas(file, maxE); info.t.lesen = T() - t;
   const W = c.width, H = c.height, d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data, A = new Float32Array(W * H);
   info.eingang = `${ow}×${oh}`; info.arbeit = `${W}×${H}`; info.S = modelSize(); info.engine = engineName();
   t = T(); onStep && onStep('1. Durchgang …', 0);
-  const m = await mask(d, W, 0, 0, W, H, neu, p => onStep && onStep('1. Durchgang', p), neu); info.t.pass1 = T() - t;
+  const m = await mask(d, W, 0, 0, W, H, area, p => onStep && onStep('1. Durchgang', p), neu); info.t.pass1 = T() - t;
   if (!m) { M.gpu && M.gpu.release && M.gpu.release(); throw new Error('Kein Teil erkannt'); }
   const cov = upMask(m, A, W, 0, 0, W, H);
   if (cov < 0.01 || cov > 0.98) { M.gpu && M.gpu.release && M.gpu.release(); throw new Error('Kein Teil erkannt (Abdeckung ' + Math.round(cov * 100) + ' %)'); }
@@ -437,7 +438,7 @@ async function cutout1(file, mode, onStep) {
     info.fenster = `${ww}×${wh} bei ${x0},${y0}` + (side > S ? ` (Teil größer als ${S} px → verkleinert)` : ' (1:1, ohne Skalieren)');
     if (!(x0 === 0 && y0 === 0 && ww === W && wh === H)) {
       t = T(); onStep && onStep('2. Durchgang …', 0);
-      const m2 = await mask(d, W, x0, y0, ww, wh, true, p => onStep && onStep('2. Durchgang', p), false); info.t.pass2 = T() - t;
+      const m2 = await mask(d, W, x0, y0, ww, wh, area, p => onStep && onStep('2. Durchgang', p), false); info.t.pass2 = T() - t;
       if (m2) { const A2 = new Float32Array(W * H), c2 = upMask(m2, A2, W, x0, y0, ww, wh);
         if (c2 >= 0.01 && c2 <= 0.98) { A.set(A2); info.pass2 = true; up = Math.max(ww, wh) / S; } }
     } else info.fenster += ' – ganzes Foto, kein 2. Durchgang';
@@ -445,12 +446,12 @@ async function cutout1(file, mode, onStep) {
     if (bw > 24 && bh > 24 && (bw < W * 0.8 || bh < H * 0.8)) {
       const pad = Math.round(0.06 * Math.max(bw, bh)), x0 = Math.max(0, b.x0 - pad), y0 = Math.max(0, b.y0 - pad), x1 = Math.min(W, b.x1 + pad), y1 = Math.min(H, b.y1 + pad);
       t = T(); onStep && onStep('2. Durchgang …', 0);
-      const m2 = await mask(d, W, x0, y0, x1 - x0, y1 - y0, neu, p => onStep && onStep('2. Durchgang', p), false); info.t.pass2 = T() - t;
+      const m2 = await mask(d, W, x0, y0, x1 - x0, y1 - y0, area, p => onStep && onStep('2. Durchgang', p), false); info.t.pass2 = T() - t;
       if (m2) { const A2 = new Float32Array(W * H), c2 = upMask(m2, A2, W, x0, y0, x1 - x0, y1 - y0);
         if (c2 >= 0.01 && c2 <= 0.98) { A.set(A2); info.pass2 = true; up = Math.max(x1 - x0, y1 - y0) / info.S; } } } }
   M.gpu && M.gpu.release && M.gpu.release();
   let col = null; t = T();
-  if (neu) { onStep && onStep('Nachbearbeitung …', 1); await new Promise(r => setTimeout(r, 30)); col = refine(d, A, W, H, up, info); }
+  if (neu) { onStep && onStep('Nachbearbeitung …', 1); await new Promise(r => setTimeout(r, 30)); col = refine(d, A, W, H, up, info, !light); }
   info.t.nach = T() - t;
   // Ergebnis: auf das Teil zuschneiden
   const bb = bbox(A, W, H, 0.02); if (!bb) throw new Error('Kein Teil erkannt');

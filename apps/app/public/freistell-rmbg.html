@@ -56,7 +56,7 @@
 
   <div class="card">
     <div class="lbl">Variante</div>
-    <div class="seg" id="mode"><button data-v="alt">Wie bisher</button><button data-v="neu">Verbessert</button><button data-v="k1024">Fenster 1024</button><button data-v="alle" class="on">Alle</button></div>
+    <div class="seg" id="mode"><button data-v="alt">Wie bisher</button><button data-v="alt2">Neues Alt</button><button data-v="alt2f">Neues Alt + Fenster</button><button data-v="alle" class="on">Alle</button></div>
     <div class="lbl" style="margin-top:12px">Hintergrund zum Prüfen</div>
     <div class="seg" id="bg"><button data-v="karo" class="on">Karo</button><button data-v="weiss">Weiß</button><button data-v="dunkel">Dunkel</button><button data-v="beige">Beige</button></div>
     <div class="row" style="margin-top:14px">
@@ -70,11 +70,11 @@
   <div id="origWrap" class="card" hidden><div class="lbl">Original</div><img id="orig" class="orig" alt=""><div class="note" id="origInfo"></div></div>
   <div class="grid two" id="out"></div>
 
-  <p class="note">Antippen eines Ergebnisses = Zoom. „Wie bisher“ ist genau der Ablauf aus dem alten Valet. „Verbessert“ nutzt dasselbe Modell, aber: Bild sauber verkleinert (Flächenmittel statt Punktauswahl), Kante an echten Bildkanten ausgerichtet, Farbsaum entfernt, einfarbiger Shop-Hintergrund und abgetrennte Krümel vorsichtig entfernt, Speicher auf dem Grafikchip zwischen den Durchgängen behalten, Ausgabe als WebP plus Vorschaubild. „Fenster 1024“ ist wie „Verbessert“, aber im 2. Durchgang wird ein Fenster von 1024 × 1024 px ums Teil in Originalauflösung ausgeschnitten – ohne Vergrößern, Verkleinern oder Verzerren; mehr Hintergrund rundum bleibt drin. Nur wenn das Teil größer ist, wird verkleinert.<br>RMBG-1.4 ist nur für nicht-kommerzielle Nutzung freigegeben.</p>
+  <p class="note">Antippen eines Ergebnisses = Zoom.<br>„Wie bisher“ = genau der Ablauf aus dem alten Valet.<br>„Neues Alt“ = derselbe Ablauf, Kanten unverändert; zusätzlich werden abgetrennte Krümel und ein einfarbiger Shop-Hintergrund entfernt, gespeichert wird als WebP mit Vorschaubild.<br>„Neues Alt + Fenster“ = wie „Neues Alt“, aber im 2. Durchgang wird ein Fenster von 1024 × 1024 px ums Teil in Originalauflösung ausgeschnitten (ohne Vergrößern oder Verzerren). Nur wenn das Teil größer ist, wird verkleinert.<br>RMBG-1.4 ist nur für nicht-kommerzielle Nutzung freigegeben.</p>
 </main>
 <script src="freistellen/rmbg.js"></script>
 <script>
-const NAME = { alt: 'Wie bisher', neu: 'Verbessert', k1024: 'Fenster 1024' }, R = window.ValetRMBG, $ = s => document.querySelector(s);
+const NAME = { alt: 'Wie bisher', neu: 'Verbessert', k1024: 'Fenster 1024', alt2: 'Neues Alt', alt2f: 'Neues Alt + Fenster' }, R = window.ValetRMBG, $ = s => document.querySelector(s);
 let mode = 'alle', bg = 'karo', file = null, busy = false;
 const fmt = ms => ms == null ? '–' : (ms / 1000).toFixed(1).replace('.', ',') + ' s';
 const kb = b => b ? (b.size / 1024 > 1024 ? (b.size / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.round(b.size / 1024) + ' KB') : '–';
@@ -110,11 +110,11 @@ function card(title) {
 }
 async function run() {
   if (busy) return; busy = true; $('#again').disabled = true; $('#out').innerHTML = '';
-  const list = mode === 'alle' ? ['alt', 'neu', 'k1024'] : [mode];
+  const list = mode === 'alle' ? ['alt', 'alt2', 'alt2f'] : [mode];
   const cards = list.map(m => card(NAME[m]));
   for (let k = 0; k < list.length; k++) {
     const m = list[k], c = cards[k], name = NAME[m];
-    c.querySelector('.model').textContent = `RMBG-1.4 (BRIA) · int8 · ${engineText()}` + (m === 'alt' ? ' · Ablauf altes Valet' : m === 'neu' ? ' · + Nachbearbeitung · Foto max. 1600 px' : ' · + Nachbearbeitung · 2. Durchgang mit Fenster in Originalauflösung');
+    c.querySelector('.model').textContent = `RMBG-1.4 (BRIA) · int8 · ${engineText()}` + (m === 'alt' ? ' · Ablauf altes Valet' : m === 'alt2' ? ' · altes Valet + Krümel/Hintergrund weg + WebP' : m === 'alt2f' ? ' · wie Neues Alt, 2. Durchgang mit Fenster in Originalauflösung' : m === 'neu' ? ' · + Nachbearbeitung · Foto max. 1600 px' : ' · + Nachbearbeitung · 2. Durchgang mit Fenster in Originalauflösung');
     const t0 = performance.now();
     try {
       const r = await R.cutout(file, m, (s, p) => { $('#pstat').textContent = `${name}: ${s}${p != null && p > 0 && p < 1 ? ' ' + Math.round(p * 100) + ' %' : ''}`; $('#pbar').style.width = Math.round((p || 0) * 100) + '%'; });
@@ -128,7 +128,7 @@ async function run() {
         ['Foto → Arbeitsgröße', `${i.eingang} → ${i.arbeit}`], ['Ergebnis', `${i.groesse} · ${r.file.type.replace('image/', '').toUpperCase()} · ${kb(r.file)}`],
       ];
       if (m !== 'alt') rows.push(['Vorschaubild', r.thumb ? `${r.thumb.type.replace('image/', '').toUpperCase()} · ${kb(r.thumb)}` : '–'],
-        ['Einfarbiger Hintergrund', i.einfarbig ? `ja, ${i.hgPixel || 0} Randpixel entfernt` : 'nein'], ['Krümel entfernt', `${i.inselnWeg || 0} von ${i.inseln || 0}`], ['Kantenfilter', i.kantenfilter ? 'ja' : 'nein (Maske 1:1)']);
+        ['Einfarbiger Hintergrund', i.einfarbig ? `ja, ${i.hgPixel || 0} Randpixel entfernt` : 'nein'], ['Krümel entfernt', `${i.inselnWeg || 0} von ${i.inseln || 0}`], ['Kanten nachbearbeitet', i.kanten === false ? 'nein (Kanten wie bisher)' : i.kantenfilter ? 'ja' : 'nur Farbsaum']);
       if (i.fenster) rows.push(['Fenster', i.fenster]);
       c.querySelector('table').innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
       const dl = document.createElement('a'); dl.className = 'btn sec'; dl.style.cssText = 'background:transparent;color:var(--ink);border:1px solid var(--line);text-decoration:none';
