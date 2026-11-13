@@ -6,9 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { ItemFormFields, readForm, toForm, type ItemForm } from '@/components/ItemForm';
 import { Sheet, SheetButton } from '@/components/Sheet';
+import { PictureEdit } from '@/components/PictureEdit';
+import type { Picture } from '@/lib/cutout';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space } from '@/lib/theme';
-import { loadItem, updateItem, deleteItem, type ItemRow } from '@/lib/item';
+import { loadItem, loadPictures, updateItem, deleteItem, saveImage, type ItemRow } from '@/lib/item';
 import { nameToHex } from '@/lib/wardrobe';
 
 export default function Bearbeiten() {
@@ -21,11 +23,17 @@ export default function Bearbeiten() {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [current, setCurrent] = useState<Record<'a' | 'b', string | null>>({ a: null, b: null });
+  const [pics, setPics] = useState<Record<'a' | 'b', Picture | null>>({ a: null, b: null });
   const bottom = useBottomInset();
   const toast = useToast(bottom + 90);
 
-  useEffect(() => { loadItem(id).then((d) => { setOrig(d.item); setF(toForm(d.item)); }).catch((e) => toast.show(e.message)); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    loadItem(id).then((d) => { setOrig(d.item); setF(toForm(d.item)); }).catch((e) => toast.show(e.message));
+    loadPictures(id).then(setCurrent).catch(() => {});
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const tileHex = wardrobe?.items.find((i) => i.id === id)?.hex;
   const close = () => (router.canGoBack() ? router.back() : router.replace(`/teil/${id}`));
   if (!f || !orig) return <View style={{ flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={t.accent} /></View>;
 
@@ -37,7 +45,11 @@ export default function Bearbeiten() {
     const { price_paid: price, list_price: list, qty, color, purchase_date: date } = change;
     setSaving(true);
     try {
+      // Neue Bilder zuerst, damit bei einem Fehler nichts halb gespeichert ist
+      const sides = (['a', 'b'] as const).filter((x) => pics[x] && (x === 'a' || f.reversible));
+      for (const x of sides) await saveImage(orig!.wardrobe_id, id, x, pics[x]!);
       await updateItem(id, change);
+      if (sides.length) { await reload(); return close(); } // Kacheln, Farbschein und Detailbild neu laden
       const tile = wardrobe?.items.find((i) => i.id === id);
       const colorChanged = color !== orig!.color;
       patch(id, {
@@ -65,6 +77,14 @@ export default function Bearbeiten() {
       </View>
       <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
         <View style={s.col}>
+          <View style={{ gap: space.md, marginBottom: space.xs }}>
+            <PictureEdit title={f.reversible ? 'Seite A' : undefined} current={current.a} value={pics.a} onChange={(p) => setPics((x) => ({ ...x, a: p }))}
+              category={f.category} color={tileHex ?? '#d8d2c8'} />
+            {f.reversible && (
+              <PictureEdit title="Seite B" current={current.b} value={pics.b} onChange={(p) => setPics((x) => ({ ...x, b: p }))}
+                category={f.category} color={tileHex ?? '#d8d2c8'} />
+            )}
+          </View>
           <ItemFormFields f={f} onChange={setF} persons={wardrobe?.persons ?? []} open={open} onOpen={setOpen} />
 
           <Pressable onPress={() => setConfirmDelete(true)} style={{ alignItems: 'center', paddingVertical: space.lg }}>
