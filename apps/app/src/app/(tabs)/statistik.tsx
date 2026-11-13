@@ -15,12 +15,12 @@ export default function Statistik() {
       <ScrollView contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}>
         <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
         <Empty title="Statistik" text="Ausgaben, Getragen und Bestand kommen nach den Outfits." />
-        {/* Übergang vom alten Valet: Bilder übernehmen */}
-        <Pressable onPress={() => router.push('/bilder-import')} accessibilityRole="button"
+        {/* Übergang vom alten Valet: Bilder zuordnen */}
+        <Pressable onPress={() => router.push('/bilder-zuordnen')} accessibilityRole="button"
           style={({ pressed }) => ({ width: scr.content, borderWidth: 1, borderColor: t.hairline, backgroundColor: t.surface, borderRadius: radius.lg, padding: space.md, gap: 4, opacity: pressed ? 0.8 : 1 })}>
-          <Text style={{ fontSize: 17, fontWeight: '700', color: t.ink }}>Bilder aus dem alten Valet</Text>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: t.ink }}>Bilder zuordnen</Text>
           <Text style={{ fontSize: 15, color: t.inkMuted }}>
-            {withoutPicture ? `${withoutPicture} Teile haben noch kein Bild. ` : ''}ZIP-Export aus dem alten Valet übernehmen.
+            {withoutPicture ? `${withoutPicture} Teile haben noch kein Bild. ` : ''}Mehrere Fotos wählen, freistellen und den Teilen zuordnen.
           </Text>
         </Pressable>
       </ScrollView>
