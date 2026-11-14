@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Icons } from './Icon';
-import { Chip } from './ui';
+import { Chip, useChipReveal } from './ui';
 import { useTheme, space } from '@/lib/theme';
 
 export type BarChip = { key: string; label: string; count?: number; icon?: React.ReactNode; dot?: string; selected: boolean; onPress: () => void; onLongPress?: () => void; dashed?: boolean };
@@ -38,8 +38,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const input = useRef<React.ComponentRef<typeof TextInput>>(null);
-  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
-  const chipX = useRef(new Map<string, { x: number; w: number }>()).current;
+  const row = useChipReveal();
   const v = useRef({
     box: new Animated.Value(0), // Breite des Suchfelds
     cy: new Animated.Value(0), // Kategorien senkrecht
@@ -80,8 +79,9 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
   };
   const pick = (c: BarChip) => {
     c.onPress();
-    const m = chipX.get(c.key);
-    if (m) scroll.current?.scrollTo({ x: Math.max(0, m.x - (W - m.w) / 2), animated: true });
+    // Chip ragt aus dem sichtbaren Bereich → gerade so weit rollen, dass er (aufgeklappt) ganz zu sehen ist
+    const prev = chips.find((x) => x.selected)?.key ?? null;
+    row.reveal(c.key, prev, open ? PAD : 0, open ? PAD : 28);
   };
 
   const boxW = v.box.interpolate({ inputRange: [0, 1], outputRange: [BTN, W - 2 * PAD - BTN - GAP] });
@@ -114,11 +114,11 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
         left: v.cx.interpolate({ inputRange: [0, 1], outputRange: [PAD + BTN + GAP, 0] }),
         width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [W - 2 * (PAD + BTN + GAP), W] }),
       }, web ? ({ maskImage: mask, WebkitMaskImage: mask } as object) : null]}>
-        <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: GAP }}>
+        <ScrollView ref={row.ref} {...row.scrollProps} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: GAP }}>
           <Animated.View style={{ width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [0, PAD - GAP] }) }} />
           {chips.map((c) => (
-            <View key={c.key} onLayout={(e) => chipX.set(c.key, { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })}>
-              <Chip tall collapse={!!c.icon} label={c.label} count={c.count} icon={c.icon} dot={c.dot} selected={c.selected} dashed={c.dashed} onPress={() => pick(c)} onLongPress={c.onLongPress} />
+            <View key={c.key} onLayout={row.layout(c.key)}>
+              <Chip tall collapse={!!c.icon} onLabelWidth={row.labelWidth(c.key)} label={c.label} count={c.count} icon={c.icon} dot={c.dot} selected={c.selected} dashed={c.dashed} onPress={() => pick(c)} onLongPress={c.onLongPress} />
             </View>
           ))}
           <View style={{ width: PAD - GAP + 12 }} />
