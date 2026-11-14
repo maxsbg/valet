@@ -134,11 +134,13 @@ function FoldLabel({ label, open, color, onWidth }: { label: string; open: boole
           <Text style={[s.chipText, s.noWrap, { color, marginLeft: FOLD_GAP, fontWeight: '600', flexShrink: 0 }]}>{text}</Text>
         </View>
       </Animated.View>
-      {/* unsichtbar in einem breiten Rahmen, damit die volle Breite gemessen wird (misst nach dem Laden der Schrift neu) */}
-      <View pointerEvents="none" aria-hidden style={s.measure}>
+      {/* unsichtbar in einem breiten Rahmen, damit die volle Breite gemessen wird (misst nach dem Laden der Schrift neu).
+          Der breite Rahmen steckt in einer Hülle ohne Größe mit overflow: hidden – sonst zählt er im Browser zur
+          Breite der Chip-Reihe und man kann weit über den letzten Chip hinaus wischen. */}
+      <View pointerEvents="none" aria-hidden style={s.measureClip}><View style={s.measure}>
         <Text onLayout={(e) => setFull(Math.ceil(e.nativeEvent.layout.width))} style={[s.chipText, s.noWrap, { fontWeight: '600', flexShrink: 0 }]}>{label}</Text>
         <Text onLayout={(e) => setShort(Math.ceil(e.nativeEvent.layout.width))} style={[s.chipText, s.noWrap, { fontWeight: '600', flexShrink: 0 }]}>{shortLabel}</Text>
-      </View>
+      </View></View>
     </>
   );
 }
@@ -265,6 +267,7 @@ const s = StyleSheet.create({
   chipFold: { gap: 0, paddingHorizontal: 13 },
   chipCountFold: { marginLeft: 6 },
   noWrap: (Platform.OS === 'web' ? { whiteSpace: 'nowrap' } : {}) as object,
+  measureClip: { position: 'absolute', left: 0, top: 0, width: 0, height: 0, overflow: 'hidden' },
   measure: { position: 'absolute', left: 0, top: 0, width: 600, opacity: 0, flexDirection: 'row', alignItems: 'flex-start' },
   dot: { width: 8, height: 8, borderRadius: 4 },
   fab: { position: 'absolute', zIndex: 10, right: space.md + 4, width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,0,0,0.28)' },
