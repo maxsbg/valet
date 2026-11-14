@@ -129,10 +129,6 @@ export default function Statistik() {
             <StatTile t={t} label="Lieblingsteil" value={r.favorites[0] ? `${r.favorites[0].w.length}×` : '–'} hint={r.favorites[0] ? byId.get(r.favorites[0].item.id)?.name || 'Teil' : 'im Zeitraum nichts'} />
           </View>
 
-          <Panel t={t} title="Verlauf">
-            <History t={t} days={r.days} from={late || !r.from ? r.start! : r.from} width={W} />
-          </Panel>
-
           {r.favorites.length > 0 && (
             <Panel t={t} title="Lieblingsteile">
               <PGrid t={t} width={W} list={g(r.favorites, (x: { w: string[] }) => `${x.w.length}×`)} />
@@ -174,13 +170,6 @@ export default function Statistik() {
             </Panel>
           )}
 
-          {r.usage.categories.length > 0 && (
-            <Panel t={t} title="Schrank-Nutzung">
-              <Text style={[s.psub, { color: t.inkMuted }]}>Wie viele Teile je Kategorie du im Zeitraum getragen hast (ohne eingelagerte)</Text>
-              {r.usage.categories.map((c) => <Bar key={c.key} t={t} label={categoryLabel(c.key)} value={c.worn} max={c.total} text={`${c.worn} von ${c.total}`} />)}
-            </Panel>
-          )}
-
           {r.best.length > 0 && (
             <Panel t={t} title="Kosten pro Tragen">
               <Text style={[s.psub, { color: t.inkMuted }]}>Seit Beginn · am meisten rausgeholt</Text>
@@ -189,6 +178,13 @@ export default function Statistik() {
                 <Text style={[s.psub, { color: t.inkMuted, marginTop: space.sm }]}>Noch teuer pro Tragen</Text>
                 <PGrid t={t} width={W} list={g(r.worst, (x: { cpw: number }) => formatEur(x.cpw), (x: { w: string[] }) => `${x.w.length}× getragen`)} />
               </>}
+            </Panel>
+          )}
+
+          {r.usage.categories.length > 0 && (
+            <Panel t={t} title="Schrank-Nutzung">
+              <Text style={[s.psub, { color: t.inkMuted }]}>Wie viele Teile je Kategorie du im Zeitraum getragen hast (ohne eingelagerte)</Text>
+              {r.usage.categories.map((c) => <Bar key={c.key} t={t} label={categoryLabel(c.key)} value={c.worn} max={c.total} text={`${c.worn} von ${c.total}`} />)}
             </Panel>
           )}
 
@@ -311,79 +307,6 @@ function Bar({ t, label, sub, value, max, text, color, dim }: { t: Theme; label:
 }
 
 const deDate = (iso: string) => { const [y, m, d] = iso.split('-'); return `${Number(d)}.${Number(m)}.${y}`; };
-const isoOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-
-/**
- * Verlauf: bis ca. 10 Wochen als Kalender (Zeilen = Mo–So, je Tag Kästchen, kräftiger = mehr Teile getragen),
- * bei längeren Zeiträumen Säulen je Monat (Tage mit Eintrag).
- */
-function History({ t, days, from, width }: { t: Theme; days: Record<string, number>; from: string; width: number }) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const [y, m, d] = from.split('-').map(Number);
-  const start = new Date(y!, m! - 1, d!);
-  const weeks = Math.ceil((today.getTime() - start.getTime()) / (7 * 864e5)) + 1;
-  const tone = t.dark ? t.accent : '#722638';
-  const level = (n: number) => (n <= 0 ? 0 : n <= 2 ? 0.35 : n <= 4 ? 0.65 : 1);
-  if (weeks <= 10) {
-    const monday = new Date(start); monday.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-    const cols = Math.ceil((today.getTime() - monday.getTime()) / (7 * 864e5) + 1 / 7);
-    const gap = 4, label = 22;
-    const cell = Math.min(30, Math.floor((width - label - (cols - 1) * gap) / cols));
-    return (
-      <View>
-        <View style={{ flexDirection: 'row', gap }}>
-          <View style={{ width: label - gap, gap }}>
-            {['Mo', '', 'Mi', '', 'Fr', '', 'So'].map((w, i) => <Text key={i} style={{ height: cell, fontSize: 10, lineHeight: cell, color: t.inkMuted }}>{w}</Text>)}
-          </View>
-          {Array.from({ length: cols }, (_, c) => (
-            <View key={c} style={{ gap }}>
-              {Array.from({ length: 7 }, (_, r) => {
-                const day = new Date(monday); day.setDate(monday.getDate() + c * 7 + r);
-                const iso = isoOf(day);
-                const out = day < start || day > today;
-                const n = days[iso] ?? 0;
-                return <View key={r} accessibilityLabel={`${deDate(iso)}: ${n} Teile`}
-                  style={{ width: cell, height: cell, borderRadius: 6, opacity: out ? 0.25 : 1,
-                    backgroundColor: n ? tone : t.dark ? '#3a302d' : '#efece5' }}>
-                  {n > 0 && <View style={{ flex: 1, borderRadius: 6, backgroundColor: t.surface, opacity: 1 - level(n) }} />}
-                </View>;
-              })}
-            </View>
-          ))}
-        </View>
-        <Text style={{ fontSize: 12, color: t.inkMuted, marginTop: 8 }}>Kräftiger = mehr Teile an dem Tag</Text>
-      </View>
-    );
-  }
-  // Monate
-  const months: { key: string; label: string; n: number }[] = [];
-  const cur = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (cur <= today && months.length < 24) {
-    const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`;
-    months.push({ key, label: MONTHS[cur.getMonth()]!, n: Object.keys(days).filter((x) => x.startsWith(key)).length });
-    cur.setMonth(cur.getMonth() + 1);
-  }
-  const max = Math.max(1, ...months.map((x) => x.n));
-  const bw = Math.min(28, (width - (months.length - 1) * 6) / months.length);
-  return (
-    <View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 110 }}>
-        {months.map((x) => (
-          <View key={x.key} style={{ width: bw, alignItems: 'center', gap: 3 }}>
-            {x.n > 0 && <Text style={{ fontSize: 10, color: t.inkMuted }}>{x.n}</Text>}
-            <View style={{ width: bw, height: Math.max(3, (x.n / max) * 80), borderRadius: 5, backgroundColor: x.n ? tone : t.dark ? '#3a302d' : '#efece5' }} />
-          </View>
-        ))}
-      </View>
-      <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-        {months.map((x) => <Text key={x.key} style={{ width: bw, fontSize: 10, textAlign: 'center', color: t.inkMuted }} numberOfLines={1}>{x.label}</Text>)}
-      </View>
-      <Text style={{ fontSize: 12, color: t.inkMuted, marginTop: 8 }}>Tage mit Eintrag je Monat</Text>
-    </View>
-  );
-}
-
 /** Teile als Bilder statt Namen (Antippen öffnet das Teil) */
 function PGrid({ t, list, width }: { t: Theme; list: { item: Tile; value: string; sub?: string }[]; width: number }) {
   const w = (width - 3 * 8) / 4;
