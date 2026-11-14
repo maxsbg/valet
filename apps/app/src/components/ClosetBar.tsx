@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Icons } from './Icon';
 import { Chip } from './ui';
@@ -46,32 +46,10 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
     cx: new Animated.Value(0), // Kategorien seitlich / volle Breite
     sw: new Animated.Value(0), // Sortieren ↔ Filter
     tx: new Animated.Value(0), // Eingabe und ✕
+    vis: new Animated.Value(0), // 1 = Suche offen (Eingabe minimal sichtbar, siehe show)
   }).current;
-
-  /**
-   * Safari (iPhone): Nach dem ersten Öffnen ließ sich die Kategorie-Zeile erst wieder wischen, wenn die Tastatur zu war.
-   * Ursache: Die Zeile ändert beim Öffnen Lage, Breite und Maske, während gleichzeitig die Tastatur aufgeht –
-   * Safari behält dabei den alten Scroll-Bereich. Kurz overflow umschalten zwingt Safari, ihn neu anzulegen.
-   */
-  const refreshScroller = () => {
-    if (Platform.OS !== 'web') return;
-    const node = (scroll.current as unknown as { getScrollableNode?: () => HTMLElement } | null)?.getScrollableNode?.();
-    if (!node) return;
-    const x = node.scrollLeft;
-    node.style.overflowX = 'hidden';
-    void node.offsetWidth; // Layout erzwingen
-    node.style.overflowX = '';
-    node.scrollLeft = x;
-  };
-  // Tastatur geht auf/zu (sichtbarer Bereich ändert sich) → Scroll-Bereich ebenfalls neu anlegen
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !open || typeof window === 'undefined' || !window.visualViewport) return;
-    const vv = window.visualViewport;
-    let id: ReturnType<typeof setTimeout> | undefined;
-    const f = () => { clearTimeout(id); id = setTimeout(refreshScroller, 60); };
-    vv.addEventListener('resize', f);
-    return () => { clearTimeout(id); vv.removeEventListener('resize', f); };
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inputOpacity = useRef(Animated.add(Animated.multiply(v.tx, 0.95), Animated.multiply(v.vis, 0.05))).current;
+  const inputWrap = useRef<React.ComponentRef<typeof View>>(null);
 
   const run = (o: boolean) => {
     const a = (val: Animated.Value, duration: number, delay: number) =>
@@ -79,11 +57,18 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
     Animated.parallel(o
       ? [a(v.cy, D, 0), a(v.cx, D, 0.3 * D), a(v.box, D, 0.32 * D), a(v.sw, 0.8 * D, 0), a(v.tx, 0.5 * D, 0.6 * D)]
       : [a(v.box, 0.6 * D, 0), a(v.cx, 0.7 * D, 0), a(v.cy, D, 0.4 * D), a(v.sw, 0.6 * D, 0), a(v.tx, 0.2 * D, 0)],
-    ).start(() => refreshScroller());
+    ).start(({ finished }) => { if (!o && finished) v.vis.setValue(0); });
   };
   const show = () => {
     if (open) return;
     setOpen(true);
+    // Safari (iPhone) merkt sich beim Fokussieren, ob das Feld unsichtbar ist (Deckkraft 0), und richtet die Eingabe dann
+    // als „verstecktes Feld“ ein – dabei blockiert es das Wischen der Kategorien, bis die Tastatur einmal zu war.
+    // Darum vor dem Fokussieren auf kaum sichtbare 5 % stellen; die Einblend-Animation übernimmt danach.
+    v.vis.setValue(1);
+    // Web: sofort am Element setzen (die Animation schreibt ihren Wert evtl. erst mit dem nächsten Bild)
+    const node = inputWrap.current as unknown as HTMLElement | null;
+    if (Platform.OS === 'web' && node?.style) node.style.opacity = '0.05';
     input.current?.focus(); // direkt im Tippen, sonst öffnet Safari die Tastatur nicht
     run(true);
   };
@@ -151,7 +136,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
           <Icons.search color={open ? t.inkMuted : t.ink} size={21} />
         </Pressable>
       </Animated.View>
-      <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[s.abs, { left: PAD + 42, top: ROW_PAD + 1, height: BTN - 2, width: inputW, opacity: v.tx }]}>
+      <Animated.View ref={inputWrap} pointerEvents={open ? 'auto' : 'none'} style={[s.abs, { left: PAD + 42, top: ROW_PAD + 1, height: BTN - 2, width: inputW, opacity: inputOpacity }]}>
         <TextInput ref={input} value={query} onChangeText={onQuery} placeholder={placeholder} placeholderTextColor={t.inkMuted}
           returnKeyType="search" enterKeyHint="search" autoCorrect={false}
           style={[s.input, { color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
