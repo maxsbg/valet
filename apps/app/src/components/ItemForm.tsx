@@ -11,9 +11,9 @@ import { TileIcon } from './tile/TileIcons';
 
 const PERSON = { pink: '#D9668E', red: '#C8102E' } as const;
 const COLORS = Object.keys(NAMED).map((k) => k[0].toUpperCase() + k.slice(1));
-const eur = (n: number | null) => (n == null ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-const toDe = (iso: string | null) => (iso ? iso.split('-').reverse().join('.') : '');
-function toIso(de: string): string | null | undefined {
+export const eur = (n: number | null) => (n == null ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+export const toDe = (iso: string | null) => (iso ? iso.split('-').reverse().join('.') : '');
+export function toIso(de: string): string | null | undefined {
   const t = de.trim();
   if (!t) return null;
   const m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);

@@ -125,3 +125,21 @@ export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 
   if (stale.length) await bucket.remove(stale); // aufräumen, Fehler egal
 }
 
+
+/**
+ * Wunschteil gekauft → Schrankteil: Preis, Kaufdatum und Besitzer setzen, Liste und Kategorie der Wunschliste entfernen.
+ * Der bisherige Wunsch-Preis bleibt als Listenpreis erhalten. Aus der eigenen Reihenfolge der Liste wird das Teil ausgetragen.
+ */
+export async function markBought(item: Pick<ItemRow, 'id' | 'wishlist_id'>, data: { price: number | null; date: string | null; owners: string[] }) {
+  const r = await supabase.from('items').update({
+    is_wish: false, wishlist_id: null, wish_tag: null,
+    price_paid: data.price, purchase_date: data.date,
+    owner_ids: data.owners, owner_id: data.owners.length === 1 ? data.owners[0]! : null,
+  }).eq('id', item.id);
+  if (r.error) throw r.error;
+  if (item.wishlist_id) {
+    const w = await supabase.from('wishlists').select('item_order').eq('id', item.wishlist_id).single();
+    const order = (w.data?.item_order ?? []) as string[];
+    if (order.includes(item.id)) await supabase.from('wishlists').update({ item_order: order.filter((x) => x !== item.id) }).eq('id', item.wishlist_id); // Fehler egal
+  }
+}
