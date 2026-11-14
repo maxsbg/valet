@@ -124,6 +124,10 @@ export default function Schrank() {
         </View>
         <SectionLabel>Saison</SectionLabel>
         <View style={s.wrap}>{SEASON_FILTERS.map((f) => <Chip key={f} label={f} selected={draft.seasons.includes(f)} onPress={() => toggleSeason(f)} />)}</View>
+        <SectionLabel>Status</SectionLabel>
+        <View style={s.wrap}>
+          <Chip label="Aussortiert (zum Verkauf)" selected={!!draft.out} onPress={() => setDraft((d) => ({ ...d, out: !d.out }))} />
+        </View>
       </Sheet>
     </View>
   );

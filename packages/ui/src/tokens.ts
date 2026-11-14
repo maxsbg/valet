@@ -56,8 +56,8 @@ export const colors = {
 
 /** Status-Farben (aus dem alten Valet). Nur als Punkt/Symbol (≥ 3:1), Text bleibt ink. Im Dunklen aufgehellt. */
 export const status = {
-  light: { wash: '#3B7BBF', repair: '#555555', lent: '#B7791F', out: '#7A7468', sold: '#6D1F2C' },
-  dark: { wash: '#6FA4DB', repair: '#9C9C9C', lent: '#D9A04A', out: '#A39C90', sold: '#D0687E' },
+  light: { wash: '#3B7BBF', repair: '#555555', lent: '#B7791F', stored: '#8A7A5C', out: '#7A7468', sold: '#6D1F2C' },
+  dark: { wash: '#6FA4DB', repair: '#9C9C9C', lent: '#D9A04A', stored: '#B8A88A', out: '#A39C90', sold: '#D0687E' },
 } as const;
 
 /** Personenfarben (wie im alten Valet: Max rosa, Paul rot). Buchstabe auf der Kachel-Plakette; im Dunklen aufgehellt. */

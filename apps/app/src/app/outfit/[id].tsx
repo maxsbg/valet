@@ -7,6 +7,8 @@ import { formatEur } from '@valet/core';
 import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
 import { OutfitBoard } from '@/components/OutfitBoard';
+import { ExportSheet } from '@/components/ExportSheet';
+import { canExport, fileName, outfitPng } from '@/lib/share';
 import { Chip, RoundButton, Empty, useToast } from '@/components/ui';
 import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
@@ -30,6 +32,7 @@ export default function OutfitDetail() {
   const [busy, setBusy] = useState(false);
   const [adding, setAdding] = useState(false);
   const [own, setOwn] = useState('');
+  const [exporting, setExporting] = useState(false);
   const dayScroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
 
   const o = wardrobe?.outfits.find((x) => x.id === id);
@@ -115,7 +118,7 @@ export default function OutfitDetail() {
     <View style={[s.page, { backgroundColor: t.bg }]}>
       <Page contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + space.xxl, alignItems: 'center' }}>
         <View style={s.col}>
-          <TopBar onBack={back} onEdit={() => router.push(`/outfit-bauen?id=${o.id}`)} />
+          <TopBar onBack={back} onEdit={() => router.push(`/outfit-bauen?id=${o.id}`)} onShare={canExport && o.pieces.length ? () => setExporting(true) : undefined} />
           <View style={[s.boardWrap, { borderColor: t.hairline }]}>
             <OutfitBoard pieces={o.pieces} byId={byId} width={width - 2} full />
           </View>
@@ -202,17 +205,24 @@ export default function OutfitDetail() {
           {date < today ? 'Vergangene Tage zählen als getragen.' : 'Die Teile werden für diesen Tag automatisch reserviert.'}
         </Text>
       </Sheet>
+      {canExport && (
+        <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Outfit als Bild" name={`${fileName(o.name || 'Outfit')}.png`}
+          make={() => outfitPng(o.pieces, byId, o.name || (o.occasions.length ? `Outfit · ${o.occasions.join(', ')}` : 'Outfit'))} />
+      )}
       {toast.node}
     </View>
   );
 }
 
-function TopBar({ onBack, onEdit }: { onBack: () => void; onEdit?: () => void }) {
+function TopBar({ onBack, onEdit, onShare }: { onBack: () => void; onEdit?: () => void; onShare?: () => void }) {
   const t = useTheme();
   return (
     <View style={s.top}>
       <RoundButton label="Zurück" onPress={onBack}><Icons.back color={t.ink} /></RoundButton>
-      {onEdit && <RoundButton label="Bearbeiten" onPress={onEdit}><Icons.pencil color={t.ink} /></RoundButton>}
+      <View style={{ flexDirection: 'row', gap: space.xs }}>
+        {onShare && <RoundButton label="Als Bild teilen" onPress={onShare}><Icons.share color={t.ink} /></RoundButton>}
+        {onEdit && <RoundButton label="Bearbeiten" onPress={onEdit}><Icons.pencil color={t.ink} /></RoundButton>}
+      </View>
     </View>
   );
 }

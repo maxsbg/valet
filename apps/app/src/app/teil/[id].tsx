@@ -12,7 +12,10 @@ import { eur, toDe, toIso } from '@/components/ItemForm';
 import { Sheet, OptionRow, SheetButton } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
-import { loadItem, wornDays, setWornToday, setStatus, markBought, type ItemDetail, type ItemRow } from '@/lib/item';
+import { loadItem, wornDays, setWornToday, setStatus, markBought, saveSet, type ItemDetail, type ItemRow } from '@/lib/item';
+import { holdItem, holdsOf, releaseHold, fmtShort } from '@/lib/outfits';
+import { ExportSheet } from '@/components/ExportSheet';
+import { canExport, fileName, itemPng } from '@/lib/share';
 import { personKey, todayLocal } from '@/lib/wardrobe';
 
 const STATUS_OPTIONS: { id: ItemRow['status']; label: string; text: string }[] = [
@@ -20,7 +23,8 @@ const STATUS_OPTIONS: { id: ItemRow['status']; label: string; text: string }[] =
   { id: 'wash', label: 'Wäsche', text: 'In der Wäsche' },
   { id: 'repair', label: 'Reparatur', text: 'In Reparatur' },
   { id: 'lent', label: 'Verliehen', text: 'Verliehen' },
-  { id: 'out', label: 'Aussortiert', text: 'Aussortiert' },
+  { id: 'stored', label: 'Eingelagert', text: 'Eingelagert' },
+  { id: 'out', label: 'Aussortiert (zum Verkauf)', text: 'Aussortiert, soll verkauft werden' },
   { id: 'sold', label: 'Verkauft', text: 'Verkauft' },
 ];
 const PERSON = { pink: '#D9668E', red: '#C8102E' } as const;
@@ -46,8 +50,16 @@ export default function Teil() {
   const [buy, setBuy] = useState<{ price: string; date: string; owners: string[]; error?: string } | null>(null);
   const bottom = useBottomInset();
   const toast = useToast(bottom + space.lg);
+  // Reservieren (einzelnes Teil, ohne Outfit)
+  type HoldRow = { id: string; personId: string | null; from: string; to: string; planned: boolean };
+  const [holds, setHolds] = useState<HoldRow[]>([]);
+  const [hold, setHold] = useState<{ who: string | null; from: string; to: string; error?: string } | null>(null);
+  // Set bearbeiten
+  const [setEdit, setSetEdit] = useState<{ members: string[]; name: string; q: string; error?: string } | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  const load = useCallback(() => { loadItem(id).then(setD).catch((e) => setErr(e.message ?? String(e))); }, [id]);
+  const loadHolds = useCallback(() => { holdsOf(id, todayLocal()).then(setHolds).catch(() => {}); }, [id]);
+  const load = useCallback(() => { loadItem(id).then(setD).catch((e) => setErr(e.message ?? String(e))); loadHolds(); }, [id, loadHolds]);
   useFocusEffect(load);
 
   const tileInfo = wardrobe?.items.find((i) => i.id === id);
@@ -124,6 +136,56 @@ export default function Teil() {
     finally { setBusy(false); }
   }
 
+  async function saveHold() {
+    if (!hold) return;
+    const from = toIso(hold.from), to = toIso(hold.to || hold.from);
+    if (!from || !to) return setHold({ ...hold, error: 'Datum bitte als TT.MM.JJJJ eingeben.' });
+    if (to < from) return setHold({ ...hold, error: '„Bis“ liegt vor „Von“.' });
+    if (to < today) return setHold({ ...hold, error: 'Der Zeitraum liegt in der Vergangenheit.' });
+    setBusy(true);
+    try {
+      await holdItem(id, hold.who, from, to);
+      setHold(null);
+      loadHolds();
+      reloadOutfits().catch(() => {}); // Bügel auf der Kachel
+      const p = wardrobe?.persons.find((x) => x.id === hold.who);
+      toast.show(`Reserviert${p ? ` für ${p.name}` : ''}: ${from === to ? fmtShort(from) : `${fmtShort(from)} – ${fmtShort(to)}`}.`);
+    } catch (e) { setHold({ ...hold, error: 'Speichern fehlgeschlagen: ' + (e as Error).message }); }
+    finally { setBusy(false); }
+  }
+
+  async function removeHold(hid: string) {
+    try { await releaseHold(hid); loadHolds(); reloadOutfits().catch(() => {}); toast.show('Reservierung entfernt.'); }
+    catch (e) { toast.show('Entfernen fehlgeschlagen: ' + (e as Error).message); }
+  }
+
+  function openSet() {
+    setSetEdit({ members: [id, ...setMates.map((m) => m.id)], name: it.set_name ?? '', q: '' });
+  }
+
+  async function confirmSet() {
+    if (!setEdit) return;
+    setBusy(true);
+    try {
+      const before = [id, ...setMates.map((m) => m.id)];
+      const sid = await saveSet(it.set_id, setEdit.members, setEdit.name.trim() || null);
+      for (const x of new Set([...before, ...setEdit.members])) patch(x, { setId: setEdit.members.includes(x) ? sid : null });
+      setD((x) => x && { ...x, item: { ...x.item, set_id: sid, set_name: sid ? setEdit.name.trim() || null : null } });
+      setSetEdit(null);
+      toast.show(sid ? 'Set gespeichert.' : 'Set aufgelöst.');
+    } catch (e) { setSetEdit({ ...setEdit, error: 'Speichern fehlgeschlagen: ' + (e as Error).message }); }
+    finally { setBusy(false); }
+  }
+
+  const holdText = (h: HoldRow) => {
+    const p = wardrobe?.persons.find((x) => x.id === h.personId);
+    return `${h.from === h.to ? fmtShort(h.from) : `${fmtShort(h.from)} – ${fmtShort(h.to)}`}${p ? ` · ${p.name}` : ''}`;
+  };
+  const otherHolds = hold ? holds.filter((h) => h.personId !== hold.who) : [];
+  const setCandidates = setEdit ? (wardrobe?.items ?? []).filter((m) => m.id !== id && !m.isWish && m.status !== 'sold' &&
+    (!setEdit.q.trim() || [m.name, m.brand, m.color].some((f) => f?.toLowerCase().includes(setEdit.q.trim().toLowerCase()))))
+    .sort((a, b) => Number(setEdit.members.includes(b.id)) - Number(setEdit.members.includes(a.id)) || a.name.localeCompare(b.name, 'de')) : [];
+
   const info: [string, string | null | undefined][] = [
     ['Kategorie', categoryLabel(it.category)],
     ['Farbe', [it.color, it.alt_color].filter(Boolean).join(' · ')],
@@ -147,6 +209,11 @@ export default function Teil() {
           {/* Bild */}
           <View style={[s.hero, { boxShadow: `inset 0 0 28px 4px ${hex}73, 0 2px 8px rgba(42,26,29,0.10)` }]}>
             <View style={{ width: '82%', height: '88%', alignItems: 'center', justifyContent: 'center' }}><ItemPicture uri={tileInfo?.image ?? tileInfo?.thumb} inset={0} category={it.category} color={hex} /></View>
+            {canExport && (tileInfo?.image || tileInfo?.thumb) && (
+              <View style={{ position: 'absolute', top: 10, right: 10 }}>
+                <RoundButton label="Bild teilen" onPress={() => setExporting(true)}><Icons.share color={t.ink} /></RoundButton>
+              </View>
+            )}
             {owner && (
               <View style={s.ownerBadge}><Text style={{ fontFamily: DISPLAY, fontSize: 20, color: PERSON[personKey(owner.color)] }}>{owner.name.slice(0, 1)}</Text></View>
             )}
@@ -195,15 +262,36 @@ export default function Teil() {
             <Action label={wornToday ? 'Heute getragen' : 'Heute tragen'} active={wornToday} disabled={busy} onPress={toggleWorn}
               icon={(c) => <Icons.check color={c} />} />
             <Action label="Outfit damit" onPress={() => router.push(`/outfit-bauen?item=${id}`)} icon={(c) => <Icons.layers color={c} size={22} />} />
-            <Action label="Reservieren" onPress={() => toast.show('Einzelne Teile reservieren kommt später. Outfits planen reserviert die Teile schon.')} icon={(c) => <Icons.calendar color={c} />} />
+            <Action label="Reservieren" active={holds.some((h) => h.from <= today && h.to >= today)} onPress={() => setHold({ who: me?.id ?? null, from: toDe(today), to: toDe(today) })} icon={(c) => <Icons.calendar color={c} />} />
             <Action label="Status" active={!!it.status} onPress={() => { setLentTo(it.lent_to ?? ''); setSheet(true); }} icon={(c) => <Icons.closet color={c} />} />
           </View>
 
+          {/* Reservierungen ab heute */}
+          {holds.length > 0 && (
+            <Section title="Reserviert">
+              <View style={[s.list, { backgroundColor: t.surface, borderColor: t.hairline }]}>
+                {holds.map((h, n) => (
+                  <View key={h.id} style={[s.listRow, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
+                    <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>{holdText(h)}</Text>
+                    {h.planned ? <Text style={{ fontSize: 13, color: t.inkMuted }}>über Outfit</Text>
+                      : <Pressable onPress={() => removeHold(h.id)} hitSlop={8} style={[s.smallBtn, { borderColor: t.hairline }]}><Text style={{ fontSize: 14, color: t.ink }}>Entfernen</Text></Pressable>}
+                  </View>
+                ))}
+              </View>
+            </Section>
+          )}
           </>}
 
           {/* Set */}
+          {!it.is_wish && setMates.length === 0 && (
+            <Pressable onPress={openSet} accessibilityRole="button" style={({ pressed }) => [s.setBtn, { borderColor: t.hairline, backgroundColor: t.surface, opacity: pressed ? 0.7 : 1 }]}>
+              <Icons.link color={t.ink} size={20} />
+              <Text style={{ flex: 1, fontSize: 16, color: t.ink }}>Mit anderen Teilen zu einem Set verbinden</Text>
+              <Icons.chevron color={t.inkMuted} />
+            </Pressable>
+          )}
           {setMates.length > 0 && (
-            <Section title={it.set_name ? `Set · ${it.set_name}` : 'Set'}>
+            <Section title={it.set_name ? `Set · ${it.set_name}` : 'Set'} action={!it.is_wish ? { label: 'Bearbeiten', onPress: openSet } : undefined}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.xs }}>
                 {setMates.map((m) => (
                   <Pressable key={m.id} onPress={() => router.push(`/teil/${m.id}`)} accessibilityLabel={m.name}
@@ -287,9 +375,85 @@ export default function Teil() {
           </View>
         )}
       </Sheet>
+      <Sheet open={!!hold} onClose={() => setHold(null)} title="Reservieren"
+        footer={<>
+          <SheetButton label="Abbrechen" onPress={() => setHold(null)} />
+          <SheetButton primary label={busy ? 'Speichert …' : 'Reservieren'} onPress={() => { if (!busy) saveHold(); }} />
+        </>}>
+        {hold && (
+          <View style={{ gap: space.md }}>
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 13, color: t.inkMuted }}>Für</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
+                {(wardrobe?.persons ?? []).map((p) => (
+                  <Chip key={p.id} label={p.id === me?.id ? `${p.name} (ich)` : p.name} dot={PERSON[personKey(p.color)]} selected={hold.who === p.id}
+                    onPress={() => setHold({ ...hold, who: p.id, error: undefined })} />
+                ))}
+              </View>
+            </View>
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 13, color: t.inkMuted }}>Schnell</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
+                {[['Heute', 0, 0], ['Morgen', 1, 1], ['Wochenende', ...weekend(today)], ['7 Tage', 0, 6]].map(([l, a, b]) => {
+                  const from = toDe(addDaysIso(today, a as number)), to = toDe(addDaysIso(today, b as number));
+                  return <Chip key={l as string} label={l as string} selected={hold.from === from && hold.to === to} onPress={() => setHold({ ...hold, from, to, error: undefined })} />;
+                })}
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: space.sm }}>
+              <View style={{ flex: 1 }}><BuyField label="Von" value={hold.from} onText={(v) => setHold({ ...hold, from: v, error: undefined })} placeholder="TT.MM.JJJJ" keyboardType="numbers-and-punctuation" /></View>
+              <View style={{ flex: 1 }}><BuyField label="Bis" value={hold.to} onText={(v) => setHold({ ...hold, to: v, error: undefined })} placeholder="TT.MM.JJJJ" keyboardType="numbers-and-punctuation" /></View>
+            </View>
+            {otherHolds.length > 0 && (
+              <Text style={[s.warn, { color: t.ink, borderColor: '#E8D27A' }]}>Schon reserviert: {otherHolds.map(holdText).join(', ')}</Text>
+            )}
+            {hold.error && <Text style={{ fontSize: 15, color: '#C8102E' }}>{hold.error}</Text>}
+          </View>
+        )}
+      </Sheet>
+      <Sheet open={!!setEdit} onClose={() => setSetEdit(null)} title="Set"
+        footer={<>
+          <SheetButton label="Abbrechen" onPress={() => setSetEdit(null)} />
+          <SheetButton primary label={busy ? 'Speichert …' : 'Speichern'} onPress={() => { if (!busy) confirmSet(); }} />
+        </>}>
+        {setEdit && (
+          <View style={{ gap: space.md }}>
+            <Text style={{ fontSize: 15, color: t.inkMuted }}>Teile, die zusammengehören (z. B. Anzug oder Trainingsanzug). Im Outfit-Baukasten wird dann nachgefragt, ob du das ganze Set trägst.</Text>
+            <BuyField label="Name (optional)" value={setEdit.name} onText={(v) => setSetEdit({ ...setEdit, name: v })} placeholder="z. B. Trainingsanzug" maxLength={40} />
+            <BuyField label="Teile suchen" value={setEdit.q} onText={(v) => setSetEdit({ ...setEdit, q: v })} placeholder="Name, Marke oder Farbe" />
+            <View style={[s.list, { backgroundColor: t.surface, borderColor: t.hairline }]}>
+              {setCandidates.slice(0, 40).map((m, n) => {
+                const on = setEdit.members.includes(m.id);
+                return (
+                  <Pressable key={m.id} onPress={() => setSetEdit({ ...setEdit, error: undefined, members: on ? setEdit.members.filter((x) => x !== m.id) : [...setEdit.members, m.id] })}
+                    accessibilityRole="checkbox" accessibilityState={{ checked: on }}
+                    style={({ pressed }) => [s.listRow, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }, { opacity: pressed ? 0.6 : 1 }]}>
+                    <View style={s.thumb}><ItemPicture uri={m.thumb} inset={2} category={m.category} color={m.hex ?? '#8e8e93'} /></View>
+                    <Text style={{ flex: 1, fontSize: 15, color: t.ink }} numberOfLines={1}>{m.name || 'Teil'}{m.setId && m.setId !== it.set_id ? ' · in anderem Set' : ''}</Text>
+                    <View style={[s.check, { borderColor: on ? '#722638' : t.hairline, backgroundColor: on ? '#722638' : 'transparent' }]}>{on && <Icons.check color="#fff" size={16} />}</View>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {setEdit.error && <Text style={{ fontSize: 15, color: '#C8102E' }}>{setEdit.error}</Text>}
+          </View>
+        )}
+      </Sheet>
+      {canExport && (
+        <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Bild teilen" name={`${fileName(it.name)}.png`}
+          make={() => itemPng((tileInfo?.image ?? tileInfo?.thumb)!)} />
+      )}
       {toast.node}
     </View>
   );
+}
+
+const addDaysIso = (iso: string, n: number) => { const [y, m, d] = iso.split('-').map(Number); return todayLocal(new Date(y!, m! - 1, d! + n)); };
+/** Nächstes Wochenende (Sa–So); am Sonntag nur heute */
+function weekend(iso: string): [number, number] {
+  const [y, m, d] = iso.split('-').map(Number);
+  const wd = new Date(y!, m! - 1, d!).getDay();
+  return wd === 0 ? [0, 0] : [6 - wd, 7 - wd];
 }
 
 function TopBar({ onBack, onEdit }: { onBack: () => void; onEdit?: () => void }) {
@@ -336,11 +500,14 @@ function Action({ label, icon, onPress, active, disabled }: { label: string; ico
   );
 }
 
-function Section({ title, children }: { title: string; children?: React.ReactNode }) {
+function Section({ title, children, action }: { title: string; children?: React.ReactNode; action?: { label: string; onPress: () => void } }) {
   const t = useTheme();
   return (
     <View style={{ marginTop: space.lg }}>
-      <Text style={[s.sectionTitle, { color: t.ink }]}>{title}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <Text style={[s.sectionTitle, { color: t.ink }]}>{title}</Text>
+        {action && <Pressable onPress={action.onPress} hitSlop={8}><Text style={{ fontSize: 15, fontWeight: '600', color: t.actionText }}>{action.label}</Text></Pressable>}
+      </View>
       {children}
     </View>
   );
@@ -365,5 +532,10 @@ const s = StyleSheet.create({
   listRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, paddingVertical: space.sm },
   moreHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg, marginBottom: space.xs, minHeight: 44 },
   buyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, height: 52, borderRadius: 26, backgroundColor: '#722638', marginTop: space.lg },
+  smallBtn: { borderWidth: 1, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
+  setBtn: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 52, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, marginTop: space.lg },
+  thumb: { width: 40, height: 40, borderRadius: 10, overflow: 'hidden', backgroundColor: '#fff' },
+  check: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  warn: { fontSize: 14, backgroundColor: '#FBF1C2', borderWidth: 1, borderRadius: radius.sm, padding: space.sm },
   input: { height: 50, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: space.md, fontSize: 17 },
 });

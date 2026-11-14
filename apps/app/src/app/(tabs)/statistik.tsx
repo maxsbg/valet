@@ -15,7 +15,7 @@ import { personKey, type Tile } from '@/lib/wardrobe';
 
 type Tab = 'spend' | 'wear' | 'closet';
 const TABS: [Tab, string][] = [['spend', 'Ausgaben'], ['wear', 'Getragen'], ['closet', 'Bestand']];
-const STATUS_TEXT: Record<string, string> = { wash: 'in der Wäsche', repair: 'in Reparatur', lent: 'verliehen', out: 'aussortiert', sold: 'verkauft' };
+const STATUS_TEXT: Record<string, string> = { wash: 'in der Wäsche', repair: 'in Reparatur', lent: 'verliehen', stored: 'eingelagert', out: 'aussortiert', sold: 'verkauft' };
 
 export default function Statistik() {
   const t = useTheme();

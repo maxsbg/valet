@@ -15,7 +15,7 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - `apps/app` – Expo SDK 58, Expo Router, react-native-web. Seiten in `src/app`, Rest in `src/components`, `src/lib`. Siehe `apps/app/AGENTS.md` (Expo-Regeln).
 - `packages/core` – Fachlogik + Import aus dem alten Valet (Tests mit `node --test` über `tsx`).
 - `packages/ui` – Design-Tokens (Farben, Personen, Kacheln, Schatten).
-- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`, am 14.11.2026 angewendet). `backup/` – Sicherung der Daten aus dem alten Valet.
+- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`; 0005: Status `stored`; beide am 14.11.2026 angewendet). `backup/` – Sicherung der Daten aus dem alten Valet.
 
 Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filter @valet/app build:web`.
 
@@ -35,7 +35,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 ## Design
 - **Schrank-Kachel** (neu, 13.11.2026): verbindlich `docs/design/kachel/VALET_KACHEL_SPEC.md` + `valet-kachel-referenz.html` (bei Widerspruch gilt die HTML). Werte in `packages/ui/src/tokens.ts` (`itemTile`), Logik in `packages/core/src/tile.ts` (glowFor, ownersFor, countLabel, topRightFor), Komponente `src/components/ItemTile.tsx` + `components/tile/`. Das Designsystem auf claude.ai ist bei der Kachel veraltet.
   - Prüfseite gehört **nicht** in die App: `node docs/design/kachel/pruefung/erstellen.mjs` erzeugt `kachel-pruefung.html` (eigenständig, gleiche Fälle wie die Referenz).
-  - Offen (Max fragen, nicht selbst entscheiden): Set-Plakette, eingelagert vs. aussortiert, Highlight-Farbe automatisch/manuell, Auswahl im Outfit-Baukasten (vorerst alt). Personen ohne Farbe → Monogramm/Bügel schwarz (ink). Teile, die nur der angemeldeten Person gehören, zeigen keine Besitzer-Plakette (14.11.2026). iOS: Blur (expo-blur), Grau-Filter, Text-Versatz nachmessen.
+  - Offen (Max fragen, nicht selbst entscheiden): Set-Plakette, Highlight-Farbe automatisch/manuell, Auswahl im Outfit-Baukasten (vorerst alt). Personen ohne Farbe → Monogramm/Bügel schwarz (ink). Teile, die nur der angemeldeten Person gehören, zeigen keine Besitzer-Plakette (14.11.2026). iOS: Blur (expo-blur), Grau-Filter, Text-Versatz nachmessen.
 - **Wunschlisten-Kachel (entschieden 14.11.2026):** Aufbau wie die Schrank-Kachel. Entwurf `docs/design/wunschliste/wunsch-kacheln.html`.
   - Unten links Preis-Kapsel (ganze Euro, kleines €, wächst mit der Stellenzahl, einstellig = Kreis) – `priceLabel` in `packages/core/src/tile.ts`.
   - Oben rechts Bedenkzeit-Ring mit Resttagen (≤ 3 Tage orange); nach Ablauf verschwindet die Plakette einfach. **Funktion vorerst AUS:** `WISH_WAIT.enabled = false` in `packages/core/src/tile.ts`. Nur einschalten, wenn Max es sagt.
@@ -55,6 +55,10 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
   - Filter nur noch Person (Alle/Max/Paul) und Saison; Stil entfällt. Aktiver Filter bei geschlossener Suche = rosa Punkt an der Lupe.
   - Plus-Knopf kleiner (48) im Milchglas mit rosa Plus. Mosaik bleibt bei jeder Sortierung.
 - Safari (iOS 26) zeichnet ohne festes Element oben einen eigenen Weichzeichner unter die Statusleiste, der die Kopfzeile verwischt → `TopTint` in `ui.tsx` (fester 8-px-Streifen in Seitenfarbe, Teil von `Header`; beim Kleben der Milchglas-Leiste aus).
+- **Status (entschieden 14.11.2026):** `stored` = eingelagert (Keller, kein Zugriff): sichtbar, abgeblendet, Kiste, zählt zum Bestand, nicht in Vorschlägen, im Baukasten wählbar mit Hinweis. `out` = aussortiert (soll verkauft werden): im Schrank ausgeblendet, nur über Filter „Aussortiert (zum Verkauf)“ (dann nur diese), Symbol Kiste mit Pfeil nach oben, zählt nicht zum Bestand.
+- **Reservieren (14.11.2026):** Teil-Detail → Reservieren (für wen, von–bis, Schnellwahl). Zeile in `reservations` ohne `plan_id`; im Schrank-Kontext als `holds` (ab heute), zählt für den Bügel auf der Kachel. Liste „Reserviert“ in der Detailansicht (über Outfit geplante nur anzeigen).
+- **Sets (14.11.2026):** `items.set_id` (Text) + `set_name`. Teil-Detail → „Zu einem Set verbinden“ / Set bearbeiten (`saveSet` in `src/lib/item.ts`, ein Teil allein = Set aufgelöst). Baukasten: Set-Teil gewählt → Blatt „Als Set tragen?“ → Rest mit auswählen.
+- **Export (14.11.2026):** `src/lib/share.ts` + `components/ExportSheet.tsx`: erst Vorschau erstellen, dann „Teilen / Sichern“ (Teilen-Menü muss direkt aus dem Tippen kommen, sonst blockt Safari). Teil = PNG freigestellt; Outfit = Board auf Elfenbein + Name + „valet“ (1080 px breit).
 - Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
@@ -76,5 +80,5 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
    - Planen = Zeile in `outfit_plans`; ab heute zusätzlich je Teil eine Zeile in `reservations` (mit `plan_id`, löscht sich per cascade).
    - Statistik: Rechnungen in `packages/core/src/stats.ts` (Ausgaben/Getragen/Bestand, Anteile über `payers` `[{person_id, amount}]`).
    - Einladen: Statistik → „Schrank teilen“ (`src/components/Invite.tsx`, `src/lib/invite.ts`). Link `…/valet/?einladung=<token>`; Token wird gemerkt, Login bietet „Konto anlegen“, danach `accept_invite` + „Wer bist du?“ (`src/components/Join.tsx`, setzt `persons.user_id`). Nur der Besitzer (Rolle owner) darf Einladungen anlegen.
-   - Noch offen aus dem alten Valet: Würfel/Vorschläge, Wada-Farben, Cap-Wahl, Teile auf dem Board verschieben, Monatskalender, Teilen als Bild, einzelne Teile reservieren.
+   - Noch offen aus dem alten Valet: Würfel/Vorschläge, Wada-Farben, Cap-Wahl, Teile auf dem Board verschieben, Monatskalender. Getragen-Auswertung mit Max genau durchgehen.
 4. Frischer Datenimport vor dem Umstieg.
