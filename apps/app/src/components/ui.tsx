@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Icons } from './Icon';
 import { Sheet, SheetButton, OptionRow } from './Sheet';
@@ -78,7 +78,7 @@ export function RoundButton({ children, label, onPress, size = 40 }: { children:
  * nicht ausgewählt nur Symbol + Anzahl, ausgewählt Symbol + Name + Anzahl – der Chip wird dabei weich breiter
  * und der Name blendet zwischen Symbol und Anzahl ein. Bei „Bewegung reduzieren“ ohne Breiten-Animation.
  */
-export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, tall, dashed, collapse }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; dot?: string; icon?: React.ReactNode; tall?: boolean; dashed?: boolean; collapse?: boolean }) {
+export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, tall, dashed, collapse, onLabelWidth }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; dot?: string; icon?: React.ReactNode; tall?: boolean; dashed?: boolean; collapse?: boolean; onLabelWidth?: (w: number) => void }) {
   const t = useTheme();
   const fold = !!collapse && !!icon;
   const color = selected ? t.bg : dashed ? t.inkMuted : t.ink;
@@ -88,7 +88,7 @@ export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, 
       style={[s.chip, tall && s.chipTall, fold && s.chipFold, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
       {icon}
       {dot && <View style={[s.dot, { backgroundColor: dot }]} />}
-      {fold ? <FoldLabel label={label} open={!!selected} color={color} /> : <Text style={[s.chipText, { color }]}>{label}</Text>}
+      {fold ? <FoldLabel label={label} open={!!selected} color={color} onWidth={onLabelWidth} /> : <Text style={[s.chipText, { color }]}>{label}</Text>}
       {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }, fold && s.chipCountFold]}>{count}</Text>}
     </Pressable>
   );
@@ -96,10 +96,24 @@ export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, 
 
 const FOLD_MS = 300;
 const FOLD_EASE = Easing.bezier(0.2, 0.8, 0.2, 1);
+/** Abstand Symbol → Name im aufgeklappten Chip */
+export const FOLD_GAP = 7;
+/** Ab dieser Breite wird ein Name aus mehreren Wörtern gekürzt (ein Wort nie) */
+const FOLD_MAX = 112;
+
+/**
+ * Name, wie er im aufgeklappten Chip steht (Regel 14.11.2026): ein Wort immer ganz; mehrere Wörter ganz, wenn sie
+ * passen, sonst erstes Wort ganz und das zweite angedeutet („Besonderer Anl…“).
+ */
+export const foldShort = (label: string) => {
+  const w = label.trim().split(/\s+/);
+  return w.length < 2 ? label : `${w[0]} ${w.slice(1).join(' ').slice(0, 3)}…`;
+};
 
 /** Name im Chip, der beim Auswählen aufgeht (Breite gemessen, dann animiert) */
-function FoldLabel({ label, open, color }: { label: string; open: boolean; color: string }) {
-  const [w, setW] = useState(0);
+function FoldLabel({ label, open, color, onWidth }: { label: string; open: boolean; color: string; onWidth?: (w: number) => void }) {
+  const [full, setFull] = useState(0);
+  const [short, setShort] = useState(0);
   const [v] = useState(() => new Animated.Value(open ? 1 : 0));
   const reduce = useReduceMotion();
   useEffect(() => {
@@ -107,20 +121,70 @@ function FoldLabel({ label, open, color }: { label: string; open: boolean; color
     if (reduce) { v.setValue(to); return; }
     Animated.timing(v, { toValue: to, duration: FOLD_MS, easing: FOLD_EASE, useNativeDriver: false }).start();
   }, [open, reduce, v]);
-  const gap = 7;
+  const shortLabel = foldShort(label);
+  const useShort = shortLabel !== label && full > FOLD_MAX;
+  const text = useShort ? shortLabel : label;
+  // +2 px Puffer gegen Rundung beim Messen: der Name wird nie abgeschnitten
+  const w = (useShort ? short : full) + 2;
+  useEffect(() => { if (full) onWidth?.(w + FOLD_GAP); }, [w, full, onWidth]);
   return (
     <>
-      <Animated.View style={{ width: v.interpolate({ inputRange: [0, 1], outputRange: [0, w + gap] }), opacity: v, overflow: 'hidden' }}>
-        <View style={{ width: w + gap, flexDirection: 'row' }}>
-          <Text numberOfLines={1} style={[s.chipText, { color, marginLeft: gap, fontWeight: '600' }]}>{label}</Text>
+      <Animated.View style={{ width: v.interpolate({ inputRange: [0, 1], outputRange: [0, w + FOLD_GAP] }), opacity: v, overflow: 'hidden' }}>
+        <View style={{ width: w + FOLD_GAP, flexDirection: 'row' }}>
+          <Text style={[s.chipText, s.noWrap, { color, marginLeft: FOLD_GAP, fontWeight: '600', flexShrink: 0 }]}>{text}</Text>
         </View>
       </Animated.View>
-      {/* unsichtbar in einem breiten Rahmen, damit die volle Breite gemessen wird */}
+      {/* unsichtbar in einem breiten Rahmen, damit die volle Breite gemessen wird (misst nach dem Laden der Schrift neu) */}
       <View pointerEvents="none" aria-hidden style={s.measure}>
-        <Text numberOfLines={1} onLayout={(e) => setW(Math.ceil(e.nativeEvent.layout.width))} style={[s.chipText, { fontWeight: '600' }]}>{label}</Text>
+        <Text onLayout={(e) => setFull(Math.ceil(e.nativeEvent.layout.width))} style={[s.chipText, s.noWrap, { fontWeight: '600', flexShrink: 0 }]}>{label}</Text>
+        <Text onLayout={(e) => setShort(Math.ceil(e.nativeEvent.layout.width))} style={[s.chipText, s.noWrap, { fontWeight: '600', flexShrink: 0 }]}>{shortLabel}</Text>
       </View>
     </>
   );
+}
+
+/**
+ * Chip-Reihe zum Wischen (Regel 14.11.2026): Ein angetippter Chip, der nicht ganz im Bereich innerhalb des
+ * Innenabstands sichtbar ist, schafft sich Platz – die Reihe rollt gerade so weit, dass er (in seiner aufgeklappten
+ * Breite) bis zum Innenabstand ganz zu sehen ist; die anderen ragen auf der anderen Seite hinaus.
+ */
+export function useChipReveal() {
+  const ref = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const [st] = useState(() => ({ x: 0, view: 0, pos: new Map<string, { x: number; w: number }>(), label: new Map<string, number>() }));
+  return {
+    ref,
+    scrollProps: {
+      scrollEventThrottle: 16,
+      onScroll: (e: { nativeEvent: { contentOffset: { x: number } } }) => { st.x = e.nativeEvent.contentOffset.x; },
+      onLayout: (e: { nativeEvent: { layout: { width: number } } }) => { st.view = e.nativeEvent.layout.width; },
+    },
+    /** onLayout für die Hülle jedes Chips */
+    layout: (key: string) => (e: { nativeEvent: { layout: { x: number; width: number } } }) => { st.pos.set(key, { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width }); },
+    /** Breite des Namens (aufgeklappt) je Chip */
+    labelWidth: (key: string) => (w: number) => { st.label.set(key, w); },
+    /**
+     * key wird ausgewählt (prev war ausgewählt, klappt zu). padL/padR = Innenabstand links/rechts im sichtbaren Bereich.
+     */
+    reveal: (key: string, prev: string | null, padL: number, padR: number) => {
+      const go = (grow: number, shift: number) => {
+        const m = st.pos.get(key);
+        if (!m || !st.view) return;
+        const x = m.x + shift;
+        const w = m.w + grow;
+        let to: number | null = null;
+        if (x < st.x + padL) to = x - padL;
+        else if (x + w > st.x + st.view - padR) to = x + w - st.view + padR;
+        if (to != null) ref.current?.scrollTo({ x: Math.max(0, to), animated: true });
+      };
+      // sofort mit der vorhergesagten Breite (Chip geht auf, der vorige klappt zu) …
+      const pm = prev && prev !== key ? st.pos.get(prev) : undefined;
+      const m0 = st.pos.get(key);
+      go(prev === key ? 0 : st.label.get(key) ?? 0, pm && m0 && pm.x < m0.x ? -(st.label.get(prev!) ?? 0) : 0);
+      // … und nach dem Aufklappen noch einmal mit der echten Lage: am Ende der Reihe kann die Ansicht erst rollen,
+      // wenn der Inhalt breiter geworden ist
+      setTimeout(() => go(0, 0), FOLD_MS + 40);
+    },
+  };
 }
 
 function useReduceMotion() {
@@ -200,6 +264,7 @@ const s = StyleSheet.create({
   // gefaltet: Abstände kommen vom Namen selbst, damit zu nichts kein doppelter Abstand bleibt
   chipFold: { gap: 0, paddingHorizontal: 13 },
   chipCountFold: { marginLeft: 6 },
+  noWrap: (Platform.OS === 'web' ? { whiteSpace: 'nowrap' } : {}) as object,
   measure: { position: 'absolute', left: 0, top: 0, width: 600, opacity: 0, flexDirection: 'row', alignItems: 'flex-start' },
   dot: { width: 8, height: 8, borderRadius: 4 },
   fab: { position: 'absolute', zIndex: 10, right: space.md + 4, width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,0,0,0.28)' },

@@ -28,7 +28,7 @@ const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 /**
  * Wochenleiste oben im Outfits-Tab (entschieden 14.11.2026). Titel antippen klappt die Karte zur Monatsansicht auf.
  * Heute: Wochentag und Zahl in accent. Felder: Mini-Outfit · vergangen leer „–“ · heute offen (accent) · Zukunft „+“.
- * Monat: Mini-Outfit nur an Tagen mit Outfit, leere Tage ohne Rahmen, andere Monate blass.
+ * Monat (14.11.2026): genau wie die Woche – gleiche Felder, Größen, Abstände und Farben; Tage anderer Monate blass ohne Feld.
  */
 export function WeekCalendar({ outfits, byId, today, width, onDay }: Props) {
   const t = useTheme();
@@ -52,7 +52,6 @@ export function WeekCalendar({ outfits, byId, today, width, onDay }: Props) {
   const last = iso(new Date(first.getFullYear(), first.getMonth() + 1, 0));
   const weeks = Math.ceil((((dateOf(last).getTime() - dateOf(start).getTime()) / 86400000) + 1) / 7);
   const cells = Array.from({ length: weeks * 7 }, (_, n) => addDays(start, n));
-  const mW = Math.min(34, colW - 8);
 
   const title = open
     ? `${MONTHS[first.getMonth()]} ${first.getFullYear()}`
@@ -70,6 +69,26 @@ export function WeekCalendar({ outfits, byId, today, width, onDay }: Props) {
   };
 
   const ring = { position: 'absolute' as const, top: -(RING + RING_GAP), left: -(RING + RING_GAP), right: -(RING + RING_GAP), bottom: -(RING + RING_GAP), borderWidth: RING, borderColor: t.accent };
+
+  /** Feld unter der Tageszahl – in Woche und Monat gleich: Mini-Outfit, vergangen „–“, heute offen, Zukunft „+“ */
+  const slot = (d: string) => {
+    const ps = plansOn(outfits, d);
+    const isToday = d === today;
+    const past = d < today;
+    return ps.length ? (
+      <View style={{ width: slotW, height: slotH }}>
+        <View style={[s.slotFull, { width: slotW, height: slotH }]}>
+          <OutfitBoard pieces={ps[0]!.outfit.pieces} byId={byId} width={slotW - 4} />
+        </View>
+        {isToday && <View pointerEvents="none" style={[ring, { borderRadius: 10 + RING + RING_GAP }]} />}
+        {ps.length > 1 && <Text style={s.more}>+{ps.length - 1}</Text>}
+      </View>
+    ) : (
+      <View style={[s.slot, { width: slotW, height: slotH, borderColor: isToday ? t.accent : t.hairline }, isToday && { backgroundColor: t.accent + '1A' }]}>
+        {past ? <Text style={{ fontSize: 16, color: t.inkMuted, opacity: 0.6 }}>–</Text> : <Icons.plus color={isToday ? t.accent : t.inkMuted} size={isToday ? 18 : 16} />}
+      </View>
+    );
+  };
 
   const num = (d: string, size: number, dim = false) => {
     const isToday = d === today;
@@ -108,19 +127,7 @@ export function WeekCalendar({ outfits, byId, today, width, onDay }: Props) {
                 <Text style={[s.wd, { color: isToday ? t.accent : t.inkMuted, fontWeight: isToday ? '700' : '400' }]}>{weekday(d)}</Text>
                 {num(d, 30)}
                 <View style={{ height: 6 }} />
-                {ps.length ? (
-                  <View style={{ width: slotW, height: slotH }}>
-                    <View style={[s.slotFull, { width: slotW, height: slotH }]}>
-                      <OutfitBoard pieces={ps[0]!.outfit.pieces} byId={byId} width={slotW - 4} />
-                    </View>
-                    {isToday && <View pointerEvents="none" style={[ring, { borderRadius: 10 + RING + RING_GAP }]} />}
-                    {ps.length > 1 && <Text style={s.more}>+{ps.length - 1}</Text>}
-                  </View>
-                ) : (
-                  <View style={[s.slot, { width: slotW, height: slotH, borderColor: isToday ? t.accent : t.hairline }, isToday && { backgroundColor: t.accent + '1A' }]}>
-                    {past ? <Text style={{ fontSize: 16, color: t.inkMuted, opacity: 0.6 }}>–</Text> : <Icons.plus color={isToday ? t.accent : t.inkMuted} size={isToday ? 18 : 16} />}
-                  </View>
-                )}
+                {slot(d)}
               </Pressable>
             );
           })}
@@ -136,22 +143,15 @@ export function WeekCalendar({ outfits, byId, today, width, onDay }: Props) {
           <View style={[s.row, { flexWrap: 'wrap' }]}>
             {cells.map((d) => {
               const inMonth = d.slice(0, 7) === mKey;
-              const ps = inMonth ? plansOn(outfits, d) : [];
+              const n = inMonth ? plansOn(outfits, d).length : 0;
               const isToday = d === today;
               return (
                 <Pressable key={d} disabled={!inMonth} onPress={() => onDay(d)} accessibilityRole="button"
-                  accessibilityLabel={`${fmtLong(d)}${isToday ? ', heute' : ''}${ps.length ? `, ${ps.length} Outfit` : ''}`}
-                  style={({ pressed }) => [s.col, { width: colW, paddingBottom: 6, opacity: !inMonth ? 0.3 : pressed ? 0.7 : 1 }]}>
-                  {num(d, 28, d < today && !isToday)}
-                  <View style={{ height: 8 }} />
-                  {ps.length ? (
-                    <View>
-                      <View style={[s.slotFull, { borderRadius: 9 }]}>
-                        <OutfitBoard pieces={ps[0]!.outfit.pieces} byId={byId} width={mW} />
-                      </View>
-                      {isToday && <View pointerEvents="none" style={[ring, { borderRadius: 9 + RING + RING_GAP }]} />}
-                    </View>
-                  ) : <View style={{ width: mW, height: Math.round(mW * BOARD_AR) + 4 }} />}
+                  accessibilityLabel={`${fmtLong(d)}${isToday ? ', heute' : ''}${n ? `, ${n} Outfit` : ''}`}
+                  style={({ pressed }) => [s.col, { width: colW, paddingBottom: 12, opacity: pressed ? 0.7 : 1 }]}>
+                  <View style={{ opacity: inMonth ? 1 : 0.3 }}>{num(d, 30)}</View>
+                  <View style={{ height: 6 }} />
+                  {inMonth ? slot(d) : <View style={{ width: slotW, height: slotH }} />}
                 </Pressable>
               );
             })}

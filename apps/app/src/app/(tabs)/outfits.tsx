@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
-import { Header, Chip, Empty, useToast } from '@/components/ui';
+import { Header, Chip, Empty, useToast, useChipReveal } from '@/components/ui';
 import { WeekCalendar } from '@/components/WeekCalendar';
 import { useTilePeople } from '@/components/Mosaic';
 import { TileIcon } from '@/components/tile/TileIcons';
@@ -24,6 +24,12 @@ export default function Outfits() {
   const { wardrobe, session, loading, reload, reloadOutfits } = useSession();
   const toast = useToast(scr.barTop + space.sm);
   const [occ, setOcc] = useState<string | null>(null);
+  const chipRow = useChipReveal();
+  // Chip wählen; ragt er aus dem sichtbaren Bereich, rollt die Reihe gerade so weit, dass er ganz zu sehen ist
+  const pickOcc = (x: string | null) => {
+    chipRow.reveal(x ?? 'alle', occ ?? 'alle', space.md, space.md);
+    setOcc(x);
+  };
   const [day, setDay] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [who, setWho] = useState<string | null>(null);
@@ -100,13 +106,19 @@ export default function Outfits() {
         <WeekCalendar outfits={outfits} byId={byId} today={today} width={scr.content} onDay={openDay} />
 
         {used.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: scr.content + 2 * space.md, flexGrow: 0 }}
+          <ScrollView ref={chipRow.ref} {...chipRow.scrollProps} horizontal showsHorizontalScrollIndicator={false} style={{ width: scr.content + 2 * space.md, flexGrow: 0 }}
             contentContainerStyle={{ gap: space.xs, paddingHorizontal: space.md, paddingTop: space.md }}>
-            <Chip tall label="Alle" count={outfits.length} selected={!occ} onPress={() => setOcc(null)} />
+            <View onLayout={chipRow.layout('alle')}>
+              <Chip tall label="Alle" count={outfits.length} selected={!occ} onPress={() => pickOcc(null)} />
+            </View>
             {used.map((x) => {
               const on = occ === x.label;
-              return <Chip key={x.label} tall collapse label={x.label} count={x.n} selected={on}
-                icon={<TileIcon name={x.icon} color={on ? t.bg : t.ink} size={18} />} onPress={() => setOcc(on ? null : x.label)} />;
+              return (
+                <View key={x.label} onLayout={chipRow.layout(x.label)}>
+                  <Chip tall collapse label={x.label} count={x.n} selected={on} onLabelWidth={chipRow.labelWidth(x.label)}
+                    icon={<TileIcon name={x.icon} color={on ? t.bg : t.ink} size={18} />} onPress={() => pickOcc(on ? null : x.label)} />
+                </View>
+              );
             })}
           </ScrollView>
         )}
