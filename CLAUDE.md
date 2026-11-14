@@ -60,6 +60,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - **Sets (14.11.2026):** `items.set_id` (Text) + `set_name`. Teil-Detail → „Zu einem Set verbinden“ / Set bearbeiten (`saveSet` in `src/lib/item.ts`, ein Teil allein = Set aufgelöst). Baukasten: Set-Teil gewählt → Blatt „Als Set tragen?“ → Rest mit auswählen.
 - **Export (14.11.2026):** `src/lib/share.ts` + `components/ExportSheet.tsx`: erst Vorschau erstellen, dann „Teilen / Sichern“ (Teilen-Menü muss direkt aus dem Tippen kommen, sonst blockt Safari). Teil = PNG freigestellt; Outfit = Board auf Elfenbein + Name + „valet“ (1080 px breit).
 - Safari (iPhone): Ein Eingabefeld nie mit Deckkraft 0 fokussieren – Safari behandelt es dann als verstecktes Feld und blockiert das Wischen in der Nähe, bis die Tastatur zu ist (Suche in `ClosetBar`: vor `focus()` 5 %).
+- **Getragen-Auswertung (entschieden 14.11.2026):** `wearStats` in `packages/core/src/stats.ts`, Ansicht in `statistik.tsx`. Geplante Outfits zählen ab ihrem Tag automatisch als getragen. Zeitraum 30 Tage / 12 Monate / Gesamt (gemerkt); Kacheln Getragen, Schrank genutzt (%), Ø Kosten pro Tragen, Lieblingsteil; Verlauf (≤ 10 Wochen Kalender, sonst Säulen je Monat), Lieblingsteile, Lieblings-Outfits + oft zusammen getragene Hauptteile (≥ 2×), Schrank-Nutzung je Kategorie (ohne eingelagerte). Kosten pro Tragen immer seit Beginn, ohne bezahlten Preis weglassen (kein Listenpreis). „Lange nicht getragen“ nur Teile der aktuellen Saison (Nov–Feb Winter, Jun–Aug Sommer, sonst Übergang; ohne Saison = ganzjährig), ab 30 Tagen (`IDLE_DAYS`).
 - Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
@@ -81,5 +82,5 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
    - Planen = Zeile in `outfit_plans`; ab heute zusätzlich je Teil eine Zeile in `reservations` (mit `plan_id`, löscht sich per cascade).
    - Statistik: Rechnungen in `packages/core/src/stats.ts` (Ausgaben/Getragen/Bestand, Anteile über `payers` `[{person_id, amount}]`).
    - Einladen: Statistik → „Schrank teilen“ (`src/components/Invite.tsx`, `src/lib/invite.ts`). Link `…/valet/?einladung=<token>`; Token wird gemerkt, Login bietet „Konto anlegen“, danach `accept_invite` + „Wer bist du?“ (`src/components/Join.tsx`, setzt `persons.user_id`). Nur der Besitzer (Rolle owner) darf Einladungen anlegen.
-   - Noch offen aus dem alten Valet: Würfel/Vorschläge, Wada-Farben, Cap-Wahl, Teile auf dem Board verschieben, Monatskalender. Getragen-Auswertung mit Max genau durchgehen.
+   - Noch offen aus dem alten Valet: Würfel/Vorschläge, Wada-Farben, Cap-Wahl, Teile auf dem Board verschieben, Monatskalender.
 4. Frischer Datenimport vor dem Umstieg.

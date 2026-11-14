@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Page } from '@/components/Page';
-import { categoryLabel, closetStats, formatEur, spendStats, wearStats, type StatItem, type WearLog, type Outfit as CoreOutfit } from '@valet/core';
+import { categoryLabel, closetStats, formatEur, spendStats, wearStats, IDLE_DAYS, type StatItem, type WearLog, type WearPeriod, type Outfit as CoreOutfit } from '@valet/core';
+import { OutfitBoard } from '@/components/OutfitBoard';
 import { Header, Chip, Empty } from '@/components/ui';
 import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
@@ -24,6 +25,7 @@ export default function Statistik() {
   const [tab, setTab] = usePersisted<Tab>('valet.statsTab', 'spend');
   const [scopeSel, setScope] = useState<string | null>(null);
   const [allBrands, setAllBrands] = useState(false);
+  const [period, setPeriod] = usePersisted<WearPeriod>('valet.wearPeriod', '30');
 
   const persons = wardrobe?.persons ?? [];
   const me = persons.find((p) => p.user_id === session?.user.id) ?? null;
@@ -35,7 +37,7 @@ export default function Statistik() {
 
   const stat: StatItem[] = useMemo(() => items.map((i) => ({
     id: i.id, ownerId: i.ownerId, category: i.category, brand: i.brand, qty: i.qty, pricePaid: i.pricePaid, listPrice: i.listPrice,
-    payers: i.payers, purchaseDate: i.purchaseDate, status: i.status, soldPrice: i.soldPrice, isWish: i.isWish, createdAt: i.createdAt,
+    payers: i.payers, purchaseDate: i.purchaseDate, status: i.status, soldPrice: i.soldPrice, isWish: i.isWish, createdAt: i.createdAt, seasons: i.seasons,
   })), [items]);
   const wears: WearLog = useMemo(() => {
     const m: WearLog = {};
@@ -100,38 +102,103 @@ export default function Statistik() {
       );
     }
     if (tab === 'wear') {
-      const r = wearStats(stat, P?.id ?? null, wears, outfits);
-      if (!r.total) return (
-        <Panel t={t} title="Getragen">
-          <Text style={{ fontSize: 14, color: t.inkMuted }}>Noch nichts eingetragen. Tippe bei einem Outfit auf „Heute tragen“, plane Tage in der Wochenleiste oder markiere ein Teil mit „Heute tragen“. Dann siehst du hier Kosten pro Tragen, Lieblingsteile und was lange im Schrank liegt.</Text>
-        </Panel>
-      );
+      const r = wearStats(stat, P?.id ?? null, wears, outfits, undefined, period);
       const g = (list: { item: StatItem }[], value: (x: never) => string, sub?: (x: never) => string) =>
         list.map((x) => ({ item: byId.get(x.item.id)!, value: value(x as never), sub: sub?.(x as never) }));
+      const W = scr.content - 30;
+      const periods: [WearPeriod, string][] = [['30', '30 Tage'], ['year', '12 Monate'], ['all', 'Gesamt']];
+      const pct = r.usage.total ? Math.round((r.usage.worn / r.usage.total) * 100) : 0;
+      const dayCount = Object.keys(r.days).length;
+      const late = r.start && r.from && r.start > r.from; // Aufzeichnung beginnt erst im Zeitraum
+      const wardOutfits = new Map((wardrobe?.outfits ?? []).map((o) => [o.id, o]));
       return (
         <>
-          <View style={s.tiles}>
-            <StatTile t={t} label="Getragen" value={`${r.total}×`} hint={`${r.trackedPieces} von ${r.pieces} Teilen`} />
-            <StatTile t={t} label="Ø Kosten pro Tragen" value={r.avgCpw != null ? formatEur(r.avgCpw) : '–'} hint="nur Teile mit Preis" />
+          <View style={[s.wrap, { marginBottom: space.sm }]}>
+            {periods.map(([k, l]) => <Chip key={k} label={l} selected={period === k} onPress={() => setPeriod(k)} />)}
           </View>
-          <Panel t={t} title="Lieblingsteile">
-            <PGrid t={t} width={scr.content - 30} list={g(r.favorites, (x: { w: string[] }) => `${x.w.length}×`)} />
+          {!r.start ? (
+            <Panel t={t} title="Getragen">
+              <Text style={{ fontSize: 14, color: t.inkMuted }}>Noch nichts eingetragen. Tippe bei einem Outfit auf „Heute tragen“, plane Tage in der Wochenleiste oder markiere ein Teil mit „Heute tragen“. Dann siehst du hier Kosten pro Tragen, Lieblingsteile und was lange im Schrank liegt.</Text>
+            </Panel>
+          ) : <>
+          {late && <Text style={[s.note, { color: t.inkMuted }]}>Aufgezeichnet seit {deDate(r.start!)} – davor gibt es keine Einträge.</Text>}
+          <View style={s.tiles}>
+            <StatTile t={t} label="Getragen" value={`${r.total}×`} hint={`an ${dayCount} ${dayCount === 1 ? 'Tag' : 'Tagen'}`} />
+            <StatTile t={t} label="Schrank genutzt" value={`${pct} %`} hint={`${r.usage.worn} von ${r.usage.total} Teilen`} />
+            <StatTile t={t} label="Ø Kosten pro Tragen" value={r.avgCpw != null ? formatEur(r.avgCpw) : '–'} hint="seit Beginn, Teile mit Preis" />
+            <StatTile t={t} label="Lieblingsteil" value={r.favorites[0] ? `${r.favorites[0].w.length}×` : '–'} hint={r.favorites[0] ? byId.get(r.favorites[0].item.id)?.name || 'Teil' : 'im Zeitraum nichts'} />
+          </View>
+
+          <Panel t={t} title="Verlauf">
+            <History t={t} days={r.days} from={late || !r.from ? r.start! : r.from} width={W} />
           </Panel>
-          {r.best.length > 0 && (
-            <Panel t={t} title="Kosten pro Tragen">
-              <Text style={[s.psub, { color: t.inkMuted }]}>Am meisten rausgeholt</Text>
-              <PGrid t={t} width={scr.content - 30} list={g(r.best, (x: { cpw: number }) => formatEur(x.cpw), (x: { w: string[] }) => `${x.w.length}× getragen`)} />
-              {r.worst.length > 0 && <>
-                <Text style={[s.psub, { color: t.inkMuted, marginTop: space.sm }]}>Noch teuer pro Tragen</Text>
-                <PGrid t={t} width={scr.content - 30} list={g(r.worst, (x: { cpw: number }) => formatEur(x.cpw), (x: { w: string[] }) => `${x.w.length}× getragen`)} />
+
+          {r.favorites.length > 0 && (
+            <Panel t={t} title="Lieblingsteile">
+              <PGrid t={t} width={W} list={g(r.favorites, (x: { w: string[] }) => `${x.w.length}×`)} />
+            </Panel>
+          )}
+
+          {r.outfits.length > 0 && (
+            <Panel t={t} title="Lieblings-Outfits">
+              <View style={s.pgrid}>
+                {r.outfits.map(({ outfit, n }) => {
+                  const o = wardOutfits.get(outfit.id);
+                  const w = (W - 3 * 8) / 4;
+                  return o ? (
+                    <Pressable key={o.id} onPress={() => router.push(`/outfit/${o.id}`)} accessibilityLabel={o.name || 'Outfit'} style={{ width: w, alignItems: 'center' }}>
+                      <View style={[s.pim, { width: w, height: Math.round(w * 1.25), borderColor: t.hairline }]}><OutfitBoard pieces={o.pieces} byId={byId} width={w - 2} /></View>
+                      <Text style={{ fontSize: 13, fontWeight: '600', marginTop: 5, color: t.ink }}>{n}×</Text>
+                    </Pressable>
+                  ) : null;
+                })}
+              </View>
+              {r.pairs.length > 0 && <>
+                <Text style={[s.psub, { color: t.inkMuted, marginTop: space.md }]}>Oft zusammen getragen</Text>
+                {r.pairs.map((x, n) => {
+                  const a = byId.get(x.a.id), b = byId.get(x.b.id);
+                  if (!a || !b) return null;
+                  return (
+                    <View key={n} style={[s.pair, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
+                      {[a, b].map((it) => (
+                        <Pressable key={it.id} onPress={() => router.push(`/teil/${it.id}`)} accessibilityLabel={it.name || 'Teil'} style={[s.pim, { width: 48, height: 48, borderColor: t.hairline }]}>
+                          <ItemPicture uri={it.thumb} inset="11%" category={it.category} color={it.hex ?? '#c4bfb4'} />
+                        </Pressable>
+                      ))}
+                      <Text style={{ flex: 1, fontSize: 14, color: t.ink }} numberOfLines={2}>{a.name || 'Teil'} + {b.name || 'Teil'}</Text>
+                      <Text style={{ fontSize: 14, color: t.inkMuted }}>{x.n}×</Text>
+                    </View>
+                  );
+                })}
               </>}
             </Panel>
           )}
-          {r.idle.length > 0 && (
-            <Panel t={t} title="Lange nicht getragen">
-              <PGrid t={t} width={scr.content - 30} list={g(r.idle, (x: { w: string[]; days: number }) => (x.w.length ? `${x.days} Tage` : 'noch nie'), (x: { w: string[] }) => (x.w.length ? 'her' : ''))} />
+
+          {r.usage.categories.length > 0 && (
+            <Panel t={t} title="Schrank-Nutzung">
+              <Text style={[s.psub, { color: t.inkMuted }]}>Wie viele Teile je Kategorie du im Zeitraum getragen hast (ohne eingelagerte)</Text>
+              {r.usage.categories.map((c) => <Bar key={c.key} t={t} label={categoryLabel(c.key)} value={c.worn} max={c.total} text={`${c.worn} von ${c.total}`} />)}
             </Panel>
           )}
+
+          {r.best.length > 0 && (
+            <Panel t={t} title="Kosten pro Tragen">
+              <Text style={[s.psub, { color: t.inkMuted }]}>Seit Beginn · am meisten rausgeholt</Text>
+              <PGrid t={t} width={W} list={g(r.best, (x: { cpw: number }) => formatEur(x.cpw), (x: { w: string[] }) => `${x.w.length}× getragen`)} />
+              {r.worst.length > 0 && <>
+                <Text style={[s.psub, { color: t.inkMuted, marginTop: space.sm }]}>Noch teuer pro Tragen</Text>
+                <PGrid t={t} width={W} list={g(r.worst, (x: { cpw: number }) => formatEur(x.cpw), (x: { w: string[] }) => `${x.w.length}× getragen`)} />
+              </>}
+            </Panel>
+          )}
+
+          <Panel t={t} title="Lange nicht getragen">
+            <Text style={[s.psub, { color: t.inkMuted }]}>Nur Teile für {r.season === 'Übergang' ? 'die Übergangszeit' : `den ${r.season}`} (und ganzjährige), ab {IDLE_DAYS} Tagen</Text>
+            {r.idle.length ? (
+              <PGrid t={t} width={W} list={g(r.idle, (x: { w: string[]; days: number }) => (x.w.length ? `${x.days} Tage` : 'noch nie'), (x: { w: string[]; days: number }) => (x.w.length ? 'her' : `seit ${x.days} Tagen`))} />
+            ) : <Text style={{ fontSize: 14, color: t.inkMuted }}>Nichts – alles für die Saison war in den letzten {IDLE_DAYS} Tagen dran.</Text>}
+          </Panel>
+          </>}
         </>
       );
     }
@@ -243,6 +310,80 @@ function Bar({ t, label, sub, value, max, text, color, dim }: { t: Theme; label:
   );
 }
 
+const deDate = (iso: string) => { const [y, m, d] = iso.split('-'); return `${Number(d)}.${Number(m)}.${y}`; };
+const isoOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
+/**
+ * Verlauf: bis ca. 10 Wochen als Kalender (Zeilen = Mo–So, je Tag Kästchen, kräftiger = mehr Teile getragen),
+ * bei längeren Zeiträumen Säulen je Monat (Tage mit Eintrag).
+ */
+function History({ t, days, from, width }: { t: Theme; days: Record<string, number>; from: string; width: number }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [y, m, d] = from.split('-').map(Number);
+  const start = new Date(y!, m! - 1, d!);
+  const weeks = Math.ceil((today.getTime() - start.getTime()) / (7 * 864e5)) + 1;
+  const tone = t.dark ? t.accent : '#722638';
+  const level = (n: number) => (n <= 0 ? 0 : n <= 2 ? 0.35 : n <= 4 ? 0.65 : 1);
+  if (weeks <= 10) {
+    const monday = new Date(start); monday.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    const cols = Math.ceil((today.getTime() - monday.getTime()) / (7 * 864e5) + 1 / 7);
+    const gap = 4, label = 22;
+    const cell = Math.min(30, Math.floor((width - label - (cols - 1) * gap) / cols));
+    return (
+      <View>
+        <View style={{ flexDirection: 'row', gap }}>
+          <View style={{ width: label - gap, gap }}>
+            {['Mo', '', 'Mi', '', 'Fr', '', 'So'].map((w, i) => <Text key={i} style={{ height: cell, fontSize: 10, lineHeight: cell, color: t.inkMuted }}>{w}</Text>)}
+          </View>
+          {Array.from({ length: cols }, (_, c) => (
+            <View key={c} style={{ gap }}>
+              {Array.from({ length: 7 }, (_, r) => {
+                const day = new Date(monday); day.setDate(monday.getDate() + c * 7 + r);
+                const iso = isoOf(day);
+                const out = day < start || day > today;
+                const n = days[iso] ?? 0;
+                return <View key={r} accessibilityLabel={`${deDate(iso)}: ${n} Teile`}
+                  style={{ width: cell, height: cell, borderRadius: 6, opacity: out ? 0.25 : 1,
+                    backgroundColor: n ? tone : t.dark ? '#3a302d' : '#efece5' }}>
+                  {n > 0 && <View style={{ flex: 1, borderRadius: 6, backgroundColor: t.surface, opacity: 1 - level(n) }} />}
+                </View>;
+              })}
+            </View>
+          ))}
+        </View>
+        <Text style={{ fontSize: 12, color: t.inkMuted, marginTop: 8 }}>Kräftiger = mehr Teile an dem Tag</Text>
+      </View>
+    );
+  }
+  // Monate
+  const months: { key: string; label: string; n: number }[] = [];
+  const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cur <= today && months.length < 24) {
+    const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`;
+    months.push({ key, label: MONTHS[cur.getMonth()]!, n: Object.keys(days).filter((x) => x.startsWith(key)).length });
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  const max = Math.max(1, ...months.map((x) => x.n));
+  const bw = Math.min(28, (width - (months.length - 1) * 6) / months.length);
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 110 }}>
+        {months.map((x) => (
+          <View key={x.key} style={{ width: bw, alignItems: 'center', gap: 3 }}>
+            {x.n > 0 && <Text style={{ fontSize: 10, color: t.inkMuted }}>{x.n}</Text>}
+            <View style={{ width: bw, height: Math.max(3, (x.n / max) * 80), borderRadius: 5, backgroundColor: x.n ? tone : t.dark ? '#3a302d' : '#efece5' }} />
+          </View>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+        {months.map((x) => <Text key={x.key} style={{ width: bw, fontSize: 10, textAlign: 'center', color: t.inkMuted }} numberOfLines={1}>{x.label}</Text>)}
+      </View>
+      <Text style={{ fontSize: 12, color: t.inkMuted, marginTop: 8 }}>Tage mit Eintrag je Monat</Text>
+    </View>
+  );
+}
+
 /** Teile als Bilder statt Namen (Antippen öffnet das Teil) */
 function PGrid({ t, list, width }: { t: Theme; list: { item: Tile; value: string; sub?: string }[]; width: number }) {
   const w = (width - 3 * 8) / 4;
@@ -276,6 +417,8 @@ const s = StyleSheet.create({
   psub: { fontSize: 12, marginTop: -4, marginBottom: 8 },
   pgrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pim: { backgroundColor: '#fff', borderWidth: 1, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  note: { fontSize: 13, marginTop: -4, marginBottom: 10 },
+  pair: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
   trow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, paddingVertical: 8 },
   h2: { fontFamily: DISPLAY, fontSize: 22, marginTop: space.lg, marginBottom: space.xs },
 });
