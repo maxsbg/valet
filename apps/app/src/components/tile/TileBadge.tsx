@@ -29,13 +29,15 @@ const raise = css({ verticalAlign: `${b.sym.raiseEm}em` });
 /** circle 20 × 20 · capsule 20 × 14 (Anzahl unter Wendbar) · pill 20 hoch, wächst mit dem Inhalt (Preis) */
 type Shape = 'circle' | 'capsule' | 'pill';
 
-export function Glass({ shape = 'circle', label, style, children }: { shape?: Shape; label?: string; style?: ViewStyle; children: React.ReactNode }) {
+export function Glass({ shape = 'circle', label, style, scale = 1, children }: { shape?: Shape; label?: string; style?: ViewStyle; scale?: number; children: React.ReactNode }) {
+  // scale: Outfit-Karte (× 1,5) – bleibt konzentrisch, weil Radius und Abstand mitwachsen
+  const big = scale !== 1 ? { width: b.size * scale, height: b.size * scale, borderRadius: b.radius * scale } : null;
   return (
     <View
       role={label ? 'img' : undefined}
       aria-label={label}
       accessibilityLabel={label}
-      style={[s.glass, shape === 'capsule' && s.capsule, shape === 'pill' && s.pill, glassWeb, style]}
+      style={[s.glass, shape === 'capsule' && s.capsule, shape === 'pill' && s.pill, big, glassWeb, style]}
     >
       {children}
     </View>
@@ -43,10 +45,11 @@ export function Glass({ shape = 'circle', label, style, children }: { shape?: Sh
 }
 
 /** Ziffern mit kleinem Beizeichen: „2ד, „12ד, „99+“ bzw. „+3“ (Zeichen vorne) */
-export function Num({ num, sym, symFirst }: { num: string; sym: '×' | '+'; symFirst?: boolean }) {
-  const symEl = <Text style={[s.sym, raise]}>{sym}</Text>;
+export function Num({ num, sym, symFirst, scale = 1 }: { num: string; sym: '×' | '+'; symFirst?: boolean; scale?: number }) {
+  const big = scale !== 1;
+  const symEl = <Text style={[s.sym, big && { fontSize: b.sym.size * scale }, raise]}>{sym}</Text>;
   return (
-    <Text style={[s.num, trim]} numberOfLines={1}>
+    <Text style={[s.num, big && { fontSize: b.num.size * scale, lineHeight: b.num.size * scale, letterSpacing: b.num.letterSpacing * scale }, trim]} numberOfLines={1}>
       {symFirst ? symEl : null}{num}{symFirst ? null : symEl}
     </Text>
   );

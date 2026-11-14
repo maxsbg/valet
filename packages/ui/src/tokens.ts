@@ -28,7 +28,7 @@ export const colors = {
     action: brand.orange,       // Hauptaktion (+), nur als Fläche
     onAction: '#2A1A1D',        // Schrift/Symbol auf Orange (5.6:1) – Weiß wäre nur 3.0:1
     actionText: '#B8430F',      // Orange als Schrift auf hellem Grund (4.8:1)
-    highlight: brand.yellow,    // „Heute“, Hervorhebung (sparsam)
+    highlight: brand.yellow,    // Hervorhebung (sparsam); „Heute“ ist seit 14.11.2026 accent
     blush: brand.pink,          // Person/Markierung
     glass: '#F5F0E8B8',         // warm getöntes Glas
     glassBorder: '#FFFFFF8C',
@@ -162,6 +162,21 @@ export const itemTile = {
   },
 } as const;
 
+/**
+ * Outfit-Karte (entschieden 14.11.2026): weiß, ohne Fußzeile, nur Plaketten. Plaketten = Kachel-Regeln × 1,5,
+ * konzentrisch zum Kartenradius: radius-badge = 22 − 7 = 15 → Plakette 30 px; Überlappung 3 × 1,5 = 4,5.
+ */
+const outfitRadius = 22;
+const outfitScale = 1.5;
+export const outfitCard = {
+  radius: outfitRadius,
+  scale: outfitScale,
+  inset: outfitRadius - itemTile.badge.radius * outfitScale,
+  overlap: itemTile.badge.ownerOverlap * outfitScale,
+  /** Innenabstand der Collage */
+  photoInset: itemTile.photoInset * outfitScale,
+} as const;
+
 /** Kachel im Mosaik (aus dem alten Valet übernommen) */
 export const tile = {
   radius: 22,
@@ -228,5 +243,5 @@ export const motion = {
   spring: { damping: 22, stiffness: 260 },
 } as const;
 
-export const tokens = { brand, colors, status, person, personText, itemTile, tile, space, radius, hitTarget, fonts, type, glass, shadow, motion };
+export const tokens = { brand, colors, status, person, personText, itemTile, outfitCard, tile, space, radius, hitTarget, fonts, type, glass, shadow, motion };
 export default tokens;

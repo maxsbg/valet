@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Icons } from './Icon';
 import { Sheet, SheetButton, OptionRow } from './Sheet';
@@ -73,17 +73,65 @@ export function RoundButton({ children, label, onPress, size = 40 }: { children:
 }
 
 /** Filter-Chip; ausgewählt = gefüllt in ink (ein einheitlicher Stil für „ausgewählt“) */
-export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, tall, dashed }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; dot?: string; icon?: React.ReactNode; tall?: boolean; dashed?: boolean }) {
+/**
+ * Filter-Chip. collapse (Kategorie-/Anlass-Chips mit Symbol, alle Tabs, entschieden 14.11.2026):
+ * nicht ausgewählt nur Symbol + Anzahl, ausgewählt Symbol + Name + Anzahl – der Chip wird dabei weich breiter
+ * und der Name blendet zwischen Symbol und Anzahl ein. Bei „Bewegung reduzieren“ ohne Breiten-Animation.
+ */
+export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, tall, dashed, collapse }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; dot?: string; icon?: React.ReactNode; tall?: boolean; dashed?: boolean; collapse?: boolean }) {
   const t = useTheme();
+  const fold = !!collapse && !!icon;
+  const color = selected ? t.bg : dashed ? t.inkMuted : t.ink;
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} onLongPress={onLongPress} delayLongPress={400}
-      style={[s.chip, tall && s.chipTall, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
+      accessibilityLabel={fold ? (count != null ? `${label}, ${count}` : label) : undefined}
+      style={[s.chip, tall && s.chipTall, fold && s.chipFold, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
       {icon}
       {dot && <View style={[s.dot, { backgroundColor: dot }]} />}
-      <Text style={[s.chipText, { color: selected ? t.bg : dashed ? t.inkMuted : t.ink }]}>{label}</Text>
-      {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }]}>{count}</Text>}
+      {fold ? <FoldLabel label={label} open={!!selected} color={color} /> : <Text style={[s.chipText, { color }]}>{label}</Text>}
+      {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }, fold && s.chipCountFold]}>{count}</Text>}
     </Pressable>
   );
+}
+
+const FOLD_MS = 300;
+const FOLD_EASE = Easing.bezier(0.2, 0.8, 0.2, 1);
+
+/** Name im Chip, der beim Auswählen aufgeht (Breite gemessen, dann animiert) */
+function FoldLabel({ label, open, color }: { label: string; open: boolean; color: string }) {
+  const [w, setW] = useState(0);
+  const [v] = useState(() => new Animated.Value(open ? 1 : 0));
+  const reduce = useReduceMotion();
+  useEffect(() => {
+    const to = open ? 1 : 0;
+    if (reduce) { v.setValue(to); return; }
+    Animated.timing(v, { toValue: to, duration: FOLD_MS, easing: FOLD_EASE, useNativeDriver: false }).start();
+  }, [open, reduce, v]);
+  const gap = 7;
+  return (
+    <>
+      <Animated.View style={{ width: v.interpolate({ inputRange: [0, 1], outputRange: [0, w + gap] }), opacity: v, overflow: 'hidden' }}>
+        <View style={{ width: w + gap, flexDirection: 'row' }}>
+          <Text numberOfLines={1} style={[s.chipText, { color, marginLeft: gap, fontWeight: '600' }]}>{label}</Text>
+        </View>
+      </Animated.View>
+      {/* unsichtbar in einem breiten Rahmen, damit die volle Breite gemessen wird */}
+      <View pointerEvents="none" aria-hidden style={s.measure}>
+        <Text numberOfLines={1} onLayout={(e) => setW(Math.ceil(e.nativeEvent.layout.width))} style={[s.chipText, { fontWeight: '600' }]}>{label}</Text>
+      </View>
+    </>
+  );
+}
+
+function useReduceMotion() {
+  const [r, setR] = useState(false);
+  useEffect(() => {
+    let on = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((x) => on && setR(x)).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setR);
+    return () => { on = false; sub.remove(); };
+  }, []);
+  return r;
 }
 
 /** Einfaches Suchfeld (Outfit-Baukasten) */
@@ -149,6 +197,10 @@ const s = StyleSheet.create({
   chipTall: { height: 44, paddingHorizontal: 16 },
   chipText: { fontSize: 15, fontWeight: '500' },
   chipCount: { fontSize: 13 },
+  // gefaltet: Abstände kommen vom Namen selbst, damit zu nichts kein doppelter Abstand bleibt
+  chipFold: { gap: 0, paddingHorizontal: 13 },
+  chipCountFold: { marginLeft: 6 },
+  measure: { position: 'absolute', left: 0, top: 0, width: 600, opacity: 0, flexDirection: 'row', alignItems: 'flex-start' },
   dot: { width: 8, height: 8, borderRadius: 4 },
   fab: { position: 'absolute', zIndex: 10, right: space.md + 4, width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,0,0,0.28)' },
   toastWrap: { position: 'absolute', zIndex: 40, left: 0, right: 0, alignItems: 'center' },

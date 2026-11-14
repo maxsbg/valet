@@ -5,7 +5,7 @@ import { Page } from '@/components/Page';
 import { categoryLabel, closetStats, formatEur, spendStats, wearStats, IDLE_DAYS, type StatItem, type WearLog, type WearPeriod, type Outfit as CoreOutfit } from '@valet/core';
 import { OutfitBoard } from '@/components/OutfitBoard';
 import { Header, Chip, Empty } from '@/components/ui';
-import { Icons } from '@/components/Icon';
+import { TileIcon } from '@/components/tile/TileIcons';
 import { ItemPicture } from '@/components/ItemPicture';
 import { Invite } from '@/components/Invite';
 import { useSession } from '@/lib/session';
@@ -215,10 +215,9 @@ export default function Statistik() {
         {(r.status.length > 0 || revenue.revenue > 0) && (
           <Panel t={t} title="Status">
             {r.status.map((x, n) => {
-              const I = Icons[x.key];
               return (
                 <View key={x.key} style={[s.trow, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}><I color={t.ink} size={14} /><Text style={{ fontSize: 14, color: t.ink }}>{x.value} {STATUS_TEXT[x.key]}</Text></View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}><TileIcon name={x.key} color={t.ink} size={15} /><Text style={{ fontSize: 14, color: t.ink }}>{x.value} {STATUS_TEXT[x.key]}</Text></View>
                   <Text style={{ fontSize: 14, color: t.inkMuted }}>{x.key === 'sold' && revenue.revenue ? `${formatEur(revenue.revenue)} Erlös` : ''}</Text>
                 </View>
               );
