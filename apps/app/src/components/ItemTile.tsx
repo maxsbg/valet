@@ -1,4 +1,5 @@
-import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, Easing, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
@@ -54,6 +55,8 @@ export type TileItem = {
   reversible: boolean;
   qty: number;
   thumb: string | null;
+  /** Wendeteile: Vorschaubild der anderen Seite – Tippen auf „Wendbar“ dreht die Kachel um */
+  thumbBack?: string | null;
   /** Besitzer (Personen-IDs) */
   owners: string[];
   isWish: boolean;
@@ -97,6 +100,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
   const wait = item.isWish ? wishWait(item.createdAt) : null;
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
   const todayP = today ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
+  const flip = useFlip(tr?.reversible && item.thumbBack ? item.thumbBack : null);
   const label = tileA11yLabel({
     name: item.name,
     status: item.status,
@@ -118,9 +122,17 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
         { width, height: h, boxShadow: `inset 0 0 ${T.glow.blur}px ${T.glow.spread}px ${glow.css}`, transform: [{ scale: pressed ? 0.97 : 1 }] },
       ]}
     >
-      <View style={[StyleSheet.absoluteFill, away && s.away, away && awayWeb, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null]}>
-        <ItemPicture uri={item.thumb} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
-      </View>
+      <Animated.View style={[StyleSheet.absoluteFill, away && s.away, away && awayWeb, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null, flip.style]}>
+        <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
+          <ItemPicture uri={item.thumb} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
+        </View>
+        {/* Rückseite erst nach dem ersten Tippen laden, dann beide behalten (kein Aufblitzen beim Zurückdrehen) */}
+        {flip.loaded && (
+          <View style={[StyleSheet.absoluteFill, !flip.back && s.hidden]}>
+            <ItemPicture uri={flip.loaded} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
+          </View>
+        )}
+      </Animated.View>
 
       {/* oben links: Status bzw. bei Wunschteilen die Kategorie (bzw. vorläufig Auswahl im Baukasten) */}
       {selected ? (
@@ -136,7 +148,12 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
         <View style={s.tr}><Glass label={`Bedenkzeit: noch ${wait.left} ${wait.left === 1 ? 'Tag' : 'Tage'}`}><WaitRing {...wait} /></Glass></View>
       ) : tr && (
         <View style={s.tr}>
-          {tr.reversible && <Glass label="Wendbar"><TileIcon name="reversible" color={B.ink} /></Glass>}
+          {tr.reversible && (flip.can ? (
+            <Pressable onPress={flip.toggle} hitSlop={B.inset} accessibilityRole="button"
+              accessibilityLabel={flip.back ? 'Wendbar – Vorderseite zeigen' : 'Wendbar – andere Seite zeigen'}>
+              <Glass><Animated.View style={flip.iconStyle}><TileIcon name="reversible" color={B.ink} /></Animated.View></Glass>
+            </Pressable>
+          ) : <Glass label="Wendbar"><TileIcon name="reversible" color={B.ink} /></Glass>)}
           {tr.count && (
             <Glass shape={tr.count.shape} label={`${tr.count.n} Stück`}>
               <Num num={tr.count.num} sym={tr.count.sym} />
@@ -174,12 +191,47 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
   );
 }
 
+/**
+ * Wendeteil umdrehen: Foto dreht sich um die senkrechte Achse bis zur Kante (90°), dann wird das Bild getauscht
+ * und es dreht von der anderen Seite zurück. Das Wendbar-Zeichen dreht sich dabei einmal mit.
+ */
+function useFlip(backUri: string | null) {
+  const [back, setBack] = useState(false);
+  const [loaded, setLoaded] = useState<string | null>(null);
+  const v = useRef(new Animated.Value(0)).current;
+  const spin = useRef(new Animated.Value(0)).current;
+  const busy = useRef(false);
+  const native = !web;
+  const toggle = () => {
+    if (!backUri || busy.current) return;
+    busy.current = true;
+    setLoaded(backUri);
+    const to = back ? 0 : 1;
+    Animated.timing(spin, { toValue: to, duration: 2 * FLIP_HALF, easing: Easing.inOut(Easing.cubic), useNativeDriver: native }).start();
+    Animated.timing(v, { toValue: 1, duration: FLIP_HALF, easing: Easing.in(Easing.cubic), useNativeDriver: native }).start(() => {
+      setBack((b) => !b);
+      v.setValue(-1);
+      Animated.timing(v, { toValue: 0, duration: FLIP_HALF, easing: Easing.out(Easing.cubic), useNativeDriver: native }).start(() => { busy.current = false; });
+    });
+  };
+  const style = {
+    transform: [
+      { perspective: 700 },
+      { rotateY: v.interpolate({ inputRange: [-1, 0, 1], outputRange: ['-90deg', '0deg', '90deg'] }) },
+    ],
+  };
+  const iconStyle = { transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] };
+  return { can: !!backUri, back: back && !!backUri, loaded: backUri ? loaded : null, toggle, style, iconStyle };
+}
+const FLIP_HALF = 170;
+
 const awayWeb = web ? ({ filter: `grayscale(${T.away.grayscale})` } as object) : null;
 // TODO iOS: grayscale-Filter gibt es nativ nicht → dort nur Abblenden über opacity (oder Bild vorab entsättigen).
 
 const s = StyleSheet.create({
   tile: { backgroundColor: T.bg, borderRadius: T.radius, overflow: 'hidden' },
   away: { opacity: T.away.opacity },
+  hidden: { opacity: 0 },
   edge: { ...StyleSheet.absoluteFill, borderRadius: T.radius, boxShadow: `inset 0 0 0 ${T.edgeWidth}px ${T.edge}` },
   tl: { position: 'absolute', top: B.inset, left: B.inset },
   tr: { position: 'absolute', top: B.inset, right: B.inset, flexDirection: 'column', alignItems: 'center', gap: B.stackGap },
