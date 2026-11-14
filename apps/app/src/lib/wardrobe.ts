@@ -41,6 +41,8 @@ export type Tile = {
   highlight: string | null;
   /** Vorschaubild (400 px) für Kacheln */
   thumb: string | null;
+  /** Wendeteile: Vorschaubild der anderen Seite (Kachel dreht sich beim Tippen auf „Wendbar“) */
+  thumbBack: string | null;
   /** Hauptbild (freigestellt oder Original) für die Detailseite */
   image: string | null;
 };
@@ -118,6 +120,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     hex: pick(colorsBy, i.id, i.main_side) ?? nameToHex(i.color),
     highlight: i.highlight_color ?? null,
     thumb: pick(thumbBy, i.id, i.main_side),
+    thumbBack: i.reversible ? other(thumbBy, i.id, i.main_side) : null,
     image: pick(imageBy, i.id, i.main_side),
   }));
   const ids = new Set(tiles.map((t) => t.id));
@@ -131,6 +134,8 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
 const side = (v: string | null) => (v ?? 'a').trim().toLowerCase();
 /** Wert für die Hauptseite eines Teils, sonst Seite A */
 const pick = (m: Map<string, string>, id: string, main: string | null) => m.get(`${id}:${side(main)}`) ?? m.get(`${id}:a`) ?? null;
+/** Wert für die andere Seite (Rückseite eines Wendeteils) */
+const other = (m: Map<string, string>, id: string, main: string | null) => m.get(`${id}:${side(main) === 'b' ? 'a' : 'b'}`) ?? null;
 
 /** Öffentliche Adresse eines Bildes im Bucket „items“ (kein Netzaufruf) */
 export const imageUrl = (path: string) => supabase.storage.from('items').getPublicUrl(path).data.publicUrl;
