@@ -1,12 +1,13 @@
 import { supabase } from './supabase';
 import { imageUrl, todayLocal } from './wardrobe';
 import type { Picture } from './cutout';
+import type { ItemStatus } from '@valet/core';
 
 export type ItemRow = {
   id: string; wardrobe_id: string; owner_id: string | null; owner_ids: string[] | null; highlight_color: string | null; name: string; brand: string | null; category: string;
   color: string | null; alt_color: string | null; size: string | null; material: string | null; style: string | null;
   seasons: string[] | null; qty: number | null; price_paid: number | null; list_price: number | null; purchase_date: string | null;
-  shop: string | null; link: string | null; notes: string | null; status: 'wash' | 'repair' | 'lent' | 'out' | 'sold' | null;
+  shop: string | null; link: string | null; notes: string | null; status: ItemStatus | null;
   status_at: string | null; lent_to: string | null; sold_price: number | null; reversible: boolean | null; set_id: string | null;
   set_name: string | null; is_wish: boolean | null; wishlist_id: string | null; wish_tag: string | null;
 };
@@ -142,4 +143,20 @@ export async function markBought(item: Pick<ItemRow, 'id' | 'wishlist_id'>, data
     const order = (w.data?.item_order ?? []) as string[];
     if (order.includes(item.id)) await supabase.from('wishlists').update({ item_order: order.filter((x) => x !== item.id) }).eq('id', item.wishlist_id); // Fehler egal
   }
+}
+
+/**
+ * Set eines Teils festlegen: `members` = alle Teile des Sets (inklusive des Teils selbst).
+ * Bleibt nur ein Teil übrig, wird das Set aufgelöst. Entfernte Teile verlieren ihre Set-Zugehörigkeit.
+ */
+export async function saveSet(setId: string | null, members: string[], name: string | null): Promise<string | null> {
+  const id = members.length > 1 ? setId ?? `set_${Math.random().toString(36).slice(2, 10)}` : null;
+  if (setId) {
+    const off = supabase.from('items').update({ set_id: null, set_name: null }).eq('set_id', setId);
+    const r = await (members.length ? off.not('id', 'in', `(${members.join(',')})`) : off);
+    if (r.error) throw r.error;
+  }
+  const r = await supabase.from('items').update({ set_id: id, set_name: id ? name || null : null }).in('id', members);
+  if (r.error) throw r.error;
+  return id;
 }

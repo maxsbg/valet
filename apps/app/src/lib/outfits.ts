@@ -15,6 +15,8 @@ export type Outfit = {
   plans: OutfitPlan[];
 };
 export type Wear = { itemId: string; date: string; personId: string | null };
+/** Einzeln reserviertes Teil (ohne Outfit), von–bis einschließlich */
+export type Hold = { id: string; itemId: string; personId: string | null; from: string; to: string };
 
 /** Anlässe, die es immer gibt (wie im alten Valet) */
 export const OCCASIONS = ['Uni', 'Arbeit', 'Training/Sport', 'Abend/Ausgehen'];
@@ -27,13 +29,15 @@ type OutfitRow = {
   outfit_plans: PlanRow[];
 };
 
-export async function loadOutfits(wardrobeId: string): Promise<{ outfits: Outfit[]; wears: Wear[] }> {
-  const [os, ws] = await Promise.all([
+export async function loadOutfits(wardrobeId: string): Promise<{ outfits: Outfit[]; wears: Wear[]; holds: Hold[] }> {
+  const [os, ws, hs] = await Promise.all([
     supabase.from('outfits')
       .select('id,name,occasions,owner_id,created_at,updated_at, outfit_items(item_id,position,x,y,z), outfit_plans(id,plan_date,person_id,created_at)')
       .eq('wardrobe_id', wardrobeId),
     supabase.from('wears').select('item_id,worn_on,person_id'),
+    supabase.from('reservations').select('id,item_id,person_id,date_from,date_to').is('plan_id', null).gte('date_to', todayLocal()),
   ]);
+  if (hs.error) throw hs.error;
   if (os.error) throw os.error;
   if (ws.error) throw ws.error;
   const outfits = ((os.data ?? []) as unknown as OutfitRow[]).map((o) => ({
@@ -47,19 +51,22 @@ export async function loadOutfits(wardrobeId: string): Promise<{ outfits: Outfit
     plans: o.outfit_plans.map((p) => ({ id: p.id, date: p.plan_date, personId: p.person_id, createdAt: p.created_at })),
   }));
   const wears = (ws.data ?? []).map((w) => ({ itemId: w.item_id as string, date: w.worn_on as string, personId: (w.person_id as string | null) ?? null }));
-  return { outfits, wears };
+  const holds = (hs.data ?? []).map((h) => ({ id: h.id as string, itemId: h.item_id as string, personId: (h.person_id as string | null) ?? null, from: h.date_from as string, to: h.date_to as string }));
+  return { outfits, wears, holds };
 }
 
 /** Teile, die heute getragen oder fürs heutige Outfit geplant sind */
-export function todayIds(outfits: Outfit[], wears: Wear[], today = todayLocal()): string[] {
+export function todayIds(outfits: Outfit[], wears: Wear[], holds: Hold[] = [], today = todayLocal()): string[] {
   const s = new Set(wears.filter((w) => w.date === today).map((w) => w.itemId));
+  for (const h of holds) if (h.from <= today && h.to >= today) s.add(h.itemId);
   for (const o of outfits) if (o.plans.some((p) => p.date === today)) for (const p of o.pieces) s.add(p.id);
   return [...s];
 }
 
 /** Wer trägt ein Teil heute (eingetragen) bzw. hat es fürs heutige Outfit geplant? Eingetragen hat Vorrang. */
-export function todayWho(outfits: Outfit[], wears: Wear[], today = todayLocal()): Record<string, string | null> {
+export function todayWho(outfits: Outfit[], wears: Wear[], holds: Hold[] = [], today = todayLocal()): Record<string, string | null> {
   const by: Record<string, string | null> = {};
+  for (const h of holds) if (h.from <= today && h.to >= today && by[h.itemId] == null) by[h.itemId] = h.personId;
   for (const o of outfits) for (const p of o.plans) if (p.date === today) for (const x of o.pieces) if (!(x.id in by) || by[x.id] == null) by[x.id] = p.personId;
   for (const w of wears) if (w.date === today) by[w.itemId] = w.personId ?? by[w.itemId] ?? null;
   return by;
@@ -164,6 +171,22 @@ export async function clashes(outfitId: string, date: string, personId: string |
   if (r.error) throw r.error;
   type Row = { item_id: string; person_id: string | null; outfit_plans: { outfit_id: string } | null };
   return ((r.data ?? []) as unknown as Row[]).filter((x) => x.person_id !== personId && x.outfit_plans?.outfit_id !== outfitId);
+}
+
+/** Einzelnes Teil reservieren (ohne Outfit) */
+export async function holdItem(itemId: string, personId: string | null, from: string, to: string) {
+  const r = await supabase.from('reservations').insert({ item_id: itemId, person_id: personId, date_from: from, date_to: to < from ? from : to });
+  if (r.error) throw r.error;
+}
+export async function releaseHold(id: string) {
+  const r = await supabase.from('reservations').delete().eq('id', id);
+  if (r.error) throw r.error;
+}
+/** Reservierungen (einzeln und über geplante Outfits), die sich mit dem Zeitraum überschneiden */
+export async function holdsOf(itemId: string, from: string): Promise<{ id: string; personId: string | null; from: string; to: string; planned: boolean }[]> {
+  const r = await supabase.from('reservations').select('id,person_id,date_from,date_to,plan_id').eq('item_id', itemId).gte('date_to', from).order('date_from');
+  if (r.error) throw r.error;
+  return (r.data ?? []).map((h) => ({ id: h.id as string, personId: (h.person_id as string | null) ?? null, from: h.date_from as string, to: h.date_to as string, planned: !!h.plan_id }));
 }
 
 // ---------- Datum ----------

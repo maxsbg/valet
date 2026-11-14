@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { personText } from '@valet/ui';
-import { isWishTag, type WishTag } from '@valet/core';
-import { loadOutfits, todayIds, todayWho, type Outfit, type Wear } from './outfits';
+import { isWishTag, type WishTag, type ItemStatus } from '@valet/core';
+import { loadOutfits, todayIds, todayWho, type Hold, type Outfit, type Wear } from './outfits';
 import type { PersonLook } from '@/components/ItemTile';
 
 export type Person = { id: string; name: string; color: string | null; user_id: string | null; item_order: string[] | null };
@@ -15,7 +15,7 @@ export type Tile = {
   ownerId: string | null;
   /** Besitzer (Personen-IDs) */
   owners: string[];
-  status: 'wash' | 'repair' | 'lent' | 'out' | 'sold' | null;
+  status: ItemStatus | null;
   qty: number;
   reversible: boolean;
   setId: string | null;
@@ -52,6 +52,8 @@ export type Wardrobe = {
   outfits: Outfit[];
   /** einzeln eingetragene Trage-Tage */
   wears: Wear[];
+  /** einzeln reservierte Teile (ab heute) */
+  holds: Hold[];
   /** heute getragen oder fürs heutige Outfit geplant */
   today: string[];
   /** wer ein Teil heute trägt bzw. für heute reserviert hat (Teil-ID → Person-ID) */
@@ -120,8 +122,9 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   }));
   const ids = new Set(tiles.map((t) => t.id));
   const wears = rest.wears.filter((x) => ids.has(x.itemId));
+  const holds = rest.holds.filter((x) => ids.has(x.itemId));
   const wishlists: Wishlist[] = (lists.data ?? []).map((l) => ({ id: l.id, name: l.name, ownerId: l.owner_id, itemOrder: l.item_order ?? [], createdAt: l.created_at }));
-  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, wishlists, outfits: rest.outfits, wears, today: todayIds(rest.outfits, wears), todayBy: todayWho(rest.outfits, wears) };
+  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, wishlists, outfits: rest.outfits, wears, holds, today: todayIds(rest.outfits, wears, holds), todayBy: todayWho(rest.outfits, wears, holds) };
 }
 
 /** Seite eines Bildes ('a'/'b'); ältere Daten hatten Großbuchstaben oder Leerzeichen */

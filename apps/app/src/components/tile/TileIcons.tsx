@@ -14,8 +14,10 @@ export const TILE_ICONS = {
   repair: [C(6.5, 17.5, 2.5), C(17.5, 17.5, 2.5), P('M8.3 15.8L18 4'), P('M15.7 15.8L6 4')],
   /** verliehen: schräger Pfeil (getauscht 14.11.2026, der gerade gehört „Next Cop“) */
   lent: [P('M6.5 17.5l11-11'), P('M9 6.5h8.5V15')],
-  /** eingelagert / aussortiert (offener Punkt 10.2: evtl. getrennte Symbole) */
-  out: [P('M4.5 9h15v10a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z'), P('M3 4.5h18V9H3z'), P('M10 13h4')],
+  /** eingelagert (Kiste) */
+  stored: [P('M4.5 9h15v10a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z'), P('M3 4.5h18V9H3z'), P('M10 13h4')],
+  /** aussortiert: Kiste mit Pfeil nach oben (raus aus dem Schrank, soll verkauft werden) */
+  out: [P('M4.5 11h15v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z'), P('M12 2.5v11'), P('M8.5 6L12 2.5 15.5 6')],
   sold: [P('M3.5 12V4.5a1 1 0 0 1 1-1H12l8.5 8.5-8.5 8.5z'), C(8, 8, 1.4)],
   reversible: [P('M4.5 11a7.5 7.5 0 0 1 13-4.5L19.5 8.5'), P('M19.5 4v4.5H15'), P('M19.5 13a7.5 7.5 0 0 1-13 4.5L4.5 15.5'), P('M4.5 20v-4.5H9')],
   // Wunschliste – Kategorie oben links (WISH_TAGS in @valet/core, gleiche Schlüssel; Entwurf docs/design/wunschliste)

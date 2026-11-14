@@ -56,6 +56,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
   const [own, setOwn] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [setAsk, setSetAsk] = useState<{ item: Tile; mates: Tile[] } | null>(null);
 
   const width = Math.min(winW, 520) - 2 * space.md;
   const close = () => (router.canGoBack() ? router.back() : router.replace('/outfits'));
@@ -71,7 +72,14 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
   const shown = pool
     .filter((i) => (!cat || i.category === cat) && (!q || [i.name, i.brand, i.color].some((f) => f?.toLowerCase().includes(q))))
     .sort((a, b) => catIndex(a.category) - catIndex(b.category) || a.name.localeCompare(b.name, 'de'));
-  const toggle = (i: Tile) => setIds((xs) => (xs.includes(i.id) ? xs.filter((x) => x !== i.id) : [...xs, i.id]));
+  const toggle = (i: Tile) => {
+    if (ids.includes(i.id)) return setIds((xs) => xs.filter((x) => x !== i.id));
+    setIds((xs) => [...xs, i.id]);
+    if (i.status === 'stored') toast.show(`${i.name || 'Teil'} ist eingelagert – vor dem Tragen holen.`);
+    // Teil eines Sets: nachfragen, ob das ganze Set getragen wird
+    const mates = i.setId ? wardrobe.items.filter((m) => m.setId === i.setId && m.id !== i.id && !ids.includes(m.id) && m.status !== 'out' && m.status !== 'sold' && !m.isWish) : [];
+    if (mates.length) setSetAsk({ item: i, mates });
+  };
   const occList = [...new Set([...allOccasions(wardrobe.outfits), ...occ])];
 
   async function save() {
@@ -189,6 +197,15 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Outfit löschen?"
         footer={<><SheetButton label="Abbrechen" onPress={() => setConfirmDelete(false)} /><SheetButton primary label="Löschen" onPress={remove} /></>}>
         <Text style={{ fontSize: 15, color: t.inkMuted }}>Das Outfit und seine geplanten Tage werden entfernt. Die Teile bleiben im Schrank.</Text>
+      </Sheet>
+      <Sheet open={!!setAsk} onClose={() => setSetAsk(null)} title="Als Set tragen?"
+        footer={<>
+          <SheetButton label="Nur dieses Teil" onPress={() => setSetAsk(null)} />
+          <SheetButton primary label="Ganzes Set" onPress={() => { const add = setAsk!.mates.map((m) => m.id); setIds((xs) => [...xs, ...add.filter((x) => !xs.includes(x))]); setSetAsk(null); }} />
+        </>}>
+        {setAsk && <Text style={{ fontSize: 15, color: t.inkMuted }}>
+          {setAsk.item.name || 'Dieses Teil'} gehört zu einem Set. Mit auswählen: {setAsk.mates.map((m) => m.name || 'Teil').join(', ')}.
+        </Text>}
       </Sheet>
       {toast.node}
     </View>

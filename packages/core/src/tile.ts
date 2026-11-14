@@ -47,12 +47,13 @@ export function glowFor(main: string | null | undefined, highlight?: string | nu
 
 // ---------- Status (Spec 5.1) ----------
 
-/** Status oben links. „out“ = eingelagert / aussortiert (offener Punkt: evtl. getrennte Symbole). */
+/** Status oben links. „stored“ = eingelagert (Keller, kein Zugriff), „out“ = aussortiert (soll verkauft werden). */
 export const TILE_STATUS: Record<ItemStatus, { label: string; away: boolean }> = {
   wash: { label: 'Wäsche', away: false },
   repair: { label: 'Reparatur', away: true },
   lent: { label: 'Verliehen', away: true },
-  out: { label: 'Eingelagert', away: true },
+  stored: { label: 'Eingelagert', away: true },
+  out: { label: 'Aussortiert', away: true },
   sold: { label: 'Verkauft', away: true },
 };
 
