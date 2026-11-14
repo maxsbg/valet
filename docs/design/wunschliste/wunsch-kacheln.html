@@ -100,7 +100,8 @@ const IC={
  grail:'<path d="M4.5 16l-1.2-8.5 5 3.8L12 5l3.7 6.3 5-3.8L19.5 16z"/><path d="M4.5 19.5h15"/>',
  watch:'<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.6"/>',
  next:'<path d="M5 12h13"/><path d="M13 6l6 6-6 6"/>',
- gift:'<path d="M15.5 3.5l1.5 3.1 3.4.5-2.5 2.4.6 3.4-3-1.6-3 1.6.6-3.4-2.5-2.4 3.4-.5z"/><path d="M9.5 13.5l-6 6"/><path d="M12.5 16.5l-3 3"/><path d="M7 11l-3 3"/>',
+ someday:'<path d="M15.5 3.5l1.5 3.1 3.4.5-2.5 2.4.6 3.4-3-1.6-3 1.6.6-3.4-2.5-2.4 3.4-.5z"/><path d="M9.5 13.5l-6 6"/><path d="M12.5 16.5l-3 3"/><path d="M7 11l-3 3"/>',
+ gift:'<path d="M4 9.5h16v3H4z"/><path d="M5.5 12.5V20h13v-7.5"/><path d="M12 9.5V20"/><path d="M12 9.5C10.5 6 7 5.5 7 7.5S10 9.5 12 9.5c2 0 5 0 5-2s-3.5-1.5-5 2"/>',
  hour:'<path d="M6.5 3.5h11"/><path d="M6.5 20.5h11"/><path d="M8 3.5v2.2a4 4 0 0 0 1.6 3.2L12 12l2.4-3.1A4 4 0 0 0 16 5.7V3.5"/><path d="M8 20.5v-2.2a4 4 0 0 1 1.6-3.2L12 12l2.4 3.1a4 4 0 0 1 1.6 3.2v2.2"/>',
  q:'<path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9v.6"/><path d="M12 18h.01"/>'
 };
@@ -130,7 +131,7 @@ const wishes=[
  {img:'tank',price:35,days:7,owner:'P',hint:'gift'},
  {img:'pants',price:89,days:13,owner:'M',hint:'watch'},
  {img:'loafer',price:159,days:0,owner:'M'},
- {img:'cap',price:9,days:5,owner:'P'},
+ {img:'cap',price:9,days:5,owner:'P',hint:'someday'},
 ];
 function render(){
   const W=document.querySelector('.mosaic').clientWidth, w=(W-20)/3, cols=[[],[],[]], hs=[0,0,0];
@@ -140,7 +141,7 @@ function render(){
 function seg(id,fn){const el=document.getElementById(id);el.onclick=e=>{const b=e.target.closest('button');if(!b)return;el.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));fn(b.dataset);render()}}
 seg('segH',d=>H=d.h==='1');seg('segM',d=>{document.getElementById('phone').className='phone '+d.m});
 const chip=(b,l)=>`<div class="chip"><div class="z">${b}</div><span class="l">${l}</span></div>`;
-document.getElementById('cats').innerHTML=[['grail','Grail'],['watch','Watchlist'],['next','Next Cop'],['gift','Gift']].map(([k,l])=>chip(`<div class="v-badge">${ic(k)}</div>`,l)).join('');
+document.getElementById('cats').innerHTML=[['grail','Grail'],['watch','Watchlist'],['next','Next Cop'],['someday','Someday'],['gift','Gift']].map(([k,l])=>chip(`<div class="v-badge">${ic(k)}</div>`,l)).join('');
 document.getElementById('prices').innerHTML=[[9,'einstellig'],[89,'zweistellig'],[249,'dreistellig'],[1249,'vierstellig']].map(([n,l])=>chip(priceBadge(n),l)).join('');
 document.getElementById('waits').innerHTML=[[14,'neu'],[7,'halb'],[2,'≤ 3 Tage'],[0,'vorbei']].map(([d,l])=>chip(waitBadge(d),l)).join('');
 render();addEventListener('resize',render);

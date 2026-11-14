@@ -12,7 +12,7 @@ export const SORTS = [
 export type SortId = (typeof SORTS)[number]['id'];
 
 /** Gleichbleibender Zufall je Teil und „Mischung“ (seed), damit das Mosaik beim Filtern nicht springt */
-function rand(id: string, seed: number): number {
+export function rand(id: string, seed: number): number {
   let h = 2166136261 ^ seed;
   for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
   return (h >>> 0) / 4294967296;

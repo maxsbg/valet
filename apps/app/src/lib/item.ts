@@ -8,7 +8,7 @@ export type ItemRow = {
   seasons: string[] | null; qty: number | null; price_paid: number | null; list_price: number | null; purchase_date: string | null;
   shop: string | null; link: string | null; notes: string | null; status: 'wash' | 'repair' | 'lent' | 'out' | 'sold' | null;
   status_at: string | null; lent_to: string | null; sold_price: number | null; reversible: boolean | null; set_id: string | null;
-  set_name: string | null; is_wish: boolean | null;
+  set_name: string | null; is_wish: boolean | null; wishlist_id: string | null; wish_tag: string | null;
 };
 export type ItemOutfit = { id: string; name: string | null; occasions: string[] | null; planDates: string[] };
 export type ItemDetail = { item: ItemRow; wears: string[]; outfits: ItemOutfit[] };
@@ -52,7 +52,7 @@ export async function setStatus(itemId: string, status: ItemRow['status'], lentT
   if (r.error) throw r.error;
 }
 
-export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'owner_id' | 'owner_ids' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible'>>;
+export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'owner_id' | 'owner_ids' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible' | 'is_wish' | 'wishlist_id' | 'wish_tag'>>;
 
 export async function updateItem(id: string, change: ItemChange) {
   const r = await supabase.from('items').update(change).eq('id', id);

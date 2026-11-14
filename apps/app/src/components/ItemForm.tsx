@@ -1,10 +1,11 @@
 import { Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { CATEGORIES, SEASONS, STYLES, parseAmount } from '@valet/core';
+import { CATEGORIES, SEASONS, STYLES, WISH_TAGS, isWishTag, parseAmount, type WishTag } from '@valet/core';
 import { Chip } from './ui';
 import { Icons } from './Icon';
 import { useTheme, space, radius } from '@/lib/theme';
 import type { ItemChange, ItemRow } from '@/lib/item';
-import { NAMED, personKey, type Person } from '@/lib/wardrobe';
+import { NAMED, personKey, type Person, type Wishlist } from '@/lib/wardrobe';
+import { TileIcon } from './tile/TileIcons';
 
 // Formular eines Teils – gemeinsam für „Bearbeiten“ und „Teil hinzufügen“
 
@@ -24,6 +25,8 @@ export type ItemForm = {
   name: string; brand: string; category: string; owners: string[]; price: string; qty: string;
   colors: string[]; size: string; list: string; date: string; shop: string; link: string;
   seasons: string[]; style: string | null; material: string; reversible: boolean; notes: string;
+  /** Wunschliste: Wunschteil, Liste und Kategorie (Grail, Watchlist …) */
+  isWish: boolean; wishlistId: string | null; wishTag: WishTag | null;
 };
 
 export function toForm(i: ItemRow): ItemForm {
@@ -32,13 +35,15 @@ export function toForm(i: ItemRow): ItemForm {
     qty: String(i.qty ?? 1), colors: (i.color ?? '').split('/').map((c) => c.trim()).filter(Boolean), size: i.size ?? '',
     list: eur(i.list_price), date: toDe(i.purchase_date), shop: i.shop ?? '', link: i.link ?? '',
     seasons: i.seasons ?? [], style: i.style, material: i.material ?? '', reversible: !!i.reversible, notes: i.notes ?? '',
+    isWish: !!i.is_wish, wishlistId: i.wishlist_id ?? null, wishTag: isWishTag(i.wish_tag) ? i.wish_tag : null,
   };
 }
 
-export function emptyForm(ownerId: string | null): ItemForm {
+export function emptyForm(ownerId: string | null, wish?: { wishlistId: string | null }): ItemForm {
   return {
     name: '', brand: '', category: '', owners: ownerId ? [ownerId] : [], price: '', qty: '1', colors: [], size: '', list: '', date: '',
     shop: '', link: '', seasons: [], style: null, material: '', reversible: false, notes: '',
+    isWish: !!wish, wishlistId: wish?.wishlistId ?? null, wishTag: null,
   };
 }
 
@@ -60,6 +65,8 @@ export function readForm(f: ItemForm) {
       qty: Math.max(1, parseInt(f.qty, 10) || 1), color: f.colors.join('/'), size: f.size.trim(), list_price: list,
       purchase_date: date, shop: f.shop.trim(), link: f.link.trim(), seasons: f.seasons, style: f.style ?? '',
       material: f.material.trim(), reversible: f.reversible, notes: f.notes.trim(),
+      // Liste und Kategorie nur bei Wunschteilen
+      ...(f.isWish ? { is_wish: true, wishlist_id: f.wishlistId, wish_tag: f.wishTag } : {}),
     } satisfies ItemChange,
   };
 }
@@ -68,12 +75,14 @@ type Props = {
   f: ItemForm;
   onChange: (f: ItemForm) => void;
   persons: Person[];
+  /** Listen der Wunschliste (nur bei Wunschteilen gezeigt) */
+  wishlists?: Wishlist[];
   open: Record<string, boolean>;
   onOpen: (open: Record<string, boolean>) => void;
 };
 
 /** Felder des Formulars: das Wichtigste offen, der Rest in aufklappbaren Gruppen */
-export function ItemFormFields({ f, onChange, persons, open, onOpen }: Props) {
+export function ItemFormFields({ f, onChange, persons, wishlists = [], open, onOpen }: Props) {
   const t = useTheme();
   const set = <K extends keyof ItemForm>(k: K, v: ItemForm[K]) => onChange({ ...f, [k]: v });
   const toggleIn = (k: 'seasons' | 'colors', v: string, max = 9) =>
@@ -104,9 +113,29 @@ export function ItemFormFields({ f, onChange, persons, open, onOpen }: Props) {
         })}
       </View>
       <View style={s.row}>
-        {Field({ label: 'Bezahlt (€ pro Stück)', k: 'price', placeholder: '0,00', keyboardType: 'decimal-pad' })}
+        {f.isWish
+          ? Field({ label: 'Preis (€)', k: 'list', placeholder: '0,00', keyboardType: 'decimal-pad' })
+          : Field({ label: 'Bezahlt (€ pro Stück)', k: 'price', placeholder: '0,00', keyboardType: 'decimal-pad' })}
         <View style={{ width: 96 }}>{Field({ label: 'Anzahl', k: 'qty', keyboardType: 'number-pad', style: {} })}</View>
       </View>
+
+      {/* Wunschliste: Liste (eine) und Kategorie (eine) */}
+      {f.isWish && (
+        <>
+          <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Liste <Text style={{ fontWeight: '400' }}>· optional</Text></Text>
+          <View style={s.wrap}>
+            <Chip label="Keine" selected={!f.wishlistId} onPress={() => set('wishlistId', null)} />
+            {wishlists.map((l) => <Chip key={l.id} label={l.name} selected={f.wishlistId === l.id} onPress={() => set('wishlistId', f.wishlistId === l.id ? null : l.id)} />)}
+          </View>
+          <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Kategorie <Text style={{ fontWeight: '400' }}>· optional, eine</Text></Text>
+          <View style={s.wrap}>
+            {WISH_TAGS.map((w) => {
+              const on = f.wishTag === w.id;
+              return <Chip key={w.id} label={w.label} selected={on} onPress={() => set('wishTag', on ? null : w.id)} icon={<TileIcon name={w.id} color={on ? t.bg : t.ink} size={15} />} />;
+            })}
+          </View>
+        </>
+      )}
 
       {/* Gruppen */}
       <Group open={!!open.farbe} onToggle={() => flip('farbe')} title="Farbe & Größe" summary={[f.colors.join(' / '), f.size && `Größe ${f.size}`].filter(Boolean).join(' · ')}>
@@ -127,11 +156,14 @@ export function ItemFormFields({ f, onChange, persons, open, onOpen }: Props) {
         {Field({ label: 'Größe', k: 'size', placeholder: 'z. B. M, 32/32, 44' })}
       </Group>
 
-      <Group open={!!open.kauf} onToggle={() => flip('kauf')} title="Kauf" summary={[f.shop, f.date, f.list && `Liste ${f.list} €`].filter(Boolean).join(' · ')}>
-        <View style={s.row}>
-          {Field({ label: 'Listenpreis (€)', k: 'list', placeholder: '0,00', keyboardType: 'decimal-pad' })}
-          {Field({ label: 'Kaufdatum', k: 'date', placeholder: 'TT.MM.JJJJ', keyboardType: 'numbers-and-punctuation' })}
-        </View>
+      <Group open={!!open.kauf} onToggle={() => flip('kauf')} title={f.isWish ? 'Shop' : 'Kauf'} summary={[f.shop, !f.isWish && f.date, !f.isWish && f.list && `Liste ${f.list} €`].filter(Boolean).join(' · ')}>
+        {/* Wunschteile: Preis steht oben, gekauft ist noch nichts */}
+        {!f.isWish && (
+          <View style={s.row}>
+            {Field({ label: 'Listenpreis (€)', k: 'list', placeholder: '0,00', keyboardType: 'decimal-pad' })}
+            {Field({ label: 'Kaufdatum', k: 'date', placeholder: 'TT.MM.JJJJ', keyboardType: 'numbers-and-punctuation' })}
+          </View>
+        )}
         {Field({ label: 'Shop', k: 'shop', placeholder: 'z. B. Zalando' })}
         {Field({ label: 'Link', k: 'link', placeholder: 'https://…', autoCapitalize: 'none', keyboardType: 'url' })}
       </Group>

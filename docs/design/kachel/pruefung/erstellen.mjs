@@ -26,7 +26,7 @@ const layoutOrig = fs.readFileSync(layoutFile, 'utf8');
 
 function patchLayout(s) {
   const steps = [
-    ["import { Stack } from 'expo-router';", "import { Stack, usePathname } from 'expo-router';"],
+    ["import { Slot, Stack } from 'expo-router';", "import { Slot, Stack, usePathname } from 'expo-router';"],
     ['  const t = useTheme();\n  // Einladungslink', '  const t = useTheme();\n  const path = usePathname();\n  // Einladungslink'],
     ['  if (!session) return <Login />;', "  if (!session && path !== '/kachel-test') return <Login />;"],
   ];

@@ -60,14 +60,14 @@ export function RoundButton({ children, label, onPress, size = 40 }: { children:
 }
 
 /** Filter-Chip; ausgewählt = gefüllt in ink (ein einheitlicher Stil für „ausgewählt“) */
-export function Chip({ label, count, selected, onPress, dot, icon, tall }: { label: string; count?: number; selected?: boolean; onPress?: () => void; dot?: string; icon?: React.ReactNode; tall?: boolean }) {
+export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, tall, dashed }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; dot?: string; icon?: React.ReactNode; tall?: boolean; dashed?: boolean }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
-      style={[s.chip, tall && s.chipTall, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }]}>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} onLongPress={onLongPress} delayLongPress={400}
+      style={[s.chip, tall && s.chipTall, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
       {icon}
       {dot && <View style={[s.dot, { backgroundColor: dot }]} />}
-      <Text style={[s.chipText, { color: selected ? t.bg : t.ink }]}>{label}</Text>
+      <Text style={[s.chipText, { color: selected ? t.bg : dashed ? t.inkMuted : t.ink }]}>{label}</Text>
       {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }]}>{count}</Text>}
     </Pressable>
   );

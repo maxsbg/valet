@@ -178,3 +178,20 @@ export function priceLabel(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n) || n <= 0) return null;
   return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(Math.round(n));
 }
+
+// ---------- Wunschliste: Kategorie (entschieden 14.11.2026) ----------
+
+/**
+ * Kategorie eines Wunschteils, höchstens eine pro Teil. Keine Liste – nur Plakette oben links, Filter und Suche.
+ * Symbole: TILE_ICONS in apps/app/src/components/tile/TileIcons.tsx (gleiche Schlüssel).
+ */
+export const WISH_TAGS = [
+  { id: 'grail', label: 'Grail' },         // Krone
+  { id: 'watchlist', label: 'Watchlist' }, // Auge
+  { id: 'nextcop', label: 'Next Cop' },    // Pfeil gerade nach rechts
+  { id: 'someday', label: 'Someday' },     // Sternschnuppe
+  { id: 'gift', label: 'Gift' },           // Geschenk
+] as const;
+export type WishTag = (typeof WISH_TAGS)[number]['id'];
+export const wishTagLabel = (id: string | null | undefined) => WISH_TAGS.find((w) => w.id === id)?.label ?? null;
+export const isWishTag = (v: unknown): v is WishTag => WISH_TAGS.some((w) => w.id === v);

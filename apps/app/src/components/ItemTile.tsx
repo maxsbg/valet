@@ -1,5 +1,5 @@
 import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishWait, TILE_STATUS, WISH_WAIT, type ItemStatus } from '@valet/core';
+import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
 import { Glass, Mono, Num, Price, WaitRing } from './tile/TileBadge';
@@ -61,6 +61,8 @@ export type TileItem = {
   price?: number | null;
   /** Wunschliste: Tag, an dem das Teil auf die Liste kam (Start der Bedenkzeit) */
   createdAt?: string | null;
+  /** Wunschliste: Kategorie (Grail, Watchlist, Next Cop, Someday, Gift) – Plakette oben links */
+  wishTag?: WishTag | null;
 };
 
 type Props = {
@@ -104,9 +106,6 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
     owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
   });
 
-  // TODO Wunschliste: Kategorie-Plakette oben links (Grail = Krone, Watchlist = Auge, Next Cop = Pfeil gerade nach rechts,
-  // Gift = Sternschnuppe) – braucht eine Spalte in items. Dabei Pfeile tauschen: „verliehen“ bekommt den schrägen Pfeil.
-
   return (
     <Pressable
       onPress={onPress}
@@ -123,9 +122,11 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
         <ItemPicture uri={item.thumb} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
       </View>
 
-      {/* oben links: Status (bzw. vorläufig Auswahl im Baukasten) */}
+      {/* oben links: Status bzw. bei Wunschteilen die Kategorie (bzw. vorläufig Auswahl im Baukasten) */}
       {selected ? (
         <View style={s.tl}><Glass style={s.sel}><Icons.check color={tile.select.on} size={B.icon.size} /></Glass></View>
+      ) : item.isWish && item.wishTag ? (
+        <View style={s.tl}><Glass label={wishTagLabel(item.wishTag) ?? undefined}><TileIcon name={item.wishTag} color={B.ink} /></Glass></View>
       ) : item.status ? (
         <View style={s.tl}><Glass label={TILE_STATUS[item.status].label}><TileIcon name={item.status} color={B.ink} /></Glass></View>
       ) : null}

@@ -15,7 +15,7 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - `apps/app` – Expo SDK 58, Expo Router, react-native-web. Seiten in `src/app`, Rest in `src/components`, `src/lib`. Siehe `apps/app/AGENTS.md` (Expo-Regeln).
 - `packages/core` – Fachlogik + Import aus dem alten Valet (Tests mit `node --test` über `tsx`).
 - `packages/ui` – Design-Tokens (Farben, Personen, Kacheln, Schatten).
-- `supabase/migrations` – Schema. `backup/` – Sicherung der Daten aus dem alten Valet.
+- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`, am 14.11.2026 angewendet). `backup/` – Sicherung der Daten aus dem alten Valet.
 
 Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filter @valet/app build:web`.
 
@@ -39,7 +39,14 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - **Wunschlisten-Kachel (entschieden 14.11.2026):** Aufbau wie die Schrank-Kachel. Entwurf `docs/design/wunschliste/wunsch-kacheln.html`.
   - Unten links Preis-Kapsel (ganze Euro, kleines €, wächst mit der Stellenzahl, einstellig = Kreis) – `priceLabel` in `packages/core/src/tile.ts`.
   - Oben rechts Bedenkzeit-Ring mit Resttagen (≤ 3 Tage orange); nach Ablauf verschwindet die Plakette einfach. **Funktion vorerst AUS:** `WISH_WAIT.enabled = false` in `packages/core/src/tile.ts`. Nur einschalten, wenn Max es sagt.
-  - Noch nicht umgesetzt: Kategorie oben links (Grail = Krone, Watchlist = Auge, Next Cop = Pfeil gerade nach rechts, Gift = Sternschnuppe; eine pro Teil, braucht Spalte in `items`). Dabei Pfeile tauschen: Status „verliehen“ bekommt den schräg aufsteigenden Pfeil (Spec, Referenz-HTML und `TileIcons.tsx`).
+  - Oben links Kategorie (`items.wish_tag`, eine pro Teil): Grail = Krone, Watchlist = Auge, Next Cop = Pfeil gerade nach rechts, Someday = Sternschnuppe, Gift = Geschenk (`WISH_TAGS` in core, Symbole in `TileIcons.tsx`). Keine Listen – nur Filter und Suche. Status „verliehen“ hat dafür den schrägen Pfeil (getauscht 14.11.2026).
+  - Kein grauer Schleier über Wunschteilen.
+- **Wunschlisten-Seite (umgesetzt 14.11.2026):** `src/app/(tabs)/wunschliste.tsx`, Logik in `src/lib/wishlists.ts`, Entwurf `docs/design/wunschliste/wunschliste-leiste.html`.
+  - Keine Kopfkarte mit Gesamtwert. Leiste = `ClosetBar` wie im Schrank, Chips = Listen (`wishlists`, eine Liste pro Teil über `items.wishlist_id`), „Alle“ vorne, „+ Liste“ (gestrichelt) am Ende. Listen gehören einer Person (`owner_id`), sichtbar für alle; mit Personen-Filter nur deren Listen.
+  - Liste gedrückt halten → Blatt mit Umbenennen / Reihenfolge ändern (hoch/runter, `wishlists.item_order`, danach Sortierung „Eigene Reihenfolge“) / Liste löschen (nur Text, Löschen rot; Teile bleiben unter „Alle“).
+  - Filter: Person und Kategorie (mehrere). Suche: Name, Marke, Shop, Kategorie. Sortieren: Zufällig, Eigene Reihenfolge, Zuletzt hinzugefügt, Höchster/Niedrigster Preis, A–Z.
+  - Plus → `/neu?wunsch=1(&liste=…)`; im Formular bei Wunschteilen „Preis“ (= `list_price`), Liste und Kategorie.
+  - Noch offen: „Lohnt sich das?“ in der Detailansicht, „Gekauft“ → Schrank.
 - **Schrank-Seite (entschieden und umgesetzt 13.11.2026):** Leiste in `src/components/ClosetBar.tsx`, Kopfzeile mit Profil-/Einstellungs-Blatt in `ui.tsx` (`Header`), Filter in `src/lib/sort.ts`. Entwürfe `docs/design/schrank/schrank-entwuerfe.html` (6 Zustände) und `suche-animation.html` (Animation, verbindlich).
   - Heute-Karte entfällt. Kopf: links Profil-Monogramm (Personenfarbe, ersetzt „?“), Mitte Logo, rechts Zahnrad (Einstellungen).
   - Zeile darunter: Lupe · Kategorie-Chips (wischbar, rechts weicher Verlauf) · Sortieren. Klebt beim Scrollen oben als Milchglas, Kacheln laufen darunter durch.
