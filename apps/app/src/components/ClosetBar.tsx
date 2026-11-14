@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Icons } from './Icon';
 import { Chip } from './ui';
@@ -48,13 +48,38 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
     tx: new Animated.Value(0), // Eingabe und ✕
   }).current;
 
+  /**
+   * Safari (iPhone): Nach dem ersten Öffnen ließ sich die Kategorie-Zeile erst wieder wischen, wenn die Tastatur zu war.
+   * Ursache: Die Zeile ändert beim Öffnen Lage, Breite und Maske, während gleichzeitig die Tastatur aufgeht –
+   * Safari behält dabei den alten Scroll-Bereich. Kurz overflow umschalten zwingt Safari, ihn neu anzulegen.
+   */
+  const refreshScroller = () => {
+    if (Platform.OS !== 'web') return;
+    const node = (scroll.current as unknown as { getScrollableNode?: () => HTMLElement } | null)?.getScrollableNode?.();
+    if (!node) return;
+    const x = node.scrollLeft;
+    node.style.overflowX = 'hidden';
+    void node.offsetWidth; // Layout erzwingen
+    node.style.overflowX = '';
+    node.scrollLeft = x;
+  };
+  // Tastatur geht auf/zu (sichtbarer Bereich ändert sich) → Scroll-Bereich ebenfalls neu anlegen
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !open || typeof window === 'undefined' || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    let id: ReturnType<typeof setTimeout> | undefined;
+    const f = () => { clearTimeout(id); id = setTimeout(refreshScroller, 60); };
+    vv.addEventListener('resize', f);
+    return () => { clearTimeout(id); vv.removeEventListener('resize', f); };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const run = (o: boolean) => {
     const a = (val: Animated.Value, duration: number, delay: number) =>
       Animated.timing(val, { toValue: o ? 1 : 0, duration, delay, easing: EASE, useNativeDriver: false });
     Animated.parallel(o
       ? [a(v.cy, D, 0), a(v.cx, D, 0.3 * D), a(v.box, D, 0.32 * D), a(v.sw, 0.8 * D, 0), a(v.tx, 0.5 * D, 0.6 * D)]
       : [a(v.box, 0.6 * D, 0), a(v.cx, 0.7 * D, 0), a(v.cy, D, 0.4 * D), a(v.sw, 0.6 * D, 0), a(v.tx, 0.2 * D, 0)],
-    ).start();
+    ).start(() => refreshScroller());
   };
   const show = () => {
     if (open) return;
@@ -92,7 +117,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
   };
   // Rechter Verlauf zu Sortieren: im Web als Maske (passt auf Seitenfarbe und Milchglas), sonst als Fläche in Seitenfarbe
   const web = Platform.OS === 'web';
-  const mask = 'linear-gradient(90deg, #000 calc(100% - 28px), transparent)';
+  const mask = open ? 'linear-gradient(90deg, #000, #000)' : 'linear-gradient(90deg, #000 calc(100% - 28px), transparent)';
   const fade = { backgroundImage: `linear-gradient(90deg, ${t.bg}00, ${t.bg})` } as object;
 
   return (
@@ -103,7 +128,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
         top: v.cy.interpolate({ inputRange: [0, 1], outputRange: [ROW_PAD, ROW_PAD + DROP] }),
         left: v.cx.interpolate({ inputRange: [0, 1], outputRange: [PAD + BTN + GAP, 0] }),
         width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [W - 2 * (PAD + BTN + GAP), W] }),
-      }, web && !open ? ({ maskImage: mask, WebkitMaskImage: mask } as object) : null]}>
+      }, web ? ({ maskImage: mask, WebkitMaskImage: mask } as object) : null]}>
         <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: GAP }}>
           <Animated.View style={{ width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [0, PAD - GAP] }) }} />
           {chips.map((c) => (
