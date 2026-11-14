@@ -23,7 +23,9 @@ const glassWeb = css({
 // TODO iOS: Unschärfe über expo-blur (BlurView, intensity ≈ 10–15, tint light) bzw. unter iOS 26 expo-glass-effect.
 // Spec 4: auf Weiß ändert sich das Aussehen ohne Unschärfe kaum. Bei 100+ Kacheln auf dem iPhone ruckelt es evtl. → dann weglassen.
 
-const trim = css({ display: 'block', textBox: 'trim-both cap alphabetic' });
+// overflow: visible – numberOfLines={1} setzt im Browser overflow: hidden; die auf Versalhöhe zugeschnittene Box
+// würde sonst die Rundungen oben (z. B. die „2“ in „+2“) und das hochgestellte Zeichen abschneiden
+const trim = css({ display: 'block', textBox: 'trim-both cap alphabetic', overflow: 'visible' });
 const raise = css({ verticalAlign: `${b.sym.raiseEm}em` });
 
 /** circle 20 × 20 · capsule 20 × 14 (Anzahl unter Wendbar) · pill 20 hoch, wächst mit dem Inhalt (Preis) */
