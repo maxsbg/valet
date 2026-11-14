@@ -14,6 +14,7 @@ import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
 import { loadItem, wornDays, setWornToday, setStatus, markBought, type ItemDetail, type ItemRow } from '@/lib/item';
 import { personKey, todayLocal } from '@/lib/wardrobe';
+import { addDays, itemReservations, itemClashes, reserveItem, deleteReservation } from '@/lib/outfits';
 
 const STATUS_OPTIONS: { id: ItemRow['status']; label: string; text: string }[] = [
   { id: null, label: 'Im Schrank', text: 'Im Schrank' },
@@ -24,6 +25,12 @@ const STATUS_OPTIONS: { id: ItemRow['status']; label: string; text: string }[] =
   { id: 'sold', label: 'Verkauft', text: 'Verkauft' },
 ];
 const PERSON = { pink: '#D9668E', red: '#C8102E' } as const;
+/** „20.11.“ bzw. „20.–22.11.“ bzw. „30.11.–2.12.“ */
+const range = (from: string, to: string) => {
+  const d = (x: string) => Number(x.slice(8)); const m = (x: string) => Number(x.slice(5, 7));
+  if (from === to) return `${d(from)}.${m(from)}.`;
+  return m(from) === m(to) ? `${d(from)}.–${d(to)}.${m(to)}.` : `${d(from)}.${m(from)}.–${d(to)}.${m(to)}.`;
+};
 const de = (iso: string) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
 const ago = (iso: string) => {
   const n = Math.round((new Date(todayLocal()).getTime() - new Date(iso).getTime()) / 864e5);
@@ -43,11 +50,18 @@ export default function Teil() {
   const [pickLent, setPickLent] = useState(false);
   const [more, setMore] = useState(false);
   // Wunschteil gekauft → Schrank
+  // Einzeln reservieren
+  type Res = Awaited<ReturnType<typeof itemReservations>>;
+  const [res, setRes] = useState<Res>([]);
+  const [rsv, setRsv] = useState<{ who: string | null; from: string; to: string; error?: string; clash?: string } | null>(null);
   const [buy, setBuy] = useState<{ price: string; date: string; owners: string[]; error?: string } | null>(null);
   const bottom = useBottomInset();
   const toast = useToast(bottom + space.lg);
 
-  const load = useCallback(() => { loadItem(id).then(setD).catch((e) => setErr(e.message ?? String(e))); }, [id]);
+  const load = useCallback(() => {
+    loadItem(id).then(setD).catch((e) => setErr(e.message ?? String(e)));
+    itemReservations(id).then(setRes).catch(() => {});
+  }, [id]);
   useFocusEffect(load);
 
   const tileInfo = wardrobe?.items.find((i) => i.id === id);
@@ -124,6 +138,46 @@ export default function Teil() {
     finally { setBusy(false); }
   }
 
+  const nameOf = (pid: string | null) => wardrobe?.persons.find((p) => p.id === pid)?.name;
+
+  function openReserve() {
+    setRsv({ who: me?.id ?? wardrobe?.persons[0]?.id ?? null, from: toDe(today), to: toDe(today) });
+  }
+
+  async function confirmReserve() {
+    if (!rsv) return;
+    const from = toIso(rsv.from); const to = toIso(rsv.to);
+    if (!from || !to) return setRsv({ ...rsv, error: 'Datum bitte als TT.MM.JJJJ eingeben.', clash: undefined });
+    if (to < from) return setRsv({ ...rsv, error: '„Bis“ liegt vor „Von“.', clash: undefined });
+    if (to < today) return setRsv({ ...rsv, error: 'Der Zeitraum liegt in der Vergangenheit.', clash: undefined });
+    setBusy(true);
+    try {
+      // Überschneidung mit anderen: einmal warnen, beim zweiten Tippen trotzdem speichern
+      if (!rsv.clash) {
+        const cl = await itemClashes(id, rsv.who, from, to);
+        if (cl.length) {
+          const c = cl[0]!;
+          return setRsv({ ...rsv, error: undefined, clash: `Schon reserviert${nameOf(c.person_id) ? ` von ${nameOf(c.person_id)}` : ''} (${range(c.date_from, c.date_to)}). Trotzdem reservieren?` });
+        }
+      }
+      await reserveItem(id, rsv.who, from, to);
+      setRsv(null);
+      setRes(await itemReservations(id));
+      reloadOutfits().catch(() => {});
+      toast.show(`Reserviert für ${range(from, to)}`);
+    } catch (e) { setRsv({ ...rsv, error: 'Speichern fehlgeschlagen: ' + (e as Error).message }); }
+    finally { setBusy(false); }
+  }
+
+  async function removeReservation(rid: string) {
+    try {
+      await deleteReservation(rid);
+      setRes((x) => x.filter((r) => r.id !== rid));
+      reloadOutfits().catch(() => {});
+      toast.show('Reservierung aufgehoben.');
+    } catch (e) { toast.show('Entfernen fehlgeschlagen: ' + (e as Error).message); }
+  }
+
   const info: [string, string | null | undefined][] = [
     ['Kategorie', categoryLabel(it.category)],
     ['Farbe', [it.color, it.alt_color].filter(Boolean).join(' · ')],
@@ -195,10 +249,27 @@ export default function Teil() {
             <Action label={wornToday ? 'Heute getragen' : 'Heute tragen'} active={wornToday} disabled={busy} onPress={toggleWorn}
               icon={(c) => <Icons.check color={c} />} />
             <Action label="Outfit damit" onPress={() => router.push(`/outfit-bauen?item=${id}`)} icon={(c) => <Icons.layers color={c} size={22} />} />
-            <Action label="Reservieren" onPress={() => toast.show('Einzelne Teile reservieren kommt später. Outfits planen reserviert die Teile schon.')} icon={(c) => <Icons.calendar color={c} />} />
+            <Action label="Reservieren" active={res.some((r) => r.from <= today)} onPress={openReserve} icon={(c) => <Icons.calendar color={c} />} />
             <Action label="Status" active={!!it.status} onPress={() => { setLentTo(it.lent_to ?? ''); setSheet(true); }} icon={(c) => <Icons.closet color={c} />} />
           </View>
 
+          {/* Reservierungen ab heute */}
+          {res.length > 0 && (
+            <Section title="Reserviert">
+              <View style={[s.list, { backgroundColor: t.surface, borderColor: t.hairline }]}>
+                {res.map((r, n) => (
+                  <View key={r.id} style={[s.listRow, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
+                    <Text style={{ flex: 1, fontSize: 16, color: t.ink }}>
+                      {range(r.from, r.to)}{nameOf(r.personId) ? ` · ${nameOf(r.personId)}` : ''}
+                    </Text>
+                    {r.viaOutfit
+                      ? <Text style={{ fontSize: 13, color: t.inkMuted }}>über Outfit</Text>
+                      : <Pressable onPress={() => removeReservation(r.id)} hitSlop={8}><Text style={{ fontSize: 15, fontWeight: '600', color: t.actionText }}>Aufheben</Text></Pressable>}
+                  </View>
+                ))}
+              </View>
+            </Section>
+          )}
           </>}
 
           {/* Set */}
@@ -264,6 +335,40 @@ export default function Teil() {
           ))
         )}
       </Sheet>
+      <Sheet open={!!rsv} onClose={() => setRsv(null)} title="Reservieren"
+        footer={<>
+          <SheetButton label="Abbrechen" onPress={() => setRsv(null)} />
+          <SheetButton primary label={busy ? 'Speichert …' : rsv?.clash ? 'Trotzdem' : 'Reservieren'} onPress={() => { if (!busy) confirmReserve(); }} />
+        </>}>
+        {rsv && (
+          <View style={{ gap: space.md }}>
+            {(wardrobe?.persons.length ?? 0) > 1 && (
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 13, color: t.inkMuted }}>Für wen?</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
+                  {(wardrobe?.persons ?? []).map((p) => (
+                    <Chip key={p.id} label={p.id === me?.id ? `${p.name} (ich)` : p.name} dot={PERSON[personKey(p.color)]} selected={rsv.who === p.id}
+                      onPress={() => setRsv({ ...rsv, who: p.id, clash: undefined, error: undefined })} />
+                  ))}
+                </View>
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
+              {([['Heute', 0, 0], ['Morgen', 1, 1], ['7 Tage', 0, 6]] as const).map(([label, a, b]) => {
+                const f = toDe(addDays(today, a)); const e = toDe(addDays(today, b));
+                return <Chip key={label} label={label} selected={rsv.from === f && rsv.to === e} onPress={() => setRsv({ ...rsv, from: f, to: e, clash: undefined, error: undefined })} />;
+              })}
+            </View>
+            <View style={{ flexDirection: 'row', gap: space.sm }}>
+              <View style={{ flex: 1 }}><BuyField label="Von" value={rsv.from} onText={(v) => setRsv({ ...rsv, from: v, clash: undefined, error: undefined })} placeholder="TT.MM.JJJJ" keyboardType="numbers-and-punctuation" /></View>
+              <View style={{ flex: 1 }}><BuyField label="Bis" value={rsv.to} onText={(v) => setRsv({ ...rsv, to: v, clash: undefined, error: undefined })} placeholder="TT.MM.JJJJ" keyboardType="numbers-and-punctuation" /></View>
+            </View>
+            {rsv.clash && <Text style={{ fontSize: 15, color: t.ink }}>{rsv.clash}</Text>}
+            {rsv.error && <Text style={{ fontSize: 15, color: '#C8102E' }}>{rsv.error}</Text>}
+          </View>
+        )}
+      </Sheet>
+
       <Sheet open={!!buy} onClose={() => setBuy(null)} title="Gekauft!"
         footer={<>
           <SheetButton label="Abbrechen" onPress={() => setBuy(null)} />

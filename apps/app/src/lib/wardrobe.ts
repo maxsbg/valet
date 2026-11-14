@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { personText } from '@valet/ui';
 import { isWishTag, type WishTag } from '@valet/core';
-import { loadOutfits, todayIds, todayWho, type Outfit, type Wear } from './outfits';
+import { loadOutfits, todayIds, todayWho, type Outfit, type Reservation, type Wear } from './outfits';
 import type { PersonLook } from '@/components/ItemTile';
 
 export type Person = { id: string; name: string; color: string | null; user_id: string | null; item_order: string[] | null };
@@ -52,6 +52,8 @@ export type Wardrobe = {
   outfits: Outfit[];
   /** einzeln eingetragene Trage-Tage */
   wears: Wear[];
+  /** einzeln reservierte Teile (ohne Outfit), ab heute */
+  reservations: Reservation[];
   /** heute getragen oder fürs heutige Outfit geplant */
   today: string[];
   /** wer ein Teil heute trägt bzw. für heute reserviert hat (Teil-ID → Person-ID) */
@@ -121,7 +123,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   const ids = new Set(tiles.map((t) => t.id));
   const wears = rest.wears.filter((x) => ids.has(x.itemId));
   const wishlists: Wishlist[] = (lists.data ?? []).map((l) => ({ id: l.id, name: l.name, ownerId: l.owner_id, itemOrder: l.item_order ?? [], createdAt: l.created_at }));
-  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, wishlists, outfits: rest.outfits, wears, today: todayIds(rest.outfits, wears), todayBy: todayWho(rest.outfits, wears) };
+  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, wishlists, outfits: rest.outfits, wears, reservations: rest.reservations, today: todayIds(rest.outfits, wears, rest.reservations), todayBy: todayWho(rest.outfits, wears, rest.reservations) };
 }
 
 /** Seite eines Bildes ('a'/'b'); ältere Daten hatten Großbuchstaben oder Leerzeichen */

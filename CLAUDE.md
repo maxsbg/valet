@@ -78,7 +78,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 4. ~~Datenimport~~ – erledigt, kein frischer Import mehr nötig.
 5. Reihenfolge (festgelegt von Max, 14.11.2026):
    1. ~~**Monatskalender**~~ (14.11.2026): Outfits-Seite, unter der Wochenleiste „Monat anzeigen“/„Woche anzeigen“ (Wahl wird auf dem Gerät gemerkt, `valet-outfits-view`). Raster in `packages/core/src/calendar.ts` (`monthGrid`, `shiftMonth`, `monthTitle`), Tag antippen → gleiches Blatt wie in der Woche.
-   2. **Einzelne Teile reservieren**
+   2. ~~**Einzelne Teile reservieren**~~ (14.11.2026): Teil-Detail → „Reservieren“ → Blatt (Für wen, Heute/Morgen/7 Tage, Von/Bis; Überschneidung mit anderer Person → Hinweis, zweites Tippen „Trotzdem“). Zeile in `reservations` **ohne** `plan_id`. Liste „Reserviert“ im Detail (einzelne aufhebbar, „über Outfit“ nicht). Geladen in `loadOutfits` (`wardrobe.reservations`, ab heute), zählen für den Bügel auf der Kachel (`todayIds`/`todayWho`). Kalender: Punkt unter dem Tag, im Tagesblatt „Reservierte Teile“.
    3. **Teilen als Bild**: Outfit als Bild exportieren **und** die Bilder einzelner Teile exportieren
    4. Danach: Wada-Farben, Cap-Wahl (aus dem alten Valet); außerdem offen: Teile auf dem Board verschieben
 

@@ -13,7 +13,7 @@ import { useScreen } from '@/lib/useScreen';
 import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
 import { usePersisted } from '@/lib/usePersisted';
 import { monthGrid, monthTitle, shiftMonth } from '@valet/core';
-import { addDays, allOccasions, fmtLong, mondayOf, plansOn, planOutfit, unplanOutfit, weekday, clashes, type Outfit } from '@/lib/outfits';
+import { addDays, allOccasions, fmtLong, mondayOf, plansOn, planOutfit, unplanOutfit, weekday, clashes, reservationsOn, deleteReservation, type Outfit } from '@/lib/outfits';
 
 export default function Outfits() {
   const t = useTheme();
@@ -95,6 +95,15 @@ export default function Outfits() {
   }
 
   const dayPlans = day ? plansOn(outfits, day) : [];
+  const reservations = wardrobe?.reservations ?? [];
+  const dayRes = day ? reservationsOn(reservations, day) : [];
+
+  async function unreserve(rid: string) {
+    setBusy(true);
+    try { await deleteReservation(rid); await reloadOutfits(); }
+    catch (e) { toast.show('Entfernen fehlgeschlagen: ' + (e as Error).message); }
+    finally { setBusy(false); }
+  }
   const pickList = [...outfits]
     .filter((o) => !who || persons.length < 2 || !o.ownerId || o.ownerId === who)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -132,6 +141,7 @@ export default function Outfits() {
                           <View style={[s.num, isToday && { backgroundColor: t.highlight }]}>
                             <Text style={{ fontSize: 13, fontWeight: isToday ? '700' : '500', color: isToday ? '#2a1a1d' : t.ink }}>{Number(c.date.slice(8))}</Text>
                           </View>
+                          <View style={[s.resDot, { backgroundColor: reservationsOn(reservations, c.date).length ? t.inkMuted : 'transparent' }]} />
                           {ps.length ? (
                             <View style={[s.mini, { borderColor: t.hairline, opacity: c.date < today ? 0.75 : 1 }]}>
                               <OutfitBoard pieces={ps[0]!.outfit.pieces} byId={byId} width={dayW - 2} />
@@ -157,6 +167,7 @@ export default function Outfits() {
                   <View style={[s.num, isToday && { backgroundColor: t.highlight }]}>
                     <Text style={{ fontSize: 13, fontWeight: isToday ? '700' : '500', color: isToday ? '#2a1a1d' : t.ink }}>{Number(d.slice(8))}</Text>
                   </View>
+                  <View style={[s.resDot, { backgroundColor: reservationsOn(reservations, d).length ? t.inkMuted : 'transparent' }]} />
                   {ps.length ? (
                     <View style={[s.mini, { borderColor: t.hairline, opacity: d < today ? 0.75 : 1 }]}>
                       <OutfitBoard pieces={ps[0]!.outfit.pieces} byId={byId} width={dayW - 2} />
@@ -251,6 +262,28 @@ export default function Outfits() {
         ) : (
           <Text style={{ color: t.inkMuted, fontSize: 15, marginTop: space.md }}>{day && day < today ? 'An dem Tag ist nichts eingetragen.' : 'Für den Tag ist noch nichts geplant.'}</Text>
         )}
+        {!picking && dayRes.length > 0 && (
+          <View style={{ marginTop: space.md }}>
+            <SectionLabel>Reservierte Teile</SectionLabel>
+            <View style={{ gap: space.xs }}>
+              {dayRes.map((r) => {
+                const it = byId.get(r.itemId);
+                const p = persons.find((x) => x.id === r.personId);
+                return (
+                  <View key={r.id} style={[s.planRow, { backgroundColor: t.surface, borderColor: t.hairline }]}>
+                    <Pressable onPress={() => { setDay(null); router.push(`/teil/${r.itemId}`); }} style={{ flex: 1, gap: 2, paddingHorizontal: space.xs }}>
+                      <Text style={{ fontSize: 16, color: t.ink }} numberOfLines={1}>{it?.name ?? 'Teil'}</Text>
+                      <Text style={{ fontSize: 14, color: t.inkMuted }}>{[p?.name, r.from !== r.to ? `${fmtDay(r.from)} – ${fmtDay(r.to)}` : null].filter(Boolean).join(' · ') || 'reserviert'}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => unreserve(r.id)} disabled={busy} hitSlop={8} style={[s.smallBtn, { borderColor: t.hairline }]}>
+                      <Text style={{ fontSize: 14, color: t.ink }}>Aufheben</Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
       </Sheet>
       {toast.node}
     </View>
@@ -269,6 +302,7 @@ const s = StyleSheet.create({
   num: { minWidth: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   mini: { borderWidth: 1, borderRadius: 8, overflow: 'hidden' },
   more: { position: 'absolute', right: 2, bottom: 2, fontSize: 10, fontWeight: '700', color: '#2a1a1d', backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 3, overflow: 'hidden' },
+  resDot: { width: 4, height: 4, borderRadius: 2, marginTop: -2 },
   toggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingTop: 2, minHeight: 28 },
   slot: { alignSelf: 'stretch', borderWidth: 1, borderStyle: 'dashed', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },

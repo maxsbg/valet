@@ -60,7 +60,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!w) return w;
       const ids = new Set(w.items.map((i) => i.id));
       const wears = r.wears.filter((x) => ids.has(x.itemId));
-      return { ...w, outfits: r.outfits, wears, today: todayIds(r.outfits, wears), todayBy: todayWho(r.outfits, wears) };
+      return { ...w, outfits: r.outfits, wears, reservations: r.reservations, today: todayIds(r.outfits, wears, r.reservations), todayBy: todayWho(r.outfits, wears, r.reservations) };
     });
   }, [wid]);
 
