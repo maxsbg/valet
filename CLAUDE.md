@@ -59,6 +59,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - **Reservieren (14.11.2026):** Teil-Detail → Reservieren (für wen, von–bis, Schnellwahl). Zeile in `reservations` ohne `plan_id`; im Schrank-Kontext als `holds` (ab heute), zählt für den Bügel auf der Kachel. Liste „Reserviert“ in der Detailansicht (über Outfit geplante nur anzeigen).
 - **Sets (14.11.2026):** `items.set_id` (Text) + `set_name`. Teil-Detail → „Zu einem Set verbinden“ / Set bearbeiten (`saveSet` in `src/lib/item.ts`, ein Teil allein = Set aufgelöst). Baukasten: Set-Teil gewählt → Blatt „Als Set tragen?“ → Rest mit auswählen.
 - **Export (14.11.2026):** `src/lib/share.ts` + `components/ExportSheet.tsx`: erst Vorschau erstellen, dann „Teilen / Sichern“ (Teilen-Menü muss direkt aus dem Tippen kommen, sonst blockt Safari). Teil = PNG freigestellt; Outfit = Board auf Elfenbein + Name + „valet“ (1080 px breit).
+- Safari (iPhone): Ein Eingabefeld nie mit Deckkraft 0 fokussieren – Safari behandelt es dann als verstecktes Feld und blockiert das Wischen in der Nähe, bis die Tastatur zu ist (Suche in `ClosetBar`: vor `focus()` 5 %).
 - Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
