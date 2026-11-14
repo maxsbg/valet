@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { isFlipped, setFlipped } from '@/lib/flipped';
 import { Animated, Easing, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { itemTile, tile } from '@valet/ui';
@@ -45,6 +46,8 @@ export type PersonLook = {
 };
 
 export type TileItem = {
+  /** Teil-ID – damit bleibt eine umgedrehte Kachel beim Seitenwechsel umgedreht */
+  id?: string;
   name: string;
   category: string;
   /** Hauptfarbe (Farbanalyse) */
@@ -100,7 +103,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
   const wait = item.isWish ? wishWait(item.createdAt) : null;
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
   const todayP = today ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
-  const flip = useFlip(tr?.reversible && item.thumbBack ? item.thumbBack : null);
+  const flip = useFlip(tr?.reversible && item.thumbBack ? item.thumbBack : null, item.id);
   const label = tileA11yLabel({
     name: item.name,
     status: item.status,
@@ -195,11 +198,12 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
  * Wendeteil umdrehen: Foto dreht sich um die senkrechte Achse bis zur Kante (90°), dann wird das Bild getauscht
  * und es dreht von der anderen Seite zurück. Das Wendbar-Zeichen dreht sich dabei einmal mit.
  */
-function useFlip(backUri: string | null) {
-  const [back, setBack] = useState(false);
-  const [loaded, setLoaded] = useState<string | null>(null);
+function useFlip(backUri: string | null, id: string | undefined) {
+  // Zustand bis zum Neuladen der App gemerkt (lib/flipped.ts) – Seiten werden beim Wechsel abgebaut
+  const [back, setBack] = useState(() => isFlipped(id));
+  const [loaded, setLoaded] = useState<string | null>(() => (isFlipped(id) ? backUri : null));
   const v = useRef(new Animated.Value(0)).current;
-  const spin = useRef(new Animated.Value(0)).current;
+  const spin = useRef(new Animated.Value(isFlipped(id) ? 1 : 0)).current;
   const busy = useRef(false);
   const native = !web;
   const toggle = () => {
@@ -207,6 +211,7 @@ function useFlip(backUri: string | null) {
     busy.current = true;
     setLoaded(backUri);
     const to = back ? 0 : 1;
+    if (id) setFlipped(id, !back);
     Animated.timing(spin, { toValue: to, duration: 2 * FLIP_HALF, easing: Easing.inOut(Easing.cubic), useNativeDriver: native }).start();
     Animated.timing(v, { toValue: 1, duration: FLIP_HALF, easing: Easing.in(Easing.cubic), useNativeDriver: native }).start(() => {
       setBack((b) => !b);
