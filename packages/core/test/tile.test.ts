@@ -44,7 +44,7 @@ const show = (owners: string[], me: string) =>
   ownersFor(owners, me).map((o) => ('more' in o ? `+${o.more}` : o.person));
 
 test('Besitzer aus Sicht von Max', () => {
-  assert.deepEqual(show([M], M), [M]);                  // nur ich
+  assert.deepEqual(show([M], M), []);                   // nur ich: keine Plakette
   assert.deepEqual(show([M, P], M), [P, M]);            // ich + 1, M oben
   assert.deepEqual(show([P, M], M), [P, M]);            // Reihenfolge der Daten egal
   assert.deepEqual(show([M, P, L], M), ['+2', M]);      // ich + 2
@@ -56,7 +56,7 @@ test('Besitzer aus Sicht von Max', () => {
 });
 
 test('Besitzer aus Sicht von Paul: P liegt oben', () => {
-  assert.deepEqual(show([P], P), [P]);
+  assert.deepEqual(show([P], P), []);
   assert.deepEqual(show([M, P], P), [M, P]);
   assert.deepEqual(show([M, P, L], P), ['+2', P]);
   assert.deepEqual(show([M], P), [M]);
@@ -71,6 +71,8 @@ test('Besitzer: „+12“, doppelte Einträge, ohne angemeldete Person', () => {
   assert.deepEqual(show([M, M, P], M), [P, M]);
   assert.deepEqual(ownersFor([P, L], null).map((o) => ('person' in o ? o.person : o.more)), [L, P]);
   assert.deepEqual(ownersFor(null, M), []);
+  assert.deepEqual(show([M], P), [M]);                  // fremdes Teil bleibt sichtbar
+  assert.deepEqual(ownersFor([M], null).map((o) => ('person' in o ? o.person : o.more)), [M]); // ohne Anmeldung
 });
 
 // ---------- Anzahl ----------

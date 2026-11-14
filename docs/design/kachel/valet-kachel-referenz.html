@@ -147,7 +147,7 @@ function ownersFor(owners, me = ME){
   const mine = owners.includes(me);
   const anchor = mine ? me : owners[0];
   const rest = owners.filter(o => o !== anchor);
-  if (rest.length === 0) return [{ person: anchor }];
+  if (rest.length === 0) return mine ? [] : [{ person: anchor }];   // nur ich → keine Plakette
   if (rest.length === 1) return [{ person: rest[0] }, { person: anchor }];
   return [{ more: rest.length }, { person: anchor }];
 }
@@ -200,7 +200,7 @@ const cell = (t, cap) => `<div class="cell">${renderTile(t)}<div class="cell__ca
 const grid = (id, list) => document.getElementById(id).innerHTML = list.map(([t,c]) => cell(t,c)).join('');
 
 grid('owners', [
-  [item('cap',114,{owners:['M']}), 'nur ich'],
+  [item('cap',114,{owners:['M']}), 'nur ich (keine Plakette)'],
   [item('tank',114,{owners:['M','P']}), 'ich + Paul'],
   [item('bag',114,{owners:['M','P','L']}), 'ich + 2 → +2'],
   [item('sneaker',114,{owners:['M','P','L','J']}), 'ich + 3 → +3'],
