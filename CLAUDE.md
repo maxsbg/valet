@@ -47,7 +47,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
   - Filter: Person und Kategorie (mehrere). Suche: Name, Marke, Shop, Kategorie. Sortieren: Zufällig, Eigene Reihenfolge, Zuletzt hinzugefügt, Höchster/Niedrigster Preis, A–Z.
   - Plus → `/neu?wunsch=1(&liste=…)`; im Formular bei Wunschteilen „Preis“ (= `list_price`), Liste und Kategorie.
   - „Gekauft“ → Schrank (14.11.2026): Detailansicht eines Wunschteils → Knopf „Gekauft – in den Schrank“ → Blatt mit Bezahlt (vorbelegt mit Wunsch-Preis), Kaufdatum (heute), Besitzer (Wunschteil → Listen-Besitzer → ich). `markBought` in `src/lib/item.ts`: `is_wish` aus, Liste/Kategorie weg, `list_price` bleibt, Teil aus `wishlists.item_order` ausgetragen.
-  - Noch offen: „Lohnt sich das?“ in der Detailansicht.
+  - „Lohnt sich das?“ → siehe KI-Features.
 - **Schrank-Seite (entschieden und umgesetzt 13.11.2026):** Leiste in `src/components/ClosetBar.tsx`, Kopfzeile mit Profil-/Einstellungs-Blatt in `ui.tsx` (`Header`), Filter in `src/lib/sort.ts`. Entwürfe `docs/design/schrank/schrank-entwuerfe.html` (6 Zustände) und `suche-animation.html` (Animation, verbindlich).
   - Heute-Karte entfällt. Kopf: links Profil-Monogramm (Personenfarbe, ersetzt „?“), Mitte Logo, rechts Zahnrad (Einstellungen).
   - Zeile darunter: Lupe · Kategorie-Chips (wischbar, rechts weicher Verlauf) · Sortieren. Klebt beim Scrollen oben als Milchglas, Kacheln laufen darunter durch.
@@ -75,5 +75,14 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
    - Planen = Zeile in `outfit_plans`; ab heute zusätzlich je Teil eine Zeile in `reservations` (mit `plan_id`, löscht sich per cascade).
    - Statistik: Rechnungen in `packages/core/src/stats.ts` (Ausgaben/Getragen/Bestand, Anteile über `payers` `[{person_id, amount}]`).
    - Einladen: Statistik → „Schrank teilen“ (`src/components/Invite.tsx`, `src/lib/invite.ts`). Link `…/valet/?einladung=<token>`; Token wird gemerkt, Login bietet „Konto anlegen“, danach `accept_invite` + „Wer bist du?“ (`src/components/Join.tsx`, setzt `persons.user_id`). Nur der Besitzer (Rolle owner) darf Einladungen anlegen.
-   - Noch offen aus dem alten Valet: Würfel/Vorschläge, Wada-Farben, Cap-Wahl, Teile auf dem Board verschieben, Monatskalender, Teilen als Bild, einzelne Teile reservieren.
-4. Frischer Datenimport vor dem Umstieg.
+4. ~~Datenimport~~ – erledigt, kein frischer Import mehr nötig.
+5. Reihenfolge (festgelegt von Max, 14.11.2026):
+   1. ~~**Monatskalender**~~ (14.11.2026): Outfits-Seite, unter der Wochenleiste „Monat anzeigen“/„Woche anzeigen“ (Wahl wird auf dem Gerät gemerkt, `valet-outfits-view`). Raster in `packages/core/src/calendar.ts` (`monthGrid`, `shiftMonth`, `monthTitle`), Tag antippen → gleiches Blatt wie in der Woche.
+   2. **Einzelne Teile reservieren**
+   3. **Teilen als Bild**: Outfit als Bild exportieren **und** die Bilder einzelner Teile exportieren
+   4. Danach: Wada-Farben, Cap-Wahl (aus dem alten Valet); außerdem offen: Teile auf dem Board verschieben
+
+## KI-Features (später, nicht vorher anfangen)
+Werden mit Max separat und sehr genau durchgegangen, bevor etwas gebaut wird.
+- **„Lohnt sich das?“** in der Detailansicht eines Wunschteils
+- **Würfel/Vorschläge** (Outfit-Vorschläge; Tabelle `daily_suggestions` existiert)

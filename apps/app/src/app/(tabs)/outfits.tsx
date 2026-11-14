@@ -11,6 +11,8 @@ import { useSession } from '@/lib/session';
 import { useTheme, space, radius, DISPLAY } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
+import { usePersisted } from '@/lib/usePersisted';
+import { monthGrid, monthTitle, shiftMonth } from '@valet/core';
 import { addDays, allOccasions, fmtLong, mondayOf, plansOn, planOutfit, unplanOutfit, weekday, clashes, type Outfit } from '@/lib/outfits';
 
 export default function Outfits() {
@@ -21,6 +23,9 @@ export default function Outfits() {
   const toast = useToast(scr.barTop + space.sm);
   const [occ, setOcc] = useState<string | null>(null);
   const [week, setWeek] = useState(0);
+  const [month, setMonth] = useState(0);
+  // Woche oder Monat (bleibt auf dem Gerät gespeichert)
+  const [view, setView] = usePersisted<'week' | 'month'>('valet-outfits-view', 'week');
   const [day, setDay] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [who, setWho] = useState<string | null>(null);
@@ -50,6 +55,17 @@ export default function Outfits() {
   const monday = addDays(mondayOf(today), week * 7);
   const days = Array.from({ length: 7 }, (_, n) => addDays(monday, n));
   const dayW = (scr.content - 2 * space.sm - 6 * 6) / 7;
+  const mon = shiftMonth(today, month);
+  const grid = view === 'month' ? monthGrid(mon.year, mon.month) : [];
+  const step = (n: number) => (view === 'month' ? setMonth(month + n) : setWeek(week + n));
+  const title = view === 'month'
+    ? monthTitle(mon.year, mon.month)
+    : week === 0 ? 'Diese Woche' : week === 1 ? 'Nächste Woche' : week === -1 ? 'Letzte Woche' : `${fmtDay(days[0]!)} – ${fmtDay(days[6]!)}`;
+  /** Beim Umschalten dort bleiben, wo man gerade ist: Woche ↔ Monat dieser Woche */
+  function toggleView() {
+    if (view === 'week') { const m = shiftMonth(monday, 0); const n = shiftMonth(today, 0); setMonth((m.year - n.year) * 12 + m.month - n.month); setView('month'); }
+    else { setWeek(month === 0 ? 0 : Math.round((Date.parse(`${mondayOf(`${mon.year}-${String(mon.month + 1).padStart(2, '0')}-01`)}T00:00:00Z`) - Date.parse(`${mondayOf(today)}T00:00:00Z`)) / 6048e5)); setView('week'); }
+  }
 
   function openDay(d: string) { setDay(d); setPicking(false); setWho(me?.id ?? persons[0]?.id ?? null); }
 
@@ -93,10 +109,43 @@ export default function Outfits() {
         {/* Wochenleiste */}
         <View style={[s.week, { width: scr.content, backgroundColor: t.surface, borderColor: t.hairline }]}>
           <View style={s.weekHead}>
-            <Pressable onPress={() => setWeek(week - 1)} hitSlop={10} accessibilityLabel="Vorige Woche"><Icons.back color={t.inkMuted} size={18} /></Pressable>
-            <Text style={[s.weekTitle, { color: t.ink }]}>{week === 0 ? 'Diese Woche' : week === 1 ? 'Nächste Woche' : week === -1 ? 'Letzte Woche' : `${fmtDay(days[0]!)} – ${fmtDay(days[6]!)}`}</Text>
-            <Pressable onPress={() => setWeek(week + 1)} hitSlop={10} accessibilityLabel="Nächste Woche" style={{ transform: [{ rotate: '180deg' }] }}><Icons.back color={t.inkMuted} size={18} /></Pressable>
+            <Pressable onPress={() => step(-1)} hitSlop={10} accessibilityLabel={view === 'month' ? 'Voriger Monat' : 'Vorige Woche'}><Icons.back color={t.inkMuted} size={18} /></Pressable>
+            <Text style={[s.weekTitle, { color: t.ink }]}>{title}</Text>
+            <Pressable onPress={() => step(1)} hitSlop={10} accessibilityLabel={view === 'month' ? 'Nächster Monat' : 'Nächste Woche'} style={{ transform: [{ rotate: '180deg' }] }}><Icons.back color={t.inkMuted} size={18} /></Pressable>
           </View>
+          {view === 'month' ? (
+            <View style={{ gap: 6 }}>
+              <View style={s.days}>
+                {grid[0]!.map((c) => <Text key={c.date} style={[s.wd, { width: dayW, textAlign: 'center', color: t.inkMuted }]}>{weekday(c.date)}</Text>)}
+              </View>
+              {grid.map((row) => {
+                const any = row.some((c) => plansOn(outfits, c.date).length > 0);
+                return (
+                  <View key={row[0]!.date} style={s.days}>
+                    {row.map((c) => {
+                      const ps = plansOn(outfits, c.date);
+                      const isToday = c.date === today;
+                      return (
+                        <Pressable key={c.date} onPress={() => openDay(c.date)} accessibilityRole="button"
+                          accessibilityLabel={`${fmtLong(c.date)}, ${ps.length ? `${ps.length} Outfit geplant` : 'nichts geplant'}`}
+                          style={({ pressed }) => [s.day, { width: dayW, opacity: (pressed ? 0.7 : 1) * (c.inMonth ? 1 : 0.35) }]}>
+                          <View style={[s.num, isToday && { backgroundColor: t.highlight }]}>
+                            <Text style={{ fontSize: 13, fontWeight: isToday ? '700' : '500', color: isToday ? '#2a1a1d' : t.ink }}>{Number(c.date.slice(8))}</Text>
+                          </View>
+                          {ps.length ? (
+                            <View style={[s.mini, { borderColor: t.hairline, opacity: c.date < today ? 0.75 : 1 }]}>
+                              <OutfitBoard pieces={ps[0]!.outfit.pieces} byId={byId} width={dayW - 2} />
+                              {ps.length > 1 && <Text style={s.more}>+{ps.length - 1}</Text>}
+                            </View>
+                          ) : any ? <View style={{ height: Math.round(dayW * 1.25) }} /> : null}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
           <View style={s.days}>
             {days.map((d) => {
               const ps = plansOn(outfits, d);
@@ -122,6 +171,11 @@ export default function Outfits() {
               );
             })}
           </View>
+          )}
+          <Pressable onPress={toggleView} hitSlop={8} accessibilityRole="button" style={s.toggle}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.actionText }}>{view === 'month' ? 'Woche anzeigen' : 'Monat anzeigen'}</Text>
+            <View style={{ transform: [{ rotate: view === 'month' ? '-90deg' : '90deg' }] }}><Icons.chevron color={t.actionText} size={14} /></View>
+          </Pressable>
         </View>
 
         {used.length > 0 && (
@@ -215,6 +269,7 @@ const s = StyleSheet.create({
   num: { minWidth: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   mini: { borderWidth: 1, borderRadius: 8, overflow: 'hidden' },
   more: { position: 'absolute', right: 2, bottom: 2, fontSize: 10, fontWeight: '700', color: '#2a1a1d', backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 3, overflow: 'hidden' },
+  toggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingTop: 2, minHeight: 28 },
   slot: { alignSelf: 'stretch', borderWidth: 1, borderStyle: 'dashed', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
