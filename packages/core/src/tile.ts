@@ -90,6 +90,7 @@ export type OwnerSlot = { person: string } | { more: number };
 /**
  * Besitzer-Plaketten aus Sicht der angemeldeten Person `me`:
  * eigenes Monogramm in der Ecke (oben), links darunter die andere Person bzw. „+N“.
+ * Gehört das Teil nur mir, gibt es keine Plakette.
  * Ohne mich: erste Person in der Ecke.
  */
 export function ownersFor(owners: readonly string[] | null | undefined, me: string | null | undefined): OwnerSlot[] {
@@ -97,7 +98,8 @@ export function ownersFor(owners: readonly string[] | null | undefined, me: stri
   if (!list.length) return [];
   const anchor = me && list.includes(me) ? me : list[0]!;
   const rest = list.filter((o) => o !== anchor);
-  if (rest.length === 0) return [{ person: anchor }];
+  // Gehört das Teil nur mir, braucht es keine Plakette (14.11.2026)
+  if (rest.length === 0) return anchor === me ? [] : [{ person: anchor }];
   if (rest.length === 1) return [{ person: rest[0]! }, { person: anchor }];
   return [{ more: rest.length }, { person: anchor }];
 }

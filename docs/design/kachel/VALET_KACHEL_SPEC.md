@@ -111,7 +111,7 @@ Symbol in ink. `aria-label` = Statusname.
 - Regeln:
   | Besitzer | Anzeige (links → rechts) |
   |---|---|
-  | nur ich | `[M]` |
+  | nur ich | keine Plakette (geändert 14.11.2026) |
   | ich + 1 | `[P][M]`, M oben |
   | ich + 2 oder mehr | `[+N][M]`, N = Anzahl der anderen, M oben |
   | nur eine andere Person | `[P]` |
