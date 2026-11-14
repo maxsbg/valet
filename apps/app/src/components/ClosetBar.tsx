@@ -118,7 +118,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
           <Animated.View style={{ width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [0, PAD - GAP] }) }} />
           {chips.map((c) => (
             <View key={c.key} onLayout={(e) => chipX.set(c.key, { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })}>
-              <Chip tall label={c.label} count={c.count} icon={c.icon} dot={c.dot} selected={c.selected} dashed={c.dashed} onPress={() => pick(c)} onLongPress={c.onLongPress} />
+              <Chip tall collapse={!!c.icon} label={c.label} count={c.count} icon={c.icon} dot={c.dot} selected={c.selected} dashed={c.dashed} onPress={() => pick(c)} onLongPress={c.onLongPress} />
             </View>
           ))}
           <View style={{ width: PAD - GAP + 12 }} />

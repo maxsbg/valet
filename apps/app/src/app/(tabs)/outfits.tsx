@@ -2,16 +2,20 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
-import { Header, Chip, Empty, Fab, useToast } from '@/components/ui';
-import { Icons } from '@/components/Icon';
+import { Header, Chip, Empty, useToast } from '@/components/ui';
+import { WeekCalendar } from '@/components/WeekCalendar';
+import { useTilePeople } from '@/components/Mosaic';
+import { TileIcon } from '@/components/tile/TileIcons';
 import { OutfitCard } from '@/components/OutfitCard';
 import { OutfitBoard } from '@/components/OutfitBoard';
 import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
-import { useTheme, space, radius, DISPLAY } from '@/lib/theme';
+import { useTheme, space, radius } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
-import { addDays, allOccasions, fmtLong, mondayOf, plansOn, planOutfit, unplanOutfit, weekday, clashes, type Outfit } from '@/lib/outfits';
+import { fmtLong, plansOn, planOutfit, unplanOutfit, clashes, type Outfit } from '@/lib/outfits';
+import { OCCASIONS } from '@valet/core';
+import { itemTile } from '@valet/ui';
 
 export default function Outfits() {
   const t = useTheme();
@@ -20,7 +24,6 @@ export default function Outfits() {
   const { wardrobe, session, loading, reload, reloadOutfits } = useSession();
   const toast = useToast(scr.barTop + space.sm);
   const [occ, setOcc] = useState<string | null>(null);
-  const [week, setWeek] = useState(0);
   const [day, setDay] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [who, setWho] = useState<string | null>(null);
@@ -31,12 +34,18 @@ export default function Outfits() {
   const persons = wardrobe?.persons ?? [];
   const me = persons.find((p) => p.user_id === session?.user.id) ?? null;
   const byId = useMemo(() => new Map((wardrobe?.items ?? []).map((i) => [i.id, i] as [string, Tile])), [wardrobe]);
-  const colorOf = (personId: string | null) => {
-    const p = persons.find((x) => x.id === personId);
-    return p ? t.person[personKey(p.color)] : null;
-  };
 
-  const used = allOccasions(outfits).filter((x) => outfits.some((o) => o.occasions.includes(x)));
+  // Anlass-Chips: nur Anlässe mit Outfits (bzw. der gewählte), in der festen Reihenfolge
+  const used = OCCASIONS.map((x) => ({ ...x, n: outfits.filter((o) => o.occasions.includes(x.label)).length }))
+    .filter((x) => x.n > 0 || occ === x.label);
+  // Bügel auf der Karte: Outfit heute getragen bzw. für heute geplant, in der Farbe der Person
+  const { person: lookOf } = useTilePeople();
+  const todayLook = (o: Outfit) => {
+    const p = o.plans.find((x) => x.date === today);
+    if (!p) return null;
+    const look = p.personId ? lookOf(p.personId) : undefined;
+    return look ? { name: look.name, stroke: look.stroke } : { stroke: itemTile.badge.ink };
+  };
   const list = useMemo(
     () => outfits.filter((o) => !occ || o.occasions.includes(occ)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [outfits, occ],
@@ -47,9 +56,6 @@ export default function Outfits() {
   const cols = Math.max(1, Math.floor((scr.content + gap) / (160 + gap)));
   const cardW = Math.floor((scr.content - (cols - 1) * gap) / cols);
 
-  const monday = addDays(mondayOf(today), week * 7);
-  const days = Array.from({ length: 7 }, (_, n) => addDays(monday, n));
-  const dayW = (scr.content - 2 * space.sm - 6 * 6) / 7;
 
   function openDay(d: string) { setDay(d); setPicking(false); setWho(me?.id ?? persons[0]?.id ?? null); }
 
@@ -90,45 +96,18 @@ export default function Outfits() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
         <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
 
-        {/* Wochenleiste */}
-        <View style={[s.week, { width: scr.content, backgroundColor: t.surface, borderColor: t.hairline }]}>
-          <View style={s.weekHead}>
-            <Pressable onPress={() => setWeek(week - 1)} hitSlop={10} accessibilityLabel="Vorige Woche"><Icons.back color={t.inkMuted} size={18} /></Pressable>
-            <Text style={[s.weekTitle, { color: t.ink }]}>{week === 0 ? 'Diese Woche' : week === 1 ? 'Nächste Woche' : week === -1 ? 'Letzte Woche' : `${fmtDay(days[0]!)} – ${fmtDay(days[6]!)}`}</Text>
-            <Pressable onPress={() => setWeek(week + 1)} hitSlop={10} accessibilityLabel="Nächste Woche" style={{ transform: [{ rotate: '180deg' }] }}><Icons.back color={t.inkMuted} size={18} /></Pressable>
-          </View>
-          <View style={s.days}>
-            {days.map((d) => {
-              const ps = plansOn(outfits, d);
-              const isToday = d === today;
-              return (
-                <Pressable key={d} onPress={() => openDay(d)} accessibilityRole="button" accessibilityLabel={`${fmtLong(d)}, ${ps.length ? `${ps.length} Outfit geplant` : 'nichts geplant'}`}
-                  style={({ pressed }) => [s.day, { width: dayW, opacity: pressed ? 0.7 : 1 }]}>
-                  <Text style={[s.wd, { color: isToday ? t.ink : t.inkMuted, fontWeight: isToday ? '700' : '500' }]}>{weekday(d)}</Text>
-                  <View style={[s.num, isToday && { backgroundColor: t.highlight }]}>
-                    <Text style={{ fontSize: 13, fontWeight: isToday ? '700' : '500', color: isToday ? '#2a1a1d' : t.ink }}>{Number(d.slice(8))}</Text>
-                  </View>
-                  {ps.length ? (
-                    <View style={[s.mini, { borderColor: t.hairline, opacity: d < today ? 0.75 : 1 }]}>
-                      <OutfitBoard pieces={ps[0]!.outfit.pieces} byId={byId} width={dayW - 2} />
-                      {ps.length > 1 && <Text style={s.more}>+{ps.length - 1}</Text>}
-                    </View>
-                  ) : (
-                    <View style={[s.slot, { height: Math.round(dayW * 1.25), borderColor: t.hairline }]}>
-                      {d >= today && <Icons.plus color={t.inkMuted} size={14} />}
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        {/* Wochenleiste; Titel antippen → Monat */}
+        <WeekCalendar outfits={outfits} byId={byId} today={today} width={scr.content} onDay={openDay} />
 
         {used.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: scr.content + 2 * space.md, flexGrow: 0 }}
             contentContainerStyle={{ gap: space.xs, paddingHorizontal: space.md, paddingTop: space.md }}>
-            <Chip label="Alle" count={outfits.length} selected={!occ} onPress={() => setOcc(null)} />
-            {used.map((x) => <Chip key={x} label={x} selected={occ === x} onPress={() => setOcc(occ === x ? null : x)} />)}
+            <Chip tall label="Alle" count={outfits.length} selected={!occ} onPress={() => setOcc(null)} />
+            {used.map((x) => {
+              const on = occ === x.label;
+              return <Chip key={x.label} tall collapse label={x.label} count={x.n} selected={on}
+                icon={<TileIcon name={x.icon} color={on ? t.bg : t.ink} size={18} />} onPress={() => setOcc(on ? null : x.label)} />;
+            })}
           </ScrollView>
         )}
 
@@ -138,7 +117,7 @@ export default function Outfits() {
           ) : list.length ? (
             <View style={[s.grid, { gap }]}>
               {list.map((o) => (
-                <OutfitCard key={o.id} outfit={o} byId={byId} width={cardW} personColor={colorOf(o.ownerId)} onPress={() => router.push(`/outfit/${o.id}`)} />
+                <OutfitCard key={o.id} outfit={o} byId={byId} width={cardW} today={todayLook(o)} onPress={() => router.push(`/outfit/${o.id}`)} />
               ))}
             </View>
           ) : (
@@ -146,7 +125,6 @@ export default function Outfits() {
           )}
         </View>
       </Page>
-      <Fab bottom={scr.fabBottom} label="Neues Outfit" onPress={() => router.push('/outfit-bauen')} />
 
       {/* Tag: geplante Outfits, Outfit wählen */}
       <Sheet open={!!day} onClose={() => setDay(null)} title={day ? (picking ? `Outfit für ${fmtLong(day)}` : fmtLong(day)) : ''}
@@ -203,19 +181,7 @@ export default function Outfits() {
   );
 }
 
-const fmtDay = (iso: string) => `${Number(iso.slice(8))}.${Number(iso.slice(5, 7))}.`;
-
 const s = StyleSheet.create({
-  week: { borderWidth: 1, borderRadius: radius.md, padding: space.sm, gap: space.xs },
-  weekHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
-  weekTitle: { fontFamily: DISPLAY, fontSize: 18 },
-  days: { flexDirection: 'row', gap: 6 },
-  day: { alignItems: 'center', gap: 4 },
-  wd: { fontSize: 12 },
-  num: { minWidth: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  mini: { borderWidth: 1, borderRadius: 8, overflow: 'hidden' },
-  more: { position: 'absolute', right: 2, bottom: 2, fontSize: 10, fontWeight: '700', color: '#2a1a1d', backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 3, overflow: 'hidden' },
-  slot: { alignSelf: 'stretch', borderWidth: 1, borderStyle: 'dashed', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
   pick: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },

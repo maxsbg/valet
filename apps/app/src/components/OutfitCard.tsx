@@ -1,46 +1,70 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { formatEur } from '@valet/core';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { occasionSlots } from '@valet/core';
+import { itemTile, outfitCard as OC } from '@valet/ui';
 import { OutfitBoard } from './OutfitBoard';
-import { useTheme, radius } from '@/lib/theme';
-import { fmtShort, nextPlan, outfitValue, type Outfit } from '@/lib/outfits';
+import { Glass, Num } from './tile/TileBadge';
+import { TileIcon } from './tile/TileIcons';
+import type { Outfit } from '@/lib/outfits';
 import type { Tile } from '@/lib/wardrobe';
 
-type Props = { outfit: Outfit; byId: Map<string, Tile>; width: number; personColor?: string | null; onPress?: () => void };
+type Props = {
+  outfit: Outfit;
+  byId: Map<string, Tile>;
+  width: number;
+  /** heute getragen bzw. für heute geplant: Strichfarbe der Person für den Bügel (ohne Person: ink) */
+  today?: { name?: string | null; stroke: string } | null;
+  onPress?: () => void;
+};
 
-/** Outfit-Karte wie im alten Valet: Board, darunter Person · Anzahl · Wert, „geplant“ und Anlässe */
-export function OutfitCard({ outfit, byId, width, personColor, onPress }: Props) {
-  const t = useTheme();
+const T = itemTile;
+
+/**
+ * Outfit-Karte (entschieden 14.11.2026, Entwurf „Valet – Outfits-Tab Überarbeitung“, Variante B):
+ * weiße Fläche wie die Kachel, kein Text, keine Fußzeile. Plaketten mit den Kachel-Regeln × 1,5:
+ *  - oben links Anlässe: erster in der Ecke obenauf, zweiter rechts darunter (4,5 px überlappend), ab drei „+N“
+ *  - unten links Bügel in Personenfarbe, wenn das Outfit heute getragen wird bzw. für heute geplant ist
+ */
+export function OutfitCard({ outfit, byId, width, today, onPress }: Props) {
   const n = outfit.pieces.filter((p) => byId.has(p.id)).length;
-  const nx = nextPlan(outfit);
+  const slots = occasionSlots(outfit.occasions);
+  const boardW = width - 2 * OC.photoInset;
+  const label = [`Outfit mit ${n} Teilen`, outfit.occasions.length ? outfit.occasions.join(', ') : null, today ? (today.name ? `heute: ${today.name}` : 'heute') : null]
+    .filter(Boolean).join(', ');
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Outfit mit ${n} Teilen`}
-      style={({ pressed }) => [s.card, { width, backgroundColor: t.surface, borderColor: t.hairline, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-      <OutfitBoard pieces={outfit.pieces} byId={byId} width={width - 2} />
-      <View style={[s.meta, { borderTopColor: t.hairline }]}>
-        <View style={s.line}>
-          {personColor && <View style={[s.dot, { backgroundColor: personColor }]} />}
-          <Text style={[s.nm, { color: t.inkMuted }]} numberOfLines={1}>{n} Teile · {formatEur(outfitValue(outfit, byId))}</Text>
-        </View>
-        {nx && <Text style={[s.plan, { color: t.accent }]}>geplant: {fmtShort(nx.date)}</Text>}
-        {outfit.occasions.length > 0 && (
-          <View style={s.occs}>
-            {outfit.occasions.map((o) => (
-              <Text key={o} style={[s.occ, { color: t.inkMuted, borderColor: t.hairline }]}>{o}</Text>
-            ))}
-          </View>
-        )}
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={({ pressed }) => [s.card, { width, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+      <View style={{ padding: OC.photoInset }}>
+        <OutfitBoard pieces={outfit.pieces} byId={byId} width={boardW} />
       </View>
+
+      {slots.length > 0 && (
+        <View style={s.tl}>
+          {slots.map((o, i) => (
+            <View key={'more' in o ? '+' : o.icon} style={[i > 0 && s.overlap, { zIndex: slots.length - i }]}>
+              <Glass scale={OC.scale}>
+                {'more' in o ? <Num num={String(o.more)} sym="+" symFirst scale={OC.scale} /> : <TileIcon name={o.icon} color={T.badge.ink} scale={OC.scale} />}
+              </Glass>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {today && (
+        <View style={s.bl}>
+          <Glass scale={OC.scale}><TileIcon name="hanger" color={today.stroke} scale={OC.scale} /></Glass>
+        </View>
+      )}
+
+      {/* feine Kante innen, über allem */}
+      <View pointerEvents="none" style={s.edge} />
     </Pressable>
   );
 }
 
 const s = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: radius.lg, overflow: 'hidden' },
-  meta: { paddingTop: 9, paddingHorizontal: 11, paddingBottom: 11, borderTopWidth: 1 },
-  line: { flexDirection: 'row', alignItems: 'center' },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
-  nm: { fontSize: 14, flexShrink: 1 },
-  plan: { fontSize: 12, marginTop: 1 },
-  occs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
-  occ: { fontSize: 11, borderWidth: 1, borderRadius: 999, paddingVertical: 1, paddingHorizontal: 7, overflow: 'hidden' },
+  card: { backgroundColor: T.bg, borderRadius: OC.radius, overflow: 'hidden' },
+  tl: { position: 'absolute', top: OC.inset, left: OC.inset, flexDirection: 'row', alignItems: 'center' },
+  bl: { position: 'absolute', bottom: OC.inset, left: OC.inset },
+  overlap: { marginLeft: -OC.overlap },
+  edge: { ...StyleSheet.absoluteFill, borderRadius: OC.radius, boxShadow: `inset 0 0 0 ${T.edgeWidth}px ${T.edge}` },
 });

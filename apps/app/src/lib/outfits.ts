@@ -1,3 +1,4 @@
+import { OCCASIONS, normalizeOccasions } from '@valet/core';
 import { supabase } from './supabase';
 import { todayLocal, type Tile } from './wardrobe';
 
@@ -18,9 +19,8 @@ export type Wear = { itemId: string; date: string; personId: string | null };
 /** Einzeln reserviertes Teil (ohne Outfit), von–bis einschließlich */
 export type Hold = { id: string; itemId: string; personId: string | null; from: string; to: string };
 
-/** Anlässe, die es immer gibt (wie im alten Valet) */
-export const OCCASIONS = ['Uni', 'Arbeit', 'Training/Sport', 'Abend/Ausgehen'];
-export const allOccasions = (outfits: Outfit[]) => [...new Set([...OCCASIONS, ...outfits.flatMap((o) => o.occasions)])];
+/** Anlässe: feste Liste aus @valet/core (14.11.2026) – keine eigenen Anlässe mehr */
+export const allOccasions = (): string[] => OCCASIONS.map((o) => o.label);
 
 type PlanRow = { id: string; plan_date: string; person_id: string | null; created_at: string };
 type OutfitRow = {
@@ -43,7 +43,8 @@ export async function loadOutfits(wardrobeId: string): Promise<{ outfits: Outfit
   const outfits = ((os.data ?? []) as unknown as OutfitRow[]).map((o) => ({
     id: o.id,
     name: o.name ?? '',
-    occasions: o.occasions ?? [],
+    // alte Namen (Uni, Arbeit …) → neue; Unbekanntes fällt weg (gespeichert erst beim nächsten Ändern)
+    occasions: normalizeOccasions(o.occasions),
     ownerId: o.owner_id,
     createdAt: o.created_at,
     updatedAt: o.updated_at,

@@ -4,12 +4,6 @@ type P = { size?: number; color: string };
 const stroke = (color: string, w = 2) => ({ fill: 'none', stroke: color, strokeWidth: w, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const });
 
 export const Icons = {
-  wash: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M4 10h16l-2 10H6Z" {...stroke(color)} /><Path d="M8 10 11 4M16 10l-3-6" {...stroke(color)} /></Svg>),
-  repair: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Circle cx={6} cy={6} r={3} {...stroke(color)} /><Circle cx={6} cy={18} r={3} {...stroke(color)} /><Path d="M8.5 7.5 20 18M8.5 16.5 20 6" {...stroke(color)} /></Svg>),
-  lent: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M7 17 17 7M9 7h8v8" {...stroke(color, 2.2)} /></Svg>),
-  out: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Rect x={3} y={4} width={18} height={5} rx={1} {...stroke(color)} /><Path d="M5 9v11h14V9M10 13h4" {...stroke(color)} /></Svg>),
-  sold: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M3 12V4h8l10 10-8 8Z" {...stroke(color)} /><Circle cx={7.5} cy={8.5} r={1.3} fill={color} /></Svg>),
-  reversible: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M20 11a8 8 0 0 0-14-5L4 8M4 4v4h4M4 13a8 8 0 0 0 14 5l2-2M20 20v-4h-4" {...stroke(color)} /></Svg>),
   hanger: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 8a2 2 0 1 1 2-2c0 1.2-2 1.6-2 3l9 6c.8.6.4 2-.6 2H3.6c-1 0-1.4-1.4-.6-2l9-6" {...stroke(color)} /></Svg>),
   layers: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="m12 4 9 5-9 5-9-5Z" {...stroke(color)} /><Path d="m3 14 9 5 9-5" {...stroke(color)} /></Svg>),
   heart: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" {...stroke(color)} /></Svg>),

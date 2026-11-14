@@ -1,3 +1,4 @@
+import { occasionOf } from '@valet/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
@@ -9,6 +10,7 @@ import { ItemPicture } from '@/components/ItemPicture';
 import { OutfitBoard } from '@/components/OutfitBoard';
 import { ExportSheet } from '@/components/ExportSheet';
 import { canExport, fileName, outfitPng } from '@/lib/share';
+import { TileIcon } from '@/components/tile/TileIcons';
 import { Chip, RoundButton, Empty, useToast } from '@/components/ui';
 import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
@@ -30,8 +32,6 @@ export default function OutfitDetail() {
   const [who, setWho] = useState<string | null>(null);
   const [warn, setWarn] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [own, setOwn] = useState('');
   const [exporting, setExporting] = useState(false);
   const dayScroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
 
@@ -65,7 +65,7 @@ export default function OutfitDetail() {
   const future = plans.filter((p) => p.date >= today).reverse();
   const past = plans.filter((p) => p.date < today);
   const plannedToday = o.plans.some((p) => p.date === today && (!me || !p.personId || p.personId === me.id));
-  const occList = [...new Set([...allOccasions(wardrobe.outfits), ...o.occasions])];
+  const occList = allOccasions();
   const dayChoices = Array.from({ length: 45 }, (_, n) => addDays(today, n - 14));
 
   async function plan(d: string, personId: string | null) {
@@ -93,11 +93,6 @@ export default function OutfitDetail() {
     const next = o!.occasions.includes(x) ? o!.occasions.filter((y) => y !== x) : [...o!.occasions, x];
     try { await setOccasions(o!.id, next); await reloadOutfits(); }
     catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
-  }
-  function addOwn() {
-    const v = own.trim().slice(0, 24);
-    setOwn(''); setAdding(false);
-    if (v && !o!.occasions.includes(v)) toggleOcc(v);
   }
 
   const planRow = (p: (typeof plans)[number], n: number) => {
@@ -142,13 +137,10 @@ export default function OutfitDetail() {
 
           <Text style={[s.section, { color: t.ink }]}>Anlass</Text>
           <View style={s.wrap}>
-            {occList.map((x) => <Chip key={x} label={x} selected={o.occasions.includes(x)} onPress={() => toggleOcc(x)} />)}
-            {adding ? (
-              <View style={[s.ownWrap, { borderColor: t.hairline, backgroundColor: t.surface }]}>
-                <TextInput autoFocus value={own} onChangeText={setOwn} onSubmitEditing={addOwn} onBlur={addOwn} placeholder="z. B. Date" placeholderTextColor={t.inkMuted} maxLength={24}
-                  style={[{ fontSize: 15, color: t.ink, width: 110, paddingVertical: 0 }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
-              </View>
-            ) : <Chip label="+ Eigener" onPress={() => setAdding(true)} />}
+            {occList.map((x) => {
+              const on = o.occasions.includes(x);
+              return <Chip key={x} label={x} selected={on} icon={<TileIcon name={occasionOf(x)!.icon} color={on ? t.bg : t.ink} size={16} />} onPress={() => toggleOcc(x)} />;
+            })}
           </View>
 
           {(future.length > 0 || past.length > 0) && (
@@ -236,7 +228,6 @@ const s = StyleSheet.create({
   btn: { flex: 1, height: 52, borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
   section: { fontFamily: DISPLAY, fontSize: 20, marginTop: space.lg, marginBottom: space.xs },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-  ownWrap: { height: 36, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 14, justifyContent: 'center' },
   list: { borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, paddingVertical: space.xs },
   smallBtn: { borderWidth: 1, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },

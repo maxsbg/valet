@@ -1,9 +1,11 @@
+import { occasionOf } from '@valet/core';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Page, STICKY } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORIES, SIDE_CATEGORIES, formatEur } from '@valet/core';
+import { TileIcon } from '@/components/tile/TileIcons';
 import { Chip, SearchField, RoundButton, Empty, useToast } from '@/components/ui';
 import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
@@ -52,8 +54,6 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
   const [cat, setCat] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [own, setOwn] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [setAsk, setSetAsk] = useState<{ item: Tile; mates: Tile[] } | null>(null);
@@ -80,7 +80,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
     const mates = i.setId ? wardrobe.items.filter((m) => m.setId === i.setId && m.id !== i.id && !ids.includes(m.id) && m.status !== 'out' && m.status !== 'sold' && !m.isWish) : [];
     if (mates.length) setSetAsk({ item: i, mates });
   };
-  const occList = [...new Set([...allOccasions(wardrobe.outfits), ...occ])];
+  const occList = allOccasions();
 
   async function save() {
     if (!ids.length) return toast.show('Wähle mindestens ein Teil aus.');
@@ -100,11 +100,6 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
     catch (e) { toast.show('Löschen fehlgeschlagen: ' + (e as Error).message); }
   }
 
-  function addOwn() {
-    const v = own.trim().slice(0, 24);
-    if (v && !occ.includes(v)) setOcc([...occ, v]);
-    setOwn(''); setAdding(false);
-  }
 
   const main = chosen.filter((i) => !SIDE_CATEGORIES.has(i.category)).sort((a, b) => catIndex(a.category) - catIndex(b.category));
   const side = chosen.filter((i) => SIDE_CATEGORIES.has(i.category)).sort((a, b) => catIndex(a.category) - catIndex(b.category));
@@ -152,13 +147,11 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
 
           <Text style={[s.label, { color: t.inkMuted, marginTop: space.sm }]}>Anlass <Text style={{ opacity: 0.7 }}>(optional)</Text></Text>
           <View style={s.wrap}>
-            {occList.map((x) => <Chip key={x} label={x} selected={occ.includes(x)} onPress={() => setOcc(occ.includes(x) ? occ.filter((y) => y !== x) : [...occ, x])} />)}
-            {adding ? (
-              <View style={[s.ownWrap, { borderColor: t.hairline, backgroundColor: t.surface }]}>
-                <TextInput autoFocus value={own} onChangeText={setOwn} onSubmitEditing={addOwn} onBlur={addOwn} placeholder="z. B. Date" placeholderTextColor={t.inkMuted} maxLength={24}
-                  style={[{ fontSize: 15, color: t.ink, width: 110, paddingVertical: 0 }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
-              </View>
-            ) : <Chip label="+ Eigener" onPress={() => setAdding(true)} />}
+            {occList.map((x) => {
+              const on = occ.includes(x);
+              return <Chip key={x} label={x} selected={on} icon={<TileIcon name={occasionOf(x)!.icon} color={on ? t.bg : t.ink} size={16} />}
+                onPress={() => setOcc(on ? occ.filter((y) => y !== x) : [...occ, x])} />;
+            })}
           </View>
 
           <View style={[s.sum, { borderColor: t.hairline, backgroundColor: t.surface }]}>
@@ -221,7 +214,6 @@ const s = StyleSheet.create({
   ccol: { gap: 6, minWidth: 0 },
   ctile: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center' },
   x: { position: 'absolute', top: 2, right: 2, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
-  ownWrap: { height: 36, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 14, justifyContent: 'center' },
   sum: { flexDirection: 'row', justifyContent: 'space-between', borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm, marginTop: space.md },
   filters: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md, paddingVertical: space.xs },
   delete: { height: 52, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: space.xl },
