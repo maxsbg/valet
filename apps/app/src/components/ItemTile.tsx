@@ -1,8 +1,8 @@
 import { Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import { glowFor, isAway, ownersFor, tileA11yLabel, topRightFor, TILE_STATUS, type ItemStatus } from '@valet/core';
+import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
-import { Glass, Mono, Num } from './tile/TileBadge';
+import { Glass, Mono, Num, Price, WaitRing } from './tile/TileBadge';
 import { TileIcon } from './tile/TileIcons';
 import { Icons } from './Icon';
 
@@ -31,8 +31,6 @@ const web = Platform.OS === 'web';
 export const RATIO: Record<string, number> = { mantel: 1.6, hose: 1.45, jacke: 1.2, pullover: 1.15, oberteil: 1.1, sport: 1.1, shorts: 0.95, tasche: 0.95, schuhe: 0.72, accessoire: 0.72 };
 export const tileHeight = (category: string, width: number) => Math.round(width * (RATIO[category] ?? 0.9));
 
-/** Standard-Bedenkzeit der Wunschliste in Tagen */
-export const WAIT = 14;
 
 /** Darstellung einer Person auf der Kachel */
 export type PersonLook = {
@@ -59,6 +57,12 @@ export type TileItem = {
   /** Besitzer (Personen-IDs) */
   owners: string[];
   isWish: boolean;
+  /** Wunschliste: Preis (Kaufpreis bzw. Listenpreis) */
+  price?: number | null;
+  /** Wunschliste: Tag, an dem das Teil auf die Liste kam (Start der Bedenkzeit) */
+  createdAt?: string | null;
+  /** Wunschliste: Kategorie (Grail, Watchlist, Next Cop, Someday, Gift) – Plakette oben links */
+  wishTag?: WishTag | null;
 };
 
 type Props = {
@@ -88,6 +92,9 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
   const glow = glowFor(item.hex, item.highlight);
   const away = isAway(item.status);
   const tr = topRightFor(item.reversible, item.qty);
+  // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)
+  const price = item.isWish ? priceLabel(item.price) : null;
+  const wait = item.isWish ? wishWait(item.createdAt) : null;
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
   const todayP = today ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
   const label = tileA11yLabel({
@@ -98,10 +105,6 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
     today: todayP,
     owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
   });
-
-  // TODO Wunschliste (mit Max klären): Inhalt der Wunsch-Plaketten nachtragen, z. B. Preis-Plakette und
-  // Bedenkzeit-Plakette (früher Preis-Pille unten links, Bedenkzeit-Ring oben rechts). Aufbau, Schein und
-  // Plaketten sind bereits die der neuen Kachel; die Wunsch-Inhalte bleiben bis dahin leer.
 
   return (
     <Pressable
@@ -119,15 +122,19 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
         <ItemPicture uri={item.thumb} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
       </View>
 
-      {/* oben links: Status (bzw. vorläufig Auswahl im Baukasten) */}
+      {/* oben links: Status bzw. bei Wunschteilen die Kategorie (bzw. vorläufig Auswahl im Baukasten) */}
       {selected ? (
         <View style={s.tl}><Glass style={s.sel}><Icons.check color={tile.select.on} size={B.icon.size} /></Glass></View>
+      ) : item.isWish && item.wishTag ? (
+        <View style={s.tl}><Glass label={wishTagLabel(item.wishTag) ?? undefined}><TileIcon name={item.wishTag} color={B.ink} /></Glass></View>
       ) : item.status ? (
         <View style={s.tl}><Glass label={TILE_STATUS[item.status].label}><TileIcon name={item.status} color={B.ink} /></Glass></View>
       ) : null}
 
-      {/* oben rechts: Wendbar, Anzahl */}
-      {tr && (
+      {/* oben rechts: Wunschliste → Bedenkzeit; sonst Wendbar, Anzahl */}
+      {wait ? (
+        <View style={s.tr}><Glass label={`Bedenkzeit: noch ${wait.left} ${wait.left === 1 ? 'Tag' : 'Tage'}`}><WaitRing {...wait} /></Glass></View>
+      ) : tr && (
         <View style={s.tr}>
           {tr.reversible && <Glass label="Wendbar"><TileIcon name="reversible" color={B.ink} /></Glass>}
           {tr.count && (
@@ -138,8 +145,10 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
         </View>
       )}
 
-      {/* unten links: Bügel = heute getragen oder für heute reserviert */}
-      {todayP && (
+      {/* unten links: Wunschliste → Preis; sonst Bügel = heute getragen oder für heute reserviert */}
+      {price ? (
+        <View style={s.bl}><Glass shape="pill" label={`${price} Euro`}><Price label={price} /></Glass></View>
+      ) : todayP && (
         <View style={s.bl}><Glass label={todayP.name ? `heute: ${todayP.name}` : 'heute getragen'}><TileIcon name="hanger" color={todayP.stroke} /></Glass></View>
       )}
 

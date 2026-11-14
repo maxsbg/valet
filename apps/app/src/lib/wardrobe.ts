@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { personText } from '@valet/ui';
+import { isWishTag, type WishTag } from '@valet/core';
 import { loadOutfits, todayIds, todayWho, type Outfit, type Wear } from './outfits';
 import type { PersonLook } from '@/components/ItemTile';
 
@@ -19,6 +20,11 @@ export type Tile = {
   reversible: boolean;
   setId: string | null;
   isWish: boolean;
+  /** Wunschliste: Liste (eine pro Teil) und Kategorie (Grail, Watchlist …) */
+  wishlistId: string | null;
+  wishTag: WishTag | null;
+  /** Shop (für die Suche in der Wunschliste) */
+  shop: string | null;
   price: number | null;
   pricePaid: number | null;
   listPrice: number | null;
@@ -38,8 +44,11 @@ export type Tile = {
   /** Hauptbild (freigestellt oder Original) für die Detailseite */
   image: string | null;
 };
+/** Liste der Wunschliste; gehört einer Person, sichtbar für alle im Schrank */
+export type Wishlist = { id: string; name: string; ownerId: string | null; itemOrder: string[]; createdAt: string };
 export type Wardrobe = {
   id: string; name: string; persons: Person[]; items: Tile[];
+  wishlists: Wishlist[];
   outfits: Outfit[];
   /** einzeln eingetragene Trage-Tage */
   wears: Wear[];
@@ -55,16 +64,17 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   if (e1) throw e1;
   const w = ws?.[0];
   if (!w) return null;
-  const [persons, items, images, rest] = await Promise.all([
+  const [persons, items, images, lists, rest] = await Promise.all([
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,color,owner_id,owner_ids,highlight_color,status,qty,reversible,main_side,set_id,is_wish,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,color,owner_id,owner_ids,highlight_color,status,qty,reversible,main_side,set_id,is_wish,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
+    supabase.from('wishlists').select('id,name,owner_id,item_order,created_at').eq('wardrobe_id', w.id).order('created_at'),
     loadOutfits(w.id),
   ]);
-  for (const r of [persons, items, images]) if (r.error) throw r.error;
+  for (const r of [persons, items, images, lists]) if (r.error) throw r.error;
   const colorsBy = new Map<string, string>();
   const thumbBy = new Map<string, string>();
   const imageBy = new Map<string, string>();
@@ -90,6 +100,9 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     reversible: !!i.reversible,
     setId: i.set_id,
     isWish: !!i.is_wish,
+    wishlistId: i.wishlist_id ?? null,
+    wishTag: isWishTag(i.wish_tag) ? i.wish_tag : null,
+    shop: i.shop || null,
     price: i.price_paid ?? i.list_price ?? null,
     pricePaid: i.price_paid,
     listPrice: i.list_price,
@@ -107,7 +120,8 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
   }));
   const ids = new Set(tiles.map((t) => t.id));
   const wears = rest.wears.filter((x) => ids.has(x.itemId));
-  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, outfits: rest.outfits, wears, today: todayIds(rest.outfits, wears), todayBy: todayWho(rest.outfits, wears) };
+  const wishlists: Wishlist[] = (lists.data ?? []).map((l) => ({ id: l.id, name: l.name, ownerId: l.owner_id, itemOrder: l.item_order ?? [], createdAt: l.created_at }));
+  return { id: w.id, name: w.name, persons: persons.data ?? [], items: tiles, wishlists, outfits: rest.outfits, wears, today: todayIds(rest.outfits, wears), todayBy: todayWho(rest.outfits, wears) };
 }
 
 /** Seite eines Bildes ('a'/'b'); ältere Daten hatten Großbuchstaben oder Leerzeichen */

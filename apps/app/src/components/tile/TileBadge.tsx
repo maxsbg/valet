@@ -1,4 +1,5 @@
 import { Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { fonts, itemTile } from '@valet/ui';
 import { DISPLAY } from '@/lib/theme';
 
@@ -25,7 +26,8 @@ const glassWeb = css({
 const trim = css({ display: 'block', textBox: 'trim-both cap alphabetic' });
 const raise = css({ verticalAlign: `${b.sym.raiseEm}em` });
 
-type Shape = 'circle' | 'capsule';
+/** circle 20 × 20 · capsule 20 × 14 (Anzahl unter Wendbar) · pill 20 hoch, wächst mit dem Inhalt (Preis) */
+type Shape = 'circle' | 'capsule' | 'pill';
 
 export function Glass({ shape = 'circle', label, style, children }: { shape?: Shape; label?: string; style?: ViewStyle; children: React.ReactNode }) {
   return (
@@ -33,7 +35,7 @@ export function Glass({ shape = 'circle', label, style, children }: { shape?: Sh
       role={label ? 'img' : undefined}
       aria-label={label}
       accessibilityLabel={label}
-      style={[s.glass, shape === 'capsule' && s.capsule, glassWeb, style]}
+      style={[s.glass, shape === 'capsule' && s.capsule, shape === 'pill' && s.pill, glassWeb, style]}
     >
       {children}
     </View>
@@ -55,6 +57,38 @@ export function Mono({ letter, color }: { letter: string; color: string }) {
   return <Text style={[s.mono, { color }, trim]} numberOfLines={1}>{letter}</Text>;
 }
 
+/** Preis in ganzen Euro mit kleinem € dahinter (Wunschliste, unten links) */
+export function Price({ label }: { label: string }) {
+  const e = b.price.eur;
+  return (
+    <Text style={[s.num, trim]} numberOfLines={1}>
+      {label}
+      <Text style={[{ fontSize: e.size, fontWeight: e.weight }, css({ verticalAlign: `${e.raiseEm}em`, marginLeft: e.marginLeft, marginRight: e.marginRight })]}>€</Text>
+    </Text>
+  );
+}
+
+/** Bedenkzeit: Ring mit verbleibenden Tagen (Wunschliste, oben rechts) – liegt in einer runden Glass-Plakette */
+export function WaitRing({ left, progress, warn }: { left: number; progress: number; warn: boolean }) {
+  const w = b.wait;
+  const c = 2 * Math.PI * w.r;
+  const two = left > 9;
+  return (
+    <>
+      <Svg width={b.size} height={b.size} viewBox={`0 0 ${b.size} ${b.size}`} style={StyleSheet.absoluteFill} aria-hidden>
+        <Circle cx={b.size / 2} cy={b.size / 2} r={w.r} fill="none" stroke={w.track} strokeWidth={w.stroke} />
+        <Circle cx={b.size / 2} cy={b.size / 2} r={w.r} fill="none" stroke={warn ? w.warn : w.color} strokeWidth={w.stroke}
+          strokeLinecap="round" strokeDasharray={`${(c * progress).toFixed(2)} ${c.toFixed(2)}`}
+          transform={`rotate(-90 ${b.size / 2} ${b.size / 2})`} />
+      </Svg>
+      <Text numberOfLines={1} style={[s.num, trim, two && {
+        fontSize: w.twoDigits.size, lineHeight: w.twoDigits.size, letterSpacing: w.twoDigits.letterSpacing,
+        marginRight: w.twoDigits.marginRight, transform: [{ translateY: w.twoDigits.offsetY + (web ? 0 : b.numOffsetY) }],
+      }]}>{left}</Text>
+    </>
+  );
+}
+
 const s = StyleSheet.create({
   glass: {
     width: b.size,
@@ -67,6 +101,7 @@ const s = StyleSheet.create({
     boxShadow: b.shadow,
   },
   capsule: { height: b.countHeight, borderRadius: b.pill },
+  pill: { width: 'auto', minWidth: b.size, paddingHorizontal: b.price.padX },
   num: {
     // Web: Systemschrift-Stapel aus den Tokens; iOS: SF Pro ist Standard
     fontFamily: web ? fonts.text : undefined,

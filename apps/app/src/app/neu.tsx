@@ -2,7 +2,7 @@ import { useBottomInset } from '@/lib/bottomInset';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Page, STICKY } from '@/components/Page';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { Icons } from '@/components/Icon';
@@ -25,6 +25,9 @@ export default function Neu() {
   const toast = useToast(bottom + 90);
   const { wardrobe, session, reload } = useSession();
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
+  // Aus der Wunschliste: ?wunsch=1 (&liste=<id>) → Wunschteil, Liste vorbelegt
+  const params = useLocalSearchParams<{ wunsch?: string; liste?: string }>();
+  const wish = params.wunsch === '1' ? { wishlistId: params.liste ?? null } : undefined;
 
   const [step, setStep] = useState<Step>('start');
   const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
@@ -75,7 +78,7 @@ export default function Neu() {
   /** Weiter zum Formular; Farbe aus dem Bild vorschlagen, solange noch keine gewählt ist */
   function toForm(p: Picture | null) {
     setPicture(p);
-    const base = f ?? emptyForm(me?.id ?? null);
+    const base = f ?? emptyForm(me?.id ?? null, wish);
     const top = p?.colors[0]?.h;
     const suggestion = top ? hexToName(top) : null;
     setF(base.colors.length || !suggestion ? base : { ...base, colors: [suggestion] });
@@ -104,7 +107,7 @@ export default function Neu() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
         <Pressable onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
-        <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>Neues Teil</Text>
+        <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>{wish ? 'Neuer Wunsch' : 'Neues Teil'}</Text>
         <View style={[s.barSide, { alignItems: 'flex-end' }]}>
           {step === 'form' && (
             <Pressable onPress={save} disabled={saving} hitSlop={10}>
@@ -194,7 +197,7 @@ export default function Neu() {
                   </Pressable>
                 </View>
               </View>
-              <ItemFormFields f={f} onChange={setF} persons={wardrobe?.persons ?? []} open={open} onOpen={setOpen} />
+              <ItemFormFields f={f} onChange={setF} persons={wardrobe?.persons ?? []} wishlists={wardrobe?.wishlists} open={open} onOpen={setOpen} />
               <Btn primary label={saving ? 'Speichert …' : 'Teil sichern'} onPress={saving ? undefined : save} style={{ marginTop: space.md }} />
             </>
           )}

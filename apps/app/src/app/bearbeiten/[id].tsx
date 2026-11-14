@@ -57,6 +57,7 @@ export default function Bearbeiten() {
         name: change.name, brand: change.brand, category: change.category, ownerId: change.owner_id, owners: change.owner_ids, price: price ?? list,
         qty, reversible: change.reversible, seasons: change.seasons, style: change.style, purchaseDate: date, color,
         hex: colorChanged ? nameToHex(color) ?? tile?.hex ?? null : tile?.hex ?? null,
+        ...(f.isWish ? { wishlistId: f.wishlistId, wishTag: f.wishTag, shop: change.shop || null } : {}),
       });
       close();
     } catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
@@ -86,7 +87,7 @@ export default function Bearbeiten() {
                 category={f.category} color={tileHex ?? '#d8d2c8'} />
             )}
           </View>
-          <ItemFormFields f={f} onChange={setF} persons={wardrobe?.persons ?? []} open={open} onOpen={setOpen} />
+          <ItemFormFields f={f} onChange={setF} persons={wardrobe?.persons ?? []} wishlists={wardrobe?.wishlists} open={open} onOpen={setOpen} />
 
           <Pressable onPress={() => setConfirmDelete(true)} style={{ alignItems: 'center', paddingVertical: space.lg }}>
             <Text style={{ fontSize: 16, color: t.dark ? '#F2B8B5' : '#B3261E' }}>Teil löschen</Text>

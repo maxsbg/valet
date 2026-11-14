@@ -85,7 +85,7 @@ Leistung (Web): Die Unschärfe bei 100+ Kacheln auf dem iPhone testen. Ruckelt d
 |---|---|---|
 | Wäsche | Korb | nein |
 | Reparatur | Schere | ja |
-| verliehen | Pfeil nach rechts | ja |
+| verliehen | Pfeil schräg nach oben rechts (getauscht 14.11.2026; der gerade Pfeil gehört jetzt „Next Cop“ in der Wunschliste) | ja |
 | eingelagert / aussortiert | Kiste | ja |
 | verkauft | Etikett | ja |
 
@@ -160,7 +160,7 @@ Symbol in ink. `aria-label` = Statusname.
 Bügel:      <path d="M12 7.5a2.2 2.2 0 1 1 2.2-2.2"/><path d="M12 7.5v1.2L3.2 15.6a1 1 0 0 0 .6 1.8h16.4a1 1 0 0 0 .6-1.8L12 8.7"/>
 Wäsche:     <path d="M4 10h16l-1.6 8.8a1.6 1.6 0 0 1-1.6 1.2H7.2a1.6 1.6 0 0 1-1.6-1.2z"/><path d="M8.5 10l3-6"/><path d="M15.5 10l-3-6"/>
 Reparatur:  <circle cx="6.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/><path d="M8.3 15.8L18 4"/><path d="M15.7 15.8L6 4"/>
-verliehen:  <path d="M5 12h13"/><path d="M13 6l6 6-6 6"/>
+verliehen:  <path d="M6.5 17.5l11-11"/><path d="M9 6.5h8.5V15"/>
 eingelagert:<path d="M4.5 9h15v10a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z"/><path d="M3 4.5h18V9H3z"/><path d="M10 13h4"/>
 verkauft:   <path d="M3.5 12V4.5a1 1 0 0 1 1-1H12l8.5 8.5-8.5 8.5z"/><circle cx="8" cy="8" r="1.4"/>
 Wendbar:    <path d="M4.5 11a7.5 7.5 0 0 1 13-4.5L19.5 8.5"/><path d="M19.5 4v4.5H15"/><path d="M19.5 13a7.5 7.5 0 0 1-13 4.5L4.5 15.5"/><path d="M4.5 20v-4.5H9"/>

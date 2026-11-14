@@ -125,3 +125,73 @@ export function tileA11yLabel(t: TileA11y): string {
   if (t.owners?.length) parts.push(t.owners.map((o) => ('more' in o ? `${o.more} weitere` : o.name)).join(', '));
   return parts.filter(Boolean).join(', ');
 }
+
+// ---------- Wunschliste: Preis und Bedenkzeit (entschieden 14.11.2026) ----------
+// Entwurf: docs/design/wunschliste/wunsch-kacheln.html
+
+/**
+ * Bedenkzeit der Wunschliste.
+ * VORERST AUS (Max, 14.11.2026): Plakette ist fertig, wird aber erst angezeigt, wenn Max sagt „jetzt anmachen“.
+ * Zum Einschalten nur `enabled` auf true setzen.
+ */
+export const WISH_WAIT = {
+  enabled: false,
+  /** Länge in Tagen, ab dem Tag, an dem das Teil auf die Liste kam */
+  days: 14,
+  /** ab so vielen Resttagen wird der Ring orange */
+  warnAt: 3,
+} as const;
+
+export type WishWait = {
+  /** verbleibende Tage (1 … days) */
+  left: number;
+  /** Anteil verbleibender Zeit 0–1 (voller Ring = gerade hinzugefügt) */
+  progress: number;
+  warn: boolean;
+};
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Bedenkzeit-Plakette oben rechts. null = keine Plakette:
+ * Funktion aus, Datum fehlt/ungültig oder Bedenkzeit vorbei (dann verschwindet die Plakette einfach).
+ */
+export function wishWait(
+  addedAt: string | Date | null | undefined,
+  now: Date = new Date(),
+  opts: { enabled: boolean; days: number; warnAt: number } = WISH_WAIT,
+): WishWait | null {
+  if (!opts.enabled || !addedAt) return null;
+  const start = new Date(addedAt);
+  if (Number.isNaN(start.getTime())) return null;
+  // in ganzen Kalendertagen rechnen (lokale Zeit): am Tag des Hinzufügens noch volle Bedenkzeit
+  const d0 = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+  const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const left = opts.days - Math.round((d1 - d0) / DAY);
+  if (left <= 0) return null;
+  const l = Math.min(left, opts.days);
+  return { left: l, progress: l / opts.days, warn: l <= opts.warnAt };
+}
+
+/** Preis auf der Kachel: ganze Euro mit Tausenderpunkt („9“, „89“, „1.249“), ohne Preis → null */
+export function priceLabel(n: number | null | undefined): string | null {
+  if (n == null || !Number.isFinite(n) || n <= 0) return null;
+  return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(Math.round(n));
+}
+
+// ---------- Wunschliste: Kategorie (entschieden 14.11.2026) ----------
+
+/**
+ * Kategorie eines Wunschteils, höchstens eine pro Teil. Keine Liste – nur Plakette oben links, Filter und Suche.
+ * Symbole: TILE_ICONS in apps/app/src/components/tile/TileIcons.tsx (gleiche Schlüssel).
+ */
+export const WISH_TAGS = [
+  { id: 'grail', label: 'Grail' },         // Krone
+  { id: 'watchlist', label: 'Watchlist' }, // Auge
+  { id: 'nextcop', label: 'Next Cop' },    // Pfeil gerade nach rechts
+  { id: 'someday', label: 'Someday' },     // Sternschnuppe
+  { id: 'gift', label: 'Gift' },           // Geschenk
+] as const;
+export type WishTag = (typeof WISH_TAGS)[number]['id'];
+export const wishTagLabel = (id: string | null | undefined) => WISH_TAGS.find((w) => w.id === id)?.label ?? null;
+export const isWishTag = (v: unknown): v is WishTag => WISH_TAGS.some((w) => w.id === v);

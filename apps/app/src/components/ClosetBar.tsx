@@ -4,9 +4,11 @@ import { Icons } from './Icon';
 import { Chip } from './ui';
 import { useTheme, space } from '@/lib/theme';
 
-export type BarChip = { key: string; label: string; count?: number; selected: boolean; onPress: () => void };
+export type BarChip = { key: string; label: string; count?: number; selected: boolean; onPress: () => void; onLongPress?: () => void; dashed?: boolean };
 
 type Props = {
+  /** Platzhalter im Suchfeld */
+  placeholder?: string;
   /** volle Breite der Leiste (Bildschirmbreite, auf großen Geräten begrenzt) */
   width: number;
   query: string;
@@ -32,7 +34,7 @@ const ROW_PAD = 8;
  * Kategorien rutschen darunter und reichen dort bis an beide Bildschirmränder.
  * Ablauf ohne Überlappung: Öffnen = Kategorien erst runter, dann seitlich; Schließen = Feld zu und seitlich, dann hoch.
  */
-export function ClosetBar({ width: W, query, onQuery, chips, filterActive, onFilter, onSort }: Props) {
+export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery, chips, filterActive, onFilter, onSort }: Props) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const input = useRef<React.ComponentRef<typeof TextInput>>(null);
@@ -106,7 +108,7 @@ export function ClosetBar({ width: W, query, onQuery, chips, filterActive, onFil
           <Animated.View style={{ width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [0, PAD - GAP] }) }} />
           {chips.map((c) => (
             <View key={c.key} onLayout={(e) => chipX.set(c.key, { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })}>
-              <Chip tall label={c.label} count={c.count} selected={c.selected} onPress={() => pick(c)} />
+              <Chip tall label={c.label} count={c.count} selected={c.selected} dashed={c.dashed} onPress={() => pick(c)} onLongPress={c.onLongPress} />
             </View>
           ))}
           <View style={{ width: PAD - GAP + 12 }} />
@@ -125,7 +127,7 @@ export function ClosetBar({ width: W, query, onQuery, chips, filterActive, onFil
         </Pressable>
       </Animated.View>
       <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[s.abs, { left: PAD + 42, top: ROW_PAD + 1, height: BTN - 2, width: inputW, opacity: v.tx }]}>
-        <TextInput ref={input} value={query} onChangeText={onQuery} placeholder="Suchen …" placeholderTextColor={t.inkMuted}
+        <TextInput ref={input} value={query} onChangeText={onQuery} placeholder={placeholder} placeholderTextColor={t.inkMuted}
           returnKeyType="search" enterKeyHint="search" autoCorrect={false}
           style={[s.input, { color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
       </Animated.View>
