@@ -12,6 +12,7 @@ import { eur, toDe, toIso } from '@/components/ItemForm';
 import { Sheet, OptionRow, SheetButton } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
+import { useFlipped } from '@/lib/flipped';
 import { loadItem, wornDays, setWornToday, setStatus, markBought, saveSet, type ItemDetail, type ItemRow } from '@/lib/item';
 import { holdItem, holdsOf, releaseHold, fmtShort } from '@/lib/outfits';
 import { ExportSheet } from '@/components/ExportSheet';
@@ -63,6 +64,9 @@ export default function Teil() {
   useFocusEffect(load);
 
   const tileInfo = wardrobe?.items.find((i) => i.id === id);
+  // Kachel im Schrank umgedreht → hier vorübergehend Seite B als Hauptbild
+  const flipped = useFlipped(id) && !!tileInfo?.imageBack;
+  const mainPic = (flipped ? tileInfo?.imageBack : null) ?? tileInfo?.image ?? tileInfo?.thumb;
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
   const ownerList = (wardrobe?.persons ?? []).filter((p) => (d?.item.owner_ids ?? (d?.item.owner_id ? [d.item.owner_id] : [])).includes(p.id));
   const owner = ownerList.length === 1 ? ownerList[0] : undefined;
@@ -208,8 +212,8 @@ export default function Teil() {
 
           {/* Bild */}
           <View style={[s.hero, { boxShadow: `inset 0 0 28px 4px ${hex}73, 0 2px 8px rgba(42,26,29,0.10)` }]}>
-            <View style={{ width: '82%', height: '88%', alignItems: 'center', justifyContent: 'center' }}><ItemPicture uri={tileInfo?.image ?? tileInfo?.thumb} inset={0} category={it.category} color={hex} /></View>
-            {canExport && (tileInfo?.image || tileInfo?.thumb) && (
+            <View style={{ width: '82%', height: '88%', alignItems: 'center', justifyContent: 'center' }}><ItemPicture uri={mainPic} inset={0} category={it.category} color={hex} /></View>
+            {canExport && mainPic && (
               <View style={{ position: 'absolute', top: 10, right: 10 }}>
                 <RoundButton label="Bild teilen" onPress={() => setExporting(true)}><Icons.share color={t.ink} /></RoundButton>
               </View>
@@ -441,7 +445,7 @@ export default function Teil() {
       </Sheet>
       {canExport && (
         <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Bild teilen" name={`${fileName(it.name)}.png`}
-          make={() => itemPng((tileInfo?.image ?? tileInfo?.thumb)!)} />
+          make={() => itemPng(mainPic!)} />
       )}
       {toast.node}
     </View>

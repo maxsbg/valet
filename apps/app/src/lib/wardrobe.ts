@@ -45,6 +45,8 @@ export type Tile = {
   thumbBack: string | null;
   /** Hauptbild (freigestellt oder Original) für die Detailseite */
   image: string | null;
+  /** Wendeteile: Bild der anderen Seite (Detailseite, wenn die Kachel umgedreht ist) */
+  imageBack: string | null;
 };
 /** Liste der Wunschliste; gehört einer Person, sichtbar für alle im Schrank */
 export type Wishlist = { id: string; name: string; ownerId: string | null; itemOrder: string[]; createdAt: string };
@@ -122,6 +124,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     thumb: pick(thumbBy, i.id, i.main_side),
     thumbBack: i.reversible ? other(thumbBy, i.id, i.main_side) : null,
     image: pick(imageBy, i.id, i.main_side),
+    imageBack: i.reversible ? other(imageBy, i.id, i.main_side) : null,
   }));
   const ids = new Set(tiles.map((t) => t.id));
   const wears = rest.wears.filter((x) => ids.has(x.itemId));
