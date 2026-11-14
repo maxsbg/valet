@@ -4,7 +4,7 @@ import { Icons } from './Icon';
 import { Chip } from './ui';
 import { useTheme, space } from '@/lib/theme';
 
-export type BarChip = { key: string; label: string; count?: number; selected: boolean; onPress: () => void; onLongPress?: () => void; dashed?: boolean };
+export type BarChip = { key: string; label: string; count?: number; icon?: React.ReactNode; dot?: string; selected: boolean; onPress: () => void; onLongPress?: () => void; dashed?: boolean };
 
 type Props = {
   /** Platzhalter im Suchfeld */
@@ -118,7 +118,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
           <Animated.View style={{ width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [0, PAD - GAP] }) }} />
           {chips.map((c) => (
             <View key={c.key} onLayout={(e) => chipX.set(c.key, { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width })}>
-              <Chip tall label={c.label} count={c.count} selected={c.selected} dashed={c.dashed} onPress={() => pick(c)} onLongPress={c.onLongPress} />
+              <Chip tall label={c.label} count={c.count} icon={c.icon} dot={c.dot} selected={c.selected} dashed={c.dashed} onPress={() => pick(c)} onLongPress={c.onLongPress} />
             </View>
           ))}
           <View style={{ width: PAD - GAP + 12 }} />

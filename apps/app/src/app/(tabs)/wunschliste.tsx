@@ -3,30 +3,37 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Image, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { WISH_TAGS, priceLabel, type WishTag } from '@valet/core';
 import { Page } from '@/components/Page';
-import { Header, Chip, Empty, Fab, glass, useToast } from '@/components/ui';
+import { Header, Chip, Empty, Fab, RoundButton, TopTint, glass, useToast } from '@/components/ui';
+import { WishlistCard, NewListCard, euros } from '@/components/WishlistCard';
 import { ClosetBar, type BarChip } from '@/components/ClosetBar';
 import { Mosaic } from '@/components/Mosaic';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
 import { TileIcon } from '@/components/tile/TileIcons';
 import { Icons } from '@/components/Icon';
 import { useSession } from '@/lib/session';
-import { useTheme, space, radius } from '@/lib/theme';
+import { useTheme, space, radius, DISPLAY } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { usePersisted } from '@/lib/usePersisted';
-import { personKey, type Wishlist } from '@/lib/wardrobe';
+import { personKey, type Tile, type Wishlist } from '@/lib/wardrobe';
 import {
   WISH_SORTS, NO_WISH_FILTERS, applyWishFilters, createList, deleteList, matchesWish, ownOrder, renameList, setListOrder,
-  sortWishes, wishFilterCount, type WishFilters, type WishSortId,
+  sortWishes, type WishFilters, type WishSortId,
 } from '@/lib/wishlists';
 
-// Wunschliste (entschieden 14.11.2026, Entwurf docs/design/wunschliste/wunschliste-leiste.html):
-// Leiste wie im Schrank, Chips = Listen (+ Liste am Ende), Liste gedrückt halten → Umbenennen / Reihenfolge / Löschen.
-// Grail, Watchlist … sind keine Listen, nur Filter und Suche. Keine Kopfkarte mit Gesamtwert.
+// Wunschliste (entschieden 14.11.2026, Entwurf docs/design/wunschliste/wunschlisten-karten.html):
+// Übersicht = Karten (erste „Neue Liste“, dann „Alle Wünsche“, dann die Listen), Chips = Personen.
+// Liste geöffnet = Kopf wie Teil-Detail (Zurück, Titel, „…“-Menü), Leiste wie im Schrank mit Kategorie-Chips
+// (Symbol · Name · Anzahl), Kacheln im selben Mosaik wie im Schrank. Grail, Watchlist … sind keine Listen.
 
-// Web: Seite wird beim Öffnen eines Teils abgebaut → gewählte Liste und Filter für die Rückkehr merken
-const kept: { list: string | null; filters: WishFilters } = { list: null, filters: NO_WISH_FILTERS };
+const ALL = 'alle';
+
+// Web: Seite wird beim Öffnen eines Teils abgebaut → geöffnete Liste, Filter und Scroll-Stand der Übersicht merken
+const kept: { open: string | null; filters: WishFilters; overviewY: number } = { open: null, filters: NO_WISH_FILTERS, overviewY: 0 };
 
 type SheetId = 'sort' | 'filter' | 'new' | 'menu' | 'rename' | 'order' | 'delete' | null;
+
+const sum = (items: Tile[]) => items.reduce((a, i) => a + (i.price ?? 0), 0);
+const teile = (n: number) => (n === 1 ? '1 Teil' : `${n} Teile`);
 
 export default function Wunschliste() {
   const t = useTheme();
@@ -34,9 +41,9 @@ export default function Wunschliste() {
   const { wardrobe, loading, error, reload, session } = useSession();
   const toast = useToast(scr.barTop + space.sm);
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
+  const web = Platform.OS === 'web';
 
-  const [list, setListState] = useState<string | null>(kept.list);
-  const setList = (l: string | null) => { kept.list = l; setListState(l); };
+  const [open, setOpenState] = useState<string | null>(kept.open);
   const [filters, setFiltersState] = useState<WishFilters>(kept.filters);
   const setFilters = (f: WishFilters) => { kept.filters = f; setFiltersState(f); };
   const [draft, setDraft] = useState<WishFilters>(NO_WISH_FILTERS);
@@ -50,33 +57,74 @@ export default function Wunschliste() {
   const [order, setOrder] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
+  /** Liste öffnen (Kategorie-Auswahl startet bei „Alle“) bzw. mit null zurück zur Übersicht */
+  const openList = (id: string | null) => {
+    if (web && id && !kept.open) kept.overviewY = window.scrollY;
+    kept.open = id;
+    setOpenState(id);
+    setQuery('');
+    if (id) setFilters({ ...kept.filters, tags: [] });
+    if (web) requestAnimationFrame(() => window.scrollTo(0, id ? 0 : kept.overviewY));
+  };
+
   const lists = wardrobe?.wishlists ?? [];
-  // gewählte Liste existiert nicht mehr (gelöscht) → zurück zu „Alle“
-  useEffect(() => { if (list && wardrobe && !lists.some((l) => l.id === list)) setList(null); }, [wardrobe]); // eslint-disable-line react-hooks/exhaustive-deps
+  const list = open && open !== ALL ? lists.find((l) => l.id === open) ?? null : null;
+  // geöffnete Liste existiert nicht mehr (gelöscht) → zurück zur Übersicht
+  useEffect(() => { if (open && open !== ALL && wardrobe && !list) openList(null); }, [wardrobe]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const wishes = useMemo(() => applyWishFilters((wardrobe?.items ?? []).filter((i) => i.isWish), filters), [wardrobe, filters]);
-  const counts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const i of wishes) if (i.wishlistId) m.set(i.wishlistId, (m.get(i.wishlistId) ?? 0) + 1);
-    return m;
-  }, [wishes]);
-  const shown = useMemo(
-    () => sortWishes(wishes.filter((i) => (!list || i.wishlistId === list) && matchesWish(i, query)), sort, seed, ownOrder(lists, list)),
-    [wishes, list, query, sort, seed, lists],
+  // Person-Filter gilt überall, Kategorien nur in der geöffneten Liste (Chips)
+  const wishes = useMemo(() => applyWishFilters((wardrobe?.items ?? []).filter((i) => i.isWish), { ...filters, tags: [] }), [wardrobe, filters]);
+  const sorted = (items: Tile[], listId: string | null) => sortWishes(items, sort, seed, ownOrder(lists, listId));
+
+  // ---------- geöffnete Liste ----------
+  const inList = useMemo(
+    () => wishes.filter((i) => (open === ALL || i.wishlistId === open) && matchesWish(i, query)),
+    [wishes, open, query],
   );
-  const nFilters = wishFilterCount(filters);
-
-  // Mit Personen-Filter nur Listen dieser Person (Listen ohne Besitzer immer)
-  const visibleLists = lists.filter((l) => !filters.person || !l.ownerId || l.ownerId === filters.person || l.id === list);
-  const chips: BarChip[] = [
-    { key: 'alle', label: 'Alle', count: wishes.length, selected: !list, onPress: () => setList(null) },
-    ...visibleLists.map((l) => ({
-      key: l.id, label: l.name, count: counts.get(l.id) ?? 0, selected: list === l.id,
-      onPress: () => setList(list === l.id ? null : l.id),
-      onLongPress: () => { setTarget(l); setSheet('menu'); },
-    })),
-    { key: '+', label: '+ Liste', selected: false, dashed: true, onPress: () => { setName(''); setOwner(me?.id ?? null); setSheet('new'); } },
+  const tagCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const i of inList) if (i.wishTag) m.set(i.wishTag, (m.get(i.wishTag) ?? 0) + 1);
+    return m;
+  }, [inList]);
+  const shown = useMemo(
+    () => sorted(inList.filter((i) => !filters.tags.length || (!!i.wishTag && filters.tags.includes(i.wishTag))), list?.id ?? null),
+    [inList, filters.tags, sort, seed, lists, list], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const oneTag = filters.tags.length === 1 ? filters.tags[0] : null;
+  const tagChips: BarChip[] = [
+    { key: 'alle', label: 'Alle', count: inList.length, selected: !filters.tags.length, onPress: () => setFilters({ ...filters, tags: [] }) },
+    ...WISH_TAGS.filter((w) => tagCounts.get(w.id) || filters.tags.includes(w.id)).map((w) => {
+      const on = oneTag === w.id;
+      return {
+        key: w.id, label: w.label, count: tagCounts.get(w.id) ?? 0, selected: on,
+        icon: <TileIcon name={w.id} color={on ? t.bg : t.ink} size={15} />,
+        onPress: () => setFilters({ ...filters, tags: on ? [] : [w.id] }),
+      };
+    }),
   ];
+
+  // ---------- Übersicht ----------
+  const ownedBy = (l: Wishlist, p: string | null) => !p || !l.ownerId || l.ownerId === p;
+  const personChips: BarChip[] = [
+    { key: 'alle', label: 'Alle', count: lists.length, selected: !filters.person, onPress: () => setFilters({ ...filters, person: null }) },
+    ...(wardrobe?.persons ?? []).map((p) => ({
+      key: p.id, label: p.name, dot: t.person[personKey(p.color)], count: lists.filter((l) => l.ownerId === p.id).length,
+      selected: filters.person === p.id, onPress: () => setFilters({ ...filters, person: filters.person === p.id ? null : p.id }),
+    })),
+  ];
+  const q = query.trim().toLowerCase();
+  const cards = useMemo(() => lists.filter((l) => ownedBy(l, filters.person)).map((l) => {
+    const all = wishes.filter((i) => i.wishlistId === l.id);
+    const hits = all.filter((i) => matchesWish(i, query));
+    return { list: l, items: sorted(q && !l.name.toLowerCase().includes(q) ? hits : all, l.id), hit: !q || l.name.toLowerCase().includes(q) || hits.length > 0 };
+  }).filter((c) => c.hit), [lists, wishes, filters.person, query, sort, seed]); // eslint-disable-line react-hooks/exhaustive-deps
+  const allItems = useMemo(() => sorted(wishes.filter((i) => matchesWish(i, query)), null), [wishes, query, sort, seed, lists]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const personOf = (id: string | null | undefined) => wardrobe?.persons.find((p) => p.id === id);
+  const dotOf = (id: string | null | undefined) => { const p = personOf(id); return p ? t.person[personKey(p.color)] : null; };
+
+  // Filter-Punkt an der Lupe: Übersicht = keiner (Person steckt in den Chips), Liste = Person und Mehrfach-Kategorien
+  const nFilters = open ? (filters.person ? 1 : 0) + (filters.tags.length > 1 ? filters.tags.length : 0) : 0;
 
   // Leiste klebt beim Scrollen oben (wie im Schrank)
   const [headH, setHeadH] = useState(60);
@@ -86,8 +134,9 @@ export default function Wunschliste() {
     const id = scrollY.addListener(({ value }) => setStuck(value >= headH));
     return () => scrollY.removeListener(id);
   }, [scrollY, headH]);
-  const web = Platform.OS === 'web';
   const barW = scr.content + 2 * space.md;
+  const gap = 10;
+  const cardW = Math.floor((scr.content - gap) / 2);
 
   async function run(job: () => Promise<void>, fail: string) {
     setBusy(true);
@@ -95,9 +144,10 @@ export default function Wunschliste() {
     catch (e) { toast.show(`${fail}: ${(e as Error).message}`); }
     finally { setBusy(false); }
   }
+  const newList = () => { setName(''); setOwner(me?.id ?? null); setSheet('new'); };
   const addList = () => {
     if (!name.trim() || !wardrobe) return toast.show('Bitte einen Namen eingeben.');
-    run(async () => { const id = await createList(wardrobe.id, name, owner); setList(id); }, 'Anlegen fehlgeschlagen');
+    run(async () => { const id = await createList(wardrobe.id, name, owner); openList(id); }, 'Anlegen fehlgeschlagen');
   };
   const rename = () => {
     if (!name.trim() || !target) return toast.show('Bitte einen Namen eingeben.');
@@ -106,15 +156,15 @@ export default function Wunschliste() {
   const remove = () => target && run(() => deleteList(target.id), 'Löschen fehlgeschlagen');
   const saveOrder = () => target && run(async () => {
     await setListOrder(target.id, order);
-    setList(target.id);
     setSort('own');
   }, 'Speichern fehlgeschlagen');
   const openOrder = () => {
     if (!target) return;
-    const inList = (wardrobe?.items ?? []).filter((i) => i.isWish && i.wishlistId === target.id);
-    setOrder(sortWishes(inList, 'own', seed, target.itemOrder).map((i) => i.id));
+    const items = (wardrobe?.items ?? []).filter((i) => i.isWish && i.wishlistId === target.id);
+    setOrder(sortWishes(items, 'own', seed, target.itemOrder).map((i) => i.id));
     setSheet('order');
   };
+  const menu = (l: Wishlist) => { setTarget(l); setSheet('menu'); };
   const move = (n: number, d: -1 | 1) => setOrder((o) => {
     const m = n + d;
     if (m < 0 || m >= o.length) return o;
@@ -126,6 +176,24 @@ export default function Wunschliste() {
   const byId = new Map((wardrobe?.items ?? []).map((i) => [i.id, i]));
   const input = [s.input, { backgroundColor: t.surface, borderColor: t.hairline, color: t.ink }, web ? ({ outlineStyle: 'none' } as object) : null];
 
+  // Karten paarweise in Zeilen (gleiche Höhe je Zeile, damit „Neue Liste“ so hoch ist wie ihre Nachbarin)
+  const tiles: React.ReactNode[] = [
+    <NewListCard key="new" width={cardW} onPress={newList} />,
+    ...(!q || allItems.length ? [
+      <WishlistCard key={ALL} width={cardW} title="Alle Wünsche" sub={`${teile(allItems.length)} · ${euros(sum(allItems))}`} items={allItems}
+        onPress={() => openList(ALL)} />,
+    ] : []),
+    ...cards.map(({ list: l, items }) => (
+      <WishlistCard key={l.id} width={cardW} title={l.name} dot={dotOf(l.ownerId)} sub={`${teile(items.length)} · ${euros(sum(items))}`} items={items}
+        onPress={() => openList(l.id)} onLongPress={() => menu(l)} />
+    )),
+  ];
+  const rows: React.ReactNode[][] = [];
+  for (let n = 0; n < tiles.length; n += 2) rows.push(tiles.slice(n, n + 2));
+
+  const owner0 = personOf(list?.ownerId);
+  const detailSub = [owner0?.name, teile(inList.length), euros(sum(inList))].filter(Boolean).join(' · ');
+
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <Page
@@ -136,12 +204,28 @@ export default function Wunschliste() {
         stickyHeaderIndices={web ? undefined : [1]}
       >
         <View style={{ width: barW }} onLayout={(e) => setHeadH(e.nativeEvent.layout.height)}>
-          <Header tint={!stuck} />
+          {open ? (
+            <View style={{ paddingHorizontal: space.md }}>
+              {!stuck && <TopTint />}
+              <View style={s.top}>
+                <RoundButton label="Zurück" onPress={() => openList(null)}><Icons.back color={t.ink} /></RoundButton>
+                {list && <RoundButton label="Liste bearbeiten" onPress={() => menu(list)}><Icons.more color={t.ink} /></RoundButton>}
+              </View>
+              <Text style={[s.title, { color: t.ink }]} numberOfLines={2}>{list?.name ?? 'Alle Wünsche'}</Text>
+              <View style={s.subLine}>
+                {owner0 && <View style={[s.dot, { backgroundColor: t.person[personKey(owner0.color)] }]} />}
+                <Text style={{ fontSize: 14, color: t.inkMuted }}>{detailSub}</Text>
+              </View>
+            </View>
+          ) : (
+            <Header tint={!stuck} />
+          )}
         </View>
         <View pointerEvents="box-none" style={[{ alignSelf: 'stretch', alignItems: 'center', zIndex: 10, marginTop: -scr.top, paddingTop: scr.top },
           stuck ? [...glass(t), { borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth }] : { backgroundColor: 'transparent' },
           web ? ({ position: 'sticky', top: 0 } as object) : null]}>
-          <ClosetBar width={barW} placeholder="Name, Marke, Shop …" query={query} onQuery={setQuery} chips={chips} filterActive={nFilters > 0}
+          <ClosetBar key={open ? 'liste' : 'uebersicht'} width={barW} placeholder={open ? 'Name, Marke, Shop …' : 'Liste oder Teil suchen …'} query={query} onQuery={setQuery}
+            chips={open ? tagChips : personChips} filterActive={nFilters > 0}
             onFilter={() => { setDraft(filters); setSheet('filter'); }} onSort={() => setSheet('sort')} />
         </View>
         <View style={{ width: scr.content, marginTop: space.xs }}>
@@ -149,9 +233,14 @@ export default function Wunschliste() {
             <Empty title="Laden fehlgeschlagen" text={error} />
           ) : !wardrobe ? (
             <View style={{ padding: space.xl }}>{loading ? <ActivityIndicator color={t.accent} /> : null}</View>
+          ) : !open ? (
+            <View style={{ gap }}>
+              {rows.map((r, n) => <View key={n} style={{ flexDirection: 'row', gap, alignItems: 'stretch' }}>{r}</View>)}
+              {q && rows.length === 1 && <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff." />}
+            </View>
           ) : shown.length ? (
             <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
-          ) : query || nFilters ? (
+          ) : query || filters.tags.length || filters.person ? (
             <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff oder Filter." />
           ) : list ? (
             <Empty title="Liste ist leer" text="Füge Teile über das Plus hinzu oder ordne sie beim Bearbeiten dieser Liste zu." />
@@ -160,7 +249,7 @@ export default function Wunschliste() {
           )}
         </View>
       </Page>
-      <Fab bottom={scr.fabBottom} label="Wunsch hinzufügen" onPress={() => router.push(list ? `/neu?wunsch=1&liste=${list}` : '/neu?wunsch=1')} />
+      <Fab bottom={scr.fabBottom} label="Wunsch hinzufügen" onPress={() => router.push(list ? `/neu?wunsch=1&liste=${list.id}` : '/neu?wunsch=1')} />
       {toast.node}
 
       {/* Sortieren */}
@@ -185,13 +274,16 @@ export default function Wunschliste() {
               onPress={() => setDraft((d) => ({ ...d, person: d.person === p.id ? null : p.id }))} />
           ))}
         </View>
-        <SectionLabel>Kategorie</SectionLabel>
-        <View style={s.wrap}>
-          {WISH_TAGS.map((w) => {
-            const on = draft.tags.includes(w.id);
-            return <Chip key={w.id} label={w.label} selected={on} onPress={() => toggleTag(w.id)} icon={<TileIcon name={w.id} color={on ? t.bg : t.ink} size={15} />} />;
-          })}
-        </View>
+        {/* Kategorien nur in einer geöffneten Liste (dort auch als Chips) */}
+        {!!open && <>
+          <SectionLabel>Kategorie</SectionLabel>
+          <View style={s.wrap}>
+            {WISH_TAGS.map((w) => {
+              const on = draft.tags.includes(w.id);
+              return <Chip key={w.id} label={w.label} selected={on} onPress={() => toggleTag(w.id)} icon={<TileIcon name={w.id} color={on ? t.bg : t.ink} size={15} />} />;
+            })}
+          </View>
+        </>}
       </Sheet>
 
       {/* Neue Liste */}
@@ -211,7 +303,7 @@ export default function Wunschliste() {
         </View>
       </Sheet>
 
-      {/* Liste gedrückt halten */}
+      {/* Listen-Menü: „…“ in der Liste oder Karte gedrückt halten */}
       <Sheet open={sheet === 'menu'} onClose={() => setSheet(null)} title={target?.name ?? 'Liste'}>
         <MenuRow label="Umbenennen" onPress={() => { setName(target?.name ?? ''); setSheet('rename'); }} />
         <MenuRow label="Reihenfolge ändern" onPress={openOrder} />
@@ -233,7 +325,7 @@ export default function Wunschliste() {
           <SheetButton primary label={busy ? 'Löscht …' : 'Löschen'} onPress={remove} />
         </>}>
         <Text style={{ fontSize: 16, color: t.inkMuted, lineHeight: 22 }}>
-          „{target?.name}“ wird gelöscht. Die Teile darin bleiben auf der Wunschliste und stehen weiter unter „Alle“.
+          „{target?.name}“ wird gelöscht. Die Teile darin bleiben auf der Wunschliste und stehen weiter unter „Alle Wünsche“.
         </Text>
       </Sheet>
 
@@ -281,6 +373,10 @@ function MenuRow({ label, onPress, danger, last }: { label: string; onPress: () 
 
 const s = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  top: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space.xs },
+  title: { fontFamily: DISPLAY, fontSize: 30, lineHeight: 36, marginTop: space.xxs },
+  subLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, marginBottom: space.xxs },
+  dot: { width: 8, height: 8, borderRadius: 4 },
   input: { height: 48, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: space.md, fontSize: 17 },
   menuRow: { minHeight: 52, justifyContent: 'center' },
   orderRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 64, paddingVertical: 6 },
