@@ -46,7 +46,8 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
   - Liste gedrückt halten → Blatt mit Umbenennen / Reihenfolge ändern (hoch/runter, `wishlists.item_order`, danach Sortierung „Eigene Reihenfolge“) / Liste löschen (nur Text, Löschen rot; Teile bleiben unter „Alle“).
   - Filter: Person und Kategorie (mehrere). Suche: Name, Marke, Shop, Kategorie. Sortieren: Zufällig, Eigene Reihenfolge, Zuletzt hinzugefügt, Höchster/Niedrigster Preis, A–Z.
   - Plus → `/neu?wunsch=1(&liste=…)`; im Formular bei Wunschteilen „Preis“ (= `list_price`), Liste und Kategorie.
-  - Noch offen: „Lohnt sich das?“ in der Detailansicht, „Gekauft“ → Schrank.
+  - „Gekauft“ → Schrank (14.11.2026): Detailansicht eines Wunschteils → Knopf „Gekauft – in den Schrank“ → Blatt mit Bezahlt (vorbelegt mit Wunsch-Preis), Kaufdatum (heute), Besitzer (Wunschteil → Listen-Besitzer → ich). `markBought` in `src/lib/item.ts`: `is_wish` aus, Liste/Kategorie weg, `list_price` bleibt, Teil aus `wishlists.item_order` ausgetragen.
+  - Noch offen: „Lohnt sich das?“ in der Detailansicht.
 - **Schrank-Seite (entschieden und umgesetzt 13.11.2026):** Leiste in `src/components/ClosetBar.tsx`, Kopfzeile mit Profil-/Einstellungs-Blatt in `ui.tsx` (`Header`), Filter in `src/lib/sort.ts`. Entwürfe `docs/design/schrank/schrank-entwuerfe.html` (6 Zustände) und `suche-animation.html` (Animation, verbindlich).
   - Heute-Karte entfällt. Kopf: links Profil-Monogramm (Personenfarbe, ersetzt „?“), Mitte Logo, rechts Zahnrad (Einstellungen).
   - Zeile darunter: Lupe · Kategorie-Chips (wischbar, rechts weicher Verlauf) · Sortieren. Klebt beim Scrollen oben als Milchglas, Kacheln laufen darunter durch.

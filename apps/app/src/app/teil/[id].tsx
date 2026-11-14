@@ -4,14 +4,15 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { Page } from '@/components/Page';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { categoryLabel, formatEur } from '@valet/core';
+import { categoryLabel, formatEur, parseAmount } from '@valet/core';
 import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
-import { RoundButton, Empty, useToast } from '@/components/ui';
+import { RoundButton, Empty, Chip, useToast } from '@/components/ui';
+import { eur, toDe, toIso } from '@/components/ItemForm';
 import { Sheet, OptionRow, SheetButton } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
-import { loadItem, wornDays, setWornToday, setStatus, type ItemDetail, type ItemRow } from '@/lib/item';
+import { loadItem, wornDays, setWornToday, setStatus, markBought, type ItemDetail, type ItemRow } from '@/lib/item';
 import { personKey, todayLocal } from '@/lib/wardrobe';
 
 const STATUS_OPTIONS: { id: ItemRow['status']; label: string; text: string }[] = [
@@ -41,6 +42,8 @@ export default function Teil() {
   const [lentTo, setLentTo] = useState('');
   const [pickLent, setPickLent] = useState(false);
   const [more, setMore] = useState(false);
+  // Wunschteil gekauft → Schrank
+  const [buy, setBuy] = useState<{ price: string; date: string; owners: string[]; error?: string } | null>(null);
   const bottom = useBottomInset();
   const toast = useToast(bottom + space.lg);
 
@@ -95,6 +98,32 @@ export default function Teil() {
     } catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
   }
 
+  function openBuy() {
+    // Besitzer: die des Wunschteils, sonst Besitzer der Liste, sonst ich
+    const listOwner = wardrobe?.wishlists.find((w) => w.id === it.wishlist_id)?.ownerId;
+    const owners = it.owner_ids?.length ? it.owner_ids : listOwner ? [listOwner] : me ? [me.id] : [];
+    setBuy({ price: eur(it.list_price), date: toDe(today), owners });
+  }
+
+  async function confirmBuy() {
+    if (!buy) return;
+    const price = parseAmount(buy.price);
+    const date = toIso(buy.date);
+    if (buy.price.trim() && price == null) return setBuy({ ...buy, error: 'Preis ist keine Zahl.' });
+    if (date === undefined) return setBuy({ ...buy, error: 'Kaufdatum bitte als TT.MM.JJJJ eingeben.' });
+    if (!buy.owners.length) return setBuy({ ...buy, error: 'Bitte wählen, wem das Teil gehört.' });
+    setBusy(true);
+    try {
+      await markBought(it, { price, date, owners: buy.owners });
+      const ownerId = buy.owners.length === 1 ? buy.owners[0]! : null;
+      setD((x) => x && { ...x, item: { ...x.item, is_wish: false, wishlist_id: null, wish_tag: null, price_paid: price, purchase_date: date, owner_ids: buy.owners, owner_id: ownerId } });
+      patch(id, { isWish: false, wishlistId: null, wishTag: null, pricePaid: price, price: price ?? it.list_price, purchaseDate: date, owners: buy.owners, ownerId });
+      setBuy(null);
+      toast.show('Gekauft – jetzt im Schrank.');
+    } catch (e) { setBuy({ ...buy, error: 'Speichern fehlgeschlagen: ' + (e as Error).message }); }
+    finally { setBusy(false); }
+  }
+
   const info: [string, string | null | undefined][] = [
     ['Kategorie', categoryLabel(it.category)],
     ['Farbe', [it.color, it.alt_color].filter(Boolean).join(' · ')],
@@ -141,6 +170,14 @@ export default function Teil() {
                 <Pressable onPress={() => changeStatus(null)} hitSlop={8}><Text style={{ fontSize: 15, fontWeight: '600', color: t.actionText }}>Zurück</Text></Pressable>
               )}
             </View>
+          )}
+
+          {it.is_wish && (
+            <Pressable onPress={openBuy} accessibilityRole="button"
+              style={({ pressed }) => [s.buyBtn, { opacity: pressed ? 0.8 : 1 }]}>
+              <Icons.check color="#fff" />
+              <Text style={{ fontSize: 17, fontWeight: '600', color: '#fff' }}>Gekauft – in den Schrank</Text>
+            </Pressable>
           )}
 
           {!it.is_wish && <>
@@ -227,6 +264,29 @@ export default function Teil() {
           ))
         )}
       </Sheet>
+      <Sheet open={!!buy} onClose={() => setBuy(null)} title="Gekauft!"
+        footer={<>
+          <SheetButton label="Abbrechen" onPress={() => setBuy(null)} />
+          <SheetButton primary label={busy ? 'Speichert …' : 'In den Schrank'} onPress={() => { if (!busy) confirmBuy(); }} />
+        </>}>
+        {buy && (
+          <View style={{ gap: space.md }}>
+            <BuyField label="Bezahlt (€)" value={buy.price} onText={(v) => setBuy({ ...buy, price: v, error: undefined })} placeholder="0,00" keyboardType="decimal-pad" />
+            <BuyField label="Kaufdatum" value={buy.date} onText={(v) => setBuy({ ...buy, date: v, error: undefined })} placeholder="TT.MM.JJJJ" keyboardType="numbers-and-punctuation" />
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 13, color: t.inkMuted }}>Gehört</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
+                {(wardrobe?.persons ?? []).map((p) => {
+                  const on = buy.owners.includes(p.id);
+                  return <Chip key={p.id} label={p.name} selected={on} dot={PERSON[personKey(p.color)]}
+                    onPress={() => setBuy({ ...buy, error: undefined, owners: on ? buy.owners.filter((x) => x !== p.id) : [...buy.owners, p.id] })} />;
+                })}
+              </View>
+            </View>
+            {buy.error && <Text style={{ fontSize: 15, color: '#C8102E' }}>{buy.error}</Text>}
+          </View>
+        )}
+      </Sheet>
       {toast.node}
     </View>
   );
@@ -238,6 +298,17 @@ function TopBar({ onBack, onEdit }: { onBack: () => void; onEdit?: () => void })
     <View style={s.top}>
       <RoundButton label="Zurück" onPress={onBack}><Icons.back color={t.ink} /></RoundButton>
       {onEdit && <RoundButton label="Bearbeiten" onPress={onEdit}><Icons.pencil color={t.ink} /></RoundButton>}
+    </View>
+  );
+}
+
+function BuyField({ label, value, onText, ...p }: { label: string; value: string; onText: (v: string) => void } & React.ComponentProps<typeof TextInput>) {
+  const t = useTheme();
+  return (
+    <View style={{ gap: 6 }}>
+      <Text style={{ fontSize: 13, color: t.inkMuted }}>{label}</Text>
+      <TextInput value={value} onChangeText={onText} placeholderTextColor={t.inkMuted} {...p}
+        style={[s.input, { backgroundColor: t.surface, borderColor: t.hairline, color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
     </View>
   );
 }
@@ -293,5 +364,6 @@ const s = StyleSheet.create({
   list: { borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 48, paddingHorizontal: space.md, paddingVertical: space.sm },
   moreHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg, marginBottom: space.xs, minHeight: 44 },
+  buyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, height: 52, borderRadius: 26, backgroundColor: '#722638', marginTop: space.lg },
   input: { height: 50, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: space.md, fontSize: 17 },
 });
