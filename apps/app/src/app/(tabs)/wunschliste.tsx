@@ -136,7 +136,7 @@ export default function Wunschliste() {
         stickyHeaderIndices={web ? undefined : [1]}
       >
         <View style={{ width: barW }} onLayout={(e) => setHeadH(e.nativeEvent.layout.height)}>
-          <Header />
+          <Header tint={!stuck} />
         </View>
         <View pointerEvents="box-none" style={[{ alignSelf: 'stretch', alignItems: 'center', zIndex: 10, marginTop: -scr.top, paddingTop: scr.top },
           stuck ? [...glass(t), { borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth }] : { backgroundColor: 'transparent' },

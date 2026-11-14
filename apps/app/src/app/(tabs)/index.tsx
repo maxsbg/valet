@@ -79,7 +79,7 @@ export default function Schrank() {
         stickyHeaderIndices={web ? undefined : [1]}
       >
         <View style={{ width: barW }} onLayout={(e) => setHeadH(e.nativeEvent.layout.height)}>
-          <Header />
+          <Header tint={!stuck} />
         </View>
         {/* klebt beim Scrollen oben; reicht bis unter die Statusleiste, Kacheln laufen darunter durch.
             Hintergrund sitzt direkt auf der klebenden Fläche: Safari tönt danach den Bereich hinter der Uhr

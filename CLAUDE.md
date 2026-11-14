@@ -54,6 +54,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
   - Lupe antippen: Suchfeld wächst aus dem Knopf (gleiche Höhe 44), rechts dreht Sortieren zu Filter. Chips rutschen 12 px darunter und gehen dort bis an beide Bildschirmränder (kein Verlauf, Padding nur im Inhalt). Choreografie: Öffnen = Chips erst runter, dann seitlich, Feld leicht verzögert; Schließen = Feld schnell zu + Chips seitlich, dann hoch. Nie überlappen.
   - Filter nur noch Person (Alle/Max/Paul) und Saison; Stil entfällt. Aktiver Filter bei geschlossener Suche = rosa Punkt an der Lupe.
   - Plus-Knopf kleiner (48) im Milchglas mit rosa Plus. Mosaik bleibt bei jeder Sortierung.
+- Safari (iOS 26) zeichnet ohne festes Element oben einen eigenen Weichzeichner unter die Statusleiste, der die Kopfzeile verwischt → `TopTint` in `ui.tsx` (fester 8-px-Streifen in Seitenfarbe, Teil von `Header`; beim Kleben der Milchglas-Leiste aus).
 - Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.

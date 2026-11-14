@@ -21,8 +21,20 @@ export function glass(t: Theme): object[] {
   ];
 }
 
+/**
+ * Web (Safari ab iOS 26): Ohne festes Element am oberen Rand legt Safari einen eigenen Weichzeichner-Verlauf
+ * unter die Statusleiste, der bis in die Kopfzeile reicht und sie unscharf macht. Ein fester, mind. 6 px hoher
+ * Streifen in Seitenfarbe am oberen Rand lässt Safari stattdessen die Statusleiste einfarbig tönen.
+ * Ausblenden, sobald eine klebende Milchglas-Leiste oben liegt (die übernimmt dann den Bereich).
+ */
+export function TopTint() {
+  const t = useTheme();
+  if (Platform.OS !== 'web') return null;
+  return <View style={[FIXED, { top: 0, left: 0, right: 0, height: 8, zIndex: 5, backgroundColor: t.bg }]} />;
+}
+
 /** Kopfzeile: Profil (Monogramm) links, Schriftzug „valet“ mittig, Einstellungen rechts */
-export function Header() {
+export function Header({ tint = true }: { tint?: boolean }) {
   const t = useTheme();
   const { wardrobe, session } = useSession();
   const [sheet, setSheet] = useState<'profile' | 'settings' | null>(null);
@@ -31,6 +43,7 @@ export function Header() {
   const letter = (me?.name ?? session?.user.email ?? '?').trim().slice(0, 1).toUpperCase();
   return (
     <View style={s.header}>
+      {tint && <TopTint />}
       <Pressable accessibilityRole="button" accessibilityLabel="Profil" onPress={() => setSheet('profile')} hitSlop={4}
         style={({ pressed }) => [s.mono, { borderColor: tone + '73', backgroundColor: tone + '1F', opacity: pressed ? 0.7 : 1 }]}>
         <Text style={[s.monoText, { color: tone }]}>{letter}</Text>
