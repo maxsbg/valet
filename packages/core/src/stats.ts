@@ -1,6 +1,7 @@
 // Statistik – Rechnungen wie im alten Valet (Ausgaben, Getragen, Bestand)
 import { qtyOf, totalPaid } from './money';
 import { daysSince, todayISO, wearDates } from './wear';
+import { SIDE_CATEGORIES } from './catalog';
 import type { Outfit, WearLog } from './model';
 
 export interface StatItem {
@@ -18,6 +19,8 @@ export interface StatItem {
   soldPrice: number | null;
   isWish: boolean;
   createdAt: string;
+  /** Saisons (leer = ganzjährig) – für „lange nicht getragen“ */
+  seasons?: string[];
 }
 
 /** Wer hat wie viel bezahlt (Gesamtbetrag × Anteil). Ohne Zahler zahlt der Besitzer alles. */
@@ -84,26 +87,98 @@ export function spendStats(all: StatItem[], personId: string | null, personIds: 
   };
 }
 
-/** Getragen: Lieblingsteile, Kosten pro Tragen, lange nicht getragen */
-export function wearStats(all: StatItem[], personId: string | null, wears: WearLog, outfits: Outfit[], today = todayISO()) {
+/** Zeitraum der Getragen-Auswertung */
+export type WearPeriod = '30' | 'year' | 'all';
+
+/** Aktuelle Saison (wie die Saison-Angabe an den Teilen): Nov–Feb Winter, Jun–Aug Sommer, sonst Übergang */
+export function seasonOf(iso: string): 'Winter' | 'Sommer' | 'Übergang' {
+  const m = Number(iso.slice(5, 7));
+  return m >= 11 || m <= 2 ? 'Winter' : m >= 6 && m <= 8 ? 'Sommer' : 'Übergang';
+}
+
+const shiftISO = (iso: string, n: number) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return todayISO(new Date(y!, m! - 1, d! + n));
+};
+
+/** Ab wann „lange nicht getragen“ gilt (Tage) */
+export const IDLE_DAYS = 30;
+
+/**
+ * Getragen: Lieblingsteile, Schrank-Nutzung, Lieblings-Outfits und -Kombinationen, Verlauf (im gewählten Zeitraum),
+ * Kosten pro Tragen (immer über die ganze Zeit) und „lange nicht getragen“ (nur Teile der aktuellen Saison).
+ * Geplante Outfits zählen ab ihrem Tag automatisch als getragen.
+ */
+export function wearStats(all: StatItem[], personId: string | null, wears: WearLog, outfits: Outfit[], today = todayISO(), period: WearPeriod = 'all') {
   const pool = all.filter((i) => !i.isWish && i.status !== 'sold' && i.status !== 'out' && (!personId || i.ownerId === personId));
+  const from = period === '30' ? shiftISO(today, -29) : period === 'year' ? shiftISO(today, -364) : null;
+  const inPeriod = (d: string) => !from || d >= from;
   const amt = (i: StatItem) => (personId ? shareFor(i, personId) : totalPaid(i));
-  const rows = pool.map((i) => ({ item: i, w: wearDates(i.id, wears, outfits, today) }));
-  const tracked = rows.filter((r) => r.w.length);
-  const total = tracked.reduce((a, r) => a + r.w.length, 0);
-  const withCpw = tracked.filter((r) => totalPaid(r.item) > 0).map((r) => ({ ...r, cpw: amt(r.item) / r.w.length })).filter((r) => r.cpw > 0);
+  const rows = pool.map((i) => {
+    const w = wearDates(i.id, wears, outfits, today);
+    return { item: i, w, pw: w.filter(inPeriod) };
+  });
+  const lifetime = rows.filter((r) => r.w.length);
+  const tracked = rows.filter((r) => r.pw.length);
+  const total = tracked.reduce((a, r) => a + r.pw.length, 0);
+  // Beginn der Aufzeichnung (erster Tag überhaupt) – Zeiträume davor sind leer
+  const start = lifetime.map((r) => r.w[0]!).sort()[0] ?? null;
+
+  // Kosten pro Tragen: immer über die ganze Zeit (sonst springt der Wert mit dem Zeitraum)
+  const withCpw = lifetime.filter((r) => totalPaid(r.item) > 0).map((r) => ({ ...r, cpw: amt(r.item) / r.w.length })).filter((r) => r.cpw > 0);
   const avgCpw = withCpw.length ? withCpw.reduce((a, r) => a + r.cpw, 0) / withCpw.length : null;
   const best = [...withCpw].sort((a, b) => a.cpw - b.cpw).slice(0, 4);
   const worst = withCpw.length > 4 ? [...withCpw].sort((a, b) => b.cpw - a.cpw).filter((r) => !best.includes(r)).slice(0, 4) : [];
-  const first = tracked.map((r) => r.w[0]!).sort()[0];
-  const since = first ? daysSince(first, today) : 0;
-  const idle = rows
-    .map((r) => ({ ...r, days: r.w.length ? daysSince(r.w[r.w.length - 1]!, today) : Math.min(since, daysSince(r.item.createdAt.slice(0, 10), today)) }))
-    .filter((r) => r.days >= 60).sort((a, b) => b.days - a.days).slice(0, 8);
+
+  // Schrank-Nutzung: Anteil der verfügbaren Teile (ohne eingelagerte), die im Zeitraum getragen wurden
+  const usable = rows.filter((r) => r.item.status !== 'stored');
+  const catMap = new Map<string, { worn: number; total: number }>();
+  for (const r of usable) {
+    const c = catMap.get(r.item.category) ?? { worn: 0, total: 0 };
+    c.total += 1; if (r.pw.length) c.worn += 1;
+    catMap.set(r.item.category, c);
+  }
+  const usage = {
+    worn: usable.filter((r) => r.pw.length).length,
+    total: usable.length,
+    categories: [...catMap].map(([key, v]) => ({ key, ...v })).sort((a, b) => b.total - a.total),
+  };
+
+  // Lange nicht getragen: nur Teile der aktuellen Saison (ohne Saison-Angabe = ganzjährig), nicht eingelagert
+  const season = seasonOf(today);
+  const idle = usable
+    .filter((r) => !r.item.seasons?.length || r.item.seasons.includes(season))
+    .map((r) => ({ ...r, days: r.w.length ? daysSince(r.w[r.w.length - 1]!, today) : Math.min(start ? daysSince(start, today) : 0, daysSince(r.item.createdAt.slice(0, 10), today)) }))
+    .filter((r) => r.days >= IDLE_DAYS).sort((a, b) => b.days - a.days).slice(0, 8);
+
+  // Tage im Zeitraum: welche Teile wurden getragen (für Verlauf und Kombinationen)
+  const byDay = new Map<string, Set<string>>();
+  for (const r of tracked) for (const d of r.pw) (byDay.get(d) ?? byDay.set(d, new Set()).get(d)!).add(r.item.id);
+  const days: Record<string, number> = {};
+  for (const [d, set] of byDay) days[d] = set.size;
+
+  // Lieblings-Outfits: geplante (= getragene) Tage im Zeitraum
+  const outfitRows = outfits
+    .map((o) => ({ outfit: o, n: o.plans.filter((p) => p.date && p.date <= today && inPeriod(p.date) && (!personId || p.personId === personId || (!p.personId && o.ownerId === personId))).length }))
+    .filter((x) => x.n > 0).sort((a, b) => b.n - a.n).slice(0, 4);
+
+  // Kombinationen: zwei Hauptteile, die am selben Tag getragen wurden (mind. 2×)
+  const byId = new Map(pool.map((i) => [i.id, i]));
+  const pairCount = new Map<string, number>();
+  for (const set of byDay.values()) {
+    const ids = [...set].filter((id) => !SIDE_CATEGORIES.has(byId.get(id)?.category ?? '')).sort();
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const k = `${ids[i]}|${ids[j]}`;
+      pairCount.set(k, (pairCount.get(k) ?? 0) + 1);
+    }
+  }
+  const pairs = [...pairCount].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3)
+    .map(([k, n]) => { const [a, b] = k.split('|'); return { a: byId.get(a!)!, b: byId.get(b!)!, n }; });
+
   return {
-    pieces: pool.length, trackedPieces: tracked.length, total, avgCpw,
-    favorites: [...tracked].sort((a, b) => b.w.length - a.w.length).slice(0, 8),
-    best, worst, idle,
+    pieces: pool.length, trackedPieces: tracked.length, total, avgCpw, start, from, season,
+    favorites: [...tracked].sort((a, b) => b.pw.length - a.pw.length).slice(0, 8).map((r) => ({ ...r, w: r.pw })),
+    best, worst, idle, usage, days, outfits: outfitRows, pairs,
   };
 }
 

@@ -35,6 +35,24 @@ test('Getragen: Kosten pro Tragen und Outfit-Planungen zählen mit', () => {
   assert.equal(r.best[0]!.cpw, 20);
 });
 
+test('Getragen: Zeitraum, Nutzung, Outfits, Kombinationen, Saison', () => {
+  const items = [
+    item({ id: 'a', category: 'hose' }), item({ id: 'b', category: 'oberteil', pricePaid: 20 }),
+    item({ id: 'c', category: 'jacke', seasons: ['Sommer'] }), item({ id: 'd', category: 'hose', status: 'stored' }),
+  ];
+  const o = { id: 'o', ownerId: null, itemIds: ['a', 'b'], occasions: [], plans: [{ id: 'p', date: '2026-11-10', personId: null }, { id: 'q', date: '2026-11-12', personId: null }] };
+  const r = wearStats(items, null, { a: ['2026-01-05'] }, [o], '2026-11-13', '30');
+  assert.equal(r.total, 4); // a und b je 2× im Zeitraum (Januar zählt nicht)
+  assert.equal(r.start, '2026-01-05');
+  assert.deepEqual([r.usage.worn, r.usage.total], [2, 3]); // eingelagert zählt nicht mit
+  assert.equal(r.outfits[0]!.n, 2);
+  assert.equal(r.pairs[0]!.n, 2);
+  assert.equal(r.days['2026-11-10'], 2);
+  assert.equal(r.season, 'Winter');
+  assert.ok(!r.idle.some((x) => x.item.id === 'c')); // Sommerteil im Winter nicht anmahnen
+  assert.equal(wearStats(items, null, { a: ['2026-01-05'] }, [o], '2026-11-13', 'all').favorites[0]!.w.length, 3);
+});
+
 test('Bestand: aussortierte Teile zählen nicht in Kategorien', () => {
   const r = closetStats([item({ id: 'a', qty: 2 }), item({ id: 'b', status: 'out' }), item({ id: 'c', isWish: true })], null);
   assert.equal(r.pieces, 3);
