@@ -110,3 +110,36 @@ test('Kachel-Label in Worten', () => {
   assert.equal(tileA11yLabel({ name: 'Hose', qty: 1 }), 'Hose');
   assert.equal(tileA11yLabel({ name: 'Hose', today: {} }), 'Hose, heute getragen');
 });
+
+// ---------- Wunschliste ----------
+import { wishWait, priceLabel, WISH_WAIT } from '../src/tile';
+const on = { ...WISH_WAIT, enabled: true };
+const at = (s: string) => new Date(s);
+
+test('Bedenkzeit: vorerst ausgeschaltet → keine Plakette', () => {
+  assert.equal(WISH_WAIT.enabled, false);
+  assert.equal(wishWait('2026-11-14T10:00:00', at('2026-11-14T12:00:00')), null);
+});
+
+test('Bedenkzeit: Resttage, Fortschritt, Warnung', () => {
+  assert.deepEqual(wishWait('2026-11-14T10:00:00', at('2026-11-14T23:00:00'), on), { left: 14, progress: 1, warn: false });
+  assert.deepEqual(wishWait('2026-11-14T10:00:00', at('2026-11-21T08:00:00'), on), { left: 7, progress: 0.5, warn: false });
+  assert.equal(wishWait('2026-11-14T10:00:00', at('2026-11-25T08:00:00'), on)!.warn, true); // 3 Tage
+  assert.equal(wishWait('2026-11-14T10:00:00', at('2026-11-24T08:00:00'), on)!.warn, false); // 4 Tage
+});
+
+test('Bedenkzeit: vorbei oder ohne Datum → Plakette verschwindet', () => {
+  assert.equal(wishWait('2026-11-14T10:00:00', at('2026-11-28T08:00:00'), on), null);
+  assert.equal(wishWait('2026-01-01', at('2026-11-28T08:00:00'), on), null);
+  assert.equal(wishWait(null, at('2026-11-28T08:00:00'), on), null);
+  assert.equal(wishWait('kein Datum', at('2026-11-28T08:00:00'), on), null);
+});
+
+test('Preis: ganze Euro mit Tausenderpunkt', () => {
+  assert.equal(priceLabel(9), '9');
+  assert.equal(priceLabel(89.5), '90');
+  assert.equal(priceLabel(249), '249');
+  assert.equal(priceLabel(1249.99), '1.250');
+  assert.equal(priceLabel(null), null);
+  assert.equal(priceLabel(0), null);
+});

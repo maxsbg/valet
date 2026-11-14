@@ -142,6 +142,23 @@ export const itemTile = {
      */
     numOffsetY: 0,
     monoOffsetY: 0,
+    /**
+     * Wunschliste – Preis-Kapsel unten links: wächst mit der Stellenzahl, einstellig = Kreis (min. size).
+     * € klein wie das × der Anzahl; optische Mitte im Browser gemessen (≤ 0,25 px).
+     */
+    price: { padX: 5, eur: { size: 6.5, weight: '600', raiseEm: 0.12, marginLeft: 0.5, marginRight: -0.4 } },
+    /**
+     * Wunschliste – Bedenkzeit-Ring oben rechts (Funktion vorerst aus, WISH_WAIT in @valet/core).
+     * Ring mit Abstand zum Plakettenrand; zweistellig kleinere Ziffern, damit „14“ den Ring nicht berührt.
+     */
+    wait: {
+      r: 7.5,
+      stroke: 1.4,
+      track: 'rgba(42,26,29,0.10)',
+      color: brand.oxblood,
+      warn: brand.orange,
+      twoDigits: { size: 7.5, letterSpacing: -0.4, marginRight: 0.5, offsetY: -0.2 },
+    },
   },
 } as const;
 

@@ -2,10 +2,9 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Page } from '@/components/Page';
-import { formatEur } from '@valet/core';
+import { formatEur, WISH_WAIT } from '@valet/core';
 import { Header, Empty, Fab, useToast } from '@/components/ui';
 import { Mosaic } from '@/components/Mosaic';
-import { WAIT } from '@/components/ItemTile';
 import { useSession } from '@/lib/session';
 import { useTheme, space, radius, DISPLAY } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
@@ -25,13 +24,12 @@ export default function Wunschliste() {
           <View style={[s.card, { backgroundColor: t.surface, borderColor: t.hairline }]}>
             <Text style={{ color: t.inkMuted, fontSize: 13 }}>{wishes.length} Wunschteile · Gesamtpreis</Text>
             <Text style={{ fontFamily: DISPLAY, fontSize: 28, color: t.ink }}>{formatEur(total)}</Text>
-            <Text style={{ color: t.inkMuted, fontSize: 13 }}>Bedenkzeit: {WAIT} Tage</Text>
+            {WISH_WAIT.enabled && <Text style={{ color: t.inkMuted, fontSize: 13 }}>Bedenkzeit: {WISH_WAIT.days} Tage</Text>}
           </View>
-          {/* TODO Wunschliste: Preis- und Bedenkzeit-Plakette auf der Kachel nachtragen (Inhalt mit Max klären), siehe ItemTile */}
           {wishes.length ? (
             <Mosaic items={wishes} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
           ) : (
-            <Empty title="Noch keine Wünsche" text="Teile, die du dir überlegst, landen hier mit 14 Tagen Bedenkzeit." />
+            <Empty title="Noch keine Wünsche" text={WISH_WAIT.enabled ? `Teile, die du dir überlegst, landen hier mit ${WISH_WAIT.days} Tagen Bedenkzeit.` : 'Teile, die du dir überlegst, landen hier.'} />
           )}
         </View>
       </Page>
