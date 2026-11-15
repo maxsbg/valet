@@ -43,8 +43,9 @@ Nur Symbole, in Glas-Gruppen (links eine Gruppe, rechts Würfel + Hauptaktion). 
 
 1. **Status-Karte** nur, wenn der Status nicht „Im Schrank“ ist: Symbol, Titel (z. B. „Verliehen an Paul“), Details (seit / zurück bis), genau eine Schnellaktion (z. B. „Zurück“). Ändern nur über den Knopf unten.
 2. **Drei Kacheln in einer Zeile:** Getragen, Pro Tragen, Zuletzt, je mit Hinweis darunter (z. B. „seit 12.10.“, „bei 59,00 €“, „vor 3 Tagen“). Werte immer gleich groß, **22 px**; passt einer nicht (ab fünfstellig), alle drei gemeinsam kleiner, höchstens bis 20 px (Breite messen). Pro Tragen bei geteiltem Preis = eigener Anteil; bei Geschenk „–“. Keine Kachel „Reserviert“.
+   **Leere Zustände:** kein Preis → Pro Tragen „–“, Hinweis „Preis fehlt“, Antippen öffnet Bearbeiten im Reiter Kauf; nie getragen → Getragen „0“ mit Hinweis „noch nie“, Zuletzt „–“.
 3. **Set-Karte** (falls verknüpft): kleine Kacheln aller Teile, sortiert **von oben nach unten am Körper:** Kopf → Oberbekleidung → Oberteil/Kleid → Hose/Rock → Schuhe → Taschen, Schmuck, Sonstiges; bei gleicher Kategorie außen vor innen (Lagen). Das aktuelle Teil ist in `accent` umrandet. „Bearbeiten“ öffnet ein Blatt mit Set-Name, Suche und Schrank-Raster (gewählt = `accent`-Rahmen + Haken unten rechts) und „Set auflösen“. Ein Teil ist in höchstens einem Set. **Sets werden in der Detailansicht gepflegt, nicht im Bearbeiten-Modus.**
-4. **In N Outfits**, dann **Notizen**.
+4. **In N Outfits** (keins: Zeile „Noch in keinem Outfit“ mit Knopf „Outfit damit“; kein Set: keine Set-Karte, Verbinden über das „…“-Menü), dann **Notizen**.
 
 Wunschteil-Übersicht: Zeile mit der Liste (nur Name; die Kategorie steht unten in der Leiste), Karte „Lohnt sich das?“ (Kauf-Check: Kombinierbar mit, Ähnlich im Schrank, Lücke, Preis, Prüfdatum), „Im Outfit ansehen“.
 
@@ -57,7 +58,8 @@ Karten **Aussehen** (Kategorie, Saison, Farben, Muster, Material, Größe), **Tr
   - Passform: zwei 5er-Skalen – Weite (schmal → weit) und Länge (kurz → lang), rechts das Wort (z. B. „eher weit“). Bei Hose und Rock dazu eine 3er-Skala Bund (tief · normal · hoch). Kleid und Rock nur Länge (Mini · über Knie · Knie · Midi · Maxi), keine Weite. „Oversized“ = weit + lang, „Boxy“ = weit + kurz, kein eigener Wert. Shop-Begriffe rechnet die KI auf die beiden Stufen um.
   - Lagen: 4 Stufen von innen nach außen (Unterlage, Mitte zu, Mitte offen, Außen), mehrere möglich, rechts „auch allein tragbar“.
   - Wetter: Balken für Wärme (0–3: sehr leicht, leicht, mittel, warm) und Regen (schlecht, mittel, gut).
-- Pflege als Symbol-Kreise in der Reihenfolge Waschen, Bleichen, Trocknen, Bügeln, Professionell. Ohne Angabe: „noch leer“ mit „Etikett“ und „Selbst wählen“.
+- Pflege als Symbol-Kreise in der Reihenfolge Waschen, Bleichen, Trocknen, Bügeln, Professionell. Ohne Angabe und ohne Schätzung: „noch leer“ mit „Etikett“ und „Selbst wählen“.
+- **Geschätzte Pflege (entschieden 15.11.2026):** Gibt es kein Etikett, schätzt die KI die Pflege aus dem Material, aber nur wenn das Material bekannt ist, und im Zweifel die vorsichtigere Stufe (30 °C statt 40 °C, Trockner „nicht“ statt „niedrig“). Professionelle Reinigung wird nie geschätzt. Geschätzte Symbole: Kreis ohne Füllung, Symbol in `ink-muted`, kleiner Stern (✱) oben rechts am Kreis; darunter einmal „geschätzt aus Material“. Antippen eines geschätzten Symbols → Blatt „Stimmt das?“ mit Bestätigen (wird normal gefüllt) oder Ändern. Ein Etikett-Foto ersetzt jede Schätzung. Speichern je Wert mit Herkunft (`etikett` / `geschaetzt` / `hand`).
 - **Wendbar:** zwei Fotos; die Wende-Plakette oben rechts auf der Kachel wechselt die Seite (bestehende Drehung aus `ItemTile`/`useFlip` beibehalten), dazu zwei Punkte unter dem Bild und „Seite A / B“. Farben (und ggf. Muster) je Seite: „Farben Seite A“, „Farben Seite B“.
 
 ## 5. Detailseite – Kauf
@@ -69,7 +71,7 @@ Karten **Aussehen** (Kategorie, Saison, Farben, Muster, Material, Größe), **Tr
 
 ## 6. Status
 
-Sieben Status, Blatt über den Status-Knopf unten. Kapseln mit Symbol (einfarbig):
+Sieben Status. **Status-Knopf unten öffnet ein Menü wie bei Apple (Pull-down) mit allen sieben Status samt Symbol, der aktuelle mit Haken (entschieden 15.11.2026).** Im Schrank, Wäsche und Aussortiert sind damit sofort gesetzt; Reparatur, Verliehen, Eingelagert und Verkauft öffnen danach ein Blatt für die Zusatzangaben. Kapseln mit Symbol (einfarbig):
 
 | Status | Symbol | Zusatzangaben im Blatt |
 |---|---|---|
@@ -111,10 +113,22 @@ Verkauft     <circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.6a4.5 4.5 0
 - **Material:** mehrfach, Rang im Chip, 1 = Hauptmaterial.
 - **Größe:** System (Buchstaben / Zahlen 44–60), dann Größe (+ One Size); bei Hemden zusätzlich Kragenweite. Systemwechsel setzt die Größe zurück.
 - **Passform, Lagen, Wetter:** antippbare Skalen (Strich antippen, 44 px Tippfläche). Lagen mehrfach, darunter ein Schalter „Auch allein tragbar“.
-- **Pflege:** je Gruppe (Waschen, Bleichen, Trocknen, Bügeln, Professionell) Chips mit Symbol und kurzer Beschriftung („nicht“, „niedrig“ – die Gruppe sagt den Rest; Screenreader-Text vollständig, z. B. „Bügeln: 2 Punkte“), je Gruppe ein Wert, alles optional. **Die KI füllt Pflege nur aus einem Etikett- oder Shop-Bild aus, sie rät nicht.**
+- **Pflege:** je Gruppe (Waschen, Bleichen, Trocknen, Bügeln, Professionell) Chips mit Symbol und kurzer Beschriftung („nicht“, „niedrig“ – die Gruppe sagt den Rest; Screenreader-Text vollständig, z. B. „Bügeln: 2 Punkte“), je Gruppe ein Wert, alles optional. Die KI füllt Pflege aus einem Etikett- oder Shop-Bild aus; ohne Bild schätzt sie nach den Regeln in Abschnitt 4 (grau mit Stern). Antippen und Bestätigen macht eine Schätzung zum festen Wert.
 - **Wendbar** (Symbol-Schalter direkt unter den Farben): an → „Farben Seite A“ und „Farben Seite B“, Foto je Seite.
 - **Kauf:** Bezahlt | Listenpreis (nebeneinander), Geschenk (Symbol-Schalter; an → Von, Bekommen am, Wert; Bezahlt, Listenpreis, Bezahlt von und Kaufdatum entfallen), Bezahlt von (Monogramm-Kapseln), bei zwei oder mehr Personen Aufteilung „Gleich“ / „Eigene Beträge“ mit Balken und Summenprüfung („Summe passt“ / „Es fehlen noch …“ in `accent`), Kaufdatum | Shop, Produktlink, Artikelnummer.
 - **Besitz:** Gehört (Monogramm-Kapseln), Anzahl (− / +; der Preis gilt für alle zusammen, Hinweis „je Stück …“, Kachel zeigt „n×“). „Teil löschen“ am Ende.
+
+## 7a. Bearbeiten – Wunschteil (entschieden 15.11.2026)
+
+Dieselbe Seite wie beim Schrank-Teil, Reiter **Steckbrief · Wunsch** statt Steckbrief · Kauf.
+- **Steckbrief** genau wie beim Schrank-Teil (Größe heißt einfach „Größe“, gemeint ist die gewünschte).
+- **Wunsch:** Preis (= `list_price`) | Shop, Produktlink, Artikelnummer, Liste (Kapseln mit den Listen, eine), Kategorie (Next Cop, Grail, Watchlist, Someday, Gift als runde Symbol-Kreise, eine), Kauftag geplant (Datum, optional).
+- **Entfällt:** Bezahlt, Bezahlt von, Aufteilung, Geschenk-Schalter, Kaufdatum, Anzahl, Status, Gehört. Das alles kommt erst über „Gekauft“ (Blatt wie bisher).
+- „Wunsch löschen“ am Ende (statt „Teil löschen“).
+
+## 7b. Helles Thema
+
+Gleicher Aufbau, Farben aus den hellen Tokens des Designsystems (`bg` Ivory, `surface`, `ink`, `accent` Oxblood). Zur Kontrolle liegen auf der Leinwand die Übersicht und Bearbeiten auch in hell. Kacheln bleiben in beiden Themen weiß.
 
 ## 8. Kategorie, Unterkategorie, Typ und Passform (entschieden 15.11.2026)
 
@@ -160,7 +174,4 @@ Shop-Begriffe rechnet die KI um (Slim = schmal, Relaxed = eher weit, Oversized =
 
 ## 9. Offen – Max fragen, nicht selbst entscheiden
 
-- **Geschätzte Pflegehinweise:** Idee „Symbole grau mit Stern = geschätzt“ ist vorgemerkt, **nicht umsetzen**, bis Max es sagt.
-- **Bearbeiten für Wunschteile** (Liste, Kategorie, Preis statt Bezahlt, gewünschte Größe, geplanter Kauftag) ist noch nicht entworfen.
-- **Status-Knopf:** Ob einfache Status (Wäsche, Aussortiert, Im Schrank) direkt aus einem kleinen Menü gesetzt werden und nur Status mit Angaben ein Blatt öffnen, ist noch nicht entschieden. Bis dahin öffnet der Knopf immer das Blatt.
-- Leere Zustände (kein Preis, nie getragen, in keinem Outfit, kein Set) und das helle Thema sind noch nicht entworfen.
+Derzeit keine offenen Punkte zu diesen Seiten (alle am 15.11.2026 entschieden). Neue Fragen hier sammeln und erst mit Max klären.
