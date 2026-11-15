@@ -2,7 +2,7 @@
 // Nur eindeutige Fälle bekommen eine Unterkategorie bzw. einen Typ; der Rest wird als `sure: false` gemeldet
 // und Max zum Nachsehen gezeigt (nicht raten). Wird auch beim frischen Import aus dem alten Valet benutzt.
 
-import { CATEGORY_NAMES, isValidPath, type CategoryPath } from '../categories';
+import { CATEGORY_NAMES, isValidPath, subcategoriesOf, type CategoryPath } from '../categories';
 import { LEGACY_COLORS, MATERIALS } from '../attributes';
 
 export type LegacyInput = { category: string | null; name: string; desc?: string | null; brand?: string | null };
@@ -76,9 +76,9 @@ const PANTS: Rule[] = [
   r(/anzughose|dress pants|stoffhose/, 'Hose', 'Stoffhose'),
 ];
 const SHORTS: Rule[] = [
-  r(/bermuda/, 'Hose', 'Shorts', 'Bermudashorts'),
-  r(/cargo/, 'Hose', 'Shorts', 'Cargoshorts'),
-  r(/.*/, 'Hose', 'Shorts'),
+  r(/bermuda/, 'Shorts', 'Bermudashorts'),
+  r(/cargo/, 'Shorts', 'Cargoshorts'),
+  r(/.*/, 'Shorts'),
 ];
 const SHOES: Rule[] = [
   r(/loafer/, 'Schuh', 'Halbschuh', 'Loafer'),
@@ -128,7 +128,7 @@ const ACCESSORIES: Rule[] = [
 /** Alte Kategorie → (sichere Oberkategorie | null, Regeln) */
 const OLD: Record<string, [string | null, Rule[]]> = {
   oberteil: ['Oberteil', TOPS], pullover: ['Oberteil', TOPS], sport: ['Oberteil', TOPS],
-  hose: ['Hose', PANTS], shorts: ['Hose', SHORTS],
+  hose: ['Hose', PANTS], shorts: ['Shorts', SHORTS],
   jacke: ['Oberbekleidung', JACKETS], mantel: ['Oberbekleidung', [r(/trench/, 'Oberbekleidung', 'Trenchcoat'), r(/parka/, 'Oberbekleidung', 'Parka'), r(/peacoat|pea coat|caban/, 'Oberbekleidung', 'Mantel', 'Peacoat'), r(/.*/, 'Oberbekleidung', 'Mantel')]],
   schuhe: ['Schuh', SHOES], tasche: ['Tasche', BAGS], accessoire: [null, ACCESSORIES], sonstiges: [null, [...ACCESSORIES, ...BAGS]],
 };
@@ -211,6 +211,11 @@ export function parseLegacyColors(s: string | null | undefined, photoHex?: strin
  * So läuft die App schon vor der einmaligen Umstellung (Migration 0007) mit beiden Formaten.
  */
 export function normalizeCategory(i: { category: string | null; subcategory?: string | null; item_type?: string | null; name?: string | null; brand?: string | null }): CategoryPath {
+  // Hose › Shorts › Typ → Shorts › Typ (eigene Kategorie seit 15.11.2026, Migration 0009)
+  if (i.category === 'Hose' && i.subcategory === 'Shorts') {
+    const sub = i.item_type && subcategoriesOf('Shorts').includes(i.item_type) ? i.item_type : null;
+    return { category: 'Shorts', subcategory: sub, type: null };
+  }
   if (!i.category || CATEGORY_NAMES.includes(i.category)) return { category: i.category ?? null, subcategory: i.subcategory ?? null, type: i.item_type ?? null };
   const r = categorizeLegacy({ category: i.category, name: i.name ?? '', brand: i.brand });
   return { category: r.category, subcategory: r.subcategory, type: r.type };

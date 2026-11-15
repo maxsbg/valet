@@ -66,7 +66,7 @@ export function TryOnCard({ outfits, byId, width, onOpen, onTry }: { outfits: Ou
     <EditCard title="Im Outfit ansehen">
       {outfits.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {outfits.map((o) => <OutfitCard key={o.id} outfit={o} byId={byId} width={cardW} onPress={() => onOpen(o.id)} />)}
+          {outfits.map((o) => <OutfitCard key={o.id} outfit={o} byId={byId} width={cardW} small onPress={() => onOpen(o.id)} />)}
         </ScrollView>
       ) : (
         <Text style={{ fontSize: 15, lineHeight: 21, color: t.inkMuted }}>Stell das Teil mit Sachen aus deinem Schrank zusammen, bevor du es kaufst.</Text>

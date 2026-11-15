@@ -144,7 +144,7 @@ export function ItemEditor(p: Props) {
         !!p.set && !f.isWish && ((last) => (
           <PlainRow label="Set" inset last={last}
             below={p.set!.draft.on ? <SetPicker draft={p.set!.draft} onChange={p.set!.onChange} items={p.set!.items} width={col}
-              current={{ id: p.set!.currentId, name: f.name.trim(), setId: p.set!.setId }} /> : null}>
+              current={{ id: p.set!.currentId, name: f.name.trim(), setId: p.set!.setId, thumb: p.pics.a?.preview ?? p.current.a, kind: layoutKind(f.category, f.subcategory), hex: p.hex }} /> : null}>
             <SymbolSwitch on={p.set!.draft.on} label="Set" onToggle={() => p.set!.onChange({ ...p.set!.draft, on: !p.set!.draft.on })}>
               {(c) => <DetailIcon name="link" size={20} color={c} />}
             </SymbolSwitch>
@@ -165,7 +165,7 @@ export function ItemEditor(p: Props) {
         ),
         !!fx.size && ((last) => (
           <EditRow label="Größe" open={!!open.size} onToggle={() => toggle('size')} ai={ai('size')} last={last} values={capsules(sizeValues)}>
-            <SizePicker kind={fx.size!} sub={f.subcategory} system={f.sizeSystem} size={f.size} collarSize={f.collarSize}
+            <SizePicker kind={fx.size!} category={f.category} sub={f.subcategory} system={f.sizeSystem} size={f.size} collarSize={f.collarSize}
               onSystem={(sys) => onForm(pickSizeSystem(f, sys))} onSize={(v) => set('size', v)} onCollar={(v) => set('collarSize', v)} />
           </EditRow>
         )),

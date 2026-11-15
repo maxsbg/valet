@@ -41,7 +41,7 @@ test('Hosengröße W/L', () => {
   assert.deepEqual(parseWL('M'), { w: null, l: null });
   assert.equal(composeWL('W32', 'L34'), 'W32/L34');
   assert.equal(composeWL('W32', null), 'W32');
-  assert.ok(pantsWaistOnly('Shorts') && !pantsWaistOnly('Jeans'));
+  assert.ok(pantsWaistOnly('Shorts') && pantsWaistOnly('Hose', 'Pyjama-Hose') && !pantsWaistOnly('Hose', 'Jeans'));
   assert.equal(PANTS_WAIST[0], 'W26'); assert.equal(PANTS_WAIST.at(-1), 'W40');
   assert.equal(PANTS_LENGTH[0], 'L28'); assert.equal(PANTS_LENGTH.at(-1), 'L36');
 });

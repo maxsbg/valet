@@ -53,6 +53,7 @@ export function fieldsFor(category: string | null | undefined, sub?: string | nu
     case 'Kleid':
       return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: true, neckline: { label: 'Ausschnitt', options: NECKLINES }, closure: false, strap: false, care: true };
     case 'Hose':
+    case 'Shorts':
       return { pattern: true, reversible: true, size: 'pants', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
     case 'Rock':
       return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
@@ -89,7 +90,8 @@ export const CAP_FITTED = ['6 7/8', '7', '7 1/8', '7 1/4', '7 3/8', '7 1/2', '7 
 export const RING_SIZES = range(48, 66).map(String);
 
 /** Hose ohne Länge: Shorts und Pyjama-Hose (Spec 7) */
-export const pantsWaistOnly = (sub: string | null | undefined) => sub === 'Shorts' || sub === 'Pyjama-Hose';
+export const pantsWaistOnly = (category: string | null | undefined, sub?: string | null) =>
+  category === 'Shorts' || (category === 'Hose' && sub === 'Pyjama-Hose');
 
 /** „W32/L32“ → { w: 'W32', l: 'L32' } */
 export function parseWL(size: string | null | undefined): { w: string | null; l: string | null } {

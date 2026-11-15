@@ -4,8 +4,8 @@ import {
   CATEGORY_TREE, CATEGORY_NAMES, subcategoriesOf, typesOf, isValidPath, categoryLast, pickCategory, fitScalesOf, layoutKind, setOrder,
 } from '../src/categories';
 
-test('Kategorien: zehn Oberkategorien in fester Reihenfolge', () => {
-  assert.deepEqual(CATEGORY_NAMES, ['Oberteil', 'Kleid', 'Hose', 'Rock', 'Oberbekleidung', 'Schuh', 'Tasche', 'Kopfbedeckung', 'Schmuck', 'Accessoire']);
+test('Kategorien: elf Oberkategorien nach Lagen sortiert', () => {
+  assert.deepEqual(CATEGORY_NAMES, ['Oberbekleidung', 'Oberteil', 'Kleid', 'Hose', 'Shorts', 'Rock', 'Schuh', 'Kopfbedeckung', 'Tasche', 'Accessoire', 'Schmuck']);
 });
 
 test('Namensregeln: kein „&“, Typ wiederholt nicht die Ebene darüber, Namen je Ebene eindeutig', () => {
@@ -76,7 +76,7 @@ test('Form für Mosaik und Board', () => {
   assert.equal(layoutKind('Oberbekleidung', 'Blouson'), 'jacke');
   assert.equal(layoutKind('Oberteil', 'Kapuzenpullover'), 'pullover');
   assert.equal(layoutKind('Oberteil', 'Hemd'), 'oberteil');
-  assert.equal(layoutKind('Hose', 'Shorts'), 'shorts');
+  assert.equal(layoutKind('Shorts', 'Cargoshorts'), 'shorts');
   assert.equal(layoutKind('Hose', 'Jeans'), 'hose');
   assert.equal(layoutKind('Kopfbedeckung', 'Kappe'), 'kopf');
   assert.equal(layoutKind('Schmuck', 'Uhr'), 'accessoire');
