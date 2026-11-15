@@ -22,10 +22,11 @@ import { useTilePeople } from '@/components/Mosaic';
 import { Segmented } from '@/components/edit/fields';
 import { DetailImage } from './DetailImage';
 import { Toolbar, TOOLBAR_SPACE } from './Toolbar';
+import { PullMenu, type Anchor } from '@/components/StatusMenu';
 import { Glyph, GLYPHS, HeadButton } from './parts';
 import { NotesCard, SteckbriefView } from './sections';
 import { CareConfirmSheet } from './sheets';
-import { BoughtSheet, BuyDaySheet, TryOnCard, WishKaufView, WishListRow, WishTagSheet, WorthCard, type BuyInput } from './wish';
+import { BoughtSheet, BuyDaySheet, TryOnCard, WishKaufView, WishListRow, WorthCard, WISH_ORDER, type BuyInput } from './wish';
 
 type Tab = 'overview' | 'profile' | 'purchase';
 
@@ -41,7 +42,8 @@ export function WishDetail({ id }: { id: string }) {
   const [d, setD] = useState<ItemDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
-  const [sheet, setSheet] = useState<'tag' | 'day' | 'buy' | null>(null);
+  const [sheet, setSheet] = useState<'day' | 'buy' | null>(null);
+  const [menu, setMenu] = useState<Anchor | null>(null);
   const [exporting, setExporting] = useState(false);
   const [care, setCare] = useState<CareGroup | null>(null);
 
@@ -73,7 +75,7 @@ export function WishDetail({ id }: { id: string }) {
       await updateItem(id, { wish_tag: next });
       setD((x) => x && { ...x, item: { ...x.item, wish_tag: next } });
       patch(id, { wishTag: next });
-      setSheet(null);
+      setMenu(null);
       toast.show(next ? `Kategorie: ${wishTagLabel(next)}` : 'Kategorie entfernt.');
     } catch (e) { fail(e); }
   }
@@ -147,7 +149,7 @@ export function WishDetail({ id }: { id: string }) {
       <Toolbar
         left={[
           { label: tag ? `Kategorie: ${wishTagLabel(tag)}, ändern` : 'Kategorie wählen',
-            icon: (c) => (tag ? <TileIcon name={tag as TileIconName} color={c} size={detail.toolbar.icon} /> : <Glyph d={GLYPHS.tagNone} color={c} />), onPress: () => setSheet('tag') },
+            icon: (c) => (tag ? <TileIcon name={tag as TileIconName} color={c} size={detail.toolbar.icon} /> : <Glyph d={GLYPHS.tagNone} color={c} />), onPress: (_e, g) => setMenu(g) },
           { label: row.buy_on ? `Kauftag ${buyDayLabel(row.buy_on)}, ändern` : 'Kauftag planen', active: !!row.buy_on,
             icon: (c) => <Glyph d={GLYPHS.calendar} color={c} />, onPress: () => setSheet('day') },
         ]}
@@ -155,7 +157,12 @@ export function WishDetail({ id }: { id: string }) {
         main={{ label: 'Gekauft – in den Schrank', onPress: () => setSheet('buy'), icon: (c) => <Glyph d={GLYPHS.bagCheck} size={24} color={c} stroke={2.1} /> }}
       />
 
-      <WishTagSheet open={sheet === 'tag'} current={tag} onPick={pickTag} onClose={() => setSheet(null)} />
+      <PullMenu open={!!menu} anchor={menu} label="Kategorie" onClose={() => setMenu(null)}
+        sections={[
+          WISH_ORDER.map((w) => ({ key: w, label: wishTagLabel(w) ?? w, icon: w as TileIconName, current: tag === w })),
+          tag ? [{ key: '', label: 'Ohne Kategorie' }] : [],
+        ]}
+        onPick={(k) => { if (k === (tag ?? '')) setMenu(null); else pickTag((k || null) as WishTag | null); }} />
       <BuyDaySheet open={sheet === 'day'} current={row.buy_on} today={today} onSave={saveDay} onClose={() => setSheet(null)} />
       <BoughtSheet open={sheet === 'buy'} persons={wardrobe?.persons ?? []} meId={me} today={today} onSave={bought} onClose={() => setSheet(null)}
         start={buyDefaults({ ownerIds: it.owner_ids, listOwner: list?.ownerId, me, price: it.list_price, today })} />

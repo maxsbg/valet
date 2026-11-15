@@ -55,13 +55,13 @@ export async function setWornToday(itemId: string, personId: string | null, worn
 
 /** Status mit Zusatzangaben speichern (statusChange aus @valet/core liefert die bereinigten Werte) */
 export async function saveStatus(itemId: string, info: StatusInfo) {
-  const r = await supabase.from('items').update({ ...info, status_where: info.status_where ?? '' }).eq('id', itemId);
+  const r = await supabase.from('items').update({ ...info, status_where: info.status_where ?? '', lent_to: info.lent_to ?? '' }).eq('id', itemId);
   if (r.error) throw r.error;
 }
 
 export async function setStatus(itemId: string, status: ItemRow['status'], lentTo?: string | null) {
   const r = await supabase.from('items')
-    .update({ status, status_at: status ? todayLocal() : null, lent_to: status === 'lent' ? lentTo ?? null : null })
+    .update({ status, status_at: status ? todayLocal() : null, lent_to: status === 'lent' ? lentTo ?? '' : '' })
     .eq('id', itemId);
   if (r.error) throw r.error;
 }

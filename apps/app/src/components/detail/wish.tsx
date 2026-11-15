@@ -120,31 +120,6 @@ export function WishKaufView({ row, link, onEdit }: { row: WishRow; link: string
 
 // ---------- Blätter ----------
 
-/** Kategorie wählen (Werkzeugleiste links 1): runde Symbol-Kreise, eine; erneut tippen hebt auf */
-export function WishTagSheet({ open, current, onPick, onClose }: { open: boolean; current: WishTag | null; onPick: (tag: WishTag | null) => void; onClose: () => void }) {
-  const t = useTheme();
-  return (
-    <Sheet open={open} onClose={onClose} title="Kategorie" head={<SheetHead title="Kategorie" onCancel={onClose} />}>
-      <View style={{ gap: 14, paddingTop: 14 }}>
-        <View style={{ gap: 4 }}>
-          {WISH_ORDER.map((w) => {
-            const on = current === w;
-            return (
-              <Pressable key={w} onPress={() => onPick(on ? null : w)} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={wishTagLabel(w) ?? w}
-                style={({ pressed }) => [s.tagRow, { borderBottomColor: t.hairline, opacity: pressed ? 0.7 : 1 }]}>
-                <IconCircle a11y={wishTagLabel(w) ?? w} selected={on}><TileIcon name={w as TileIconName} color={on ? t.bg : t.ink} size={20} /></IconCircle>
-                <Text style={{ flex: 1, fontSize: 16, fontWeight: on ? '600' : '400', color: t.ink }}>{wishTagLabel(w)}</Text>
-                {on && <Glyph d={GLYPHS.check} size={20} color={t.accent} stroke={2.4} />}
-              </Pressable>
-            );
-          })}
-        </View>
-        <Hint>Eine Kategorie pro Teil. Erneut antippen hebt sie auf.</Hint>
-      </View>
-    </Sheet>
-  );
-}
-
 /** Kauftag planen (Werkzeugleiste links 2): Schnellwahl, Datum, Entfernen */
 export function BuyDaySheet({ open, current, today, onSave, onClose }: {
   open: boolean; current: string | null; today: string; onSave: (day: string | null) => Promise<void>; onClose: () => void;

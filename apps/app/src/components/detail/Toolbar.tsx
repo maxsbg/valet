@@ -1,23 +1,34 @@
 // Werkzeugleiste unten (Spec 2): ersetzt auf der Detailseite die Tab-Leiste – Apple: Tab-Leiste = Navigation, Werkzeugleiste = Aktionen.
 // Links eine Glas-Gruppe (Status bzw. Kategorie, Kalender), rechts Würfel in Glas + runde Hauptaktion (52, accent).
+import { useRef } from 'react';
 import { Platform, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
 import { useTabBarBottom } from '@/lib/bottomInset';
 import { FIXED, glass } from '@/components/ui';
+import type { Anchor } from '@/components/StatusMenu';
 
 const T = detail.toolbar;
+type Measurable = { measureInWindow: (cb: (x: number, y: number, width: number, height: number) => void) => void };
 
-export type ToolButton = { label: string; icon: (color: string) => React.ReactNode; onPress: (e: GestureResponderEvent) => void; active?: boolean; disabled?: boolean };
+export type ToolButton = { label: string; icon: (color: string) => React.ReactNode; onPress: (e: GestureResponderEvent, group: Anchor) => void; active?: boolean; disabled?: boolean };
 
 export function Toolbar({ left, right, main }: { left: ToolButton[]; right: ToolButton[]; main: ToolButton }) {
   const t = useTheme();
   const bottom = useTabBarBottom();
-  const group = (list: ToolButton[]) => (
-    <View style={[s.group, glass(t), s.shadow]}>
+  const refs = useRef<Record<string, Measurable | null>>({});
+  // Rechteck der Glas-Gruppe → Menüs darüber stehen linksbündig mit ihr
+  const press = (side: string, b: ToolButton) => (e: GestureResponderEvent) => {
+    e.persist?.();
+    const g = refs.current[side];
+    if (!g) return b.onPress(e, { x: T.side, y: 0, width: 0, height: 0 });
+    g.measureInWindow((x, y, width, height) => b.onPress(e, { x, y, width, height }));
+  };
+  const group = (list: ToolButton[], side: string) => (
+    <View ref={(r) => { refs.current[side] = r as unknown as Measurable | null; }} style={[s.group, glass(t), s.shadow]}>
       {list.map((b) => (
         <Pressable key={b.label} accessibilityRole="button" accessibilityLabel={b.label} accessibilityState={{ selected: !!b.active, disabled: !!b.disabled }}
-          onPress={b.onPress} disabled={b.disabled} hitSlop={2}
+          onPress={press(side, b)} disabled={b.disabled} hitSlop={2}
           style={({ pressed }) => [s.btn, b.active && { backgroundColor: t.hairline }, { opacity: b.disabled ? 0.4 : pressed ? 0.6 : 1 }]}>
           {b.icon(t.ink)}
         </Pressable>
@@ -26,11 +37,11 @@ export function Toolbar({ left, right, main }: { left: ToolButton[]; right: Tool
   );
   return (
     <View pointerEvents="box-none" style={[s.bar, FIXED, { bottom }]}>
-      {group(left)}
+      {group(left, 'left')}
       <View style={s.right}>
-        {group(right)}
+        {group(right, 'right')}
         <Pressable accessibilityRole="button" accessibilityLabel={main.label} accessibilityState={{ selected: !!main.active, disabled: !!main.disabled }}
-          onPress={main.onPress} disabled={main.disabled}
+          onPress={(e) => main.onPress(e, { x: 0, y: 0, width: 0, height: 0 })} disabled={main.disabled}
           style={({ pressed }) => [s.main, { backgroundColor: t.accent, opacity: main.disabled ? 0.5 : pressed ? 0.85 : 1 }]}>
           {main.icon(t.onAccent)}
         </Pressable>
