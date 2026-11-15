@@ -18,6 +18,7 @@ import { personKey, type Tile, type Wishlist } from '@/lib/wardrobe';
 import {
   WISH_SORTS, NO_WISH_FILTERS, applyWishFilters, createList, deleteList, matchesWish, ownOrder, renameList, setListOrder,
   sortWishes, type WishFilters, type WishSortId,
+  wishlistNav,
 } from '@/lib/wishlists';
 
 // Wunschliste (entschieden 14.11.2026, Entwurf docs/design/wunschliste/wunschlisten-karten.html):
@@ -43,7 +44,11 @@ export default function Wunschliste() {
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
   const web = Platform.OS === 'web';
 
-  const [open, setOpenState] = useState<string | null>(kept.open);
+  // Aus der Wunschteil-Detailseite („Liste“ antippen): diese Liste geöffnet zeigen
+  const [open, setOpenState] = useState<string | null>(() => {
+    if (wishlistNav.open) { kept.open = wishlistNav.open; kept.filters = { ...kept.filters, tags: [] }; wishlistNav.open = null; }
+    return kept.open;
+  });
   const [filters, setFiltersState] = useState<WishFilters>(kept.filters);
   const setFilters = (f: WishFilters) => { kept.filters = f; setFiltersState(f); };
   const [draft, setDraft] = useState<WishFilters>(NO_WISH_FILTERS);

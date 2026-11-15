@@ -67,12 +67,13 @@ export function Mono({ letter, color, scale = 1 }: { letter: string; color: stri
 }
 
 /** Preis in ganzen Euro mit kleinem € dahinter (Wunschliste, unten links) */
-export function Price({ label }: { label: string }) {
+export function Price({ label, scale = 1 }: { label: string; scale?: number }) {
   const e = b.price.eur;
+  const big = scale !== 1 ? { fontSize: b.num.size * scale, lineHeight: b.num.size * scale, letterSpacing: b.num.letterSpacing * scale } : null;
   return (
-    <Text style={[s.num, trim]} numberOfLines={1}>
+    <Text style={[s.num, big, trim]} numberOfLines={1}>
       {label}
-      <Text style={[{ fontSize: e.size, fontWeight: e.weight }, css({ verticalAlign: `${e.raiseEm}em`, marginLeft: e.marginLeft, marginRight: e.marginRight })]}>€</Text>
+      <Text style={[{ fontSize: e.size * scale, fontWeight: e.weight }, css({ verticalAlign: `${e.raiseEm}em`, marginLeft: e.marginLeft * scale, marginRight: e.marginRight * scale })]}>€</Text>
     </Text>
   );
 }

@@ -2,12 +2,12 @@
 // Gleiche Plaketten-Regeln wie die Schrank-Kachel (VALET_KACHEL_SPEC.md), nur × 2. Kein randloses Bild.
 // Wendbar: Plakette oben rechts dreht das Foto (useFlip aus ItemTile, Zustand geteilt), dazu Punkte und „Seite A / B“.
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { glowFor, isAway, ownersFor, tileA11yLabel, topRightFor, TILE_STATUS, type ItemStatus } from '@valet/core';
+import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { detail, itemTile } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
 import { ItemPicture } from '@/components/ItemPicture';
 import { useFlip, type PersonLook } from '@/components/ItemTile';
-import { Glass, Mono, Num } from '@/components/tile/TileBadge';
+import { Glass, Mono, Num, Price } from '@/components/tile/TileBadge';
 import { TileIcon } from '@/components/tile/TileIcons';
 
 const I = detail.image;
@@ -20,6 +20,8 @@ export type DetailImageItem = {
   reversible: boolean; qty: number; owners: string[];
   /** Hauptbild (volle Auflösung) und Bild der anderen Seite */
   image: string | null; imageBack: string | null;
+  /** Wunschteil (Kachel-Regeln der Wunschliste × 2): oben links Kategorie, unten links Preis, kein Status, kein Bügel */
+  wish?: { tag: WishTag | null; price: number | null } | null;
 };
 
 export function DetailImage({ item, width, me, person, today }: {
@@ -28,12 +30,14 @@ export function DetailImage({ item, width, me, person, today }: {
   const t = useTheme();
   const h = Math.round(width * I.height / I.width);
   const glow = glowFor(item.hex, item.highlight);
-  const away = isAway(item.status);
+  const wish = item.wish ?? null;
+  const away = !wish && isAway(item.status);
+  const price = wish ? priceLabel(wish.price) : null;
   const tr = topRightFor(item.reversible, item.qty);
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
-  const todayP = today ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
+  const todayP = today && !wish ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
   const flip = useFlip(tr?.reversible && item.imageBack ? item.imageBack : null, item.id);
-  const label = tileA11yLabel({
+  const label = wish ? [item.name, wish.tag ? wishTagLabel(wish.tag) : null, price ? `${price} Euro` : null].filter(Boolean).join(', ') : tileA11yLabel({
     name: item.name, status: item.status, reversible: item.reversible, qty: item.qty, today: todayP,
     owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
   });
@@ -54,7 +58,13 @@ export function DetailImage({ item, width, me, person, today }: {
           )}
         </Animated.View>
 
-        {item.status && (
+        {wish?.tag && (
+          <View style={s.tl}><Glass scale={K} label={`Kategorie ${wishTagLabel(wish.tag)}`}><TileIcon name={wish.tag} color={B.ink} scale={K} /></Glass></View>
+        )}
+        {price && (
+          <View style={s.bl}><Glass scale={K} shape="pill" label={`Preis ${price} Euro`}><Price label={price} scale={K} /></Glass></View>
+        )}
+        {!wish && item.status && (
           <View style={s.tl}><Glass scale={K} label={TILE_STATUS[item.status].label}><TileIcon name={item.status} color={B.ink} scale={K} /></Glass></View>
         )}
         {tr && (

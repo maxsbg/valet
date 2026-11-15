@@ -149,7 +149,7 @@ export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 
  */
 export async function markBought(item: Pick<ItemRow, 'id' | 'wishlist_id'>, data: { price: number | null; date: string | null; owners: string[] }) {
   const r = await supabase.from('items').update({
-    is_wish: false, wishlist_id: null, wish_tag: null,
+    is_wish: false, wishlist_id: null, wish_tag: null, buy_on: null,
     price_paid: data.price, purchase_date: data.date,
     owner_ids: data.owners, owner_id: data.owners.length === 1 ? data.owners[0]! : null,
   }).eq('id', item.id);
