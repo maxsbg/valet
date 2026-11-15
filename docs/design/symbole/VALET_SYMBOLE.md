@@ -1,6 +1,6 @@
 # Valet – Symbole (verbindlich seit 15.11.2026, mit Max)
 
-Einzige Quelle: `packages/ui/src/symbols.ts` (`SYMBOLS`). Übersicht für Max: `symbol-katalog.html` (neu erzeugen mit `pnpm symbole` nach jeder Änderung am Pool). Wächter: `packages/core/test/symbols.test.ts`.
+Einzige Quelle: `packages/ui/src/symbols.ts` (`SYMBOLS`). Übersicht für Max: `symbol-katalog.html` (neu erzeugen mit `pnpm symbole` nach jeder Änderung am Pool; Aufbau in `katalog.ts`). Wächter: `packages/core/test/symbols.test.ts` – schlägt auch an, wenn der Katalog nicht mehr zum Code passt.
 
 ## Regeln
 

@@ -91,3 +91,10 @@ test('Bedienungs-, Tab- und Plaketten-Symbole sind benutzt, vorgemerkte noch nic
     else assert.ok(used, `„${name}“ wird nirgends benutzt – entfernen oder vormerken`);
   }
 });
+
+test('Symbol-Katalog passt zum Code (sonst: pnpm symbole)', async () => {
+  const { katalogHtml } = await import('../../../docs/design/symbole/katalog');
+  const file = path.resolve(here, '../../../docs/design/symbole/symbol-katalog.html');
+  assert.ok(fs.readFileSync(file, 'utf8') === katalogHtml(),
+    'symbol-katalog.html ist veraltet – nach Änderungen am Symbol-Pool im Repo-Hauptordner „pnpm symbole“ ausführen');
+});
