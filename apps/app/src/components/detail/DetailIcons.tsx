@@ -6,10 +6,11 @@ type El = { d?: string; c?: [number, number, number]; fill?: boolean; r?: [numbe
 type Icon = { vb: number; sw: number; els: El[] };
 
 export const DETAIL_ICONS = {
-  flower: { vb: 24, sw: 2, els: [{ c: [12, 12, 2.5] }, { d: 'M12 9.5C10 7 10 4 12 3c2 1 2 4 0 6.5z' }, { d: 'M14.5 12c2.5-2 5.5-2 6.5 0-1 2-4 2-6.5 0z' }, { d: 'M12 14.5c2 2.5 2 5.5 0 6.5-2-1-2-4 0-6.5z' }, { d: 'M9.5 12C7 14 4 14 3 12c1-2 4-2 6.5 0z' }] },
+  // Saison (15.11.2026): Frühling = Spross, Sommer = Sonne, Herbst = Eichel, Winter = Schneeflocke mit V-Zweigen
+  sprout: { vb: 24, sw: 2, els: [{ d: 'M12 20.5V11' }, { d: 'M12 13.5C12 10 9.6 8 6 8c0 3.5 2.4 5.5 6 5.5Z' }, { d: 'M12 11c0-3.6 2.5-6 6-6 0 3.6-2.5 6-6 6Z' }, { d: 'M8.5 20.5h7' }] },
   sun: { vb: 24, sw: 2, els: [{ c: [12, 12, 4] }, { d: 'M12 2v2' }, { d: 'M12 20v2' }, { d: 'M4.9 4.9l1.4 1.4' }, { d: 'M17.7 17.7l1.4 1.4' }, { d: 'M2 12h2' }, { d: 'M20 12h2' }, { d: 'M4.9 19.1l1.4-1.4' }, { d: 'M17.7 6.3l1.4-1.4' }] },
-  leaf: { vb: 24, sw: 2, els: [{ d: 'M5 19c0-8 5-14 15-15-1 10-7 15-15 15z' }, { d: 'M5 19l8-8' }] },
-  snow: { vb: 24, sw: 2, els: [{ d: 'M12 2v20' }, { d: 'M3.3 7l17.4 10' }, { d: 'M3.3 17L20.7 7' }, { d: 'M9.5 4L12 6.5 14.5 4' }, { d: 'M9.5 20L12 17.5 14.5 20' }] },
+  acorn: { vb: 24, sw: 2, els: [{ d: 'M6.5 11c0-3.4 2.5-5 5.5-5s5.5 1.6 5.5 5Z' }, { d: 'M12 6V3.8' }, { d: 'M7.6 11c0 4.8 2.4 8.3 4.4 9 2-.7 4.4-4.2 4.4-9' }] },
+  snow: { vb: 24, sw: 2, els: [{ d: 'M12 3v18' }, { d: 'M4.21 7.5l15.58 9' }, { d: 'M4.21 16.5l15.58-9' }, { d: 'M9.6 4.4L12 6.5l2.4-2.1' }, { d: 'M14.4 19.6L12 17.5l-2.4 2.1' }, { d: 'M17.38 6.12l-.62 3.13 3.02 1.03' }, { d: 'M6.62 17.88l.62-3.13-3.02-1.03' }, { d: 'M19.78 13.72l-3.02 1.03.62 3.13' }, { d: 'M4.22 10.28l3.02-1.03-.62-3.13' }] },
   thermo: { vb: 24, sw: 2, els: [{ d: 'M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z' }] },
   drop: { vb: 24, sw: 2, els: [{ d: 'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z' }] },
   w30: { vb: 32, sw: 1.8, els: [{ d: 'M4 9l2.6 15h18.8L28 9' }, { d: 'M4 9c2 1.6 4 1.6 6 0s4-1.6 6 0 4 1.6 6 0 4-1.6 6 0' }, { t: [16, 21, '30', 8.5, 700] }, { d: 'M7 28h18' }] },
@@ -65,4 +66,4 @@ export function DetailIcon({ name, size = 20, color }: { name: DetailIconName; s
 }
 
 /** Saison → Symbol */
-export const SEASON_ICON: Record<string, DetailIconName> = { Frühling: 'flower', Sommer: 'sun', Herbst: 'leaf', Winter: 'snow' };
+export const SEASON_ICON: Record<string, DetailIconName> = { Frühling: 'sprout', Sommer: 'sun', Herbst: 'acorn', Winter: 'snow' };
