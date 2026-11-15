@@ -194,7 +194,7 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
       {shares.length > 0 && (
         <View style={{ gap: 10 }}>
           <View style={s.between}>
-            <Text style={{ fontSize: 13, color: t.inkMuted }}>Aufgeteilt</Text>
+            <Text style={{ fontSize: 13, color: t.inkMuted }}>Bezahlt von</Text>
             <Text style={{ fontSize: 13, color: t.inkMuted }}>{splitLabel(shares)}</Text>
           </View>
           <View accessibilityRole="image" accessibilityLabel="Aufteilung" style={s.bar}>
@@ -205,8 +205,10 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
               const p = person(r.personId);
               return (
                 <View key={r.personId} style={[s.shareRow, i < shares.length - 1 && { borderBottomWidth: 1, borderBottomColor: t.hairline }]}>
-                  {p && <Monogram person={p} size={28} />}
-                  <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>{p ? (p.id === meId ? `${p.name} (du)` : p.name) : '?'}</Text>
+                  <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                    {p ? <Capsule label={p.id === meId ? `${p.name} (du)` : p.name} selected leading={<Monogram person={p} />} />
+                      : <Text style={{ fontSize: 15, color: t.ink }}>?</Text>}
+                  </View>
                   <Text style={{ fontSize: 13, color: t.inkMuted }}>{r.pct} %</Text>
                   <Text style={{ minWidth: 72, textAlign: 'right', fontSize: 15, fontWeight: '600', color: t.ink, fontVariant: ['tabular-nums'] }}>{formatPrice(r.amount)}</Text>
                 </View>
@@ -312,7 +314,7 @@ const s = StyleSheet.create({
   row: { minHeight: 52, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
   between: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   bar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 },
-  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingVertical: 8 },
   facts: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 10, columnGap: 8 },
   link: { height: 44, borderRadius: 12, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12 },
   setTile: { height: 104, borderRadius: 14, backgroundColor: '#fff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
