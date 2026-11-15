@@ -124,7 +124,7 @@ export function statusCard(i: StatusInfo, today: string, personName: (id: string
     case 'sold':
       return {
         icon: s, title: i.sold_price != null ? `Verkauft für ${formatPrice(i.sold_price)}` : 'Verkauft',
-        details: parts(i.sold_date && `am ${shortDate(i.sold_date, today)}`, i.status_where), warn: null, action: { label: 'Doch nicht verkauft', to: 'out' },
+        details: parts(i.sold_date && `am ${shortDate(i.sold_date, today)}`, i.status_where), warn: null, action: { label: 'Doch nicht', to: 'out' },
       };
   }
 }
