@@ -33,7 +33,10 @@ type Shape = 'circle' | 'capsule' | 'pill';
 
 export function Glass({ shape = 'circle', label, style, scale = 1, children }: { shape?: Shape; label?: string; style?: ViewStyle; scale?: number; children: React.ReactNode }) {
   // scale: Outfit-Karte (× 1,5) – bleibt konzentrisch, weil Radius und Abstand mitwachsen
-  const big = scale !== 1 ? { width: b.size * scale, height: b.size * scale, borderRadius: b.radius * scale } : null;
+  const big = scale === 1 ? null
+    : shape === 'capsule' ? { width: b.size * scale, height: b.countHeight * scale, borderRadius: b.pill }
+    : shape === 'pill' ? { height: b.size * scale, minWidth: b.size * scale, borderRadius: b.radius * scale, paddingHorizontal: b.price.padX * scale }
+    : { width: b.size * scale, height: b.size * scale, borderRadius: b.radius * scale };
   return (
     <View
       role={label ? 'img' : undefined}
@@ -58,8 +61,9 @@ export function Num({ num, sym, symFirst, scale = 1 }: { num: string; sym: '×' 
 }
 
 /** Monogramm in Gloock, in der Textfarbe der Person */
-export function Mono({ letter, color }: { letter: string; color: string }) {
-  return <Text style={[s.mono, { color }, trim]} numberOfLines={1}>{letter}</Text>;
+export function Mono({ letter, color, scale = 1 }: { letter: string; color: string; scale?: number }) {
+  const big = scale !== 1 ? { fontSize: b.mono.size * scale, lineHeight: b.mono.size * scale, transform: web ? undefined : [{ translateY: b.monoOffsetY * scale }] } : null;
+  return <Text style={[s.mono, { color }, big, trim]} numberOfLines={1}>{letter}</Text>;
 }
 
 /** Preis in ganzen Euro mit kleinem € dahinter (Wunschliste, unten links) */

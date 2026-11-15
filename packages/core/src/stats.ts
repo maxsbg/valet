@@ -12,6 +12,8 @@ export interface StatItem {
   brand: string | null;
   qty: number;
   pricePaid: number | null;
+  /** Geschenk: kein Kaufpreis, 0 € in eigener Zeile „Geschenke“, keine Kosten pro Tragen */
+  isGift?: boolean;
   listPrice: number | null;
   /** Zahler: ohne Betrag = gleichmäßig aufgeteilt */
   payers: { personId: string | null; amount: number | null }[] | null;
@@ -81,7 +83,8 @@ export function spendStats(all: StatItem[], personId: string | null, personIds: 
   return {
     total, allTotal, revenue, saved, listSum, paidPieces,
     avg: paidPieces ? total / paidPieces : 0,
-    missing: owned.filter((i) => i.pricePaid == null).length,
+    missing: owned.filter((i) => i.pricePaid == null && !i.isGift).length,
+    gifts: owned.filter((i) => i.isGift).reduce((a, i) => a + qtyOf(i), 0),
     brands, noBrand, years, byPerson, unassigned,
     categories: sum((i) => i.category),
     top: [...paid].sort((a, b) => amt(b) - amt(a)).slice(0, 5).map((i) => ({ item: i, value: amt(i) })),

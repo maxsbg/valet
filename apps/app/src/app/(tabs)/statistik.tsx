@@ -37,7 +37,7 @@ export default function Statistik() {
 
   const stat: StatItem[] = useMemo(() => items.map((i) => ({
     id: i.id, ownerId: i.ownerId, category: i.category, brand: i.brand, qty: i.qty, pricePaid: i.pricePaid, listPrice: i.listPrice,
-    payers: i.payers, purchaseDate: i.purchaseDate, status: i.status, soldPrice: i.soldPrice, isWish: i.isWish, createdAt: i.createdAt, seasons: i.seasons,
+    payers: i.payers, purchaseDate: i.purchaseDate, status: i.status, soldPrice: i.soldPrice, isWish: i.isWish, isGift: i.isGift, createdAt: i.createdAt, seasons: i.seasons,
   })), [items]);
   const wears: WearLog = useMemo(() => {
     const m: WearLog = {};
@@ -86,6 +86,8 @@ export default function Statistik() {
           {r.categories.length > 0 && (
             <Panel t={t} title="Ausgaben nach Kategorie">
               {r.categories.map((c) => <Bar key={c.key} t={t} label={categoryLabel(c.key)} value={c.value} max={r.categories[0]!.value} text={formatEur(c.value)} />)}
+              {/* Geschenke: 0 € in eigener Zeile (Spec 5) */}
+              {r.gifts > 0 && <Bar t={t} label="Geschenke" sub={`${r.gifts} ${r.gifts === 1 ? 'Teil' : 'Teile'}`} value={0} max={r.categories[0]!.value} text={formatEur(0)} color="#c4bfb4" dim />}
             </Panel>
           )}
           {r.years.length > 0 && (

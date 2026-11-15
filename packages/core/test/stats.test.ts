@@ -59,3 +59,9 @@ test('Bestand: aussortierte Teile zählen nicht in Kategorien', () => {
   assert.deepEqual(r.categories, [{ key: 'hose', value: 2 }]);
   assert.equal(r.wishes, 1);
 });
+
+test('Geschenke: zählen nicht als „ohne Preis“, eigene Anzahl', () => {
+  const r = spendStats([item({ id: 'g', pricePaid: null, isGift: true }), item({ id: 'x', pricePaid: null })], null);
+  assert.equal(r.missing, 1);
+  assert.equal(r.gifts, 1);
+});

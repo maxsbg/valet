@@ -202,7 +202,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
  * Wendeteil umdrehen: Foto dreht sich um die senkrechte Achse bis zur Kante (90°), dann wird das Bild getauscht
  * und es dreht von der anderen Seite zurück. Das Wendbar-Zeichen dreht sich dabei einmal mit.
  */
-function useFlip(backUri: string | null, id: string | undefined) {
+export function useFlip(backUri: string | null, id: string | undefined) {
   // Zustand bis zum Neuladen der App gemerkt (lib/flipped.ts) – Seiten werden beim Wechsel abgebaut
   const [back, setBack] = useState(() => isFlipped(id));
   const [loaded, setLoaded] = useState<string | null>(() => (isFlipped(id) ? backUri : null));
