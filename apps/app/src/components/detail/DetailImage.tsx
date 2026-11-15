@@ -78,7 +78,7 @@ export function DetailImage({ item, width, me, person, today }: {
           </View>
         )}
         {todayP && (
-          <View style={s.bl}><Glass scale={K} label={todayP.name ? `heute: ${todayP.name}` : 'heute getragen'}><TileIcon name="hanger" color={todayP.stroke} scale={K} /></Glass></View>
+          <View style={s.bl}><Glass scale={K} label={todayP.name ? `heute: ${todayP.name}` : 'heute getragen'}><TileIcon name="wornToday" color={todayP.stroke} scale={K} /></Glass></View>
         )}
         {owners.length > 0 && (
           <View style={s.br}>

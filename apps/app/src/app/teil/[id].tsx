@@ -212,7 +212,7 @@ function ClosetDetail({ id }: { id: string }) {
         ]}
         right={[{ label: 'Outfit damit', icon: (c) => <Glyph d={GLYPHS.dice} color={c} />, onPress: () => router.push(`/outfit-bauen?item=${id}`) }]}
         main={{ label: wornToday ? 'Heute getragen – entfernen' : 'Heute tragen', active: wornToday, disabled: busy, onPress: toggleWorn,
-          icon: (c) => <Glyph d={wornToday ? GLYPHS.check : GLYPHS.hanger} size={24} color={c} stroke={2.2} /> }}
+          icon: (c) => <Glyph d={wornToday ? GLYPHS.check : GLYPHS.wornToday} size={24} color={c} stroke={2.2} /> }}
       />
 
       <StatusMenu open={!!menu} anchor={menu} current={statusKey(it.status)} onPick={pickStatus} onClose={() => setMenu(null)} />

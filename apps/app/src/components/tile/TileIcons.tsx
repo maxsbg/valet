@@ -12,8 +12,15 @@ const C = (cx: number, cy: number, r: number): El => ({ c: [cx, cy, r] });
 const R = (x: number, y: number, w: number, h: number, r: number): El =>
   P(`M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 -${r} ${r}h-${w - 2 * r}a${r} ${r} 0 0 1 -${r} -${r}v-${h - 2 * r}a${r} ${r} 0 0 1 ${r} -${r}z`);
 
+/**
+ * „Heute getragen“ – festes Symbol (Kleiderbügel), entschieden 15.11.2026: dieselbe Form wie der Knopf „Heute tragen“
+ * in der Werkzeugleiste des Teil-Details. Einzige Quelle: Kachel, Detail-Bild, Outfit-Karte und Werkzeugleiste
+ * (GLYPHS.wornToday) nutzen diesen Pfad. Nur für „heute getragen/geplant/reserviert“ verwenden.
+ */
+export const WORN_TODAY_D = 'M10 6a2 2 0 1 1 2 2v1.6l-8.4 5.7A1.5 1.5 0 0 0 4.4 18h15.2a1.5 1.5 0 0 0 .8-2.7L12 9.6';
+
 export const TILE_ICONS = {
-  hanger: [P('M12 7.5a2.2 2.2 0 1 1 2.2-2.2'), P('M12 7.5v1.2L3.2 15.6a1 1 0 0 0 .6 1.8h16.4a1 1 0 0 0 .6-1.8L12 8.7')],
+  wornToday: [P(WORN_TODAY_D)],
   // Status – exakt aus VALET_DETAILSEITE_SPEC.md, Abschnitt 6 (ersetzt seit 15.11.2026 die Kachel-Symbole aus der Kachel-Spec)
   /** Im Schrank: Schrank mit zwei Türen */
   closet: [R(5, 3, 14, 18, 2), P('M12 3v18'), P('M9.5 11v2'), P('M14.5 11v2')],
@@ -72,12 +79,12 @@ export type TileIconName = keyof typeof TILE_ICONS;
  * 24er-Raster bleibt gleich (wirkt also proportional dicker, wie auf der Kachel).
  */
 export function TileIcon({ name, color, size: sizeOverride, scale = 1 }: { name: TileIconName; color: string; size?: number; scale?: number }) {
-  const base = name === 'hanger' ? itemTile.badge.hanger : itemTile.badge.icon;
+  const base = name === 'wornToday' ? itemTile.badge.wornToday : itemTile.badge.icon;
   // size: nur außerhalb der Kachel (z. B. Filter-Chips); Strich wächst nicht mit, damit er nicht zu dick wird
   const size = sizeOverride ?? base.size * scale;
   const stroke = sizeOverride ? Math.min(base.stroke, 2) : base.stroke;
   // Bügel optisch mittig (Versatz aus den Tokens), alle anderen Symbole sind im Raster zentriert
-  const offsetY = name === 'hanger' ? itemTile.badge.hanger.offsetY * scale : 0;
+  const offsetY = name === 'wornToday' ? itemTile.badge.wornToday.offsetY * scale : 0;
   const p = { fill: 'none', stroke: color, strokeWidth: stroke, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" aria-hidden style={offsetY ? { transform: [{ translateY: offsetY }] } : undefined}>

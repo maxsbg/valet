@@ -56,7 +56,7 @@ export function OutfitCard({ outfit, byId, width, today, onPress, small }: Props
 
       {today && (
         <View style={[s.bl, { bottom: M.inset, left: M.inset }]}>
-          <Glass scale={M.scale}><TileIcon name="hanger" color={today.stroke} scale={M.scale} /></Glass>
+          <Glass scale={M.scale}><TileIcon name="wornToday" color={today.stroke} scale={M.scale} /></Glass>
         </View>
       )}
 
