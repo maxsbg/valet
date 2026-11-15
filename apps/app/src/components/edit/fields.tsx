@@ -10,6 +10,9 @@ import { FieldLabel, Wrap } from '@/components/detail/parts';
 
 const D = detail;
 const web = Platform.OS === 'web';
+/** Pfeil-Spalte der aufklappbaren Zeilen (Pfeil + Abstand zu den Werten) */
+const CHEVRON = 16;
+const CHEVRON_GAP = 10;
 
 /** „KI“-Markierung: Feld von der KI vorausgefüllt, bis bestätigt oder geändert */
 export function KiBadge() {
@@ -67,20 +70,24 @@ export function EditRow({ label, open, onToggle, values, ai, last, children }: {
         <View style={s.rowValues}>
           {values.length ? <Wrap gap={6} align="end">{values}</Wrap> : <Text style={{ fontSize: 15, color: t.inkMuted, textAlign: 'right' }}>Auswählen</Text>}
         </View>
-        <Animated.View style={{ transform: [{ rotate }] }}><DetailIcon name="chevronDown" size={16} color={t.inkMuted} /></Animated.View>
+        <Animated.View style={{ transform: [{ rotate }] }}><DetailIcon name="chevronDown" size={CHEVRON} color={t.inkMuted} /></Animated.View>
       </Pressable>
       {open && <View style={{ gap: 14 }}>{children}</View>}
     </View>
   );
 }
 
-/** Feste Zeile ohne Aufklappen (z. B. Wendbar, Geschenk mit Symbol-Schalter) */
+/**
+ * Feste Zeile ohne Aufklappen (z. B. Wendbar, Geschenk mit Symbol-Schalter).
+ * Der Wert steht in der Wertespalte, rechtsbündig mit den Kapseln der aufklappbaren Zeilen:
+ * rechts bleibt die Pfeil-Spalte frei (16 px Pfeil + 10 px Abstand, Spec 1).
+ */
 export function PlainRow({ label, children, last, ink }: { label: string; children: React.ReactNode; last?: boolean; ink?: boolean }) {
   const t = useTheme();
   return (
     <View style={[s.plain, !last && { borderBottomWidth: 1, borderBottomColor: t.hairline }]}>
       <Text style={{ fontSize: 15, color: ink ? t.ink : t.inkMuted }}>{label}</Text>
-      {children}
+      <View style={{ marginRight: CHEVRON + CHEVRON_GAP }}>{children}</View>
     </View>
   );
 }
@@ -228,7 +235,7 @@ const s = StyleSheet.create({
   cardRows: { paddingHorizontal: 14, paddingVertical: 4 },
   cardPlain: { padding: 14, gap: 16 },
   cardTitle: { fontFamily: DISPLAY, fontSize: D.font.cardTitle, lineHeight: 24 },
-  row: { minHeight: 52, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  row: { minHeight: 52, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: CHEVRON_GAP },
   rowLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   rowLabelText: { fontSize: D.font.rowLabel },
   rowValues: { flex: 1, minWidth: 0, alignItems: 'flex-end' },

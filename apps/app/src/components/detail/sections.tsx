@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows,
+  CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, necklineOf, setOrder, shareRows,
+  showField, sizeKindOf, type FieldKey,
   shortDate, shortUrl, splitLabel, statFontSize, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -70,9 +71,14 @@ function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
  */
 export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void }) {
   const t = useTheme();
+  // Felder je Kategorie (Spec 8a): nicht passende Zeilen und leere Karten entfallen
+  const show = (k: FieldKey) => showField(k, f.category, f.subcategory);
+  const reversible = f.reversible && show('reversible');
+  const neck = necklineOf(f.category, f.subcategory);
+  const sizeKind = sizeKindOf(f.category, f.subcategory);
   const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x) => <ValueCapsule key={x} label={x} />);
   const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={c} outline><ColorDot name={c} /></ValueCircle>);
-  const scales = fitScalesOf(f.category);
+  const scales = show('fit') ? fitScalesOf(f.category) : [];
   const fit = scales.filter((sc) => f.fit[sc.key] != null).map((sc) => (
     <ValueScale key={sc.key} caption={sc.label} steps={sc.steps.length} on={(i) => i === f.fit[sc.key]} a11y={`${sc.label} ${sc.steps[f.fit[sc.key]!]}`} />
   ));
@@ -82,32 +88,36 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
   const aussehen: [string, React.ReactNode[]][] = [
     ['Kategorie', caps([categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })])],
     ['Saison', SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><DetailIcon name={SEASON_ICON[x]!} color={t.bg} /></ValueCircle>)],
-    [f.reversible ? 'Farben Seite A' : 'Farben', colors(f.colors)],
-    ...(f.reversible ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
-    [f.reversible ? 'Muster Seite A' : 'Muster', caps([f.pattern])],
-    ...(f.reversible ? [['Muster Seite B', caps([f.patternB])] as [string, React.ReactNode[]]] : []),
+    [reversible ? 'Farben Seite A' : 'Farben', colors(f.colors)],
+    ...(reversible ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
+    ...(show('pattern') ? [[reversible ? 'Muster Seite A' : 'Muster', caps([f.pattern])] as [string, React.ReactNode[]]] : []),
+    ...(show('pattern') && reversible ? [['Muster Seite B', caps([f.patternB])] as [string, React.ReactNode[]]] : []),
     ['Material', caps(f.materials.map((m) => (m.pct ? `${m.name} ${m.pct} %` : m.name)))],
-    ['Größe', caps([f.size, hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null])],
+    ...(sizeKind ? [[sizeKind === 'ring' ? 'Ringgröße' : 'Größe', caps([f.size, hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null])] as [string, React.ReactNode[]]] : []),
   ];
   const tragen: [string, React.ReactNode[]][] = [
     ['Passform', fit.length ? [...fit, <Text key="w" style={{ fontSize: 13, color: t.inkMuted }}>{fitWord}</Text>] : []],
-    ['Lagen', [
+    ['Lagen', !show('layers') ? [] : [
       ...(f.layers.length ? [<ValueScale key="l" steps={LAYERS.length} on={(i) => f.layers.includes(i)} a11y={`Lagen: ${f.layers.map((i) => LAYERS[i]).join(', ')}`} />] : []),
       ...(f.standalone ? [<Text key="a" style={{ fontSize: 13, color: t.inkMuted }}>auch allein tragbar</Text>] : []),
     ]],
-    ['Wetter', [
+    ['Wetter', !show('weather') ? [] : [
       ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <DetailIcon name="thermo" size={16} color={c} />} />] : []),
       ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <DetailIcon name="drop" size={16} color={c} />} />] : []),
     ]],
   ];
-  const details: [string, React.ReactNode[]][] = [['Stil', caps(f.styles)], ['Kragen', caps([f.collar])], ['Verschluss', caps([f.closure])]];
+  const details: [string, React.ReactNode[]][] = [
+    ['Stil', caps(f.styles)],
+    ...(neck ? [[neck.label, caps([f.collar])] as [string, React.ReactNode[]]] : []),
+    ['Verschluss', show('closure') ? caps([f.closure]) : []],
+  ];
   const has = (rows: [string, React.ReactNode[]][]) => rows.some(([, v]) => v.length > 0);
   return (
     <>
       {has(aussehen) && <EditCard title="Aussehen" rows><Rows rows={aussehen} /></EditCard>}
       {has(tragen) && <EditCard title="Tragen" rows><Rows rows={tragen} /></EditCard>}
       {has(details) && <EditCard title="Details" rows><Rows rows={details} /></EditCard>}
-      <EditCard title="Pflege" rows={care.length > 0}>
+      {show('care') && <EditCard title="Pflege" rows={care.length > 0}>
         {care.length ? (
           <View style={{ paddingBottom: 12 }}>
             <View style={[s.row, { justifyContent: 'flex-start' }]}>
@@ -138,7 +148,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
             </Wrap>
           </View>
         )}
-      </EditCard>
+      </EditCard>}
     </>
   );
 }
