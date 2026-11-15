@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  COLORS, colorHex, colorFamily, tapMainColor, tapNuance, rankInk, migrateSeasons, MATERIALS, PATTERNS, sizeSystemOf, hasCollarSize,
+  COLORS, colorHex, colorFamily, tapMainColor, tapNuance, rankInk, migrateSeasons, MATERIALS, PATTERNS, CLOSURES, sizeSystemOf, hasCollarSize,
   careList, confirmCare, careFromLabel, careLabel, type ColorPick,
 } from '../src/attributes';
 
@@ -67,6 +67,10 @@ test('Saison: Übergang → Frühling + Herbst, Reihenfolge fest', () => {
 test('Listen: Flanell, Lammfell, Zopfmuster, Rippstrick ergänzt', () => {
   assert.ok(MATERIALS.includes('Flanell') && MATERIALS.includes('Lammfell'));
   assert.ok(PATTERNS.includes('Zopfmuster') && PATTERNS.includes('Rippstrick'));
+});
+
+test('Verschluss: Schnalle ergänzt (vor „ohne“)', () => {
+  assert.deepEqual(CLOSURES, ['Knöpfe', 'Reißverschluss', 'Druckknöpfe', 'Schnürung', 'Klett', 'Schnalle', 'ohne']);
 });
 
 test('Größe: System erkennen, Kragenweite nur bei Hemd', () => {

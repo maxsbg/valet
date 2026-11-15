@@ -13,6 +13,7 @@ test('Altdaten: eindeutige Fälle', () => {
   assert.deepEqual(cat('oberteil', "'BASEMENT' RIB HENLEY LONGSLEEVE"), ['Oberteil', 'Langarmshirt', 'Henley-Langarmshirt', true]);
   assert.deepEqual(cat('mantel', 'Beiger Trenchcoat'), ['Oberbekleidung', 'Trenchcoat', null, true]);
   assert.deepEqual(cat('mantel', '109 - Maxi Coat'), ['Oberbekleidung', 'Mantel', null, true]);
+  assert.deepEqual(cat('jacke', 'Navy Peacoat'), ['Oberbekleidung', 'Mantel', 'Peacoat', true]);
   assert.deepEqual(cat('shorts', 'AVEL SHORTS', 'Weite Bermuda-Shorts'), ['Hose', 'Shorts', 'Bermudashorts', true]);
   assert.deepEqual(cat('tasche', 'Debossed Weekender Bag'), ['Tasche', 'Reisetasche', 'Weekender', true]);
   assert.deepEqual(cat('accessoire', 'PRX Powermatic 80', 'Rundes Uhrengehäuse'), ['Schmuck', 'Uhr', null, true]);

@@ -44,6 +44,7 @@ const TOPS: Rule[] = [
 const JACKETS: Rule[] = [
   r(/trench/, 'Oberbekleidung', 'Trenchcoat'),
   r(/parka/, 'Oberbekleidung', 'Parka'),
+  r(/peacoat|pea coat|caban/, 'Oberbekleidung', 'Mantel', 'Peacoat'),
   r(/shearling|lammfell/, 'Oberbekleidung', 'Shearlingjacke'),
   r(/bomber/, 'Oberbekleidung', 'Blouson', 'Bomberjacke'),
   r(/harrington/, 'Oberbekleidung', 'Blouson', 'Harrington-Jacke'),
@@ -128,7 +129,7 @@ const ACCESSORIES: Rule[] = [
 const OLD: Record<string, [string | null, Rule[]]> = {
   oberteil: ['Oberteil', TOPS], pullover: ['Oberteil', TOPS], sport: ['Oberteil', TOPS],
   hose: ['Hose', PANTS], shorts: ['Hose', SHORTS],
-  jacke: ['Oberbekleidung', JACKETS], mantel: ['Oberbekleidung', [r(/trench/, 'Oberbekleidung', 'Trenchcoat'), r(/parka/, 'Oberbekleidung', 'Parka'), r(/.*/, 'Oberbekleidung', 'Mantel')]],
+  jacke: ['Oberbekleidung', JACKETS], mantel: ['Oberbekleidung', [r(/trench/, 'Oberbekleidung', 'Trenchcoat'), r(/parka/, 'Oberbekleidung', 'Parka'), r(/peacoat|pea coat|caban/, 'Oberbekleidung', 'Mantel', 'Peacoat'), r(/.*/, 'Oberbekleidung', 'Mantel')]],
   schuhe: ['Schuh', SHOES], tasche: ['Tasche', BAGS], accessoire: [null, ACCESSORIES], sonstiges: [null, [...ACCESSORIES, ...BAGS]],
 };
 

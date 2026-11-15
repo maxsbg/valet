@@ -112,7 +112,7 @@ export const STYLES = ['Bequem', 'Lässig', 'Business Casual', 'Formell', 'Moder
 export const LEGACY_STYLES: Readonly<Record<string, string>> = { Casual: 'Lässig', Streetwear: 'Street', Business: 'Business Casual', Sport: 'Sportlich', Schick: 'Klassisch' };
 
 export const COLLARS = ['Klassischer Kragen', 'Button-down', 'Stehkragen', 'Reverskragen', 'ohne Kragen'] as const;
-export const CLOSURES = ['Knöpfe', 'Reißverschluss', 'Druckknöpfe', 'Schnürung', 'Klett', 'ohne'] as const;
+export const CLOSURES = ['Knöpfe', 'Reißverschluss', 'Druckknöpfe', 'Schnürung', 'Klett', 'Schnalle', 'ohne'] as const;
 
 // ---------- Größe ----------
 

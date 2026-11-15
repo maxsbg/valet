@@ -116,7 +116,7 @@ Verkauft     <circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.6a4.5 4.5 0
 - **Pflege:** je Gruppe (Waschen, Bleichen, Trocknen, Bügeln, Professionell) Chips mit Symbol und kurzer Beschriftung („nicht“, „niedrig“ – die Gruppe sagt den Rest; Screenreader-Text vollständig, z. B. „Bügeln: 2 Punkte“), je Gruppe ein Wert, alles optional. Die KI füllt Pflege aus einem Etikett- oder Shop-Bild aus; ohne Bild schätzt sie nach den Regeln in Abschnitt 4 (grau mit Stern). Antippen und Bestätigen macht eine Schätzung zum festen Wert.
 - **Wendbar** (Symbol-Schalter direkt unter den Farben): an → „Farben Seite A“ und „Farben Seite B“, Foto je Seite.
 - **Kauf:** Bezahlt | Listenpreis (nebeneinander), Geschenk (Symbol-Schalter; an → Von, Bekommen am, Wert; Bezahlt, Listenpreis, Bezahlt von und Kaufdatum entfallen), Bezahlt von (Monogramm-Kapseln), bei zwei oder mehr Personen Aufteilung „Gleich“ / „Eigene Beträge“ mit Balken und Summenprüfung („Summe passt“ / „Es fehlen noch …“ in `accent`), Kaufdatum | Shop, Produktlink, Artikelnummer.
-- **Besitz:** Gehört (Monogramm-Kapseln), Anzahl (− / +; der Preis gilt für alle zusammen, Hinweis „je Stück …“, Kachel zeigt „n×“). „Teil löschen“ am Ende.
+- **Besitz:** Gehört (Monogramm-Kapseln), Anzahl (− / +; **der Preis gilt je Stück** (entschieden 15.11.2026), Ausgaben in der Statistik = Preis × Anzahl, Hinweis „zusammen …“, Kachel zeigt „n×“). „Teil löschen“ am Ende.
 
 ## 7a. Bearbeiten – Wunschteil (entschieden 15.11.2026)
 

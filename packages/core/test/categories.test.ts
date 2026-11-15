@@ -28,6 +28,10 @@ test('Typen sind allein verständlich (Beispiele aus der Spec)', () => {
   assert.deepEqual(typesOf('Oberbekleidung', 'Blouson'), ['Bomberjacke', 'Harrington-Jacke']);
   assert.deepEqual(typesOf('Oberteil', 'Sweatshirt'), []);
   assert.deepEqual(subcategoriesOf('Rock').length, 8);
+  // Spec-Stand PR #45/#46: Peacoat statt Caban-Mantel, Beuteltasche entfernt
+  assert.deepEqual(typesOf('Oberbekleidung', 'Mantel'), ['Chesterfield-Mantel', 'Peacoat', 'Covert-Mantel', 'Duster-Mantel', 'Carcoat']);
+  assert.ok(!typesOf('Tasche', 'Handtasche').includes('Beuteltasche'));
+  assert.deepEqual(typesOf('Tasche', 'Handtasche'), ['Shopper', 'Hobo-Bag', 'Bowlingtasche', 'Satchel', 'Baguette-Bag', 'Halbmondtasche', 'Satteltasche', 'Barrel-Bag']);
 });
 
 test('Gültige Pfade', () => {
