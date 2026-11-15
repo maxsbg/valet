@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
-import { Header, Chip, Empty, useToast, useChipReveal } from '@/components/ui';
+import { Header, Chip, Empty, PageEnd, useToast, useChipReveal } from '@/components/ui';
 import { WeekCalendar } from '@/components/WeekCalendar';
 import { useTilePeople } from '@/components/Mosaic';
 import { TileIcon } from '@/components/tile/TileIcons';
@@ -98,9 +98,9 @@ export default function Outfits() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
+      <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
-        <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
+        <View style={{ width: scr.content + 2 * space.md }}><Header title="Outfits" /></View>
 
         {/* Wochenleiste; Titel antippen → Monat */}
         <WeekCalendar outfits={outfits} byId={byId} today={today} width={scr.content} onDay={openDay} />
@@ -136,6 +136,7 @@ export default function Outfits() {
             <Empty title="Noch keine Outfits" text="Stell dir aus deinen Teilen ein Outfit zusammen und speichere es." />
           )}
         </View>
+        <PageEnd />
       </Page>
 
       {/* Tag: geplante Outfits, Outfit wählen */}

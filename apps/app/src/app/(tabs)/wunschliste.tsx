@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Image, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { WISH_TAGS, priceLabel, type WishTag } from '@valet/core';
 import { Page } from '@/components/Page';
-import { Header, Chip, Empty, Fab, RoundButton, TopTint, glass, useToast } from '@/components/ui';
+import { Header, Chip, Empty, Fab, PageEnd, RoundButton, TopTint, glass, useToast } from '@/components/ui';
 import { WishlistCard, NewListCard, euros } from '@/components/WishlistCard';
 import { ClosetBar, type BarChip } from '@/components/ClosetBar';
 import { Mosaic } from '@/components/Mosaic';
@@ -202,7 +202,7 @@ export default function Wunschliste() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <Page
-        contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
+        contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
         keyboardShouldPersistTaps="handled"
         scrollY={scrollY}
@@ -223,7 +223,7 @@ export default function Wunschliste() {
               </View>
             </View>
           ) : (
-            <Header tint={!stuck} />
+            <Header title="Wunschliste" tint={!stuck} />
           )}
         </View>
         <View pointerEvents="box-none" style={[{ alignSelf: 'stretch', alignItems: 'center', zIndex: 10, marginTop: -scr.top, paddingTop: scr.top },
@@ -253,6 +253,7 @@ export default function Wunschliste() {
             <Empty title="Noch keine Wünsche" text="Teile, die du dir überlegst, landen hier." />
           )}
         </View>
+        <PageEnd />
       </Page>
       <Fab bottom={scr.fabBottom} label="Wunsch hinzufügen" onPress={() => router.push(list ? `/neu?wunsch=1&liste=${list.id}` : '/neu?wunsch=1')} />
       {toast.node}
