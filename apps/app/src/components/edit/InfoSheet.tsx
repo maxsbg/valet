@@ -6,10 +6,11 @@ import { useTheme } from '@/lib/theme';
 import { Sheet } from '@/components/Sheet';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { Hint, SheetHead } from '@/components/detail/parts';
-import { DetailIcon, type DetailIconName } from '@/components/detail/DetailIcons';
+import { Icon } from '@/components/Icon';
+import type { SymbolName } from '@valet/ui';
 
 export type InfoKind = 'label' | 'shop' | 'order';
-const KINDS: { key: InfoKind; title: string; text: string; icon: DetailIconName }[] = [
+const KINDS: { key: InfoKind; title: string; text: string; icon: SymbolName }[] = [
   { key: 'label', title: 'Etikett', text: 'Pflegesymbole, Material in Prozent, Größe, Artikelnummer', icon: 'label' },
   { key: 'shop', title: 'Shop-Screenshot', text: 'Name, Marke, Preis und Streichpreis, Farbe, Passform, Material', icon: 'phone' },
   { key: 'order', title: 'Bestellbestätigung', text: 'Bezahlter Preis, Kaufdatum, Shop, Größe', icon: 'bag' },
@@ -32,21 +33,21 @@ export function InfoSheet({ open, onClose }: { open: boolean; onClose: () => voi
           return (
             <Pressable key={k.key} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => setKind(on ? null : k.key)}
               style={({ pressed }) => [s.kind, { backgroundColor: t.surfaceSunken, borderColor: on ? t.ink : t.hairline, opacity: pressed ? 0.8 : 1 }]}>
-              <View style={[s.kindIcon, { backgroundColor: t.surface }]}><DetailIcon name={k.icon} color={t.ink} /></View>
+              <View style={[s.kindIcon, { backgroundColor: t.surface }]}><Icon name={k.icon} size="row" color={t.ink} /></View>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink }}>{k.title}</Text>
                 <Text style={{ fontSize: 13, lineHeight: 17, color: t.inkMuted }}>{k.text}</Text>
               </View>
-              <DetailIcon name="chevronRight" size={16} color={t.inkMuted} />
+              <Icon name="chevron" size="inline" color={t.inkMuted} />
             </Pressable>
           );
         })}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
           <PhotoPicker onPick={pick} label="Kamera" style={{ flex: 1 }}>
-            <View style={[s.src, { borderColor: t.hairline }]}><DetailIcon name="camera" size={18} color={t.ink} /><Text style={[s.srcText, { color: t.ink }]}>Kamera</Text></View>
+            <View style={[s.src, { borderColor: t.hairline }]}><Icon name="camera" size="chip" color={t.ink} /><Text style={[s.srcText, { color: t.ink }]}>Kamera</Text></View>
           </PhotoPicker>
           <PhotoPicker onPick={pick} label="Fotos" style={{ flex: 1 }}>
-            <View style={[s.src, { borderColor: t.hairline }]}><DetailIcon name="photos" size={18} color={t.ink} /><Text style={[s.srcText, { color: t.ink }]}>Fotos</Text></View>
+            <View style={[s.src, { borderColor: t.hairline }]}><Icon name="photos" size="chip" color={t.ink} /><Text style={[s.srcText, { color: t.ink }]}>Fotos</Text></View>
           </PhotoPicker>
         </View>
         {file

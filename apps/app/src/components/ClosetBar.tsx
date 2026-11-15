@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { Icons } from './Icon';
 import { Chip, useChipReveal } from './ui';
 import { useTheme, space } from '@/lib/theme';
 import type { Person } from '@/lib/wardrobe';
+import { Icon } from '@/components/Icon';
 
 export type BarChip = { key: string; label: string; count?: number; icon?: React.ReactNode; person?: Pick<Person, 'name' | 'color'>; selected: boolean; onPress: () => void; onLongPress?: () => void; dashed?: boolean };
 
@@ -160,7 +160,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
         borderColor: v.box.interpolate({ inputRange: [0, 1], outputRange: [t.hairline, t.surfaceSunken] }),
       }]}>
         <Pressable onPress={show} disabled={open} accessibilityRole="button" accessibilityLabel="Suchen" style={s.lupe}>
-          <Icons.search color={open ? t.inkMuted : t.ink} size={21} />
+          <Icon name="search" size="button" color={open ? t.inkMuted : t.ink} />
         </Pressable>
       </Animated.View>
       <Animated.View ref={inputWrap} pointerEvents={open ? 'auto' : 'none'} style={[s.abs, { left: PAD + 42, top: ROW_PAD + 1, height: BTN - 2, width: inputW, opacity: inputOpacity }]}>
@@ -170,7 +170,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
       </Animated.View>
       <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[s.abs, s.x, { left: W - PAD - BTN - GAP - 8 - 28, top: ROW_PAD + 8, backgroundColor: t.hairline, opacity: v.tx, transform: [{ scale: v.tx.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }]}>
         <Pressable onPress={hide} hitSlop={8} accessibilityRole="button" accessibilityLabel="Suche schließen" style={s.center}>
-          <Icons.close color={t.ink} size={13} />
+          <Icon name="close" size="mini" color={t.ink} />
         </Pressable>
       </Animated.View>
       {filterActive && (
@@ -180,13 +180,13 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
       {/* Sortieren ↔ Filter */}
       <Animated.View pointerEvents={open ? 'none' : 'auto'} style={[s.abs, { top: ROW_PAD, right: PAD }, sortStyle]}>
         <Pressable onPress={onSort} accessibilityRole="button" accessibilityLabel="Sortieren" style={[s.round, { backgroundColor: t.surface, borderColor: t.hairline }]}>
-          <Icons.sort color={t.ink} size={21} />
+          <Icon name="sort" size="button" color={t.ink} />
         </Pressable>
       </Animated.View>
       <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[s.abs, { top: ROW_PAD, right: PAD }, filterStyle]}>
         <Pressable onPress={() => { input.current?.blur(); onFilter(); }} accessibilityRole="button" accessibilityLabel="Filter"
           style={[s.round, filterActive ? { backgroundColor: t.ink, borderColor: t.ink } : { backgroundColor: t.surface, borderColor: t.hairline }]}>
-          <Icons.filter color={filterActive ? t.bg : t.ink} size={21} />
+          <Icon name="filter" size="button" color={filterActive ? t.bg : t.ink} />
         </Pressable>
       </Animated.View>
     </Animated.View>

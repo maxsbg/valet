@@ -8,7 +8,8 @@ import { useTheme } from '@/lib/theme';
 import type { Tile } from '@/lib/wardrobe';
 import { ItemPicture } from '@/components/ItemPicture';
 import { Sheet } from '@/components/Sheet';
-import { FieldLabel, Glyph, GLYPHS, Hint, SheetHead, TextField } from '@/components/detail/parts';
+import { FieldLabel, Hint, SheetHead, TextField } from '@/components/detail/parts';
+import { Icon } from '@/components/Icon';
 
 export type SetDraft = { on: boolean; members: string[]; name: string };
 
@@ -50,7 +51,7 @@ export function SetPicker({ draft, onChange, current, items, width }: Props) {
         <Pressable accessibilityRole="button" accessibilityLabel="Teile hinzufügen oder entfernen" onPress={() => setPick(true)} style={{ width: col, gap: 4 }}>
           {({ pressed }) => (
             <View style={[s.tile, s.add, { height: col, borderColor: t.hairline, opacity: pressed ? 0.6 : 1 }]}>
-              <Glyph d={GLYPHS.plus} size={26} color={t.ink} />
+              <Icon name="plus" size="large" color={t.ink} />
             </View>
           )}
         </Pressable>
@@ -90,7 +91,7 @@ function SetPickSheet({ open, selected, current, items, onDone, onClose }: {
                 accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${m.name}${other ? ', in anderem Set' : ''}`} style={{ width: col, gap: 4 }}>
                 <View style={[s.tile, { height: col, boxShadow: on ? `inset 0 0 0 2px ${t.accent}` : 'inset 0 0 0 1px rgba(42,26,29,0.09)' }]}>
                   <ItemPicture uri={m.thumb} inset={8} category={m.kind} color={m.hex ?? '#d8d2c8'} />
-                  {on && <View style={[s.check, { backgroundColor: t.accent }]}><Glyph d={GLYPHS.check} size={14} color={t.onAccent} stroke={2.6} /></View>}
+                  {on && <View style={[s.check, { backgroundColor: t.accent }]}><Icon name="check" size="inline" color={t.onAccent} /></View>}
                 </View>
                 <Text numberOfLines={1} style={{ fontSize: 12, color: t.inkMuted }}>{other ? `${m.name} · anderes Set` : m.name}</Text>
               </Pressable>

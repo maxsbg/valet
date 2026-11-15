@@ -6,7 +6,6 @@ import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
 import { Glass, Mono, Num, Price, WaitRing } from './tile/TileBadge';
 import { TileIcon } from './tile/TileIcons';
-import { Icons } from './Icon';
 
 // Schrank-Kachel – verbindlich: docs/design/kachel/VALET_KACHEL_SPEC.md + valet-kachel-referenz.html.
 // Kein Text auf der Kachel (außer Monogramm und Zahlen), weiß auch im dunklen Modus, alle Maße aus den Tokens.
@@ -146,7 +145,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
 
       {/* oben links: Status bzw. bei Wunschteilen die Kategorie (bzw. vorläufig Auswahl im Baukasten) */}
       {selected ? (
-        <View style={s.tl}><Glass style={s.sel}><Icons.check color={tile.select.on} size={B.icon.size} /></Glass></View>
+        <View style={s.tl}><Glass style={s.sel}><TileIcon name="check" color={tile.select.on} /></Glass></View>
       ) : item.isWish && item.wishTag ? (
         <View style={s.tl}><Glass label={wishTagLabel(item.wishTag) ?? undefined}><TileIcon name={item.wishTag} color={B.ink} /></Glass></View>
       ) : item.status ? (

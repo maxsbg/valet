@@ -5,7 +5,6 @@ import { Page } from '@/components/Page';
 import { Header, Chip, Empty, PageEnd, useToast, useChipReveal } from '@/components/ui';
 import { WeekCalendar } from '@/components/WeekCalendar';
 import { useTilePeople } from '@/components/Mosaic';
-import { TileIcon } from '@/components/tile/TileIcons';
 import { OutfitCard } from '@/components/OutfitCard';
 import { OutfitBoard } from '@/components/OutfitBoard';
 import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
@@ -16,6 +15,7 @@ import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
 import { fmtLong, plansOn, planOutfit, unplanOutfit, clashes, type Outfit } from '@/lib/outfits';
 import { OCCASIONS } from '@valet/core';
 import { itemTile } from '@valet/ui';
+import { Icon } from '@/components/Icon';
 
 export default function Outfits() {
   const t = useTheme();
@@ -116,7 +116,7 @@ export default function Outfits() {
               return (
                 <View key={x.label} onLayout={chipRow.layout(x.label)}>
                   <Chip tall collapse label={x.label} count={x.n} selected={on} onLabelWidth={chipRow.labelWidth(x.label)}
-                    icon={<TileIcon name={x.icon} color={on ? t.bg : t.ink} size={18} />} onPress={() => pickOcc(on ? null : x.label)} />
+                    icon={<Icon name={x.icon} size="chip" color={on ? t.bg : t.ink} />} onPress={() => pickOcc(on ? null : x.label)} />
                 </View>
               );
             })}

@@ -2,6 +2,7 @@ import { useBottomInset } from '@/lib/bottomInset';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useTheme, DISPLAY, space } from '@/lib/theme';
+import { Icon } from '@/components/Icon';
 
 type Props = { open: boolean; onClose: () => void; title: string; children: React.ReactNode; footer?: React.ReactNode;
   /** eigene Kopfzeile (z. B. SheetHead: X · Titel · Haken) statt des großen Titels */
@@ -46,7 +47,7 @@ export function OptionRow({ label, selected, onPress, last }: { label: string; s
     <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected }}
       style={({ pressed }) => [s.row, { borderBottomColor: t.hairline, borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth * 2, opacity: pressed ? 0.6 : 1 }]}>
       <Text style={{ fontSize: 17, color: t.ink, fontWeight: selected ? '700' : '400' }}>{label}</Text>
-      {selected && <Text style={{ fontSize: 20, color: t.ink }}>✓</Text>}
+      {selected && <Icon name="check" size="row" color={t.ink} />}
     </Pressable>
   );
 }

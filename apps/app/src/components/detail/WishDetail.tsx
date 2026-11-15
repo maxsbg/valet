@@ -17,16 +17,17 @@ import { canExport, fileName, itemPng } from '@/lib/share';
 import { Page } from '@/components/Page';
 import { Empty, useToast } from '@/components/ui';
 import { ExportSheet } from '@/components/ExportSheet';
-import { TileIcon, type TileIconName } from '@/components/tile/TileIcons';
 import { useTilePeople } from '@/components/Mosaic';
 import { Segmented } from '@/components/edit/fields';
 import { DetailImage } from './DetailImage';
 import { Toolbar, TOOLBAR_SPACE } from './Toolbar';
 import { PullMenu, type Anchor } from '@/components/StatusMenu';
-import { Glyph, GLYPHS, HeadButton } from './parts';
+import { HeadButton } from './parts';
 import { NotesCard, SteckbriefView } from './sections';
 import { CareConfirmSheet } from './sheets';
 import { BoughtSheet, BuyDaySheet, TryOnCard, WishKaufView, WishListRow, WorthCard, WISH_ORDER, type BuyInput } from './wish';
+import { Icon } from '@/components/Icon';
+import type { SymbolName } from '@valet/ui';
 
 type Tab = 'overview' | 'profile' | 'purchase';
 
@@ -149,17 +150,17 @@ export function WishDetail({ id }: { id: string }) {
       <Toolbar
         left={[
           { label: tag ? `Kategorie: ${wishTagLabel(tag)}, ändern` : 'Kategorie wählen',
-            icon: (c) => (tag ? <TileIcon name={tag as TileIconName} color={c} size={detail.toolbar.icon} /> : <Glyph d={GLYPHS.tagNone} color={c} />), onPress: (_e, g) => setMenu(g) },
+            icon: (c) => (tag ? <Icon name={tag as SymbolName} size="button" color={c} /> : <Icon name="tagNone" size="button" color={c} />), onPress: (_e, g) => setMenu(g) },
           { label: row.buy_on ? `Kauftag ${buyDayLabel(row.buy_on)}, ändern` : 'Kauftag planen', active: !!row.buy_on,
-            icon: (c) => <Glyph d={GLYPHS.calendar} color={c} />, onPress: () => setSheet('day') },
+            icon: (c) => <Icon name="calendar" size="button" color={c} />, onPress: () => setSheet('day') },
         ]}
-        right={[{ label: 'Im Outfit ansehen', icon: (c) => <Glyph d={GLYPHS.dice} color={c} />, onPress: tryOn }]}
-        main={{ label: 'Gekauft – in den Schrank', onPress: () => setSheet('buy'), icon: (c) => <Glyph d={GLYPHS.bagCheck} size={24} color={c} stroke={2.1} /> }}
+        right={[{ label: 'Im Outfit ansehen', icon: (c) => <Icon name="outfitNew" size="button" color={c} />, onPress: tryOn }]}
+        main={{ label: 'Gekauft – in den Schrank', onPress: () => setSheet('buy'), icon: (c) => <Icon name="bagCheck" size="bar" color={c} /> }}
       />
 
       <PullMenu open={!!menu} anchor={menu} label="Kategorie" onClose={() => setMenu(null)}
         sections={[
-          WISH_ORDER.map((w) => ({ key: w, label: wishTagLabel(w) ?? w, icon: w as TileIconName, current: tag === w })),
+          WISH_ORDER.map((w) => ({ key: w, label: wishTagLabel(w) ?? w, icon: w as SymbolName, current: tag === w })),
           tag ? [{ key: '', label: 'Ohne Kategorie' }] : [],
         ]}
         onPick={(k) => { if (k === (tag ?? '')) setMenu(null); else pickTag((k || null) as WishTag | null); }} />

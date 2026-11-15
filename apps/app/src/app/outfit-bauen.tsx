@@ -5,9 +5,7 @@ import { Page, STICKY } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORIES, SIDE_CATEGORIES, formatEur } from '@valet/core';
-import { TileIcon } from '@/components/tile/TileIcons';
 import { Chip, SearchField, RoundButton, Empty, useToast } from '@/components/ui';
-import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
 import { Mosaic } from '@/components/Mosaic';
 import { Sheet, SheetButton } from '@/components/Sheet';
@@ -16,6 +14,7 @@ import { useBottomInset } from '@/lib/bottomInset';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 import { personKey, type Tile } from '@/lib/wardrobe';
 import { allOccasions, deleteOutfit, planOutfit, saveOutfit } from '@/lib/outfits';
+import { Icon } from '@/components/Icon';
 
 const catIndex = (c: string) => { const n = CATEGORIES.indexOf(c); return n < 0 ? 99 : n; };
 
@@ -108,7 +107,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
       {i.thumb || i.image
         ? <Image source={{ uri: i.thumb ?? i.image! }} resizeMode="contain" style={StyleSheet.absoluteFill} />
         : <ItemPicture uri={null} inset={0} category={i.category} color={i.hex ?? '#c4bfb4'} />}
-      <Pressable onPress={() => toggle(i)} hitSlop={8} accessibilityLabel={`${i.name || 'Teil'} entfernen`} style={s.x}><Icons.close color="#fff" size={12} /></Pressable>
+      <Pressable onPress={() => toggle(i)} hitSlop={8} accessibilityLabel={`${i.name || 'Teil'} entfernen`} style={s.x}><Icon name="close" size="mini" color="#fff" /></Pressable>
     </View>
   );
 
@@ -149,7 +148,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
           <View style={s.wrap}>
             {occList.map((x) => {
               const on = occ.includes(x);
-              return <Chip key={x} label={x} selected={on} icon={<TileIcon name={occasionOf(x)!.icon} color={on ? t.bg : t.ink} size={16} />}
+              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.bg : t.ink} />}
                 onPress={() => setOcc(on ? occ.filter((y) => y !== x) : [...occ, x])} />;
             })}
           </View>
@@ -165,7 +164,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
             <SearchField value={query} onChange={setQuery} onClose={() => { setSearching(false); setQuery(''); }} />
           ) : (
             <>
-              <RoundButton label="Suchen" onPress={() => setSearching(true)}><Icons.search color={t.ink} /></RoundButton>
+              <RoundButton label="Suchen" onPress={() => setSearching(true)}><Icon name="search" size="button" color={t.ink} /></RoundButton>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: space.xs }}>
                 <Chip label="Alle" count={pool.length} selected={!cat} onPress={() => setCat(null)} />
                 {CATEGORIES.filter((c) => counts.get(c)).map((c) => (

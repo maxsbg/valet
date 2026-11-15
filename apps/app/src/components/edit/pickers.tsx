@@ -8,8 +8,9 @@ import {
 } from '@valet/core';
 import { useTheme } from '@/lib/theme';
 import { Capsule, FieldLabel, Hint, Wrap } from '@/components/detail/parts';
-import { DetailIcon, type DetailIconName } from '@/components/detail/DetailIcons';
 import { ColorDot, Toggle } from './fields';
+import { Icon } from '@/components/Icon';
+import type { SymbolName } from '@valet/ui';
 
 // ---------- Farben ----------
 
@@ -51,14 +52,14 @@ export function ColorPicker({ pick, onChange }: { pick: ColorPick; onChange: (p:
 /** Eine Skala: Kopf (Bezeichnung · Wert), antippbare Striche (44 px Tippfläche), darunter die Enden oder Beschriftungen */
 export function Scale({ caption, value, steps, on, onPick, lo, hi, labels, icon, a11y }: {
   caption: string; value: string; steps: number; on: (i: number) => boolean; onPick: (i: number) => void;
-  lo?: string; hi?: string; labels?: readonly string[]; icon?: DetailIconName; a11y: (i: number) => string;
+  lo?: string; hi?: string; labels?: readonly string[]; icon?: SymbolName; a11y: (i: number) => string;
 }) {
   const t = useTheme();
   return (
     <View style={{ gap: 4 }}>
       <View style={s.scaleHead}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {icon && <DetailIcon name={icon} size={16} color={t.ink} />}
+          {icon && <Icon name={icon} size="inline" color={t.ink} />}
           <Text style={{ fontSize: 14, color: t.ink }}>{caption}</Text>
         </View>
         <Text style={{ fontSize: 14, color: t.inkMuted }}>{value}</Text>
@@ -144,7 +145,7 @@ export function CarePicker({ care, onChange }: { care: Care; onChange: (c: Care)
           <Wrap>
             {g.options.map((o) => (
               <Capsule key={o.id} label={o.short} a11y={`${g.label}: ${o.short}`} selected={care[g.key]?.v === o.id} onPress={() => pick(g.key, o.id)}
-                icon={(c) => <DetailIcon name={o.id as DetailIconName} size={20} color={c} />} />
+                icon={(c) => <Icon name={o.id as SymbolName} size="row" color={c} />} />
             ))}
           </Wrap>
         </View>

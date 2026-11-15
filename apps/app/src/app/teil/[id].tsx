@@ -21,15 +21,15 @@ import { Empty, useToast } from '@/components/ui';
 import { ExportSheet } from '@/components/ExportSheet';
 import { StatusMenu, type Anchor } from '@/components/StatusMenu';
 import { StatusSheet } from '@/components/StatusSheet';
-import { TileIcon } from '@/components/tile/TileIcons';
 import { useTilePeople } from '@/components/Mosaic';
 import { Segmented, EditCard } from '@/components/edit/fields';
 import { DetailImage } from '@/components/detail/DetailImage';
 import { Toolbar, TOOLBAR_SPACE } from '@/components/detail/Toolbar';
-import { Glyph, GLYPHS, HeadButton } from '@/components/detail/parts';
+import { HeadButton } from '@/components/detail/parts';
 import { KaufView, NotesCard, OutfitsCard, SetCard, StatTiles, SteckbriefView } from '@/components/detail/sections';
 import { CareConfirmSheet, ReserveSheet, type HoldRow } from '@/components/detail/sheets';
 import { WishDetail } from '@/components/detail/WishDetail';
+import { Icon } from '@/components/Icon';
 
 export default function Teil() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -141,7 +141,7 @@ function ClosetDetail({ id }: { id: string }) {
     <>
       {card && (
         <View style={[s.statusCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
-          <View style={[s.statusIcon, { borderColor: t.hairline }]}><TileIcon name={card.icon} color={t.ink} size={20} /></View>
+          <View style={[s.statusIcon, { borderColor: t.hairline }]}><Icon name={card.icon} size="row" color={t.ink} /></View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink }}>{card.title}</Text>
             {card.details.length > 0 && <Text style={{ fontSize: 13, color: t.inkMuted }}>{card.details.join(' · ')}</Text>}
@@ -207,12 +207,12 @@ function ClosetDetail({ id }: { id: string }) {
 
       <Toolbar
         left={[
-          { label: `Status: ${statusDef(statusKey(it.status)).label}, ändern`, icon: (c) => <TileIcon name={statusKey(it.status)} color={c} size={detail.toolbar.icon} />, onPress: (_e, g) => setMenu(g) },
-          { label: reservedToday ? 'Reserviert – neue Reservierung' : 'Reservieren', active: reservedToday, icon: (c) => <Glyph d={GLYPHS.reserve} color={c} />, onPress: () => setReserve(true) },
+          { label: `Status: ${statusDef(statusKey(it.status)).label}, ändern`, icon: (c) => <Icon name={statusKey(it.status)} size="button" color={c} />, onPress: (_e, g) => setMenu(g) },
+          { label: reservedToday ? 'Reserviert – neue Reservierung' : 'Reservieren', active: reservedToday, icon: (c) => <Icon name="calendar" size="button" color={c} />, onPress: () => setReserve(true) },
         ]}
-        right={[{ label: 'Outfit damit', icon: (c) => <Glyph d={GLYPHS.dice} color={c} />, onPress: () => router.push(`/outfit-bauen?item=${id}`) }]}
+        right={[{ label: 'Outfit damit', icon: (c) => <Icon name="outfitNew" size="button" color={c} />, onPress: () => router.push(`/outfit-bauen?item=${id}`) }]}
         main={{ label: wornToday ? 'Heute getragen – entfernen' : 'Heute tragen', active: wornToday, disabled: busy, onPress: toggleWorn,
-          icon: (c) => <Glyph d={wornToday ? GLYPHS.check : GLYPHS.wornToday} size={24} color={c} stroke={2.2} /> }}
+          icon: (c) => <Icon name={wornToday ? 'check' : 'wornToday'} size="bar" color={c} /> }}
       />
 
       <StatusMenu open={!!menu} anchor={menu} current={statusKey(it.status)} onPick={pickStatus} onClose={() => setMenu(null)} />

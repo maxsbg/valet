@@ -12,8 +12,9 @@ import { useScreen } from '@/lib/useScreen';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
 import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, SEASON_FILTERS, type SortId, type Filters } from '@/lib/sort';
 import { personKey, todayLocal } from '@/lib/wardrobe';
-import { TileIcon, CATEGORY_ICON } from '@/components/tile/TileIcons';
+import { CATEGORY_ICON } from '@valet/ui';
 import { usePersisted } from '@/lib/usePersisted';
+import { Icon } from '@/components/Icon';
 
 const kept: { cat: string | null; filters: Filters } = { cat: null, filters: NO_FILTERS };
 
@@ -64,7 +65,7 @@ export default function Schrank() {
     ...CATEGORIES.filter((c) => counts.get(c)).map((c) => ({
       key: c, label: c, count: counts.get(c), selected: cat === c, onPress: () => setCat(cat === c ? null : c),
       // Symbol wie bei den Anlass-Chips im Outfits-Tab: ClosetBar faltet Chips mit Symbol (zu: Symbol + Anzahl)
-      icon: CATEGORY_ICON[c] ? <TileIcon name={CATEGORY_ICON[c]!} color={cat === c ? t.bg : t.ink} size={18} /> : undefined,
+      icon: CATEGORY_ICON[c] ? <Icon name={CATEGORY_ICON[c]!} size="chip" color={cat === c ? t.bg : t.ink} /> : undefined,
     })),
   ];
   // Milchglas erst, wenn die Leiste oben klebt (Kopfzeile weggescrollt)
@@ -106,7 +107,7 @@ export default function Schrank() {
               {/* Rückgabe fällig (Hinweis in der App; Push-Nachricht kommt später) */}
               <Pressable accessibilityRole="button" onPress={() => router.push(`/teil/${due[0]!.id}`)} onLongPress={() => setHideDue(true)}
                 style={({ pressed }) => [s.due, { backgroundColor: t.surface, borderColor: t.accent, opacity: pressed ? 0.8 : 1 }]}>
-                <TileIcon name="lent" color={t.accent} size={20} />
+                <Icon name="lent" size="row" color={t.accent} />
                 <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>
                   {due.length === 1 ? <>Rückgabe fällig: <Text style={{ fontWeight: '600' }}>{due[0]!.name}</Text></> : `${due.length} verliehene Teile sind fällig`}
                 </Text>

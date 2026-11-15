@@ -2,10 +2,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { glowFor } from '@valet/core';
 import { itemTile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
-import { Icons } from './Icon';
 import { useTheme, radius } from '@/lib/theme';
 import type { Person, Tile } from '@/lib/wardrobe';
 import { Monogram } from './Monogram';
+import { Icon } from '@/components/Icon';
 
 // Wunschlisten-Karten (entschieden 14.11.2026, Entwurf docs/design/wunschliste/wunschlisten-karten.html):
 // Aufbau wie die Outfit-Karte (Rand, Radius 22, Infozeile mit Personenpunkt), statt Board ein 2×2-Mosaik
@@ -55,7 +55,7 @@ export function NewListCard({ width, onPress }: { width: number; onPress: () => 
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Neue Liste anlegen"
       style={({ pressed }) => [s.card, s.add, { width, backgroundColor: tone + '1F', borderColor: tone + '73', transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-      <View style={[s.plus, { borderColor: tone + '73' }]}><Icons.plus color={tone} size={22} /></View>
+      <View style={[s.plus, { borderColor: tone + '73' }]}><Icon name="plus" size="button" color={tone} /></View>
       <Text style={[s.addText, { color: tone }]}>Neue Liste</Text>
     </Pressable>
   );

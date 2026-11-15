@@ -14,9 +14,8 @@ import { useBottomInset } from '@/lib/bottomInset';
 import { personKey, type Person, type Wishlist } from '@/lib/wardrobe';
 import type { Picture } from '@/lib/cutout';
 import { Page, STICKY } from '@/components/Page';
-import { TileIcon, type TileIconName } from '@/components/tile/TileIcons';
 import { Capsule, DateField, FieldLabel, HeadButton, Hint, IconCircle, Monogram, TextField, Wrap } from '@/components/detail/parts';
-import { DetailIcon, SEASON_ICON, type DetailIconName } from '@/components/detail/DetailIcons';
+import { SEASON_ICON } from '@valet/ui';
 import {
   ColorDot, EditCard, EditRow, KiBadge, NotesField, Pair, PlainRow, RankBadge, Segmented, Stepper, SymbolSwitch, ValueCapsule, ValueCircle, ValueScale,
 } from './fields';
@@ -25,6 +24,8 @@ import { EditImage } from './EditImage';
 import { InfoSheet } from './InfoSheet';
 import { SetPicker, type SetDraft } from './SetPicker';
 import type { Tile } from '@/lib/wardrobe';
+import { Icon } from '@/components/Icon';
+import type { SymbolName } from '@valet/ui';
 
 type Side = 'a' | 'b';
 const WISH_ORDER: WishTag[] = ['nextcop', 'grail', 'watchlist', 'someday', 'gift'];
@@ -127,16 +128,16 @@ export function ItemEditor(p: Props) {
         ),
         (last) => (
           <EditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')} last={last}
-            values={SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><DetailIcon name={SEASON_ICON[x]!} color={t.bg} /></ValueCircle>)}>
+            values={SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.bg} /></ValueCircle>)}>
             <Wrap>{SEASONS.map((x) => <Capsule key={x} label={x} selected={f.seasons.includes(x)} onPress={() => set('seasons', toggleIn(f.seasons, x))}
-              icon={(c) => <DetailIcon name={SEASON_ICON[x]!} size={18} color={c} />} />)}</Wrap>
+              icon={(c) => <Icon name={SEASON_ICON[x]!} size="chip" color={c} />} />)}</Wrap>
           </EditRow>
         ),
         (last) => colorRow('a', last),
         fx.reversible && ((last) => (
           <PlainRow label="Wendbar" inset last={last}>
             <SymbolSwitch on={f.reversible} label="Wendbar" onToggle={() => set('reversible', !f.reversible)}>
-              {(c) => <TileIcon name="reversible" color={c} size={20} />}
+              {(c) => <Icon name="reversible" size="row" color={c} />}
             </SymbolSwitch>
           </PlainRow>
         )),
@@ -146,7 +147,7 @@ export function ItemEditor(p: Props) {
             below={p.set!.draft.on ? <SetPicker draft={p.set!.draft} onChange={p.set!.onChange} items={p.set!.items} width={col}
               current={{ id: p.set!.currentId, name: f.name.trim(), setId: p.set!.setId, thumb: p.pics.a?.preview ?? p.current.a, kind: layoutKind(f.category, f.subcategory), hex: p.hex }} /> : null}>
             <SymbolSwitch on={p.set!.draft.on} label="Set" onToggle={() => p.set!.onChange({ ...p.set!.draft, on: !p.set!.draft.on })}>
-              {(c) => <DetailIcon name="link" size={20} color={c} />}
+              {(c) => <Icon name="link" size="row" color={c} />}
             </SymbolSwitch>
           </PlainRow>
         )),
@@ -192,8 +193,8 @@ export function ItemEditor(p: Props) {
         fx.weather && ((last) => (
           <EditRow label="Wetter" open={!!open.weather} onToggle={() => toggle('weather')} ai={ai('warmth') || ai('rain')} last={last}
             values={[
-              ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <DetailIcon name="thermo" size={16} color={c} />} />] : []),
-              ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <DetailIcon name="drop" size={16} color={c} />} />] : []),
+              ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <Icon name="thermo" size="inline" color={c} />} />] : []),
+              ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <Icon name="drop" size="inline" color={c} />} />] : []),
             ]}>
             <WeatherPicker warmth={f.warmth} rain={f.rain} onWarmth={(v) => set('warmth', v)} onRain={(v) => set('rain', v)} />
           </EditRow>
@@ -218,7 +219,7 @@ export function ItemEditor(p: Props) {
               const g = CARE.find((x) => x.key === c.group)!;
               const o = g.options.find((x) => x.id === c.v);
               return <ValueCircle key={c.group} a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={c.src === 'geschaetzt'}>
-                <DetailIcon name={c.v as DetailIconName} size={22} color={c.src === 'geschaetzt' ? t.inkMuted : t.bg} />
+                <Icon name={c.v as SymbolName} size="button" color={c.src === 'geschaetzt' ? t.inkMuted : t.bg} />
               </ValueCircle>;
             })}>
             <CarePicker care={f.care} onChange={(c) => set('care', c)} />
@@ -246,7 +247,7 @@ export function ItemEditor(p: Props) {
           </Pair>
         )}
         <PlainRow label="Geschenk" last>
-          <SymbolSwitch on={f.gift} label="Geschenk" onToggle={() => set('gift', !f.gift)}>{(c) => <TileIcon name="gift" color={c} size={20} />}</SymbolSwitch>
+          <SymbolSwitch on={f.gift} label="Geschenk" onToggle={() => set('gift', !f.gift)}>{(c) => <Icon name="gift" size="row" color={c} />}</SymbolSwitch>
         </PlainRow>
         {f.gift ? (
           <View style={{ gap: 12 }}>
@@ -343,7 +344,7 @@ export function ItemEditor(p: Props) {
         <FieldLabel>Kategorie{f.wishTag ? ` · ${WISH_LABEL[f.wishTag]}` : ''}</FieldLabel>
         <Wrap>{WISH_ORDER.map((w) => (
           <IconCircle key={w} a11y={WISH_LABEL[w]} selected={f.wishTag === w} onPress={() => set('wishTag', pickOne(f.wishTag, w))}>
-            <TileIcon name={w as TileIconName} color={f.wishTag === w ? t.bg : t.ink} size={20} />
+            <Icon name={w as SymbolName} size="row" color={f.wishTag === w ? t.bg : t.ink} />
           </IconCircle>
         ))}</Wrap>
       </View>

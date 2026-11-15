@@ -5,12 +5,10 @@ import { Page } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatEur } from '@valet/core';
-import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
 import { OutfitBoard } from '@/components/OutfitBoard';
 import { ExportSheet } from '@/components/ExportSheet';
 import { canExport, fileName, outfitPng } from '@/lib/share';
-import { TileIcon } from '@/components/tile/TileIcons';
 import { Chip, RoundButton, Empty, useToast } from '@/components/ui';
 import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
@@ -18,6 +16,7 @@ import { useBottomInset } from '@/lib/bottomInset';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
 import { addDays, allOccasions, clashes, fmtLong, fmtShort, outfitValue, planOutfit, setOccasions, unplanOutfit } from '@/lib/outfits';
+import { Icon } from '@/components/Icon';
 
 export default function OutfitDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -125,12 +124,12 @@ export default function OutfitDetail() {
           <View style={s.actions}>
             <Pressable onPress={wearToday} disabled={busy || plannedToday} accessibilityRole="button"
               style={({ pressed }) => [s.btn, { backgroundColor: plannedToday ? t.surface : t.action, borderColor: plannedToday ? t.hairline : t.action, opacity: pressed ? 0.85 : 1 }]}>
-              {plannedToday && <Icons.check color={t.ink} size={18} />}
+              {plannedToday && <Icon name="check" size="chip" color={t.ink} />}
               <Text style={{ fontSize: 17, fontWeight: '600', color: plannedToday ? t.ink : t.onAction }}>{plannedToday ? 'Heute getragen' : 'Heute tragen'}</Text>
             </Pressable>
             <Pressable onPress={() => { setDate(addDays(today, 1)); setWho(me?.id ?? persons[0]?.id ?? null); setPlanning(true); }} accessibilityRole="button"
               style={({ pressed }) => [s.btn, { backgroundColor: t.surface, borderColor: t.hairline, opacity: pressed ? 0.85 : 1 }]}>
-              <Icons.calendar color={t.ink} size={18} />
+              <Icon name="calendar" size="chip" color={t.ink} />
               <Text style={{ fontSize: 17, fontWeight: '600', color: t.ink }}>Für Tag planen</Text>
             </Pressable>
           </View>
@@ -139,7 +138,7 @@ export default function OutfitDetail() {
           <View style={s.wrap}>
             {occList.map((x) => {
               const on = o.occasions.includes(x);
-              return <Chip key={x} label={x} selected={on} icon={<TileIcon name={occasionOf(x)!.icon} color={on ? t.bg : t.ink} size={16} />} onPress={() => toggleOcc(x)} />;
+              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.bg : t.ink} />} onPress={() => toggleOcc(x)} />;
             })}
           </View>
 
@@ -210,10 +209,10 @@ function TopBar({ onBack, onEdit, onShare }: { onBack: () => void; onEdit?: () =
   const t = useTheme();
   return (
     <View style={s.top}>
-      <RoundButton label="Zurück" onPress={onBack}><Icons.back color={t.ink} /></RoundButton>
+      <RoundButton label="Zurück" onPress={onBack}><Icon name="back" size="button" color={t.ink} /></RoundButton>
       <View style={{ flexDirection: 'row', gap: space.xs }}>
-        {onShare && <RoundButton label="Als Bild teilen" onPress={onShare}><Icons.share color={t.ink} /></RoundButton>}
-        {onEdit && <RoundButton label="Bearbeiten" onPress={onEdit}><Icons.pencil color={t.ink} /></RoundButton>}
+        {onShare && <RoundButton label="Als Bild teilen" onPress={onShare}><Icon name="share" size="button" color={t.ink} /></RoundButton>}
+        {onEdit && <RoundButton label="Bearbeiten" onPress={onEdit}><Icon name="edit" size="button" color={t.ink} /></RoundButton>}
       </View>
     </View>
   );

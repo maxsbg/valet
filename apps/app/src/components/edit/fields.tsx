@@ -5,8 +5,8 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import { colorHex, rankInk, MULTICOLOR, MULTICOLOR_STOPS } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme, DISPLAY } from '@/lib/theme';
-import { DetailIcon } from '@/components/detail/DetailIcons';
 import { FieldLabel, Wrap } from '@/components/detail/parts';
+import { Icon } from '@/components/Icon';
 
 const D = detail;
 const web = Platform.OS === 'web';
@@ -67,7 +67,7 @@ export function EditRow({ label, open, onToggle, values, ai, last, children }: {
         <View style={s.rowValues}>
           {values.length ? <Wrap gap={6} align="end">{values}</Wrap> : <Text style={{ fontSize: 15, color: t.inkMuted, textAlign: 'right' }}>Auswählen</Text>}
         </View>
-        <Animated.View style={{ transform: [{ rotate }] }}><DetailIcon name="chevronDown" size={16} color={t.inkMuted} /></Animated.View>
+        <Animated.View style={{ transform: [{ rotate }] }}><Icon name="chevron" size="inline" rotate={90} color={t.inkMuted} /></Animated.View>
       </Pressable>
       {open && <View style={{ gap: 14 }}>{children}</View>}
     </View>
@@ -203,11 +203,11 @@ export function Stepper({ value, onChange, min = 1 }: { value: number; onChange:
   return (
     <View style={[s.stepper, { backgroundColor: t.surfaceSunken, borderColor: t.hairline }]}>
       <Pressable accessibilityRole="button" accessibilityLabel="eins weniger" disabled={value <= min} onPress={() => onChange(value - 1)} style={s.stepBtn}>
-        <Text style={{ fontSize: 22, color: value <= min ? t.hairline : t.ink }}>−</Text>
+        <Icon name="minus" size="row" color={value <= min ? t.hairline : t.ink} />
       </Pressable>
       <Text aria-live="polite" style={{ minWidth: 28, textAlign: 'center', fontSize: 16, fontWeight: '600', color: t.ink, fontVariant: ['tabular-nums'] }}>{value}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel="eins mehr" onPress={() => onChange(value + 1)} style={s.stepBtn}>
-        <Text style={{ fontSize: 22, color: t.ink }}>+</Text>
+        <Icon name="plus" size="row" color={t.ink} />
       </Pressable>
     </View>
   );

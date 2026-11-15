@@ -9,7 +9,7 @@ import { canCutout, cutout, original, type Picture } from '@/lib/cutout';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemPicture } from '@/components/ItemPicture';
 import { TileIcon } from '@/components/tile/TileIcons';
-import { DetailIcon } from '@/components/detail/DetailIcons';
+import { Icon } from '@/components/Icon';
 
 const I = detail.image;
 const web = Platform.OS === 'web';
@@ -76,7 +76,7 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
           <>
             <Pressable accessibilityRole="button" accessibilityLabel={`Wenden, zeigt ${sideName}`} onPress={() => setSide(side === 'a' ? 'b' : 'a')}
               style={[s_.badge, badgeGlass]}>
-              <TileIcon name="reversible" color="#2a1a1d" size={detail.image.badgeIcon} />
+              <TileIcon name="reversible" color="#2a1a1d" scale={detail.image.badgeIcon / itemTile.badge.icon.size} />
             </Pressable>
             <View pointerEvents="none" style={[s_.sidePill, badgeGlass]}><Text style={s_.pillText}>{sideName}</Text></View>
           </>
@@ -84,15 +84,15 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
         <View style={s_.actions}>
           {onChangePhoto && side === 'a' ? (
             <Pressable accessibilityRole="button" onPress={onChangePhoto} style={[s_.action, badgeGlass]}>
-              <DetailIcon name="camera" size={16} color="#2a1a1d" /><Text style={s_.pillText}>{changeLabel}</Text>
+              <Icon name="camera" size="inline" color="#2a1a1d" /><Text style={s_.pillText}>{changeLabel}</Text>
             </Pressable>
           ) : canCutout ? (
             <PhotoPicker onPick={flow.pick} label={changeLabel}>
-              <View style={[s_.action, badgeGlass]}><DetailIcon name="camera" size={16} color="#2a1a1d" /><Text style={s_.pillText}>{changeLabel}</Text></View>
+              <View style={[s_.action, badgeGlass]}><Icon name="camera" size="inline" color="#2a1a1d" /><Text style={s_.pillText}>{changeLabel}</Text></View>
             </PhotoPicker>
           ) : <View />}
           <Pressable accessibilityRole="button" onPress={onInfo} style={[s_.action, badgeGlass]}>
-            <DetailIcon name="sparkle" size={16} color="#2a1a1d" /><Text style={s_.pillText}>Infos auslesen</Text>
+            <Icon name="sparkle" size="inline" color="#2a1a1d" /><Text style={s_.pillText}>Infos auslesen</Text>
           </Pressable>
         </View>
       </View>

@@ -186,7 +186,7 @@ export function priceLabel(n: number | null | undefined): string | null {
 
 /**
  * Kategorie eines Wunschteils, höchstens eine pro Teil. Keine Liste – nur Plakette oben links, Filter und Suche.
- * Symbole: TILE_ICONS in apps/app/src/components/tile/TileIcons.tsx (gleiche Schlüssel).
+ * Symbole: gleiche Schlüssel im Symbol-Pool (SYMBOLS in packages/ui/src/symbols.ts).
  */
 export const WISH_TAGS = [
   { id: 'grail', label: 'Grail' },         // Krone
