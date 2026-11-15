@@ -1,7 +1,8 @@
 // Statistik – Rechnungen wie im alten Valet (Ausgaben, Getragen, Bestand)
 import { qtyOf, totalPaid } from './money';
 import { daysSince, todayISO, wearDates } from './wear';
-import { SIDE_CATEGORIES } from './catalog';
+import { SIDE_CATEGORIES } from './categories';
+import type { Season } from './attributes';
 import type { Outfit, WearLog } from './model';
 
 export interface StatItem {
@@ -90,10 +91,10 @@ export function spendStats(all: StatItem[], personId: string | null, personIds: 
 /** Zeitraum der Getragen-Auswertung */
 export type WearPeriod = '30' | 'year' | 'all';
 
-/** Aktuelle Saison (wie die Saison-Angabe an den Teilen): Nov–Feb Winter, Jun–Aug Sommer, sonst Übergang */
-export function seasonOf(iso: string): 'Winter' | 'Sommer' | 'Übergang' {
+/** Aktuelle Saison (wie die Saison-Angabe an den Teilen): Mär–Mai Frühling, Jun–Aug Sommer, Sep–Okt Herbst, Nov–Feb Winter */
+export function seasonOf(iso: string): Season {
   const m = Number(iso.slice(5, 7));
-  return m >= 11 || m <= 2 ? 'Winter' : m >= 6 && m <= 8 ? 'Sommer' : 'Übergang';
+  return m >= 11 || m <= 2 ? 'Winter' : m <= 5 ? 'Frühling' : m <= 8 ? 'Sommer' : 'Herbst';
 }
 
 const shiftISO = (iso: string, n: number) => {

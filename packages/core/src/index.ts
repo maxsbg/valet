@@ -8,3 +8,7 @@ export * from './board';
 export * from './stats';
 export * from './tile';
 export * from './occasions';
+export * from './categories';
+export * from './attributes';
+export * from './layout';
+export * from './import/categorize';

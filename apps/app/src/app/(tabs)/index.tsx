@@ -51,14 +51,14 @@ export default function Schrank() {
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return inCloset.filter((i) => (!cat || i.category === cat) &&
-      (!q || [i.name, i.brand, i.color].some((f) => f?.toLowerCase().includes(q))));
+      (!q || [i.name, i.brand, i.color, i.category, i.subcategory, i.type, ...i.colors].some((f) => f?.toLowerCase().includes(q))));
   }, [inCloset, cat, query]);
 
   const barW = scr.content + 2 * space.md;
   const chips = [
     { key: 'alle', label: 'Alle', count: inCloset.length, selected: !cat, onPress: () => setCat(null) },
-    ...CATEGORIES.filter((c) => counts.get(c.id)).map((c) => ({
-      key: c.id, label: c.label, count: counts.get(c.id), selected: cat === c.id, onPress: () => setCat(cat === c.id ? null : c.id),
+    ...CATEGORIES.filter((c) => counts.get(c)).map((c) => ({
+      key: c, label: c, count: counts.get(c), selected: cat === c, onPress: () => setCat(cat === c ? null : c),
     })),
   ];
   // Milchglas erst, wenn die Leiste oben klebt (Kopfzeile weggescrollt)

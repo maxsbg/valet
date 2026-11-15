@@ -1,10 +1,12 @@
 import { supabase } from './supabase';
 import { imageUrl, todayLocal } from './wardrobe';
 import type { Picture } from './cutout';
-import type { ItemStatus } from '@valet/core';
+import { migrateSeasons, normalizeCategory, type ItemStatus } from '@valet/core';
 
 export type ItemRow = {
   id: string; wardrobe_id: string; owner_id: string | null; owner_ids: string[] | null; highlight_color: string | null; name: string; brand: string | null; category: string;
+  /** Unterkategorie und Typ (neue Liste); category kann bis zur Umstellung noch eine alte ID sein → loadItem rechnet um */
+  subcategory: string | null; item_type: string | null;
   color: string | null; alt_color: string | null; size: string | null; material: string | null; style: string | null;
   seasons: string[] | null; qty: number | null; price_paid: number | null; list_price: number | null; purchase_date: string | null;
   shop: string | null; link: string | null; notes: string | null; status: ItemStatus | null;
@@ -28,7 +30,10 @@ export async function loadItem(id: string): Promise<ItemDetail> {
     .map((r) => r.outfits)
     .filter((o): o is O => !!o)
     .map((o) => ({ id: o.id, name: o.name, occasions: o.occasions, planDates: o.outfit_plans.map((p) => p.plan_date) }));
-  return { item: it.data as ItemRow, wears: (wears.data ?? []).map((w) => w.worn_on as string), outfits };
+  const row = it.data as ItemRow;
+  const path = normalizeCategory(row);
+  const item: ItemRow = { ...row, category: path.category ?? '', subcategory: path.subcategory, item_type: path.type, seasons: migrateSeasons(row.seasons) };
+  return { item, wears: (wears.data ?? []).map((w) => w.worn_on as string), outfits };
 }
 
 /** Tage, an denen das Teil getragen wurde: einzeln eingetragen + geplante Outfits bis heute (wie im alten Valet) */
@@ -53,7 +58,7 @@ export async function setStatus(itemId: string, status: ItemRow['status'], lentT
   if (r.error) throw r.error;
 }
 
-export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'owner_id' | 'owner_ids' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible' | 'is_wish' | 'wishlist_id' | 'wish_tag'>>;
+export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'subcategory' | 'item_type' | 'owner_id' | 'owner_ids' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible' | 'is_wish' | 'wishlist_id' | 'wish_tag'>> & { styles?: string[] };
 
 export async function updateItem(id: string, change: ItemChange) {
   const r = await supabase.from('items').update(change).eq('id', id);

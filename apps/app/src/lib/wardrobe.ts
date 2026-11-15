@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { personText } from '@valet/ui';
-import { isWishTag, type WishTag, type ItemStatus } from '@valet/core';
+import { isWishTag, layoutKind, migrateSeasons, normalizeCategory, type LayoutKind, type WishTag, type ItemStatus } from '@valet/core';
 import { loadOutfits, todayIds, todayWho, type Hold, type Outfit, type Wear } from './outfits';
 import type { PersonLook } from '@/components/ItemTile';
 
@@ -9,7 +9,16 @@ export type Tile = {
   id: string;
   name: string;
   brand: string | null;
+  /** Kategorie, Unterkategorie, Typ (neue feste Liste aus packages/core; alte Daten werden beim Laden umgerechnet) */
   category: string;
+  subcategory: string | null;
+  type: string | null;
+  /** Grobe Form für Mosaik-Höhe, Platzhalter und Outfit-Board */
+  kind: LayoutKind;
+  /** Lagen 0 Unterlage … 3 Außen (Set-Reihenfolge) */
+  layers: number[];
+  /** Farben (Rang = Reihenfolge) */
+  colors: string[];
   color: string | null;
   /** Spiegel von owner_id für Auswertungen: genau ein Besitzer → dessen ID, sonst null */
   ownerId: string | null;
@@ -74,7 +83,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,color,owner_id,owner_ids,highlight_color,status,qty,reversible,main_side,set_id,is_wish,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,subcategory,item_type,colors,layers,color,owner_id,owner_ids,highlight_color,status,qty,reversible,main_side,set_id,is_wish,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
     supabase.from('wishlists').select('id,name,owner_id,item_order,created_at').eq('wardrobe_id', w.id).order('created_at'),
@@ -93,11 +102,16 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     const top = [...c].sort((a, b) => b.s - a.s)[0];
     if (top?.h) colorsBy.set(key, top.h);
   }
-  const tiles: Tile[] = (items.data ?? []).map((i) => ({
+  const tiles: Tile[] = (items.data ?? []).map((i) => { const path = normalizeCategory(i); return {
     id: i.id,
     name: i.name,
     brand: i.brand,
-    category: i.category ?? 'sonstiges',
+    category: path.category ?? '',
+    subcategory: path.subcategory,
+    type: path.type,
+    kind: layoutKind(path.category, path.subcategory),
+    layers: i.layers ?? [],
+    colors: i.colors ?? [],
     color: i.color,
     ownerId: i.owner_id,
     owners: i.owner_ids ?? [],
@@ -117,7 +131,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     material: i.material,
     createdAt: i.created_at,
     purchaseDate: i.purchase_date,
-    seasons: i.seasons ?? [],
+    seasons: migrateSeasons(i.seasons),
     style: i.style,
     hex: pick(colorsBy, i.id, i.main_side) ?? nameToHex(i.color),
     highlight: i.highlight_color ?? null,
@@ -125,7 +139,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     thumbBack: i.reversible ? other(thumbBy, i.id, i.main_side) : null,
     image: pick(imageBy, i.id, i.main_side),
     imageBack: i.reversible ? other(imageBy, i.id, i.main_side) : null,
-  }));
+  }; });
   const ids = new Set(tiles.map((t) => t.id));
   const wears = rest.wears.filter((x) => ids.has(x.itemId));
   const holds = rest.holds.filter((x) => ids.has(x.itemId));

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { isFlipped, setFlipped } from '@/lib/flipped';
 import { Animated, Easing, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
+import { layoutKind, glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
 import { Glass, Mono, Num, Price, WaitRing } from './tile/TileBadge';
@@ -29,9 +29,11 @@ const T = itemTile;
 const B = T.badge;
 const web = Platform.OS === 'web';
 
-/** Seitenverhältnis (Höhe : Breite) im Mosaik je Kategorie – wie im alten Valet. */
-export const RATIO: Record<string, number> = { mantel: 1.6, hose: 1.45, jacke: 1.2, pullover: 1.15, oberteil: 1.1, sport: 1.1, shorts: 0.95, tasche: 0.95, schuhe: 0.72, accessoire: 0.72 };
-export const tileHeight = (category: string, width: number) => Math.round(width * (RATIO[category] ?? 0.9));
+/** Seitenverhältnis (Höhe : Breite) im Mosaik je Form (layoutKind) – wie im alten Valet, dazu Kleid, Rock, Kopf. */
+export const RATIO: Record<string, number> = { mantel: 1.6, kleid: 1.55, hose: 1.45, jacke: 1.2, pullover: 1.15, oberteil: 1.1, sport: 1.1, rock: 1.05, shorts: 0.95, tasche: 0.95, schuhe: 0.72, kopf: 0.72, accessoire: 0.72 };
+/** Kachelhöhe; nimmt die Form (kind) oder notfalls die Kategorie */
+export const tileHeight = (kindOrCategory: string, width: number) =>
+  Math.round(width * (RATIO[kindOrCategory] ?? RATIO[layoutKind(kindOrCategory)] ?? 0.9));
 
 
 /** Darstellung einer Person auf der Kachel */
@@ -50,6 +52,8 @@ export type TileItem = {
   id?: string;
   name: string;
   category: string;
+  /** Grobe Form (layoutKind) für Höhe und Platzhalter */
+  kind?: string;
   /** Hauptfarbe (Farbanalyse) */
   hex: string | null;
   /** zweite, auffällige Farbe am Teil */
@@ -94,7 +98,7 @@ type Props = {
 };
 
 export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend }: Props) {
-  const h = height ?? tileHeight(item.category, width);
+  const h = height ?? tileHeight(item.kind ?? item.category, width);
   const glow = glowFor(item.hex, item.highlight);
   const away = isAway(item.status);
   const tr = topRightFor(item.reversible, item.qty);
@@ -127,12 +131,12 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
     >
       <Animated.View style={[StyleSheet.absoluteFill, away && s.away, away && awayWeb, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null, flip.style]}>
         <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
-          <ItemPicture uri={item.thumb} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
+          <ItemPicture uri={item.thumb} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
         </View>
         {/* Rückseite erst nach dem ersten Tippen laden, dann beide behalten (kein Aufblitzen beim Zurückdrehen) */}
         {flip.loaded && (
           <View style={[StyleSheet.absoluteFill, !flip.back && s.hidden]}>
-            <ItemPicture uri={flip.loaded} category={item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
+            <ItemPicture uri={flip.loaded} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
           </View>
         )}
       </Animated.View>

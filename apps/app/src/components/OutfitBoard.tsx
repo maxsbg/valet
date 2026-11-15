@@ -33,7 +33,7 @@ export function OutfitBoard({ pieces, byId, width, full, radius = 0 }: Props) {
             {uri ? (
               <Image source={{ uri }} resizeMode="contain" style={StyleSheet.absoluteFill} accessibilityIgnoresInvertColors />
             ) : (
-              <ItemPicture uri={null} inset={0} category={it.category} color={it.hex ?? '#c4bfb4'} />
+              <ItemPicture uri={null} inset={0} category={it.kind} color={it.hex ?? '#c4bfb4'} />
             )}
           </View>
         );

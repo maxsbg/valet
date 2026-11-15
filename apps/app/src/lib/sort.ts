@@ -1,3 +1,4 @@
+import { SEASONS } from '@valet/core';
 import type { Tile } from './wardrobe';
 
 export const SORTS = [
@@ -41,7 +42,7 @@ export type Filters = { person: string | null; seasons: string[]; out?: boolean 
 export const NO_FILTERS: Filters = { person: null, seasons: [], out: false };
 export const filterCount = (f: Filters) => (f.person ? 1 : 0) + f.seasons.length + (f.out ? 1 : 0);
 
-export const SEASON_FILTERS = ['Sommer', 'Übergang', 'Winter'];
+export const SEASON_FILTERS: readonly string[] = SEASONS;
 
 /** Innerhalb der Saisons „oder“, zwischen Person und Saison „und“. */
 export function applyFilters(items: Tile[], f: Filters): Tile[] {

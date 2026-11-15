@@ -24,3 +24,8 @@ test('Gesamtpreis = Stückpreis × Menge', () => {
 test('Umrechnung GBP→EUR wie im Bestand (587,95 × 1,18)', () => {
   assert.equal(convert(587.95, 1.18), 693.78);
 });
+
+test('Preis gilt je Stück: Ausgaben = Preis × Anzahl (Regel 15.11.2026)', () => {
+  assert.equal(totalPaid({ pricePaid: 24.98, qty: 2 }), 49.96);
+  assert.equal(totalPaid({ pricePaid: 35, qty: 1 }), 35);
+});

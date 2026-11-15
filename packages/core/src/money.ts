@@ -24,3 +24,27 @@ export const convert = (amount: number, rate: number): number =>
 
 export const formatEur = (n: number | null | undefined): string =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n ?? 0);
+
+/**
+ * Preis-Anzeige der Detailseiten (Spec 1): unter 100 € mit Cent (8,43 €, 59,00 €),
+ * ab 100 € ganze Euro mit Tausenderpunkt (143 €, 4.643 €).
+ */
+export function formatPrice(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '–';
+  const a = Math.abs(n);
+  const s = a < 100
+    ? a.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : Math.round(a).toLocaleString('de-DE', { maximumFractionDigits: 0 });
+  return `${n < 0 ? '−' : ''}${s} €`;
+}
+
+/** Gleiche Anteile in Cent, Rest auf die ersten verteilen (59,00 € / 2 → 29,50 + 29,50; 10 € / 3 → 3,34 + 3,33 + 3,33). */
+export function equalSplit(total: number, n: number): number[] {
+  if (n <= 0) return [];
+  const cents = Math.round(total * 100), base = Math.floor(cents / n), rest = cents - base * n;
+  return Array.from({ length: n }, (_, i) => (base + (i < rest ? 1 : 0)) / 100);
+}
+
+/** Summenprüfung der Aufteilung: 0 = passt, > 0 = es fehlt noch, < 0 = zu viel (auf Cent gerundet). */
+export const splitGap = (total: number, amounts: readonly (number | null)[]): number =>
+  Math.round((total - amounts.reduce<number>((a, b) => a + (b ?? 0), 0)) * 100) / 100;
