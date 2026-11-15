@@ -77,7 +77,7 @@ export const SYMBOLS = {
   link: { group: 'bedienung', meaning: 'Set: verknüpfte Teile', uses: ['Set-Schalter in Bearbeiten'],
     els: ['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'], src: 'Lucide' },
   camera: { group: 'bedienung', meaning: 'Foto aufnehmen/ändern', uses: ['Foto ändern', 'Quelle „Kamera“'],
-    els: ['M5 7.5h1.8l1.7-2.5h7l1.7 2.5H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5a2 2 0 0 1 2-2z', 'c:12,13,3.5'] },
+    els: ['M5 7.5h1.8l1.7-2.5h7l1.7 2.5H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5a2 2 0 0 1 2-2z', 'c:12,12.5,3.2'] },
   photos: { group: 'bedienung', meaning: 'Aus den Fotos wählen', uses: ['Quelle „Fotos“'],
     els: ['M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z', 'c:9,10,1.6', 'M21 16l-5-5-8 8'], src: 'Lucide' },
   label: { group: 'bedienung', meaning: 'Etikett', uses: ['Infos aus dem Etikett', 'Etikett im Steckbrief'],
