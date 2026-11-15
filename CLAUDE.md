@@ -30,7 +30,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - Zugriff über RLS mit `is_member(wardrobe_id)`. Schrank „Max & Paul“: `e3601e23-…`.
 - Tabellen: wardrobes, wardrobe_members, wardrobe_invites, persons (color 'Rosa'/'Rot', item_order), wishlists, items (Besitzer in `owner_ids uuid[]`, mehrere möglich, kein „gemeinsam“; `owner_id` nur Spiegel für die Statistik: genau einer → dessen ID, sonst null; `highlight_color`), item_images (colors jsonb `[{h,s}]`), wears (PK item_id+worn_on), outfits, outfit_items, outfit_plans, reservations, daily_suggestions, cutout_feedback.
 - `outfit_plans` hat **keine** direkte Verbindung zu `outfit_items` → über `outfits(outfit_items(item_id))` laden. Abfragen immer gegen die echte DB prüfen.
-- Testkonto `claude-test@valet.invalid` (Schrank `c9fcb483-…`) kann gelöscht werden.
+- Testkonto `claude-test@valet.invalid` (Schrank „Test (Claude, wird gelöscht)“ `c9fc09ca-…`, Personen Testi/Testa) für Ende-zu-Ende-Tests von Claude mit Playwright gegen eine lokal gebaute App (15.11.2026 mit Max abgesprochen). Passwort nur im Arbeitsordner der Sitzung, nie im Repo oder Chat. Schrank „Max & Paul“ dabei nie anfassen.
 
 ## Design
 - **Schrank-Kachel** (neu, 13.11.2026): verbindlich `docs/design/kachel/VALET_KACHEL_SPEC.md` + `valet-kachel-referenz.html` (bei Widerspruch gilt die HTML). Werte in `packages/ui/src/tokens.ts` (`itemTile`), Logik in `packages/core/src/tile.ts` (glowFor, ownersFor, countLabel, topRightFor), Komponente `src/components/ItemTile.tsx` + `components/tile/`. Das Designsystem auf claude.ai ist bei der Kachel veraltet.

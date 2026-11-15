@@ -91,7 +91,8 @@ export default function Neu() {
     const r = editChange(f, { isNew: true });
     if ('error' in r) return toast.show(r.error);
     // Leere Angaben weglassen → Standardwerte der Datenbank
-    const data = Object.fromEntries(Object.entries(r.change).filter(([, v]) => v !== null && v !== ''));
+    // (category bleibt: Spalte ist „not null“, leerer Text = ohne Kategorie)
+    const data = Object.fromEntries(Object.entries(r.change).filter(([k, v]) => k === 'category' || (v !== null && v !== '')));
     setSaving(true);
     try {
       await createItem(wardrobe.id, data, picture, f.reversible ? picB : null);

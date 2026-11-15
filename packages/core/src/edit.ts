@@ -187,7 +187,8 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
   const scales = fitScalesOf(f.category).map((s) => s.key);
   const base: Record<string, unknown> = {
     name: f.name.trim(), brand: f.brand.trim(),
-    category: f.category, subcategory: f.subcategory, item_type: f.type,
+    // items.category ist „not null“ → ohne Kategorie leerer Text (beim Laden = keine Kategorie)
+    category: f.category ?? '', subcategory: f.category ? f.subcategory : null, item_type: f.category && f.subcategory ? f.type : null,
     seasons: f.seasons, colors: f.colors.slice(0, MAX_COLORS), colors_b: f.reversible ? f.colorsB.slice(0, MAX_COLORS) : [],
     pattern: f.pattern, pattern_b: f.reversible ? f.patternB : null,
     materials: f.materials, size_system: f.sizeSystem,
