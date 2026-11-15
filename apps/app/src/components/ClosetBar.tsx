@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Icons } from './Icon';
 import { Chip, useChipReveal } from './ui';
@@ -27,6 +27,7 @@ const PAD = space.md; // 16
 const GAP = 8;
 const DROP = BTN + 12; // Kategorien rutschen 12 px unter das Suchfeld
 const ROW_PAD = 8;
+const FADE = 28; // Länge des Verlaufs an den Enden der Kategorien
 
 /**
  * Leiste über dem Schrank: Lupe · Kategorien · Sortieren.
@@ -81,7 +82,7 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
     c.onPress();
     // Chip ragt aus dem sichtbaren Bereich → gerade so weit rollen, dass er (aufgeklappt) ganz zu sehen ist
     const prev = chips.find((x) => x.selected)?.key ?? null;
-    row.reveal(c.key, prev, open ? PAD : 0, open ? PAD : 28);
+    row.reveal(c.key, prev, open ? PAD : FADE, open ? PAD : FADE);
   };
 
   const boxW = v.box.interpolate({ inputRange: [0, 1], outputRange: [BTN, W - 2 * PAD - BTN - GAP] });
@@ -100,10 +101,34 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
       { scale: v.sw.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
     ],
   };
-  // Rechter Verlauf zu Sortieren: im Web als Maske (passt auf Seitenfarbe und Milchglas), sonst als Fläche in Seitenfarbe
+  // Verlauf an beiden Enden (zur Lupe und zu Sortieren), nur bei geschlossener Suche. Jede Seite wächst mit dem Weg,
+  // den die Reihe dorthin noch rollen kann (bis FADE): am Anfang links scharf, am Ende rechts scharf.
+  // Web: als Maske direkt am Element (passt auf Seitenfarbe und Milchglas, kein Neuzeichnen beim Rollen);
+  // sonst als Flächen in Seitenfarbe.
   const web = Platform.OS === 'web';
-  const mask = open ? 'linear-gradient(90deg, #000, #000)' : 'linear-gradient(90deg, #000 calc(100% - 28px), transparent)';
-  const fade = { backgroundImage: `linear-gradient(90deg, ${t.bg}00, ${t.bg})` } as object;
+  const rowWrap = useRef<React.ComponentRef<typeof View>>(null);
+  const [m] = useState(() => ({ x: 0, view: 0, content: 0, open: false, sx: new Animated.Value(0), rest: new Animated.Value(FADE) }));
+  const applyMask = () => {
+    const left = Math.min(FADE, Math.max(0, m.x));
+    const right = m.content && m.view ? Math.min(FADE, Math.max(0, m.content - m.view - m.x)) : FADE;
+    m.sx.setValue(left);
+    m.rest.setValue(right);
+    const node = rowWrap.current as unknown as HTMLElement | null;
+    if (!web || !node?.style) return;
+    const mask = m.open ? 'none' : `linear-gradient(90deg, transparent, #000 ${left}px, #000 calc(100% - ${right}px), transparent)`;
+    node.style.setProperty('mask-image', mask);
+    node.style.setProperty('-webkit-mask-image', mask);
+  };
+  useEffect(() => { m.open = open; applyMask(); });
+  const fadeL = { backgroundImage: `linear-gradient(270deg, ${t.bg}00, ${t.bg})` } as object;
+  const fadeR = { backgroundImage: `linear-gradient(90deg, ${t.bg}00, ${t.bg})` } as object;
+  const closed = v.cx.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  const scrollProps = {
+    ...row.scrollProps,
+    onScroll: (e: { nativeEvent: { contentOffset: { x: number } } }) => { row.scrollProps.onScroll(e); m.x = e.nativeEvent.contentOffset.x; applyMask(); },
+    onLayout: (e: { nativeEvent: { layout: { width: number } } }) => { row.scrollProps.onLayout(e); m.view = e.nativeEvent.layout.width; applyMask(); },
+    onContentSizeChange: (w: number) => { m.content = w; applyMask(); },
+  };
 
   return (
     <Animated.View style={{ width: W, height: v.cy.interpolate({ inputRange: [0, 1], outputRange: [BTN + 2 * ROW_PAD, BTN + 2 * ROW_PAD + DROP] }) }}>
@@ -113,8 +138,8 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
         top: v.cy.interpolate({ inputRange: [0, 1], outputRange: [ROW_PAD, ROW_PAD + DROP] }),
         left: v.cx.interpolate({ inputRange: [0, 1], outputRange: [PAD + BTN + GAP, 0] }),
         width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [W - 2 * (PAD + BTN + GAP), W] }),
-      }, web ? ({ maskImage: mask, WebkitMaskImage: mask } as object) : null]}>
-        <ScrollView ref={row.ref} {...row.scrollProps} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: GAP }}>
+      }]} ref={rowWrap}>
+        <ScrollView ref={row.ref} {...scrollProps} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: GAP }}>
           <Animated.View style={{ width: v.cx.interpolate({ inputRange: [0, 1], outputRange: [0, PAD - GAP] }) }} />
           {chips.map((c) => (
             <View key={c.key} onLayout={row.layout(c.key)}>
@@ -123,7 +148,8 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
           ))}
           <View style={{ width: PAD - GAP + 12 }} />
         </ScrollView>
-        {!web && <Animated.View pointerEvents="none" style={[s.fade, fade, { opacity: v.cx.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]} />}
+        {!web && <Animated.View pointerEvents="none" style={[s.fade, { left: 0 }, fadeL, { opacity: Animated.multiply(closed, m.sx.interpolate({ inputRange: [0, FADE], outputRange: [0, 1] })) }]} />}
+        {!web && <Animated.View pointerEvents="none" style={[s.fade, { right: 0 }, fadeR, { opacity: Animated.multiply(closed, m.rest.interpolate({ inputRange: [0, FADE], outputRange: [0, 1] })) }]} />}
       </Animated.View>
 
       {/* Lupe → Suchfeld */}
@@ -174,6 +200,6 @@ const s = StyleSheet.create({
   x: { width: 28, height: 28, borderRadius: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   round: { width: BTN, height: BTN, borderRadius: BTN / 2, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  fade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 28 },
+  fade: { position: 'absolute', top: 0, bottom: 0, width: FADE },
   dot: { width: 11, height: 11, borderRadius: 6, borderWidth: 2 },
 });
