@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSession } from '@/lib/session';
-import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
-import { personKey } from '@/lib/wardrobe';
+import { useTheme, space, radius } from '@/lib/theme';
+import { Monogram } from './Monogram';
 import { claimPerson, createInvite, inviteLink, shareLink } from '@/lib/invite';
 
 /** Personen im Schrank: wer schon ein Konto hat, wen man einladen kann, „Das bin ich“ */
@@ -38,11 +38,10 @@ export function Invite() {
   return (
     <View style={[s.box, { backgroundColor: t.surface, borderColor: t.hairline }]}>
       {persons.map((p, n) => {
-        const color = t.person[personKey(p.color)];
         const linked = !!p.user_id;
         return (
           <View key={p.id} style={[s.row, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
-            <View style={[s.av, { borderColor: color }]}><Text style={{ fontFamily: DISPLAY, fontSize: 16, color }}>{p.name.slice(0, 1).toUpperCase()}</Text></View>
+            <Monogram person={p} size={34} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 16, color: t.ink }}>{p.name}{p.id === me?.id ? ' (ich)' : ''}</Text>
               <Text style={{ fontSize: 13, color: t.inkMuted }}>{linked ? 'hat ein Konto' : 'noch kein Konto'}</Text>
@@ -82,7 +81,6 @@ function SmallBtn({ label, onPress, primary }: { label: string; onPress: () => v
 const s = StyleSheet.create({
   box: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 56, paddingVertical: 6 },
-  av: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
   btn: { borderWidth: 1, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, alignSelf: 'flex-start' },
   link: { fontSize: 13, borderWidth: 1, borderRadius: radius.sm, padding: space.xs },
 });

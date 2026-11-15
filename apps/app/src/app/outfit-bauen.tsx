@@ -127,7 +127,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
             <>
               <Text style={[s.label, { color: t.inkMuted }]}>Aus welchem Schrank?</Text>
               <View style={s.wrap}>
-                {persons.map((x) => <Chip key={x.id} label={x.id === me?.id ? 'Meinem Schrank' : x.name} dot={t.person[personKey(x.color)]} selected={src === x.id} onPress={() => setSrc(x.id)} />)}
+                {persons.map((x) => <Chip key={x.id} label={x.id === me?.id ? 'Meinem Schrank' : x.name} person={x} selected={src === x.id} onPress={() => setSrc(x.id)} />)}
                 <Chip label="Beiden" selected={src === 'all'} onPress={() => setSrc('all')} />
               </View>
             </>

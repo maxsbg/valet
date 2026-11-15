@@ -188,7 +188,7 @@ export default function OutfitDetail() {
           <>
             <SectionLabel>Wer trägt es?</SectionLabel>
             <View style={s.wrap}>
-              {persons.map((p) => <Chip key={p.id} label={p.id === me?.id ? `${p.name} (ich)` : p.name} dot={t.person[personKey(p.color)]} selected={who === p.id} onPress={() => setWho(p.id)} />)}
+              {persons.map((p) => <Chip key={p.id} label={p.id === me?.id ? `${p.name} (ich)` : p.name} person={p} selected={who === p.id} onPress={() => setWho(p.id)} />)}
             </View>
           </>
         )}

@@ -6,7 +6,8 @@ import { Sheet, SheetButton, OptionRow } from './Sheet';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 import { useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
-import { personKey } from '@/lib/wardrobe';
+import { personKey, type Person } from '@/lib/wardrobe';
+import { Monogram } from './Monogram';
 
 type Theme = ReturnType<typeof useTheme>;
 
@@ -88,16 +89,16 @@ export function RoundButton({ children, label, onPress, size = 40 }: { children:
  * nicht ausgewählt nur Symbol + Anzahl, ausgewählt Symbol + Name + Anzahl – der Chip wird dabei weich breiter
  * und der Name blendet zwischen Symbol und Anzahl ein. Bei „Bewegung reduzieren“ ohne Breiten-Animation.
  */
-export function Chip({ label, count, selected, onPress, onLongPress, dot, icon, tall, dashed, collapse, onLabelWidth }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; dot?: string; icon?: React.ReactNode; tall?: boolean; dashed?: boolean; collapse?: boolean; onLabelWidth?: (w: number) => void }) {
+export function Chip({ label, count, selected, onPress, onLongPress, person, icon, tall, dashed, collapse, onLabelWidth }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; person?: Pick<Person, 'name' | 'color'>; icon?: React.ReactNode; tall?: boolean; dashed?: boolean; collapse?: boolean; onLabelWidth?: (w: number) => void }) {
   const t = useTheme();
   const fold = !!collapse && !!icon;
   const color = selected ? t.bg : dashed ? t.inkMuted : t.ink;
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} onLongPress={onLongPress} delayLongPress={400}
       accessibilityLabel={fold ? (count != null ? `${label}, ${count}` : label) : undefined}
-      style={[s.chip, tall && s.chipTall, fold && s.chipFold, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
+      style={[s.chip, tall && s.chipTall, fold && s.chipFold, person && { paddingLeft: tall ? 7 : 6 }, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
       {icon}
-      {dot && <View style={[s.dot, { backgroundColor: dot }]} />}
+      {person && <Monogram person={person} size={tall ? 30 : 24} />}
       {fold ? <FoldLabel label={label} open={!!selected} color={color} onWidth={onLabelWidth} /> : <Text style={[s.chipText, { color }]}>{label}</Text>}
       {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }, fold && s.chipCountFold]}>{count}</Text>}
     </Pressable>
@@ -284,7 +285,6 @@ const s = StyleSheet.create({
   noWrap: (Platform.OS === 'web' ? { whiteSpace: 'nowrap' } : {}) as object,
   measureClip: { position: 'absolute', left: 0, top: 0, width: 0, height: 0, overflow: 'hidden' },
   measure: { position: 'absolute', left: 0, top: 0, width: 600, opacity: 0, flexDirection: 'row', alignItems: 'flex-start' },
-  dot: { width: 8, height: 8, borderRadius: 4 },
   fab: { position: 'absolute', zIndex: 10, right: space.md + 4, width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(0,0,0,0.28)' },
   toastWrap: { position: 'absolute', zIndex: 40, left: 0, right: 0, alignItems: 'center' },
   toast: { backgroundColor: '#2a1a1d', borderRadius: radius.pill, paddingHorizontal: 18, paddingVertical: 10, boxShadow: '0 6px 20px rgba(42,26,29,0.2)' },
