@@ -24,6 +24,8 @@ import {
 import { CarePicker, ColorPicker, FitPicker, LayersPicker, WeatherPicker } from './pickers';
 import { EditImage } from './EditImage';
 import { InfoSheet } from './InfoSheet';
+import { SetPicker, type SetDraft } from './SetPicker';
+import type { Tile } from '@/lib/wardrobe';
 
 type Side = 'a' | 'b';
 const WISH_ORDER: WishTag[] = ['nextcop', 'grail', 'watchlist', 'someday', 'gift'];
@@ -49,6 +51,8 @@ type Props = {
   onChangePhoto?: () => void;
   /** Start-Reiter (z. B. „Preis fehlt“ antippen → Kauf) */
   initialTab?: 'steck' | 'kauf';
+  /** Set (nur Schrank-Teile): Zustand, Teile des Schranks, bisheriges Set */
+  set?: { draft: SetDraft; onChange: (d: SetDraft) => void; items: Tile[]; currentId: string | null; setId: string | null };
 };
 
 export function ItemEditor(p: Props) {
@@ -119,12 +123,21 @@ export function ItemEditor(p: Props) {
             icon={(c) => <DetailIcon name={SEASON_ICON[x]!} size={18} color={c} />} />)}</Wrap>
         </EditRow>
         {colorRow('a')}
-        <PlainRow label="Wendbar">
+        <PlainRow label="Wendbar" inset>
           <SymbolSwitch on={f.reversible} label="Wendbar" onToggle={() => set('reversible', !f.reversible)}>
             {(c) => <TileIcon name="reversible" color={c} size={20} />}
           </SymbolSwitch>
         </PlainRow>
         {f.reversible && colorRow('b')}
+        {p.set && !f.isWish && (
+          <PlainRow label="Set" inset
+            below={p.set.draft.on ? <SetPicker draft={p.set.draft} onChange={p.set.onChange} items={p.set.items} width={col}
+              current={{ id: p.set.currentId, name: f.name.trim(), setId: p.set.setId }} /> : null}>
+            <SymbolSwitch on={p.set.draft.on} label="Set" onToggle={() => p.set!.onChange({ ...p.set!.draft, on: !p.set!.draft.on })}>
+              {(c) => <DetailIcon name="link" size={20} color={c} />}
+            </SymbolSwitch>
+          </PlainRow>
+        )}
         {textRow('pattern', f.reversible ? 'Muster Seite A' : 'Muster', PATTERNS)}
         {f.reversible && textRow('patternB', 'Muster Seite B', PATTERNS)}
         <EditRow label="Material" open={!!open.material} onToggle={() => toggle('material')} ai={ai('materials')}

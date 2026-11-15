@@ -13,12 +13,11 @@ import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY } from '@/lib/theme';
 import { useBottomInset } from '@/lib/bottomInset';
 import { todayLocal } from '@/lib/wardrobe';
-import { loadItem, wornDays, setWornToday, saveStatus, saveSet, updateItem, type ItemDetail } from '@/lib/item';
+import { loadItem, wornDays, setWornToday, saveStatus, updateItem, type ItemDetail } from '@/lib/item';
 import { holdItem, holdsOf, releaseHold, fmtShort } from '@/lib/outfits';
 import { canExport, fileName, itemPng } from '@/lib/share';
 import { Page } from '@/components/Page';
 import { Empty, useToast } from '@/components/ui';
-import { Sheet, OptionRow } from '@/components/Sheet';
 import { ExportSheet } from '@/components/ExportSheet';
 import { StatusMenu, anchorFromPress, type Anchor } from '@/components/StatusMenu';
 import { StatusSheet } from '@/components/StatusSheet';
@@ -29,7 +28,7 @@ import { DetailImage } from '@/components/detail/DetailImage';
 import { Toolbar, TOOLBAR_SPACE } from '@/components/detail/Toolbar';
 import { Glyph, GLYPHS, HeadButton } from '@/components/detail/parts';
 import { KaufView, NotesCard, OutfitsCard, SetCard, StatTiles, SteckbriefView } from '@/components/detail/sections';
-import { CareConfirmSheet, ReserveSheet, SetSheet, type HoldRow } from '@/components/detail/sheets';
+import { CareConfirmSheet, ReserveSheet, type HoldRow } from '@/components/detail/sheets';
 import { LegacyWishDetail } from '@/components/detail/LegacyWishDetail';
 
 export default function Teil() {
@@ -58,8 +57,6 @@ function ClosetDetail({ id }: { id: string }) {
   const [statusSheet, setStatusSheet] = useState<StatusKey | null>(null);
   const [holds, setHolds] = useState<HoldRow[]>([]);
   const [reserve, setReserve] = useState(false);
-  const [setOpen, setSetOpen] = useState(false);
-  const [more, setMore] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [care, setCare] = useState<CareGroup | null>(null);
 
@@ -129,14 +126,6 @@ function ClosetDetail({ id }: { id: string }) {
   async function removeHold(hid: string) {
     try { await releaseHold(hid); loadHolds(); reloadOutfits().catch(() => {}); toast.show('Reservierung entfernt.'); } catch (e) { fail(e); }
   }
-  async function confirmSet(members: string[], name: string | null) {
-    const before = setMembers.map((m) => m.id);
-    const sid = await saveSet(it.set_id, members.includes(id) ? members : [id, ...members], name);
-    for (const x of new Set([...before, ...members, id])) patch(x, { setId: sid && (members.includes(x) || x === id) ? sid : null });
-    setD((x) => x && { ...x, item: { ...x.item, set_id: sid, set_name: sid ? name : null } });
-    setSetOpen(false);
-    toast.show(sid ? 'Set gespeichert.' : 'Set aufgelöst.');
-  }
   async function confirmCareValue() {
     if (!care) return;
     const next = confirmCare(f.care, care);
@@ -167,7 +156,7 @@ function ClosetDetail({ id }: { id: string }) {
       )}
       <StatTiles tiles={tiles} onEditPrice={() => edit('kauf')} />
       {setMembers.length > 1 && (
-        <SetCard name={it.set_name} members={setMembers} currentId={id} onOpen={(x) => router.push(`/teil/${x}`)} onEdit={() => setSetOpen(true)} />
+        <SetCard name={it.set_name} members={setMembers} currentId={id} onOpen={(x) => router.push(`/teil/${x}`)} />
       )}
       <OutfitsCard outfits={outfits} byId={byId} width={col} onOpen={(o) => router.push(`/outfit/${o}`)} onNew={() => router.push(`/outfit-bauen?item=${id}`)} />
       {holds.length > 0 && (
@@ -189,13 +178,12 @@ function ClosetDetail({ id }: { id: string }) {
     <View style={[s.page, { backgroundColor: t.bg }]}>
       <Page contentContainerStyle={{ paddingTop: insets.top + 6, paddingBottom: bottom + TOOLBAR_SPACE, alignItems: 'center' }}>
         <View style={{ width: col, gap: 14 }}>
-          {/* Kopf: Zurück · Teilen, Bearbeiten, … */}
+          {/* Kopf: Zurück · Teilen, Bearbeiten */}
           <View style={s.head}>
             <HeadButton glyph="back" label="Zurück" onPress={back} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {canExport && mainPic && <HeadButton glyph="share" label="Bild teilen" onPress={() => setExporting(true)} />}
               <HeadButton glyph="edit" label="Bearbeiten" onPress={() => edit()} />
-              <HeadButton glyph="more" label="Mehr" onPress={() => setMore(true)} />
             </View>
           </View>
 
@@ -228,12 +216,7 @@ function ClosetDetail({ id }: { id: string }) {
       <StatusMenu open={!!menu} anchor={menu} current={statusKey(it.status)} onPick={pickStatus} onClose={() => setMenu(null)} />
       <StatusSheet open={!!statusSheet} start={statusSheet ?? 'closet'} info={sInfo} persons={lendTo} today={today} onSave={applyStatus} onClose={() => setStatusSheet(null)} />
       <ReserveSheet open={reserve} persons={wardrobe?.persons ?? []} meId={me} holds={holds} onSave={saveHold} onClose={() => setReserve(false)} />
-      <SetSheet open={setOpen} current={tile} initial={setMembers.map((m) => m.id).filter((x) => x !== id)} name={it.set_name} items={wardrobe?.items ?? []}
-        hasSet={setMembers.length > 1} onSave={confirmSet} onClose={() => setSetOpen(false)} />
       <CareConfirmSheet group={care} value={care ? f.care[care] ?? null : null} onConfirm={confirmCareValue} onChange={() => { setCare(null); edit(); }} onClose={() => setCare(null)} />
-      <Sheet open={more} onClose={() => setMore(false)} title="Mehr">
-        <OptionRow label={setMembers.length > 1 ? 'Set bearbeiten' : 'Zu einem Set verbinden'} selected={false} last onPress={() => { setMore(false); setSetOpen(true); }} />
-      </Sheet>
       {canExport && mainPic && (
         <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Bild teilen" name={`${fileName(it.name)}.png`} make={() => itemPng(mainPic)} />
       )}

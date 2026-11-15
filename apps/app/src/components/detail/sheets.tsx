@@ -1,72 +1,12 @@
-// Blätter der Detailseite: Set bearbeiten (Spec 3.3), Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4)
+// Blätter der Detailseite: Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4)
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Text, View } from 'react-native';
 import { CARE, careLabel, type CareGroup, type CareValue } from '@valet/core';
 import { useTheme } from '@/lib/theme';
-import { todayLocal, type Person, type Tile } from '@/lib/wardrobe';
+import { todayLocal, type Person } from '@/lib/wardrobe';
 import { fmtShort } from '@/lib/outfits';
 import { Sheet } from '@/components/Sheet';
-import { ItemPicture } from '@/components/ItemPicture';
-import { Capsule, DateField, FieldLabel, Glyph, GLYPHS, Hint, Monogram, SheetHead, TextField, Wrap } from './parts';
-
-// ---------- Set ----------
-
-/** Set-Name, Suche, Schrank-Raster (gewählt = accent-Rahmen + Haken unten rechts), „Set auflösen“. Ein Teil ist in höchstens einem Set. */
-export function SetSheet({ open, current, initial, name: name0, items, hasSet, onSave, onClose }: {
-  open: boolean; current: Tile; initial: string[]; name: string | null; items: Tile[]; hasSet: boolean;
-  onSave: (members: string[], name: string | null) => Promise<void>; onClose: () => void;
-}) {
-  const t = useTheme();
-  const { width: W } = useWindowDimensions();
-  const [members, setMembers] = useState<string[]>(initial);
-  const [name, setName] = useState(name0 ?? '');
-  const [q, setQ] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => { if (open) { setMembers(initial); setName(name0 ?? ''); setQ(''); setError(null); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-  const query = q.trim().toLowerCase();
-  const list = items
-    .filter((m) => m.id !== current.id && !m.isWish && m.status !== 'sold' && (!query || [m.name, m.brand, m.color, m.subcategory, m.type].some((f) => f?.toLowerCase().includes(query))))
-    .sort((a, b) => Number(members.includes(b.id)) - Number(members.includes(a.id)) || a.name.localeCompare(b.name, 'de'));
-  const col = Math.floor((Math.min(W, 560) - 32 - 16) / 3);
-  const save = async (m: string[]) => {
-    setBusy(true);
-    try { await onSave(m, name.trim() || null); } catch (e) { setError('Speichern fehlgeschlagen: ' + (e as Error).message); } finally { setBusy(false); }
-  };
-  return (
-    <Sheet open={open} onClose={onClose} title="Set" head={<SheetHead title="Set" onCancel={onClose} onDone={() => save(members)} doneDisabled={busy} />}>
-      <View style={{ gap: 14, paddingTop: 14 }}>
-        <TextField label="Name (optional)" value={name} onChange={setName} placeholder="z. B. Flannel-Set" />
-        <TextField label="Teile suchen" value={q} onChange={setQ} placeholder="Name, Marke, Farbe, Art" />
-        <View style={s.grid}>
-          {[current, ...list].slice(0, 61).map((m) => {
-            const fixed = m.id === current.id;
-            const on = fixed || members.includes(m.id);
-            const other = !fixed && m.setId && m.setId !== current.setId;
-            return (
-              <Pressable key={m.id} disabled={fixed} accessibilityRole="checkbox" accessibilityState={{ checked: on, disabled: fixed }}
-                accessibilityLabel={`${m.name}${fixed ? ' (dieses Teil)' : ''}${other ? ', in anderem Set' : ''}`}
-                onPress={() => setMembers((x) => (x.includes(m.id) ? x.filter((y) => y !== m.id) : [...x, m.id]))} style={{ width: col, gap: 4 }}>
-                <View style={[s.tile, { height: col, boxShadow: on ? `inset 0 0 0 2px ${t.accent}` : 'inset 0 0 0 1px rgba(42,26,29,0.09)' }]}>
-                  <ItemPicture uri={m.thumb} inset={8} category={m.kind} color={m.hex ?? '#d8d2c8'} />
-                  {on && <View style={[s.check, { backgroundColor: t.accent }]}><Glyph d={GLYPHS.check} size={14} color={t.onAccent} stroke={2.6} /></View>}
-                </View>
-                <Text numberOfLines={1} style={{ fontSize: 12, color: fixed ? t.ink : t.inkMuted, fontWeight: fixed ? '600' : '400' }}>{fixed ? 'Dieses Teil' : other ? `${m.name} · anderes Set` : m.name}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Hint>Teile, die zusammengehören (z. B. Anzug oder Pyjama). Ein Teil ist in höchstens einem Set. Im Outfit-Baukasten fragt Valet „Als Set tragen?“.</Hint>
-        {hasSet && (
-          <Pressable accessibilityRole="button" onPress={() => save([current.id])} style={({ pressed }) => [s.danger, { borderColor: t.hairline, opacity: pressed ? 0.7 : 1 }]}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: t.accent }}>Set auflösen</Text>
-          </Pressable>
-        )}
-        {error && <Hint accent>{error}</Hint>}
-      </View>
-    </Sheet>
-  );
-}
+import { Capsule, DateField, FieldLabel, Hint, Monogram, SheetHead, Wrap } from './parts';
 
 // ---------- Reservieren ----------
 
@@ -143,10 +83,3 @@ export function CareConfirmSheet({ group, value, onConfirm, onChange, onClose }:
   );
 }
 export const CARE_GROUPS = CARE.map((c) => c.key);
-
-const s = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tile: { borderRadius: 14, backgroundColor: '#fff', overflow: 'hidden' },
-  check: { position: 'absolute', right: 6, bottom: 6, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  danger: { height: 48, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-});

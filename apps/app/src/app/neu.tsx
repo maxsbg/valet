@@ -12,7 +12,8 @@ import { editChange, emptyEditForm, nearestColor, setField, type EditForm } from
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
 import { canCutout, cutout, modelCached, original, type Picture } from '@/lib/cutout';
-import { createItem } from '@/lib/item';
+import { createItem, saveSet } from '@/lib/item';
+import type { SetDraft } from '@/components/edit/SetPicker';
 
 type Step = 'start' | 'work' | 'review' | 'form';
 const MAROON = '#722638';
@@ -38,6 +39,7 @@ export default function Neu() {
   const [f, setF] = useState<EditForm | null>(null);
   // Wendeteil: Foto der Seite B (im Formular gewählt)
   const [picB, setPicB] = useState<Picture | null>(null);
+  const [setDraft, setSetDraft] = useState<SetDraft>({ on: false, members: [], name: '' });
   const [saving, setSaving] = useState(false);
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
@@ -95,7 +97,8 @@ export default function Neu() {
     const data = Object.fromEntries(Object.entries(r.change).filter(([k, v]) => k === 'category' || (v !== null && v !== '')));
     setSaving(true);
     try {
-      await createItem(wardrobe.id, data, picture, f.reversible ? picB : null);
+      const newId = await createItem(wardrobe.id, data, picture, f.reversible ? picB : null);
+      if (!f.isWish && setDraft.on && setDraft.members.length) await saveSet(null, [newId, ...setDraft.members], setDraft.name.trim() || null);
       await reload();
       close();
     } catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
@@ -110,7 +113,8 @@ export default function Neu() {
       <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
         wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
         onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
-        saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }} />
+        saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }}
+        set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: null, setId: null }} />
       {toast.node}
     </View>
   );

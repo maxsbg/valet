@@ -75,12 +75,21 @@ export function EditRow({ label, open, onToggle, values, ai, last, children }: {
 }
 
 /** Feste Zeile ohne Aufklappen (z. B. Wendbar, Geschenk mit Symbol-Schalter) */
-export function PlainRow({ label, children, last, ink }: { label: string; children: React.ReactNode; last?: boolean; ink?: boolean }) {
+export function PlainRow({ label, children, last, ink, inset, below }: {
+  label: string; children: React.ReactNode; last?: boolean; ink?: boolean;
+  /** in Karten mit aufklappbaren Zeilen: Wert rechtsbündig mit den anderen Werten, links von der Pfeil-Spalte (16 + 10 px frei) */
+  inset?: boolean;
+  /** Inhalt unter der Zeile (z. B. Set-Auswahl, wenn der Schalter an ist) */
+  below?: React.ReactNode;
+}) {
   const t = useTheme();
   return (
-    <View style={[s.plain, !last && { borderBottomWidth: 1, borderBottomColor: t.hairline }]}>
-      <Text style={{ fontSize: 15, color: ink ? t.ink : t.inkMuted }}>{label}</Text>
-      {children}
+    <View style={!last && { borderBottomWidth: 1, borderBottomColor: t.hairline }}>
+      <View style={s.plain}>
+        <Text style={{ fontSize: 15, color: ink ? t.ink : t.inkMuted }}>{label}</Text>
+        <View style={inset ? { marginRight: 26 } : null}>{children}</View>
+      </View>
+      {below}
     </View>
   );
 }

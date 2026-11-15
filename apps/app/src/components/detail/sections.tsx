@@ -236,7 +236,8 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
 // ---------- Set (Spec 3.3) ----------
 
 /** Kleine Kacheln aller Teile, von oben nach unten am Körper; aktuelles Teil in accent umrandet */
-export function SetCard({ name, members, currentId, onOpen, onEdit }: { name: string | null; members: Tile[]; currentId: string; onOpen: (id: string) => void; onEdit: () => void }) {
+/** Bearbeitet wird das Set in Bearbeiten (Zeile „Set“ unter „Wendbar“, entschieden 15.11.2026) – hier nur Ansicht */
+export function SetCard({ name, members, currentId, onOpen }: { name: string | null; members: Tile[]; currentId: string; onOpen: (id: string) => void }) {
   const t = useTheme();
   const sorted = setOrder(members);
   const tiles = sorted.map((m) => {
@@ -252,7 +253,7 @@ export function SetCard({ name, members, currentId, onOpen, onEdit }: { name: st
     );
   });
   return (
-    <EditCard title={name ? `Set · ${name}` : 'Set'} action={{ label: 'Bearbeiten', onPress: onEdit }}>
+    <EditCard title={name ? `Set · ${name}` : 'Set'}>
       {sorted.length > 3
         ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{tiles}</ScrollView>
         : <View style={{ flexDirection: 'row', gap: 8 }}>{tiles}</View>}

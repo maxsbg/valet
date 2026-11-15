@@ -25,7 +25,7 @@ Stand: 15.11.2026. Verbindliche Regeln aus der Abstimmung mit Max für die Seite
 
 ## 2. Detailseite – Aufbau
 
-- Kopf: runde Glasknöpfe Zurück, Teilen, Bearbeiten.
+- Kopf: runde Glasknöpfe Zurück, Teilen, Bearbeiten – kein „…“-Knopf (15.11.2026).
 - Bild als große Kachel 358 × 380, Radius 28, Plaketten 40 px mit 8 px Abstand (konzentrisch: 28 − 8 = 20). Gleiche Plaketten-Regeln wie die Schrank-Kachel (`VALET_KACHEL_SPEC.md`), nur × 2. Kein randloses Bild.
 - Darunter Marke (13 px, `ink-muted`), Name (Gloock 32), Reiter **Übersicht · Steckbrief · Kauf** (SegmentedControl).
 - **Untere Leiste ist eine Werkzeugleiste** (Apple-Richtlinie: Tab-Leiste = Navigation, Werkzeugleiste = Aktionen). Sie ersetzt auf der Detailseite die Tab-Leiste, beide nie gleichzeitig. Gleiche Plätze bei Schrank- und Wunschteil:
@@ -44,8 +44,8 @@ Nur Symbole, in Glas-Gruppen (links eine Gruppe, rechts Würfel + Hauptaktion). 
 1. **Status-Karte** nur, wenn der Status nicht „Im Schrank“ ist: Symbol, Titel (z. B. „Verliehen an Paul“), Details (seit / zurück bis), genau eine Schnellaktion (z. B. „Zurück“). Ändern nur über den Knopf unten.
 2. **Drei Kacheln in einer Zeile:** Getragen, Pro Tragen, Zuletzt, je mit Hinweis darunter (z. B. „seit 12.10.“, „bei 59,00 €“, „vor 3 Tagen“). Werte immer gleich groß, **22 px**; passt einer nicht (ab fünfstellig), alle drei gemeinsam kleiner, höchstens bis 20 px (Breite messen). Pro Tragen bei geteiltem Preis = eigener Anteil; bei Geschenk „–“. Keine Kachel „Reserviert“.
    **Leere Zustände:** kein Preis → Pro Tragen „–“, Hinweis „Preis fehlt“, Antippen öffnet Bearbeiten im Reiter Kauf; nie getragen → Getragen „0“ mit Hinweis „noch nie“, Zuletzt „–“.
-3. **Set-Karte** (falls verknüpft): kleine Kacheln aller Teile, sortiert **von oben nach unten am Körper:** Kopf → Oberbekleidung → Oberteil/Kleid → Hose/Rock → Schuhe → Taschen, Schmuck, Sonstiges; bei gleicher Kategorie außen vor innen (Lagen). Das aktuelle Teil ist in `accent` umrandet. „Bearbeiten“ öffnet ein Blatt mit Set-Name, Suche und Schrank-Raster (gewählt = `accent`-Rahmen + Haken unten rechts) und „Set auflösen“. Ein Teil ist in höchstens einem Set. **Sets werden in der Detailansicht gepflegt, nicht im Bearbeiten-Modus.**
-4. **In N Outfits** (keins: Zeile „Noch in keinem Outfit“ mit Knopf „Outfit damit“; kein Set: keine Set-Karte, Verbinden über das „…“-Menü), dann **Notizen**.
+3. **Set-Karte** (falls verknüpft): kleine Kacheln aller Teile, sortiert **von oben nach unten am Körper:** Kopf → Oberbekleidung → Oberteil/Kleid → Hose/Rock → Schuhe → Taschen, Schmuck, Sonstiges; bei gleicher Kategorie außen vor innen (Lagen). Das aktuelle Teil ist in `accent` umrandet. Ein Teil ist in höchstens einem Set. **Geändert 15.11.2026: Sets werden in Bearbeiten gepflegt** (Zeile „Set“ unter „Wendbar“, Symbol-Schalter mit Link-Symbol; an → darunter Set-Name, gewählte Teile als Kacheln mit `accent`-Rahmen + Haken und Suche „Teil hinzufügen“; aus = Set aufgelöst). Die Set-Karte in der Übersicht ist nur Ansicht, ohne „Bearbeiten“.
+4. **In N Outfits** (keins: Zeile „Noch in keinem Outfit“ mit Knopf „Outfit damit“; kein Set: keine Set-Karte, Verbinden in Bearbeiten → „Set“), dann **Notizen**.
 
 Wunschteil-Übersicht: Zeile mit der Liste (nur Name; die Kategorie steht unten in der Leiste), Karte „Lohnt sich das?“ (Kauf-Check: Kombinierbar mit, Ähnlich im Schrank, Lücke, Preis, Prüfdatum), „Im Outfit ansehen“.
 
