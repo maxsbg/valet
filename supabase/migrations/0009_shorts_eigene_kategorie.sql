@@ -1,6 +1,7 @@
 -- 0009: Shorts werden eine eigene Oberkategorie (Max, 15.11.2026).
 -- Vorher Hose › Shorts › Typ, jetzt Shorts › Typ (die Typen werden zu Unterkategorien).
 -- Die App rechnet alte Zeilen schon beim Laden um (normalizeCategory), die Migration räumt nur die Daten auf.
+-- Angewendet am 15.11.2026 (5 Teile im Schrank „Max & Paul“: 3 Bermudashorts, 2 ohne Unterkategorie).
 begin;
 update public.items
    set category = 'Shorts',
