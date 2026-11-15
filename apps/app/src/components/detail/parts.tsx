@@ -7,6 +7,7 @@ import { balanceRows, splitRows } from '@valet/core';
 import { useTheme, DISPLAY } from '@/lib/theme';
 import { personTone, type Person } from '@/lib/wardrobe';
 import { glass } from '@/components/ui';
+import { WORN_TODAY_D } from '@/components/tile/TileIcons';
 
 const D = detail;
 const web = Platform.OS === 'web';
@@ -38,7 +39,8 @@ export const GLYPHS = {
   /** Werkzeugleiste (Leinwand „D · Übersicht“) */
   reserve: ['M6.5 5h11a3 3 0 0 1 3 3v9.5a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z', 'M8 3v4', 'M16 3v4', 'M3.5 10h17', 'M9.5 15l2 2 3.5-3.5'],
   dice: ['M7.5 3.5h9a4 4 0 0 1 4 4v9a4 4 0 0 1-4 4h-9a4 4 0 0 1-4-4v-9a4 4 0 0 1 4-4z', 'f:8.5,8.5,1.1', 'f:15.5,15.5,1.1', 'f:12,12,1.1'],
-  hanger: ['M10 6a2 2 0 1 1 2 2v1.6l-8.4 5.7A1.5 1.5 0 0 0 4.4 18h15.2a1.5 1.5 0 0 0 .8-2.7L12 9.6'],
+  /** Heute tragen – gleicher Bügel wie die Kachel-Plakette (WORN_TODAY_D, einzige Quelle) */
+  wornToday: [WORN_TODAY_D],
   external: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4'],
   chevron: ['M9 6l6 6-6 6'],
   more: ['f:5,12,1.7', 'f:12,12,1.7', 'f:19,12,1.7'],

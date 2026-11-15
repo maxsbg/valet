@@ -126,10 +126,11 @@ export const itemTile = {
     /** Symbole (24er-Raster): gerenderte Größe und Strichstärke */
     icon: { size: 11, stroke: 2.2 },
     /**
-     * Bügel: Form liegt im 24er-Raster nicht mittig (Inhalt y 3,1…17,4 → Mitte 10,25 statt 12).
-     * offsetY schiebt ihn optisch in die Mitte: (12 − 10,25) / 24 × 12 px = 0,875 px. Bei neuem Symbol neu rechnen.
+     * „Heute getragen“-Bügel (WORN_TODAY_D in TileIcons.tsx, gleiche Form wie „Heute tragen“ im Teil-Detail):
+     * liegt im 24er-Raster nicht mittig (Inhalt y 4…18 → Mitte 11 statt 12).
+     * offsetY schiebt ihn optisch in die Mitte: (12 − 11) / 24 × 12 px = 0,5 px. Bei neuem Symbol neu rechnen.
      */
-    hanger: { size: 12, stroke: 2.4, offsetY: 0.875 },
+    wornToday: { size: 12, stroke: 2.4, offsetY: 0.5 },
     /** font-badge-num: Ziffern (Anzahl, „+N“) */
     num: { size: 8.5, weight: '700', letterSpacing: -0.3 },
     /** font-badge-sym: Beizeichen × und + */

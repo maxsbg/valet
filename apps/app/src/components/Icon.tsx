@@ -5,7 +5,6 @@ type P = { size?: number; color: string };
 const stroke = (color: string, w = 2) => ({ fill: 'none', stroke: color, strokeWidth: w, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const });
 
 export const Icons = {
-  hanger: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 8a2 2 0 1 1 2-2c0 1.2-2 1.6-2 3l9 6c.8.6.4 2-.6 2H3.6c-1 0-1.4-1.4-.6-2l9-6" {...stroke(color)} /></Svg>),
   // Tab-Leiste (15.11.2026): Schrank = Schrank-Symbol aus dem Status, Outfits = Karten-Stapel, Wunschliste = weiches Herz, Statistik = waagerechte Balken mit Ecke
   closet: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" {...stroke(color)} /><Path d="M12 3v18M9.5 11v2M14.5 11v2" {...stroke(color)} /></Svg>),
   layers: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M6.5 7h8A2.5 2.5 0 0 1 17 9.5v9a2.5 2.5 0 0 1-2.5 2.5h-8A2.5 2.5 0 0 1 4 18.5v-9A2.5 2.5 0 0 1 6.5 7Z" {...stroke(color)} /><Path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h7A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H17" {...stroke(color)} /></Svg>),

@@ -176,7 +176,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
       {price ? (
         <View style={s.bl}><Glass shape="pill" label={`${price} Euro`}><Price label={price} /></Glass></View>
       ) : todayP && (
-        <View style={s.bl}><Glass label={todayP.name ? `heute: ${todayP.name}` : 'heute getragen'}><TileIcon name="hanger" color={todayP.stroke} /></Glass></View>
+        <View style={s.bl}><Glass label={todayP.name ? `heute: ${todayP.name}` : 'heute getragen'}><TileIcon name="wornToday" color={todayP.stroke} /></Glass></View>
       )}
 
       {/* unten rechts: Besitzer, links → rechts, rechts liegt obenauf */}
