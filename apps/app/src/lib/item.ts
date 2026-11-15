@@ -68,7 +68,7 @@ export async function setStatus(itemId: string, status: ItemRow['status'], lentT
 
 export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'subcategory' | 'item_type' | 'owner_id' | 'owner_ids' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible' | 'is_wish' | 'wishlist_id' | 'wish_tag'>> & { styles?: string[] };
 
-export async function updateItem(id: string, change: ItemChange) {
+export async function updateItem(id: string, change: ItemChange | Record<string, unknown>) {
   const r = await supabase.from('items').update(change).eq('id', id);
   if (r.error) throw r.error;
 }
@@ -100,12 +100,15 @@ export type NewItem = ItemChange & { name: string; category: string };
  * Legt ein Teil an und lädt (falls vorhanden) Bild + Vorschaubild in den Bucket „items“.
  * Schlägt das Hochladen fehl, wird das Teil wieder entfernt, damit kein halbes Teil übrig bleibt.
  */
-export async function createItem(wardrobeId: string, data: NewItem, picture?: Picture | null): Promise<string> {
+export async function createItem(wardrobeId: string, data: NewItem | Record<string, unknown>, picture?: Picture | null, pictureB?: Picture | null): Promise<string> {
   const ins = await supabase.from('items').insert({ ...data, wardrobe_id: wardrobeId }).select('id').single();
   if (ins.error) throw ins.error;
   const id = ins.data.id as string;
   if (picture) {
-    try { await saveImage(wardrobeId, id, 'a', picture); }
+    try {
+      await saveImage(wardrobeId, id, 'a', picture);
+      if (pictureB) await saveImage(wardrobeId, id, 'b', pictureB);
+    }
     catch (e) { await supabase.from('items').delete().eq('id', id); throw e; }
   }
   return id;

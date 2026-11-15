@@ -8,7 +8,7 @@ import { categoryLast, formatEur, parseAmount, statusCard, statusChange, statusD
 import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
 import { RoundButton, Empty, Chip, useToast } from '@/components/ui';
-import { eur, toDe, toIso } from '@/components/ItemForm';
+import { eur, toDe, toIso } from '@/lib/format';
 import { Sheet, SheetButton } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';

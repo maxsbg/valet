@@ -67,4 +67,5 @@ test('Karte: weitere Status', () => {
   const sold = statusCard({ ...none, status: 'sold', sold_price: 30, sold_date: '2026-11-02', status_where: 'Vinted' }, TODAY)!;
   assert.equal(sold.title, 'Verkauft für 30,00 €');
   assert.deepEqual(sold.details, ['am 2.11.', 'Vinted']);
+  assert.deepEqual(sold.action, { label: 'Doch nicht', to: 'out' });
 });
