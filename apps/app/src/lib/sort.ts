@@ -36,19 +36,21 @@ export function sortTiles(items: Tile[], sort: SortId, seed: number, order: stri
 
 /**
  * Filter im Schrank: eine Person (oder alle) und Saisons. Verkaufte Teile sind im Schrank nie sichtbar,
- * aussortierte (sollen verkauft werden) nur mit dem Filter „Aussortiert“ – dann ausschließlich diese.
+ * aussortierte (sollen verkauft werden) und verkaufte nur mit ihrem Filter – dann ausschließlich diese (beide zusammen möglich).
  */
-export type Filters = { person: string | null; seasons: string[]; out?: boolean };
-export const NO_FILTERS: Filters = { person: null, seasons: [], out: false };
-export const filterCount = (f: Filters) => (f.person ? 1 : 0) + f.seasons.length + (f.out ? 1 : 0);
+export type Filters = { person: string | null; seasons: string[]; out?: boolean; sold?: boolean };
+export const NO_FILTERS: Filters = { person: null, seasons: [], out: false, sold: false };
+export const filterCount = (f: Filters) => (f.person ? 1 : 0) + f.seasons.length + (f.out ? 1 : 0) + (f.sold ? 1 : 0);
 
 export const SEASON_FILTERS: readonly string[] = SEASONS;
 
 /** Innerhalb der Saisons „oder“, zwischen Person und Saison „und“. */
 export function applyFilters(items: Tile[], f: Filters): Tile[] {
   return items.filter((i) => {
-    if (i.status === 'sold') return false;
-    if ((i.status === 'out') !== !!f.out) return false;
+    // Aussortiert/Verkauft: ohne Filter ausgeblendet, mit Filter nur diese
+    const gone = i.status === 'out' || i.status === 'sold';
+    if (f.out || f.sold) { if (!((f.out && i.status === 'out') || (f.sold && i.status === 'sold'))) return false; }
+    else if (gone) return false;
     if (f.person && !i.owners.includes(f.person)) return false;
     if (f.seasons.length && !f.seasons.some((s) => i.seasons.includes(s))) return false;
     return true;

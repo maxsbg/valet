@@ -1,6 +1,6 @@
 -- 0007: Vorhandene Teile auf die neue Kategorie-Liste umstellen (Spec 8, „Umstellung vorhandener Teile“)
 -- Erzeugt aus packages/core (categorizeLegacy, parseLegacyMaterial, parseLegacyColors, migrateSeasons) am 15.11.2026
--- für den Schrank „Max & Paul“ (e3601e23-…). ERST NACH DEM MERGE von Stufe 1 anwenden – der alte Code kennt die neuen Namen nicht.
+-- für den Schrank „Max & Paul“ (e3601e23-…). Angewendet am 15.11.2026 nach dem Merge von Stufe 1 (127 Teile, 2 Testteile gelöscht).
 -- Entscheidungen 15.11.2026: Saison Übergang → Frühling + Herbst, Schick → Klassisch, Grau nach Foto-Helligkeit,
 -- Jacken/Mäntel ohne Lage → Außen, Bomber → Blouson › Bomberjacke, Zip-Hoodies → Sweatjacke › Zip-Hoodie,
 -- Asics → Sportschuh › Laufschuh, Guardian Coat → Mantel › Peacoat, Buckle Bag → Handtasche + Verschluss Schnalle,

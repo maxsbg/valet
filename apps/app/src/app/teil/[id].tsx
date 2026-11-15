@@ -1,33 +1,27 @@
 import { useBottomInset } from '@/lib/bottomInset';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
+import { ActivityIndicator, type GestureResponderEvent, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
 import { Page } from '@/components/Page';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { categoryLast, formatEur, parseAmount } from '@valet/core';
+import { categoryLast, formatEur, parseAmount, statusCard, statusChange, statusDef, statusKey, type StatusInfo, type StatusKey } from '@valet/core';
 import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
 import { RoundButton, Empty, Chip, useToast } from '@/components/ui';
 import { eur, toDe, toIso } from '@/components/ItemForm';
-import { Sheet, OptionRow, SheetButton } from '@/components/Sheet';
+import { Sheet, SheetButton } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
 import { useFlipped } from '@/lib/flipped';
-import { loadItem, wornDays, setWornToday, setStatus, markBought, saveSet, type ItemDetail, type ItemRow } from '@/lib/item';
+import { loadItem, wornDays, setWornToday, saveStatus, markBought, saveSet, type ItemDetail, type ItemRow } from '@/lib/item';
 import { holdItem, holdsOf, releaseHold, fmtShort } from '@/lib/outfits';
 import { ExportSheet } from '@/components/ExportSheet';
+import { StatusMenu, anchorFromPress, type Anchor } from '@/components/StatusMenu';
+import { StatusSheet } from '@/components/StatusSheet';
+import { TileIcon } from '@/components/tile/TileIcons';
 import { canExport, fileName, itemPng } from '@/lib/share';
 import { personKey, todayLocal } from '@/lib/wardrobe';
 
-const STATUS_OPTIONS: { id: ItemRow['status']; label: string; text: string }[] = [
-  { id: null, label: 'Im Schrank', text: 'Im Schrank' },
-  { id: 'wash', label: 'Wäsche', text: 'In der Wäsche' },
-  { id: 'repair', label: 'Reparatur', text: 'In Reparatur' },
-  { id: 'lent', label: 'Verliehen', text: 'Verliehen' },
-  { id: 'stored', label: 'Eingelagert', text: 'Eingelagert' },
-  { id: 'out', label: 'Aussortiert (zum Verkauf)', text: 'Aussortiert, soll verkauft werden' },
-  { id: 'sold', label: 'Verkauft', text: 'Verkauft' },
-];
 const PERSON = { pink: '#D9668E', red: '#C8102E' } as const;
 const de = (iso: string) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
 const ago = (iso: string) => {
@@ -43,9 +37,9 @@ export default function Teil() {
   const [d, setD] = useState<ItemDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [sheet, setSheet] = useState(false);
-  const [lentTo, setLentTo] = useState('');
-  const [pickLent, setPickLent] = useState(false);
+  // Status: Menü (Pull-down) und Blatt für die Zusatzangaben
+  const [menu, setMenu] = useState<Anchor | null>(null);
+  const [statusSheet, setStatusSheet] = useState<StatusKey | null>(null);
   const [more, setMore] = useState(false);
   // Wunschteil gekauft → Schrank
   const [buy, setBuy] = useState<{ price: string; date: string; owners: string[]; error?: string } | null>(null);
@@ -90,7 +84,13 @@ export default function Teil() {
   const paid = it.price_paid != null ? it.price_paid * (it.qty || 1) : null;
   const cpw = paid && days.length ? paid / days.length : null;
   const hex = tileInfo?.hex ?? '#d8d2c8';
-  const st = STATUS_OPTIONS.find((o) => o.id === it.status) ?? STATUS_OPTIONS[0];
+  const sInfo: StatusInfo = {
+    status: it.status, status_at: it.status_at, status_where: it.status_where || null, status_until: it.status_until,
+    lent_person_id: it.lent_person_id, lent_to: it.lent_to || null, sold_price: it.sold_price, sold_date: it.sold_date,
+  };
+  const personName = (pid: string) => wardrobe?.persons.find((p) => p.id === pid)?.name ?? null;
+  const card = statusCard(sInfo, today, personName);
+  const lendTo = (wardrobe?.persons ?? []).filter((p) => p.user_id !== session?.user.id);
 
   async function toggleWorn() {
     setBusy(true);
@@ -104,14 +104,19 @@ export default function Teil() {
     finally { setBusy(false); }
   }
 
-  async function changeStatus(next: ItemRow['status'], to?: string) {
-    setSheet(false); setPickLent(false);
-    try {
-      await setStatus(id, next, to);
-      setD((x) => x && { ...x, item: { ...x.item, status: next, status_at: next ? today : null, lent_to: next === 'lent' ? to ?? null : null } });
-      patch(id, { status: next });
-      toast.show(next ? `Status: ${STATUS_OPTIONS.find((o) => o.id === next)!.label}` : 'Wieder im Schrank.');
-    } catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
+  /** Status mit Zusatzangaben speichern (aus Menü, Blatt oder Schnellaktion der Karte) */
+  async function applyStatus(next: StatusInfo) {
+    await saveStatus(id, next);
+    setD((x) => x && { ...x, item: { ...x.item, ...next } });
+    patch(id, { status: next.status });
+    setStatusSheet(null);
+    toast.show(next.status ? `Status: ${statusDef(statusKey(next.status)).label}` : 'Wieder im Schrank.');
+  }
+  /** Menü: einfache Status sofort setzen, die anderen öffnen das Blatt */
+  function pickStatus(k: StatusKey) {
+    setMenu(null);
+    if (statusDef(k).details) { setStatusSheet(k); return; }
+    applyStatus(statusChange(k, {}, today)).catch((e) => toast.show('Speichern fehlgeschlagen: ' + (e as Error).message));
   }
 
   function openBuy() {
@@ -231,15 +236,20 @@ export default function Teil() {
             </Text>
           </View>
 
-          {it.status && (
+          {/* Status-Karte (Spec 3.1): nur wenn nicht „Im Schrank“; genau eine Schnellaktion, Ändern nur über den Status-Knopf */}
+          {card && (
             <View style={[s.statusBar, { backgroundColor: t.surface, borderColor: t.hairline }]}>
-              <View style={[s.dot, { backgroundColor: t.status[it.status] }]} />
-              <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>
-                {st.text}{it.status === 'lent' && it.lent_to ? ` an ${it.lent_to}` : ''}{it.status_at ? ` seit ${de(it.status_at)}` : ''}
-              </Text>
-              {it.status !== 'out' && it.status !== 'sold' && (
-                <Pressable onPress={() => changeStatus(null)} hitSlop={8}><Text style={{ fontSize: 15, fontWeight: '600', color: t.actionText }}>Zurück</Text></Pressable>
-              )}
+              <TileIcon name={card.icon} color={t.ink} size={22} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink }}>{card.title}</Text>
+                {card.details.length > 0 && <Text style={{ fontSize: 13, color: t.inkMuted }}>{card.details.join(' · ')}</Text>}
+                {card.warn && <Text style={{ fontSize: 13, fontWeight: '600', color: t.accent }}>{card.warn}</Text>}
+              </View>
+              <Pressable hitSlop={8} accessibilityRole="button" onPress={() => {
+                const to = card.action.to;
+                if (to === 'sheet:sold') setStatusSheet('sold');
+                else applyStatus(statusChange(to, sInfo, today)).catch((e) => toast.show('Speichern fehlgeschlagen: ' + (e as Error).message));
+              }}><Text style={{ fontSize: 15, fontWeight: '600', color: t.actionText }}>{card.action.label}</Text></Pressable>
             </View>
           )}
 
@@ -267,7 +277,7 @@ export default function Teil() {
               icon={(c) => <Icons.check color={c} />} />
             <Action label="Outfit damit" onPress={() => router.push(`/outfit-bauen?item=${id}`)} icon={(c) => <Icons.layers color={c} size={22} />} />
             <Action label="Reservieren" active={holds.some((h) => h.from <= today && h.to >= today)} onPress={() => setHold({ who: me?.id ?? null, from: toDe(today), to: toDe(today) })} icon={(c) => <Icons.calendar color={c} />} />
-            <Action label="Status" active={!!it.status} onPress={() => { setLentTo(it.lent_to ?? ''); setSheet(true); }} icon={(c) => <Icons.closet color={c} />} />
+            <Action label="Status" active={!!it.status} onPress={(e) => setMenu(anchorFromPress(e))} icon={(c) => <TileIcon name={statusKey(it.status)} color={c} size={22} />} />
           </View>
 
           {/* Reservierungen ab heute */}
@@ -341,21 +351,9 @@ export default function Teil() {
         </View>
       </Page>
 
-      <Sheet open={sheet} onClose={() => { setSheet(false); setPickLent(false); }} title={pickLent ? 'An wen verliehen?' : 'Status'}
-        footer={pickLent ? <>
-          <SheetButton label="Zurück" onPress={() => setPickLent(false)} />
-          <SheetButton primary label="Speichern" onPress={() => changeStatus('lent', lentTo.trim() || undefined)} />
-        </> : undefined}>
-        {pickLent ? (
-          <TextInput autoFocus value={lentTo} onChangeText={setLentTo} placeholder="Name (optional)" placeholderTextColor={t.inkMuted}
-            style={[s.input, { backgroundColor: t.surface, borderColor: t.hairline, color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
-        ) : (
-          STATUS_OPTIONS.map((o, n) => (
-            <OptionRow key={o.label} label={o.label} selected={it.status === o.id} last={n === STATUS_OPTIONS.length - 1}
-              onPress={() => (o.id === 'lent' ? setPickLent(true) : changeStatus(o.id))} />
-          ))
-        )}
-      </Sheet>
+      <StatusMenu open={!!menu} anchor={menu} current={statusKey(it.status)} onPick={pickStatus} onClose={() => setMenu(null)} />
+      <StatusSheet open={!!statusSheet} start={statusSheet ?? 'closet'} info={sInfo} persons={lendTo} today={today}
+        onSave={applyStatus} onClose={() => setStatusSheet(null)} />
       <Sheet open={!!buy} onClose={() => setBuy(null)} title="Gekauft!"
         footer={<>
           <SheetButton label="Abbrechen" onPress={() => setBuy(null)} />
@@ -491,7 +489,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Action({ label, icon, onPress, active, disabled }: { label: string; icon: (c: string) => React.ReactNode; onPress: () => void; active?: boolean; disabled?: boolean }) {
+function Action({ label, icon, onPress, active, disabled }: { label: string; icon: (c: string) => React.ReactNode; onPress: (e: GestureResponderEvent) => void; active?: boolean; disabled?: boolean }) {
   const t = useTheme();
   const bg = active ? (t.dark ? t.accent : '#722638') : t.surface;
   const fg = active ? (t.dark ? t.onAccent : '#fff') : t.ink;

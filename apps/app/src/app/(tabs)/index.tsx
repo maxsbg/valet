@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, RefreshControl, StyleSheet, View } from 'react-native';
-import { CATEGORIES } from '@valet/core';
+import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { CATEGORIES, lentDue } from '@valet/core';
 import { Header, Chip, Fab, Empty, glass } from '@/components/ui';
 import { ClosetBar } from '@/components/ClosetBar';
 import { Page } from '@/components/Page';
@@ -11,7 +11,8 @@ import { useTheme, space } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
 import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, SEASON_FILTERS, type SortId, type Filters } from '@/lib/sort';
-import { personKey } from '@/lib/wardrobe';
+import { personKey, todayLocal } from '@/lib/wardrobe';
+import { TileIcon } from '@/components/tile/TileIcons';
 import { usePersisted } from '@/lib/usePersisted';
 
 const kept: { cat: string | null; filters: Filters } = { cat: null, filters: NO_FILTERS };
@@ -39,6 +40,9 @@ export default function Schrank() {
     [wardrobe, me, filters, sort, seed],
   );
   const nFilters = filterCount(filters);
+  const today = todayLocal();
+  const due = useMemo(() => (wardrobe?.items ?? []).filter((i) => !i.isWish && lentDue({ status: i.status, status_until: i.statusUntil }, today)), [wardrobe, today]);
+  const [hideDue, setHideDue] = useState(false);
   const toggleSeason = (v: string) =>
     setDraft((d) => ({ ...d, seasons: d.seasons.includes(v) ? d.seasons.filter((x) => x !== v) : [...d.seasons, v] }));
 
@@ -95,6 +99,18 @@ export default function Schrank() {
             <Empty title="Laden fehlgeschlagen" text={error} />
           ) : !wardrobe ? (
             <View style={{ padding: space.xl }}>{loading ? <ActivityIndicator color={t.accent} /> : <Empty title="Kein Schrank" text="Für dein Konto gibt es noch keinen Kleiderschrank." />}</View>
+          ) : due.length > 0 && !query && !cat && nFilters === 0 && !hideDue ? (
+            <>
+              {/* Rückgabe fällig (Hinweis in der App; Push-Nachricht kommt später) */}
+              <Pressable accessibilityRole="button" onPress={() => router.push(`/teil/${due[0]!.id}`)} onLongPress={() => setHideDue(true)}
+                style={({ pressed }) => [s.due, { backgroundColor: t.surface, borderColor: t.accent, opacity: pressed ? 0.8 : 1 }]}>
+                <TileIcon name="lent" color={t.accent} size={20} />
+                <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>
+                  {due.length === 1 ? <>Rückgabe fällig: <Text style={{ fontWeight: '600' }}>{due[0]!.name}</Text></> : `${due.length} verliehene Teile sind fällig`}
+                </Text>
+              </Pressable>
+              <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
+            </>
           ) : shown.length === 0 ? (
             <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff oder Filter." />
           ) : (
@@ -127,6 +143,7 @@ export default function Schrank() {
         <SectionLabel>Status</SectionLabel>
         <View style={s.wrap}>
           <Chip label="Aussortiert (zum Verkauf)" selected={!!draft.out} onPress={() => setDraft((d) => ({ ...d, out: !d.out }))} />
+          <Chip label="Verkauft" selected={!!draft.sold} onPress={() => setDraft((d) => ({ ...d, sold: !d.sold }))} />
         </View>
       </Sheet>
     </View>
@@ -134,5 +151,6 @@ export default function Schrank() {
 }
 
 const s = StyleSheet.create({
+  due: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, marginBottom: space.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
 });

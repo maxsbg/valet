@@ -1,24 +1,34 @@
 import Svg, { Circle, Path } from 'react-native-svg';
 import { itemTile } from '@valet/ui';
 
-// Symbole der Kachel-Plaketten – exakt aus docs/design/kachel/VALET_KACHEL_SPEC.md, Abschnitt 6.
+// Symbole der Kachel-Plaketten – exakt aus docs/design/kachel/VALET_KACHEL_SPEC.md, Abschnitt 6;
+// Status-Symbole aus docs/design/detailseite/VALET_DETAILSEITE_SPEC.md, Abschnitt 6.
 // 24er-Raster, nur Linien, runde Enden; geometrisch zentriert (keine Korrektur nötig).
 
 type El = { d?: string; c?: [number, number, number] };
 const P = (d: string): El => ({ d });
 const C = (cx: number, cy: number, r: number): El => ({ c: [cx, cy, r] });
+/** <rect x y width height rx> als Pfad (gleiche Form, damit alle Symbole nur aus Pfaden und Kreisen bestehen) */
+const R = (x: number, y: number, w: number, h: number, r: number): El =>
+  P(`M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 -${r} ${r}h-${w - 2 * r}a${r} ${r} 0 0 1 -${r} -${r}v-${h - 2 * r}a${r} ${r} 0 0 1 ${r} -${r}z`);
 
 export const TILE_ICONS = {
   hanger: [P('M12 7.5a2.2 2.2 0 1 1 2.2-2.2'), P('M12 7.5v1.2L3.2 15.6a1 1 0 0 0 .6 1.8h16.4a1 1 0 0 0 .6-1.8L12 8.7')],
-  wash: [P('M4 10h16l-1.6 8.8a1.6 1.6 0 0 1-1.6 1.2H7.2a1.6 1.6 0 0 1-1.6-1.2z'), P('M8.5 10l3-6'), P('M15.5 10l-3-6')],
-  repair: [C(6.5, 17.5, 2.5), C(17.5, 17.5, 2.5), P('M8.3 15.8L18 4'), P('M15.7 15.8L6 4')],
-  /** verliehen: schräger Pfeil (getauscht 14.11.2026, der gerade gehört „Next Cop“) */
-  lent: [P('M6.5 17.5l11-11'), P('M9 6.5h8.5V15')],
-  /** eingelagert (Kiste) */
-  stored: [P('M4.5 9h15v10a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z'), P('M3 4.5h18V9H3z'), P('M10 13h4')],
-  /** aussortiert: Kiste mit Pfeil nach oben (raus aus dem Schrank, soll verkauft werden) */
-  out: [P('M4.5 11h15v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z'), P('M12 2.5v11'), P('M8.5 6L12 2.5 15.5 6')],
-  sold: [P('M3.5 12V4.5a1 1 0 0 1 1-1H12l8.5 8.5-8.5 8.5z'), C(8, 8, 1.4)],
+  // Status – exakt aus VALET_DETAILSEITE_SPEC.md, Abschnitt 6 (ersetzt seit 15.11.2026 die Kachel-Symbole aus der Kachel-Spec)
+  /** Im Schrank: Schrank mit zwei Türen */
+  closet: [R(5, 3, 14, 18, 2), P('M12 3v18'), P('M9.5 11v2'), P('M14.5 11v2')],
+  /** Wäsche: Waschmaschine */
+  wash: [R(4, 3, 16, 18, 2.5), C(12, 13, 4.5), P('M7.5 6.5h2')],
+  /** Reparatur: Schere */
+  repair: [C(6, 6, 3), C(6, 18, 3), P('M20 4L8.1 15.9'), P('M14.5 14.5L20 20'), P('M8.1 8.1L12 12')],
+  /** Verliehen: schräg aufsteigender Pfeil (der gerade gehört „Next Cop“) */
+  lent: [P('M7 17L17 7'), P('M9 7h8v8')],
+  /** Eingelagert: Ablage (offene Schale mit Fach) */
+  stored: [P('M4 13l2-8h12l2 8v6H4z'), P('M4 13h5l1 2h4l1-2h5')],
+  /** Aussortiert: Kiste (Deckel + Griffleiste), ohne Pfeil */
+  out: [R(3, 4, 18, 5, 1.5), P('M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9'), P('M10 13h4')],
+  /** Verkauft: Euro im Kreis */
+  sold: [C(12, 12, 9), P('M15.5 8.6a4.5 4.5 0 1 0 0 6.8'), P('M7 11h6'), P('M7 13.4h6')],
   reversible: [P('M4.5 11a7.5 7.5 0 0 1 13-4.5L19.5 8.5'), P('M19.5 4v4.5H15'), P('M19.5 13a7.5 7.5 0 0 1-13 4.5L4.5 15.5'), P('M4.5 20v-4.5H9')],
   // Wunschliste – Kategorie oben links (WISH_TAGS in @valet/core, gleiche Schlüssel; Entwurf docs/design/wunschliste)
   grail: [P('M4.5 16l-1.2-8.5 5 3.8L12 5l3.7 6.3 5-3.8L19.5 16z'), P('M4.5 19.5h15')],
