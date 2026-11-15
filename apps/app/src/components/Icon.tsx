@@ -6,9 +6,11 @@ const stroke = (color: string, w = 2) => ({ fill: 'none', stroke: color, strokeW
 
 export const Icons = {
   hanger: ({ size = 15, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 8a2 2 0 1 1 2-2c0 1.2-2 1.6-2 3l9 6c.8.6.4 2-.6 2H3.6c-1 0-1.4-1.4-.6-2l9-6" {...stroke(color)} /></Svg>),
-  layers: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="m12 4 9 5-9 5-9-5Z" {...stroke(color)} /><Path d="m3 14 9 5 9-5" {...stroke(color)} /></Svg>),
-  heart: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" {...stroke(color)} /></Svg>),
-  chart: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M5 20V11M12 20V5M19 20v-6" {...stroke(color)} /></Svg>),
+  // Tab-Leiste (15.11.2026): Schrank = Schrank-Symbol aus dem Status, Outfits = Karten-Stapel, Wunschliste = weiches Herz, Statistik = waagerechte Balken mit Ecke
+  closet: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" {...stroke(color)} /><Path d="M12 3v18M9.5 11v2M14.5 11v2" {...stroke(color)} /></Svg>),
+  layers: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M6.5 7h8A2.5 2.5 0 0 1 17 9.5v9a2.5 2.5 0 0 1-2.5 2.5h-8A2.5 2.5 0 0 1 4 18.5v-9A2.5 2.5 0 0 1 6.5 7Z" {...stroke(color)} /><Path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h7A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H17" {...stroke(color)} /></Svg>),
+  heart: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 20.5c-.4 0-.8-.15-1.1-.4C6.6 16.4 3 13.2 3 8.9 3 6.2 5.1 4 7.7 4c1.7 0 3.2.9 4.3 2.3C13.1 4.9 14.6 4 16.3 4 18.9 4 21 6.2 21 8.9c0 4.3-3.6 7.5-7.9 11.2-.3.25-.7.4-1.1.4Z" {...stroke(color)} /></Svg>),
+  chart: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M3 3v16a2 2 0 0 0 2 2h16" {...stroke(color)} /><Path d="M7 7h8M7 11.5h12M7 16h5" {...stroke(color)} /></Svg>),
   plus: ({ size = 24, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 5v14M5 12h14" {...stroke(color, 2.4)} /></Svg>),
   search: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Circle cx={11} cy={11} r={6.5} {...stroke(color)} /><Path d="m16 16 4 4" {...stroke(color)} /></Svg>),
   close: ({ size = 18, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M6 6l12 12M18 6 6 18" {...stroke(color)} /></Svg>),
