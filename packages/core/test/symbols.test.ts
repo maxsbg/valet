@@ -56,7 +56,7 @@ test('Status, Anlässe, Wunsch-Kategorien, Pflege, Saison und Oberkategorien hab
 
 test('Größen-Stufen bleiben die festgelegten', () => {
   assert.deepEqual(ICON_SIZE, { mini: 12, inline: 16, chip: 18, row: 20, button: 22, bar: 24, large: 28 });
-  assert.deepEqual(MONO_SIZE, { text: 20, chip: 24, tall: 30, row: 38, button: 44 });
+  assert.deepEqual(MONO_SIZE, { text: 18, chip: 20, row: 38, button: 44 });
 });
 
 // ---------- App-Code ----------

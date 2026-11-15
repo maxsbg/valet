@@ -7,7 +7,7 @@ import { useTheme, DISPLAY } from '@/lib/theme';
 import { personTone, type Person } from '@/lib/wardrobe';
 import { glass } from '@/components/ui';
 import { Icon } from '@/components/Icon';
-import type { SymbolName } from '@valet/ui';
+import { monoInset, type SymbolName } from '@valet/ui';
 
 const D = detail;
 const web = Platform.OS === 'web';
@@ -46,7 +46,7 @@ export function Capsule({ label, selected, onPress, icon, leading, a11y, dashed 
   const fg = selected ? t.bg : t.ink;
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected: !!selected }} accessibilityLabel={a11y ?? label} onPress={onPress} disabled={!onPress}
-      style={({ pressed }) => [s.capsule, leading ? { paddingLeft: 6 } : null,
+      style={({ pressed }) => [s.capsule, leading ? { paddingLeft: monoInset(D.capsule.height) - 1 } : null,
         selected ? { backgroundColor: t.ink, borderColor: t.ink } : { borderColor: t.hairline, backgroundColor: 'transparent' },
         dashed && { borderStyle: 'dashed', borderColor: t.inkMuted }, { opacity: pressed ? 0.7 : 1 }]}>
       {leading}
