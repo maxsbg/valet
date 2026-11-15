@@ -105,17 +105,7 @@ export function IconCircle({ children, selected, onPress, a11y, muted }: { child
   );
 }
 
-/** Monogramm-Plakette einer Person (Gloock, person-*-text auf Weiß) – nie Farbpunkt */
-export function Monogram({ person, size = D.monogram }: { person: Pick<Person, 'name' | 'color'>; size?: number }) {
-  const tone = personTone(person.color);
-  return (
-    <View style={[s.mono, { width: size, height: size, borderRadius: size / 2 }]} aria-hidden>
-      <Text style={{ fontFamily: DISPLAY, fontSize: Math.round(size * 0.54), lineHeight: Math.round(size * 0.66), color: tone ? personText[tone] : '#2A1A1D' }}>
-        {person.name.trim().slice(0, 1).toUpperCase()}
-      </Text>
-    </View>
-  );
-}
+export { Monogram } from '@/components/Monogram';
 
 /**
  * Gleichmäßig umbrechen (Spec 1): Breiten messen, Zeilenzahl wie beim normalen Umbruch,
@@ -218,6 +208,5 @@ const s = StyleSheet.create({
   },
   capsuleText: { fontSize: D.capsule.font, fontWeight: D.capsule.weight, textAlign: 'center' },
   circle: { width: D.circle, height: D.circle, borderRadius: D.circle / 2, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  mono: { backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px rgba(42,26,29,0.12)' },
   input: { height: D.field.height, borderRadius: D.field.radius, borderWidth: 1, paddingHorizontal: 12, fontSize: 16 },
 });

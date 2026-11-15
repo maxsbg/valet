@@ -12,7 +12,8 @@ import { useSession } from '@/lib/session';
 import { usePersisted } from '@/lib/usePersisted';
 import { useTheme, space, radius, DISPLAY, type Theme } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
-import { personKey, type Tile } from '@/lib/wardrobe';
+import { personKey, type Person, type Tile } from '@/lib/wardrobe';
+import { Monogram } from '@/components/Monogram';
 
 type Tab = 'spend' | 'wear' | 'closet';
 const TABS: [Tab, string][] = [['spend', 'Ausgaben'], ['wear', 'Getragen'], ['closet', 'Bestand']];
@@ -56,8 +57,8 @@ export default function Statistik() {
       const r = spendStats(stat, P?.id ?? null, personIds);
       const brands = r.brands.slice(0, allBrands ? 999 : 8), maxB = Math.max(1, ...r.brands.map((b) => b.value));
       const people = P ? [] : [
-        ...r.byPerson.map((x) => { const p = persons.find((y) => y.id === x.key)!; return { label: p.name + (p.id === me?.id ? ' (ich)' : ''), value: x.value, color: t.person[personKey(p.color)] }; }),
-        ...(r.unassigned ? [{ label: 'ohne Zuordnung', value: r.unassigned, color: '#c4bfb4' }] : []),
+        ...r.byPerson.map((x) => { const p = persons.find((y) => y.id === x.key)!; return { label: p.name + (p.id === me?.id ? ' (ich)' : ''), value: x.value, color: t.person[personKey(p.color)], person: p as Person | undefined }; }),
+        ...(r.unassigned ? [{ label: 'ohne Zuordnung', value: r.unassigned, color: '#c4bfb4', person: undefined }] : []),
       ].sort((a, b) => b.value - a.value);
       return (
         <>
@@ -80,7 +81,7 @@ export default function Statistik() {
           )}
           {people.length > 0 && (
             <Panel t={t} title="Ausgaben nach Person">
-              {people.map((x) => <Bar key={x.label} t={t} label={x.label} value={x.value} max={Math.max(1, ...people.map((y) => y.value))} text={formatEur(x.value)} color={x.color} />)}
+              {people.map((x) => <Bar key={x.label} t={t} label={x.label} value={x.value} max={Math.max(1, ...people.map((y) => y.value))} text={formatEur(x.value)} color={x.color} person={x.person} />)}
             </Panel>
           )}
           {r.categories.length > 0 && (
@@ -243,7 +244,7 @@ export default function Statistik() {
         <View style={{ width: scr.content }}>
           {persons.length > 0 && (
             <View style={[s.wrap, { marginBottom: space.sm }]}>
-              {persons.map((p) => <Chip key={p.id} label={p.id === me?.id ? 'Ich' : p.name} dot={t.person[personKey(p.color)]} selected={scope === p.id} onPress={() => setScope(p.id)} />)}
+              {persons.map((p) => <Chip key={p.id} label={p.id === me?.id ? 'Ich' : p.name} person={p} selected={scope === p.id} onPress={() => setScope(p.id)} />)}
               <Chip label="Allgemein" selected={scope === 'all'} onPress={() => setScope('all')} />
             </View>
           )}
@@ -294,10 +295,11 @@ function Panel({ t, title, children }: { t: Theme; title: string; children: Reac
   );
 }
 
-function Bar({ t, label, sub, value, max, text, color, dim }: { t: Theme; label: string; sub?: string; value: number; max: number; text: string; color?: string; dim?: boolean }) {
+function Bar({ t, label, sub, value, max, text, color, dim, person }: { t: Theme; label: string; sub?: string; value: number; max: number; text: string; color?: string; dim?: boolean; person?: Pick<Person, 'name' | 'color'> }) {
   return (
     <View style={[s.bar, dim && { opacity: 0.6 }]}>
-      <View style={s.barHead}>
+      <View style={[s.barHead, person && { alignItems: 'center', gap: 8 }]}>
+        {person && <Monogram person={person} size={22} />}
         <Text style={{ flex: 1, fontSize: 14, color: t.ink }} numberOfLines={1}>{label}{sub ? <Text style={{ fontSize: 12, color: t.inkMuted }}>  {sub}</Text> : null}</Text>
         <Text style={{ fontSize: 14, color: t.inkMuted }}>{text}</Text>
       </View>

@@ -137,7 +137,7 @@ export default function Schrank() {
         <View style={s.wrap}>
           <Chip label="Alle" selected={!draft.person} onPress={() => setDraft((d) => ({ ...d, person: null }))} />
           {(wardrobe?.persons ?? []).map((p) => (
-            <Chip key={p.id} label={p.name} dot={t.person[personKey(p.color)]} selected={draft.person === p.id}
+            <Chip key={p.id} label={p.name} person={p} selected={draft.person === p.id}
               onPress={() => setDraft((d) => ({ ...d, person: d.person === p.id ? null : p.id }))} />
           ))}
         </View>

@@ -14,7 +14,8 @@ import { useSession } from '@/lib/session';
 import { useTheme, space, radius, DISPLAY } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { usePersisted } from '@/lib/usePersisted';
-import { personKey, type Tile, type Wishlist } from '@/lib/wardrobe';
+import { type Tile, type Wishlist } from '@/lib/wardrobe';
+import { Monogram } from '@/components/Monogram';
 import {
   WISH_SORTS, NO_WISH_FILTERS, applyWishFilters, createList, deleteList, matchesWish, ownOrder, renameList, setListOrder,
   sortWishes, type WishFilters, type WishSortId,
@@ -113,7 +114,7 @@ export default function Wunschliste() {
   const personChips: BarChip[] = [
     { key: 'alle', label: 'Alle', count: lists.length, selected: !filters.person, onPress: () => setFilters({ ...filters, person: null }) },
     ...(wardrobe?.persons ?? []).map((p) => ({
-      key: p.id, label: p.name, dot: t.person[personKey(p.color)], count: lists.filter((l) => l.ownerId === p.id).length,
+      key: p.id, label: p.name, person: p, count: lists.filter((l) => l.ownerId === p.id).length,
       selected: filters.person === p.id, onPress: () => setFilters({ ...filters, person: filters.person === p.id ? null : p.id }),
     })),
   ];
@@ -126,7 +127,6 @@ export default function Wunschliste() {
   const allItems = useMemo(() => sorted(wishes.filter((i) => matchesWish(i, query)), null), [wishes, query, sort, seed, lists]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const personOf = (id: string | null | undefined) => wardrobe?.persons.find((p) => p.id === id);
-  const dotOf = (id: string | null | undefined) => { const p = personOf(id); return p ? t.person[personKey(p.color)] : null; };
 
   // Filter-Punkt an der Lupe: Übersicht = keiner (Person steckt in den Chips), Liste = Person und Mehrfach-Kategorien
   const nFilters = open ? (filters.person ? 1 : 0) + (filters.tags.length > 1 ? filters.tags.length : 0) : 0;
@@ -189,7 +189,7 @@ export default function Wunschliste() {
         onPress={() => openList(ALL)} />,
     ] : []),
     ...cards.map(({ list: l, items }) => (
-      <WishlistCard key={l.id} width={cardW} title={l.name} dot={dotOf(l.ownerId)} sub={`${teile(items.length)} · ${euros(sum(items))}`} items={items}
+      <WishlistCard key={l.id} width={cardW} title={l.name} owner={personOf(l.ownerId)} sub={`${teile(items.length)} · ${euros(sum(items))}`} items={items}
         onPress={() => openList(l.id)} onLongPress={() => menu(l)} />
     )),
   ];
@@ -218,7 +218,7 @@ export default function Wunschliste() {
               </View>
               <Text style={[s.title, { color: t.ink }]} numberOfLines={2}>{list?.name ?? 'Alle Wünsche'}</Text>
               <View style={s.subLine}>
-                {owner0 && <View style={[s.dot, { backgroundColor: t.person[personKey(owner0.color)] }]} />}
+                {owner0 && <Monogram person={owner0} size={20} />}
                 <Text style={{ fontSize: 14, color: t.inkMuted }}>{detailSub}</Text>
               </View>
             </View>
@@ -276,7 +276,7 @@ export default function Wunschliste() {
         <View style={s.wrap}>
           <Chip label="Alle" selected={!draft.person} onPress={() => setDraft((d) => ({ ...d, person: null }))} />
           {(wardrobe?.persons ?? []).map((p) => (
-            <Chip key={p.id} label={p.name} dot={t.person[personKey(p.color)]} selected={draft.person === p.id}
+            <Chip key={p.id} label={p.name} person={p} selected={draft.person === p.id}
               onPress={() => setDraft((d) => ({ ...d, person: d.person === p.id ? null : p.id }))} />
           ))}
         </View>
@@ -304,7 +304,7 @@ export default function Wunschliste() {
         <SectionLabel>Für</SectionLabel>
         <View style={s.wrap}>
           {(wardrobe?.persons ?? []).map((p) => (
-            <Chip key={p.id} label={p.name} dot={t.person[personKey(p.color)]} selected={owner === p.id} onPress={() => setOwner(p.id)} />
+            <Chip key={p.id} label={p.name} person={p} selected={owner === p.id} onPress={() => setOwner(p.id)} />
           ))}
         </View>
       </Sheet>
@@ -382,7 +382,6 @@ const s = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space.xs },
   title: { fontFamily: DISPLAY, fontSize: 30, lineHeight: 36, marginTop: space.xxs },
   subLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, marginBottom: space.xxs },
-  dot: { width: 8, height: 8, borderRadius: 4 },
   input: { height: 48, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: space.md, fontSize: 17 },
   menuRow: { minHeight: 52, justifyContent: 'center' },
   orderRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 64, paddingVertical: 6 },

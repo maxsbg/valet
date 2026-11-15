@@ -4,7 +4,8 @@ import { itemTile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
 import { Icons } from './Icon';
 import { useTheme, radius } from '@/lib/theme';
-import type { Tile } from '@/lib/wardrobe';
+import type { Person, Tile } from '@/lib/wardrobe';
+import { Monogram } from './Monogram';
 
 // Wunschlisten-Karten (entschieden 14.11.2026, Entwurf docs/design/wunschliste/wunschlisten-karten.html):
 // Aufbau wie die Outfit-Karte (Rand, Radius 22, Infozeile mit Personenpunkt), statt Board ein 2×2-Mosaik
@@ -16,9 +17,9 @@ const GAP = 6;
 /** Ganze Euro ohne Nachkommastellen („1.840 €“) */
 export const euros = (n: number) => `${Math.round(n).toLocaleString('de-DE')} €`;
 
-type Props = { title: string; sub: string; dot?: string | null; items: Tile[]; width: number; onPress: () => void; onLongPress?: () => void };
+type Props = { title: string; sub: string; owner?: Pick<Person, 'name' | 'color'> | null; items: Tile[]; width: number; onPress: () => void; onLongPress?: () => void };
 
-export function WishlistCard({ title, sub, dot, items, width, onPress, onLongPress }: Props) {
+export function WishlistCard({ title, sub, owner, items, width, onPress, onLongPress }: Props) {
   const t = useTheme();
   const cell = (width - 2 - 2 * PAD - GAP) / 2;
   return (
@@ -39,7 +40,7 @@ export function WishlistCard({ title, sub, dot, items, width, onPress, onLongPre
       <View style={[s.meta, { borderTopColor: t.hairline }]}>
         <Text style={[s.title, { color: t.ink }]} numberOfLines={1}>{title}</Text>
         <View style={s.line}>
-          {dot ? <View style={[s.dot, { backgroundColor: dot }]} /> : null}
+          {owner ? <View style={s.mono}><Monogram person={owner} size={18} /></View> : null}
           <Text style={[s.sub, { color: t.inkMuted }]} numberOfLines={1}>{sub}</Text>
         </View>
       </View>
@@ -67,7 +68,7 @@ const s = StyleSheet.create({
   meta: { paddingTop: 9, paddingHorizontal: 11, paddingBottom: 11, borderTopWidth: 1 },
   title: { fontSize: 15, fontWeight: '500' },
   line: { flexDirection: 'row', alignItems: 'center', marginTop: 1 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  mono: { marginRight: 6 },
   sub: { fontSize: 14, flexShrink: 1 },
   add: { alignItems: 'center', justifyContent: 'center', gap: 10 },
   plus: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
