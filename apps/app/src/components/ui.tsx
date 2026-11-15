@@ -62,7 +62,7 @@ export function Header({ title, tint = true }: { title: string; tint?: boolean }
   );
 }
 
-/** Schriftzug „valet“ am Ende jeder Tab-Seite: mittig, Abstand zur letzten Karte und zur Tab-Leiste (wie vorher im Kopf) */
+/** Schriftzug „valet“ am Ende jeder Tab-Seite: mittig, sichtbar gleicher Abstand zur letzten Karte und zur Tab-Leiste */
 export function PageEnd() {
   const t = useTheme();
   return (
@@ -268,7 +268,8 @@ const s = StyleSheet.create({
   monoText: { fontFamily: DISPLAY, fontSize: 20, lineHeight: 24 },
   wordmark: { fontFamily: DISPLAY, fontSize: 32, lineHeight: 38 },
   title: { flex: 1, fontFamily: DISPLAY, fontSize: 30, lineHeight: 36, marginRight: space.sm },
-  end: { alignSelf: 'stretch', alignItems: 'center', marginTop: space.xl },
+  // sichtbar gleicher Abstand oben und unten (≈ 31 pt): Gloock lässt über „l“ ca. 8, unter der Grundlinie ca. 7 pt Luft
+  end: { alignSelf: 'stretch', alignItems: 'center', marginTop: space.lg - 1 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 40, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: 14, flex: 1 },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 0 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1 },
