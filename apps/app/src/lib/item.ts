@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { imageUrl, todayLocal } from './wardrobe';
 import type { Picture } from './cutout';
-import { migrateSeasons, normalizeCategory, type ItemStatus } from '@valet/core';
+import { migrateSeasons, normalizeCategory, type ItemStatus, type StatusInfo } from '@valet/core';
 
 export type ItemRow = {
   id: string; wardrobe_id: string; owner_id: string | null; owner_ids: string[] | null; highlight_color: string | null; name: string; brand: string | null; category: string;
@@ -10,7 +10,9 @@ export type ItemRow = {
   color: string | null; alt_color: string | null; size: string | null; material: string | null; style: string | null;
   seasons: string[] | null; qty: number | null; price_paid: number | null; list_price: number | null; purchase_date: string | null;
   shop: string | null; link: string | null; notes: string | null; status: ItemStatus | null;
-  status_at: string | null; lent_to: string | null; sold_price: number | null; reversible: boolean | null; set_id: string | null;
+  status_at: string | null; lent_to: string | null; sold_price: number | null;
+  /** Status-Zusatzangaben (Spec 6) */
+  status_where: string | null; status_until: string | null; lent_person_id: string | null; sold_date: string | null; reversible: boolean | null; set_id: string | null;
   set_name: string | null; is_wish: boolean | null; wishlist_id: string | null; wish_tag: string | null;
 };
 export type ItemOutfit = { id: string; name: string | null; occasions: string[] | null; planDates: string[] };
@@ -48,6 +50,12 @@ export async function setWornToday(itemId: string, personId: string | null, worn
   const r = worn
     ? await supabase.from('wears').upsert({ item_id: itemId, worn_on: today, person_id: personId })
     : await supabase.from('wears').delete().eq('item_id', itemId).eq('worn_on', today);
+  if (r.error) throw r.error;
+}
+
+/** Status mit Zusatzangaben speichern (statusChange aus @valet/core liefert die bereinigten Werte) */
+export async function saveStatus(itemId: string, info: StatusInfo) {
+  const r = await supabase.from('items').update({ ...info, status_where: info.status_where ?? '' }).eq('id', itemId);
   if (r.error) throw r.error;
 }
 

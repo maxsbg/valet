@@ -243,5 +243,37 @@ export const motion = {
   spring: { damping: 22, stiffness: 260 },
 } as const;
 
-export const tokens = { brand, colors, status, person, personText, itemTile, outfitCard, tile, space, radius, hitTarget, fonts, type, glass, shadow, motion };
+/**
+ * Teil-Detail, Wunschteil, Bearbeiten (docs/design/detailseite/VALET_DETAILSEITE_SPEC.md, 15.11.2026).
+ * Bild-Kachel = Schrank-Kachel × 2: Plakette 40, Abstand 8, Radius 28 (konzentrisch 28 − 8 = 20).
+ */
+export const detail = {
+  /** Kapsel wie die Filter-Kapseln im Schrank */
+  capsule: { height: 38, minWidth: 52, padX: 13, font: 16, weight: '600', gap: 7, icon: 18 },
+  /** Werte nur als Symbol (Saison, Farben, Pflege, Status, Wunsch-Kategorie): runde Kreise */
+  circle: 38,
+  /** Farbkreis in Kapseln und Kreisen, überall gleich */
+  colorDot: 24,
+  /** Monogramm in Kapseln */
+  monogram: 24,
+  /** runde Kopf-Knöpfe (Zurück, Teilen, Bearbeiten, X, Haken, Zurücksetzen) */
+  headButton: 44,
+  headIcon: 22,
+  /** Werkzeugleiste unten (ersetzt die Tab-Leiste) */
+  toolbar: { height: 52, button: 44, main: 52, icon: 22, side: 16, bottom: 28, gap: 8 },
+  /** Pull-down-Menü (Status) */
+  menu: { width: 250, radius: 18, row: 46, check: 18, icon: 20, font: 16 },
+  /** Bild-Kachel oben */
+  image: { width: 358, height: 380, radius: 28, badge: 40, inset: 8, badgeIcon: 22 },
+  /** Karten im Inhalt */
+  card: { radius: 16, pad: 14, gap: 14 },
+  /** Tragen-Kacheln: Werte gleich groß, gemeinsam höchstens bis 20 px kleiner */
+  stat: { value: 22, valueMin: 20, label: 13, hint: 12 },
+  /** Schrift (Gloock): Name 32, Karten-Überschrift 20, Titel in Kopfzeilen/Blättern 20, große Preise 32 */
+  font: { name: 32, cardTitle: 20, sheetTitle: 20, price: 32, brand: 13, rowLabel: 15 },
+  /** Eingabefelder */
+  field: { height: 44, radius: 12, label: 13 },
+} as const;
+
+export const tokens = { brand, colors, status, person, personText, itemTile, outfitCard, tile, space, radius, hitTarget, fonts, type, glass, shadow, motion, detail };
 export default tokens;

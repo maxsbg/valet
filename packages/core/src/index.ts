@@ -12,3 +12,4 @@ export * from './categories';
 export * from './attributes';
 export * from './layout';
 export * from './import/categorize';
+export * from './status';

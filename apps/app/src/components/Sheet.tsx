@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useTheme, DISPLAY, space } from '@/lib/theme';
 
-type Props = { open: boolean; onClose: () => void; title: string; children: React.ReactNode; footer?: React.ReactNode };
+type Props = { open: boolean; onClose: () => void; title: string; children: React.ReactNode; footer?: React.ReactNode;
+  /** eigene Kopfzeile (z. B. SheetHead: X · Titel · Haken) statt des großen Titels */
+  head?: React.ReactNode };
 
 /** Sheet von unten mit Griff, Titel in Gloock und optionaler fester Fußzeile */
-export function Sheet({ open, onClose, title, children, footer }: Props) {
+export function Sheet({ open, onClose, title, children, footer, head }: Props) {
   const t = useTheme();
   const bottom = useBottomInset();
   const { height, width } = useWindowDimensions();
@@ -29,7 +31,7 @@ export function Sheet({ open, onClose, title, children, footer }: Props) {
       </Animated.View>
       <Animated.View style={[s.sheet, { backgroundColor: t.bg, maxHeight: height * 0.88, width: Math.min(width, 560), paddingBottom: Math.max(bottom, space.md), transform: [{ translateY: y }] }]}>
         <View style={[s.grab, { backgroundColor: t.hairline }]} />
-        <Text style={[s.title, { color: t.ink }]} accessibilityRole="header">{title}</Text>
+        {head ?? <Text style={[s.title, { color: t.ink }]} accessibilityRole="header">{title}</Text>}
         <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: space.md, paddingBottom: space.md }}>{children}</ScrollView>
         {footer && <View style={s.footer}>{footer}</View>}
       </Animated.View>

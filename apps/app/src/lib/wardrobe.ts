@@ -25,6 +25,8 @@ export type Tile = {
   /** Besitzer (Personen-IDs) */
   owners: string[];
   status: ItemStatus | null;
+  /** Verliehen: zurück bis (Hinweis bei fälliger Rückgabe) */
+  statusUntil: string | null;
   qty: number;
   reversible: boolean;
   setId: string | null;
@@ -83,7 +85,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,subcategory,item_type,colors,layers,color,owner_id,owner_ids,highlight_color,status,qty,reversible,main_side,set_id,is_wish,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,subcategory,item_type,colors,layers,color,owner_id,owner_ids,highlight_color,status,status_until,qty,reversible,main_side,set_id,is_wish,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
     supabase.from('wishlists').select('id,name,owner_id,item_order,created_at').eq('wardrobe_id', w.id).order('created_at'),
@@ -116,6 +118,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     ownerId: i.owner_id,
     owners: i.owner_ids ?? [],
     status: i.status,
+    statusUntil: i.status_until ?? null,
     qty: i.qty ?? 1,
     reversible: !!i.reversible,
     setId: i.set_id,
