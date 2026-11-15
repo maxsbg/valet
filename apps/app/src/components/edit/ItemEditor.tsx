@@ -47,6 +47,8 @@ type Props = {
   onDelete?: () => void;
   /** Neues Teil: „Foto ändern“ führt zurück zum Fotoschritt */
   onChangePhoto?: () => void;
+  /** Start-Reiter (z. B. „Preis fehlt“ antippen → Kauf) */
+  initialTab?: 'steck' | 'kauf';
 };
 
 export function ItemEditor(p: Props) {
@@ -56,7 +58,7 @@ export function ItemEditor(p: Props) {
   const bottom = useBottomInset();
   const { width: W } = useWindowDimensions();
   const col = Math.min(W - 32, 520);
-  const [tab, setTab] = useState<'steck' | 'kauf'>('steck');
+  const [tab, setTab] = useState<'steck' | 'kauf'>(p.initialTab ?? 'steck');
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [colorUi, setColorUi] = useState<Record<Side, { open: string | null; full: boolean }>>({ a: { open: null, full: false }, b: { open: null, full: false } });
   const [info, setInfo] = useState(false);

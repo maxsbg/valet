@@ -14,3 +14,4 @@ export * from './layout';
 export * from './import/categorize';
 export * from './status';
 export * from './edit';
+export * from './detail';

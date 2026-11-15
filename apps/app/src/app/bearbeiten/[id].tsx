@@ -15,7 +15,7 @@ import { nameToHex } from '@/lib/wardrobe';
 import { colorHex } from '@valet/core';
 
 export default function Bearbeiten() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, reiter } = useLocalSearchParams<{ id: string; reiter?: string }>();
   const t = useTheme();
   const { wardrobe, session, patch, reload } = useSession();
   const [orig, setOrig] = useState<ItemRow | null>(null);
@@ -75,7 +75,7 @@ export default function Bearbeiten() {
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ItemEditor title="Bearbeiten" form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null} wishlists={wardrobe?.wishlists ?? []}
         current={current} pics={pics} onPic={(side, p) => setPics((x) => ({ ...x, [side]: p }))} hex={tile?.hex ?? null} highlight={tile?.highlight}
-        saving={saving} onCancel={close} onSave={save} onDelete={() => setConfirmDelete(true)} />
+        saving={saving} onCancel={close} onSave={save} onDelete={() => setConfirmDelete(true)} initialTab={reiter === 'kauf' ? 'kauf' : 'steck'} />
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title={f.isWish ? 'Wunsch löschen?' : 'Teil löschen?'}
         footer={<><SheetButton label="Abbrechen" onPress={() => setConfirmDelete(false)} /><SheetButton primary label="Löschen" onPress={remove} /></>}>
         <Text style={{ fontSize: 16, color: t.ink }}>„{orig.name}“ wird mit allen Tragetagen und aus allen Outfits entfernt. Das lässt sich nicht rückgängig machen.</Text>

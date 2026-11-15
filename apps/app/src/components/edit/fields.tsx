@@ -22,11 +22,20 @@ export function KiBadge() {
 }
 
 /** Karte mit Gloock-Überschrift (Aussehen, Tragen, Details, Pflege, Kauf, Besitz …) */
-export function EditCard({ title, children, rows }: { title: string; children: React.ReactNode; /** aufklappbare Zeilen: kein Innenabstand oben/unten */ rows?: boolean }) {
+export function EditCard({ title, children, rows, action }: {
+  title: string; children: React.ReactNode; /** aufklappbare Zeilen: kein Innenabstand oben/unten */ rows?: boolean;
+  /** Text-Aktion rechts neben der Überschrift (z. B. „Bearbeiten“ bei der Set-Karte) */ action?: { label: string; onPress: () => void };
+}) {
   const t = useTheme();
+  const head = <Text style={[s.cardTitle, { color: t.ink }, rows && { marginTop: 10, marginBottom: 2 }]} accessibilityRole="header">{title}</Text>;
   return (
     <View style={[s.card, rows ? s.cardRows : s.cardPlain, { backgroundColor: t.surface, borderColor: t.hairline }]}>
-      <Text style={[s.cardTitle, { color: t.ink }, rows && { marginTop: 10, marginBottom: 2 }]} accessibilityRole="header">{title}</Text>
+      {action ? (
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+          {head}
+          <Pressable onPress={action.onPress} accessibilityRole="button" hitSlop={8}><Text style={{ fontSize: 15, color: t.accent }}>{action.label}</Text></Pressable>
+        </View>
+      ) : head}
       {children}
     </View>
   );

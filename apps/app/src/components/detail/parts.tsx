@@ -18,6 +18,7 @@ export function Glyph({ d, size = D.headIcon, color, stroke = 2 }: { d: string[]
     <Svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
       {d.map((x, i) => {
         if (x.startsWith('c:')) { const [cx, cy, r] = x.slice(2).split(',').map(Number); return <Circle key={i} cx={cx} cy={cy} r={r} {...p} />; }
+        if (x.startsWith('f:')) { const [cx, cy, r] = x.slice(2).split(',').map(Number); return <Circle key={i} cx={cx} cy={cy} r={r} fill={color} />; }
         return <Path key={i} d={x} {...p} />;
       })}
     </Svg>
@@ -34,6 +35,14 @@ export const GLYPHS = {
   reset: ['M4 12a8 8 0 1 0 2.4-5.7', 'M4 4v4.5h4.5'],
   calendar: ['M6.5 5h11a3 3 0 0 1 3 3v9.5a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z', 'M8 3v4', 'M16 3v4', 'M3.5 10h17', 'M9.5 15l2 2 3.5-3.5'],
   plus: ['M12 5v14', 'M5 12h14'],
+  /** Werkzeugleiste (Leinwand „D · Übersicht“) */
+  reserve: ['M6.5 5h11a3 3 0 0 1 3 3v9.5a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z', 'M8 3v4', 'M16 3v4', 'M3.5 10h17', 'M9.5 15l2 2 3.5-3.5'],
+  dice: ['M7.5 3.5h9a4 4 0 0 1 4 4v9a4 4 0 0 1-4 4h-9a4 4 0 0 1-4-4v-9a4 4 0 0 1 4-4z', 'f:8.5,8.5,1.1', 'f:15.5,15.5,1.1', 'f:12,12,1.1'],
+  hanger: ['M10 6a2 2 0 1 1 2 2v1.6l-8.4 5.7A1.5 1.5 0 0 0 4.4 18h15.2a1.5 1.5 0 0 0 .8-2.7L12 9.6'],
+  external: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4'],
+  chevron: ['M9 6l6 6-6 6'],
+  more: ['f:5,12,1.7', 'f:12,12,1.7', 'f:19,12,1.7'],
+  search: ['c:11,11,6.5', 'M16 16l4.5 4.5'],
   minus: ['M5 12h14'],
 } satisfies Record<string, string[]>;
 
