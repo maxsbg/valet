@@ -12,7 +12,7 @@ import { useScreen } from '@/lib/useScreen';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
 import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, SEASON_FILTERS, type SortId, type Filters } from '@/lib/sort';
 import { personKey, todayLocal } from '@/lib/wardrobe';
-import { TileIcon } from '@/components/tile/TileIcons';
+import { TileIcon, CATEGORY_ICON } from '@/components/tile/TileIcons';
 import { usePersisted } from '@/lib/usePersisted';
 
 const kept: { cat: string | null; filters: Filters } = { cat: null, filters: NO_FILTERS };
@@ -63,6 +63,8 @@ export default function Schrank() {
     { key: 'alle', label: 'Alle', count: inCloset.length, selected: !cat, onPress: () => setCat(null) },
     ...CATEGORIES.filter((c) => counts.get(c)).map((c) => ({
       key: c, label: c, count: counts.get(c), selected: cat === c, onPress: () => setCat(cat === c ? null : c),
+      // Symbol wie bei den Anlass-Chips im Outfits-Tab: ClosetBar faltet Chips mit Symbol (zu: Symbol + Anzahl)
+      icon: CATEGORY_ICON[c] ? <TileIcon name={CATEGORY_ICON[c]!} color={cat === c ? t.bg : t.ink} size={18} /> : undefined,
     })),
   ];
   // Milchglas erst, wenn die Leiste oben klebt (Kopfzeile weggescrollt)

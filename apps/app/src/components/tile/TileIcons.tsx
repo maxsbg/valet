@@ -36,6 +36,19 @@ export const TILE_ICONS = {
   nextcop: [P('M5 12h13'), P('M13 6l6 6-6 6')],
   someday: [P('M15.5 3.5l1.5 3.1 3.4.5-2.5 2.4.6 3.4-3-1.6-3 1.6.6-3.4-2.5-2.4 3.4-.5z'), P('M9.5 13.5l-6 6'), P('M12.5 16.5l-3 3'), P('M7 11l-3 3')],
   gift: [P('M4 9.5h16v3H4z'), P('M5.5 12.5V20h13v-7.5'), P('M12 9.5V20'), P('M12 9.5C10.5 6 7 5.5 7 7.5S10 9.5 12 9.5c2 0 5 0 5-2s-3.5-1.5-5 2')],
+  // Oberkategorien (Schrank-Chips, entschieden 15.11.2026): hohe Symbole 18 hoch, breite 20 breit, alle mittig;
+  // Shorts und Rock bewusst kürzer als die Hose
+  catOberbekleidung: [P('M8 3 4.7 4.3a2 2 0 0 0-1.3 1.6L2 18.9a1 1 0 0 0 1 1.1h2.1a1 1 0 0 0 1-.9L7 12v7a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-7l.9 7.1a1 1 0 0 0 1 .9H21a1 1 0 0 0 1-1.1L20.6 5.9a2 2 0 0 0-1.3-1.6L16 3'), P('M8 3l4 4 4-4M12 7v14')],
+  catOberteil: [P('M19.54 4.31L15.6 3a3.6 3.6 0 0 1-7.2 0L4.46 4.31a1.8 1.8 0 0 0-1.21 2.01l.52 3.12a.9.9 0 0 0 .89.76H6.6v9c0 .99.81 1.8 1.8 1.8h7.2a1.8 1.8 0 0 0 1.8-1.8V10.2h1.94a.9.9 0 0 0 .89-.76l.52-3.12a1.8 1.8 0 0 0-1.21-2.01z')],
+  catKleid: [P('M9.16 3v4.74M14.84 3v4.74'), P('M8.21 7.74h7.58l-1.14 4.26 3.79 7.86a.85.85 0 0 1-.76 1.14H6.32a.85.85 0 0 1-.76-1.14l3.79-7.86Z')],
+  catHose: [P('M6.2 3h11.6a1 1 0 0 1 1 .95l.9 16a1 1 0 0 1-1 1.05H15a1 1 0 0 1-1-.85L12 10l-2 10.15a1 1 0 0 1-1 .85H5.3a1 1 0 0 1-1-1.05l.9-16A1 1 0 0 1 6.2 3Z'), P('M5.4 7h13.2')],
+  catShorts: [P('M6.1 4.62h11.8a1.02 1.02 0 0 1 1.02.92l1.32 12.72a1.02 1.02 0 0 1-1.01 1.12h-4.69a1.02 1.02 0 0 1-1.01-.81L12 11.75l-1.53 6.82a1.02 1.02 0 0 1-1.01.81H4.77a1.02 1.02 0 0 1-1.01-1.12l1.32-12.72a1.02 1.02 0 0 1 1.02-.92Z'), P('M5.49 8.69h13.02')],
+  catRock: [P('M7.46 3.92h9.08a1.01 1.01 0 0 1 1.01.81l2.93 14.13a1.01 1.01 0 0 1-1.01 1.22H4.53a1.01 1.01 0 0 1-1.01-1.22l2.93-14.13a1.01 1.01 0 0 1 1.01-.81Z'), P('M6.75 7.46h10.5M9.98 7.46l-1.01 12.62M14.02 7.46l1.01 12.62')],
+  catSchuh: [P('M4 5.5h3a1 1 0 0 1 .9.6L9.5 9.5l9.4 2.5A4 4 0 0 1 22 15.9v.6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z'), P('M2 14.5h20M10.5 9.8l-1 1.9M13.5 10.6l-1 1.9')],
+  catKopfbedeckung: [P('M2 14.37a7.89 7.89 0 0 1 15.79 0Z'), P('M14.63 14.37h5.79a1.58 1.58 0 0 1 0 3.16h-4.74a3.16 3.16 0 0 1-3.15-3.16'), P('M9.89 6.47v.01')],
+  catTasche: [P('M6.15 9.31h11.7a2.66 2.66 0 0 1 2.65 2.66v6.37a2.66 2.66 0 0 1-2.65 2.66H6.15a2.66 2.66 0 0 1-2.65-2.66v-6.37a2.66 2.66 0 0 1 2.65-2.66Z'), P('M6.69 9.31l3.82-5.53a1.81 1.81 0 0 1 2.98 0l3.82 5.53M3.5 13.56h17M12 13.56v2.13')],
+  catAccessoire: [C(6, 15, 4), C(18, 15, 4), P('M14 15a2 2 0 0 0-4 0M2.5 13 5 7c.7-1.3 1.4-2 3-2M21.5 13 19 7c-.7-1.3-1.5-2-3-2')],
+  catSchmuck: [C(12, 12, 5.41), P('M12 10.21v1.8l.9.9M15.72 8.1l-.73-3.65a1.8 1.8 0 0 0-1.8-1.45h-2.42a1.8 1.8 0 0 0-1.76 1.45L8.28 8.1M8.29 15.94l.72 3.61a1.8 1.8 0 0 0 1.8 1.45h2.45a1.8 1.8 0 0 0 1.8-1.45l.73-3.65')],
   // Outfit-Anlässe (OCCASIONS in @valet/core, entschieden 14.11.2026; Alltag = Fußspuren)
   occAlltag: [P('M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z'), P('M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z'), P('M16 17h4'), P('M4 13h4')],
   occBuero: [P('M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z'), P('M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2')],
@@ -72,3 +85,9 @@ export function TileIcon({ name, color, size: sizeOverride, scale = 1 }: { name:
     </Svg>
   );
 }
+
+/** Oberkategorie → Symbol (Schrank-Chips; Name aus CATEGORIES in @valet/core) */
+export const CATEGORY_ICON: Record<string, TileIconName> = {
+  Oberbekleidung: 'catOberbekleidung', Oberteil: 'catOberteil', Kleid: 'catKleid', Hose: 'catHose', Shorts: 'catShorts', Rock: 'catRock',
+  Schuh: 'catSchuh', Kopfbedeckung: 'catKopfbedeckung', Tasche: 'catTasche', Accessoire: 'catAccessoire', Schmuck: 'catSchmuck',
+};
