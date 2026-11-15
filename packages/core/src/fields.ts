@@ -28,7 +28,7 @@ export type Fields = {
 
 export const NECKLINES = ['Rundhals', 'V-Ausschnitt', 'Knopfleiste', 'Polokragen', 'Rollkragen', 'Stehkragen', 'Kapuze'] as const;
 export const OUTER_COLLARS = [...COLLARS.filter((c) => c !== 'ohne Kragen'), 'Kapuze', 'ohne Kragen'] as const;
-/** Trägerart bei Taschen (Vorschlag, Liste in der Spec noch nicht festgelegt) */
+/** Trägerart bei Taschen (bestätigt 15.11.2026) */
 export const STRAPS = ['Henkel', 'Schultergurt', 'Umhängegurt', 'Rucksackgurte', 'Kette', 'ohne'] as const;
 
 const ACC_CARE = new Set(['Unterwäsche', 'Socke', 'Strumpfhose', 'Bademode', 'Schal', 'Anzug-Accessoire', 'Handschuh', 'Traditionelle Kleidung', 'Stulpe']);
@@ -80,12 +80,12 @@ const range = (a: number, b: number, step = 1) => Array.from({ length: Math.roun
 
 export const PANTS_WAIST = range(26, 40).map((n) => `W${n}`);
 export const PANTS_LENGTH = range(28, 36).map((n) => `L${n}`);
-/** EU-Schuhgrößen 35–48 in halben Schritten (Vorschlag) */
+/** EU-Schuhgrößen 35–48 in halben Schritten (bestätigt 15.11.2026) */
 export const SHOE_SIZES = range(35, 48, 0.5).map((n) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)},5`));
 export const CAP_ADJUSTABLE = 'Verstellbar';
 /** Fitted-Größen (US, Kopfumfang) */
 export const CAP_FITTED = ['6 7/8', '7', '7 1/8', '7 1/4', '7 3/8', '7 1/2', '7 5/8', '7 3/4', '7 7/8', '8'] as const;
-/** Ringgrößen (Innenumfang in mm, Vorschlag) */
+/** Ringgrößen (Innenumfang in mm, bestätigt 15.11.2026) */
 export const RING_SIZES = range(48, 66).map(String);
 
 /** Hose ohne Länge: Shorts und Pyjama-Hose (Spec 7) */

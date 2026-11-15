@@ -89,8 +89,11 @@ export function setField<K extends keyof EditForm>(f: EditForm, k: K, v: EditFor
 export function setCategory(f: EditForm, p: { category: string | null; subcategory: string | null; type: string | null }): EditForm {
   const before = fieldsFor(f.category, f.subcategory).size, after = fieldsFor(p.category, p.subcategory).size;
   let next = setField(setField(setField(f, 'category', p.category), 'subcategory', p.subcategory), 'type', p.type);
-  if (before !== after) next = { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null };
-  return next;
+  if (before === after) return next;
+  // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose): bleibt stehen (Max, 15.11.2026).
+  // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.
+  const keepLetters = f.sizeSystem === 'letters' && !!f.size && (after === 'clothing' || after === 'pants');
+  return keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null };
 }
 
 /** KI-Vorschlag bestätigen (Wert bleibt) */

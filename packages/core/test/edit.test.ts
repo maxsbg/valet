@@ -141,8 +141,14 @@ test('Größe beim Laden: Schuh → EU, Jeans W/L, Kappe „7 3/8 (58,7 cm)“ �
 });
 
 test('Kategorie-Wechsel: Größen-System passt sich an', () => {
-  const f = setCategory(base({ sizeSystem: 'letters', size: 'M' }), { category: 'Hose', subcategory: 'Jeans', type: null });
-  assert.deepEqual([f.sizeSystem, f.size], ['wl', null]);
+  const f = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Hose', subcategory: 'Jeans', type: null });
+  assert.deepEqual([f.sizeSystem, f.size], ['letters', 'M']);
+  const e = setCategory(base({ category: 'Oberteil', sizeSystem: 'numbers', size: '50' }), { category: 'Hose', subcategory: 'Jeans', type: null });
+  assert.deepEqual([e.sizeSystem, e.size], ['wl', null]);
+  const h = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Schuh', subcategory: 'Sneaker', type: null });
+  assert.deepEqual([h.sizeSystem, h.size], ['eu', null]);
+  const b = setCategory(base({ category: 'Hose', sizeSystem: 'letters', size: 'L' }), { category: 'Oberteil', subcategory: null, type: null });
+  assert.deepEqual([b.sizeSystem, b.size], ['letters', 'L']);
   const g = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Oberbekleidung', subcategory: null, type: null });
   assert.deepEqual([g.sizeSystem, g.size], ['letters', 'M']);
 });
