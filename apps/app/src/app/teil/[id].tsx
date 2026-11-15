@@ -1,5 +1,5 @@
 // Teil-Detail (VALET_DETAILSEITE_SPEC.md, Abschnitte 2–5): Kopf, Bild-Kachel, Reiter Übersicht · Steckbrief · Kauf,
-// Werkzeugleiste unten statt Tab-Leiste. Wunschteile vorerst noch über die bisherige Seite (Stufe 5).
+// Werkzeugleiste unten statt Tab-Leiste. Wunschteile: components/detail/WishDetail.tsx (Stufe 5).
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -29,13 +29,13 @@ import { Toolbar, TOOLBAR_SPACE } from '@/components/detail/Toolbar';
 import { Glyph, GLYPHS, HeadButton } from '@/components/detail/parts';
 import { KaufView, NotesCard, OutfitsCard, SetCard, StatTiles, SteckbriefView } from '@/components/detail/sections';
 import { CareConfirmSheet, ReserveSheet, type HoldRow } from '@/components/detail/sheets';
-import { LegacyWishDetail } from '@/components/detail/LegacyWishDetail';
+import { WishDetail } from '@/components/detail/WishDetail';
 
 export default function Teil() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { wardrobe } = useSession();
   const isWish = wardrobe?.items.find((i) => i.id === id)?.isWish;
-  return isWish ? <LegacyWishDetail /> : <ClosetDetail id={id} />;
+  return isWish ? <WishDetail id={id} /> : <ClosetDetail id={id} />;
 }
 
 type Tab = 'overview' | 'profile' | 'purchase';

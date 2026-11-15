@@ -5,6 +5,9 @@ import type { Tile, Wishlist } from './wardrobe';
 
 // Wunschliste: Listen anlegen/umbenennen/löschen, Reihenfolge, Suche, Filter und Sortierung (entschieden 14.11.2026)
 
+/** Wunschteil-Detail → „Liste“ antippen: diese Liste beim nächsten Öffnen der Wunschliste geöffnet zeigen */
+export const wishlistNav: { open: string | null } = { open: null };
+
 export async function createList(wardrobeId: string, name: string, ownerId: string | null): Promise<string> {
   const r = await supabase.from('wishlists').insert({ wardrobe_id: wardrobeId, name: name.trim(), owner_id: ownerId }).select('id').single();
   if (r.error) throw r.error;

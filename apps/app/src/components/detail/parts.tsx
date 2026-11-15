@@ -44,6 +44,10 @@ export const GLYPHS = {
   more: ['f:5,12,1.7', 'f:12,12,1.7', 'f:19,12,1.7'],
   search: ['c:11,11,6.5', 'M16 16l4.5 4.5'],
   minus: ['M5 12h14'],
+  /** Wunschteil: Gekauft (Einkaufstüte mit Haken, Leinwand „E · Übersicht“) */
+  bagCheck: ['M5 8h14l-1 12H6z', 'M9 8V6.5a3 3 0 0 1 6 0V8', 'M9.2 14.2l2 2 3.6-3.6'],
+  /** Wunschteil ohne Kategorie: leerer Kreis */
+  tagNone: ['c:12,12,7.5'],
 } satisfies Record<string, string[]>;
 
 /** Runder 44-px-Kopfknopf: Glas (Zurück, Teilen, Bearbeiten, X, Zurücksetzen) oder accent (Haken = Fertig) */
