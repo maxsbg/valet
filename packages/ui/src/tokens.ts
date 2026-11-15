@@ -255,8 +255,6 @@ export const detail = {
   circle: 38,
   /** Farbkreis in Kapseln und Kreisen, überall gleich */
   colorDot: 24,
-  /** Monogramm in Kapseln */
-  monogram: 24,
   /** runde Kopf-Knöpfe (Zurück, Teilen, Bearbeiten, X, Haken, Zurücksetzen) */
   headButton: 44,
   headIcon: 22,

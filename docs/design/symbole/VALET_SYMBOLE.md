@@ -12,8 +12,9 @@ Einzige Quelle: `packages/ui/src/symbols.ts` (`SYMBOLS`). Übersicht für Max: `
 6. **Größe im Raster:** hohe Formen 18 hoch, breite höchstens 20 breit, runde/quadratische 18; optisch mittig. Ausnahme: Bügel (`wornToday`) mit Versatz aus `itemTile.badge.wornToday.offsetY`.
 7. **Richtung durch Drehen** (`rotate`): den Chevron gibt es einmal – nach unten 90, nach links 180.
 8. **Größen nur aus `ICON_SIZE`:** `mini` 12 (X in Mini-Knöpfen) · `inline` 16 (neben Text, Pills) · `chip` 18 (Chips und Kapseln, alle Tabs gleich) · `row` 20 (Zeilen, Menüs, Schalter, Blätter-Pfeile) · `button` 22 (runde Knöpfe, Werkzeugleiste, Pflege-Kreise) · `bar` 24 (Tab-Leiste, Hauptknopf) · `large` 28 (große Einzel-Symbole). Plaketten über `TileIcon`.
-9. **Vorgemerkte Symbole** (`reserved`) nicht für anderes benutzen: `dice` (Outfit würfeln), `grip` (Umsortieren per Ziehen), `undo` (Kopfknopf „Zurücksetzen“ laut Spec). Wird die Funktion gebaut: `reserved` entfernen.
-10. **Herkunft** angeben: von Lucide abgeleitete Formen mit `src: 'Lucide'` (Lizenzhinweis steht in `symbols.ts`).
+9. **Monogramme** haben ebenfalls feste Stufen (`MONO_SIZE`, `<Monogram size=… />`): `text` 20 (neben 14-px-Text) · `chip` 24 (Chips 36 und Kapseln 38, konzentrisch, = Farbkreis) · `tall` 30 (hohe Chips 44) · `row` 38 (Listenzeile, = Wert-Kreis) · `button` 44 (Profil-Knopf, = runde Knöpfe). Plaketten über `itemTile.badge`.
+10. **Vorgemerkte Symbole** (`reserved`) nicht für anderes benutzen: `dice` (Outfit würfeln), `grip` (Umsortieren per Ziehen), `undo` (Kopfknopf „Zurücksetzen“ laut Spec). Wird die Funktion gebaut: `reserved` entfernen.
+11. **Herkunft** angeben: von Lucide abgeleitete Formen mit `src: 'Lucide'` (Lizenzhinweis steht in `symbols.ts`).
 
 ## Bewusst geteilt (gleiche Bedeutung)
 - `closet`: Tab „Schrank“ + Status „Im Schrank“

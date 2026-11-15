@@ -1,13 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { detail as D, personText } from '@valet/ui';
+import { MONO_SIZE, personText, type MonoSize } from '@valet/ui';
 import { DISPLAY } from '@/lib/theme';
 import { personTone, type Person } from '@/lib/wardrobe';
 
 /**
  * Monogramm-Plakette einer Person (Gloock, person-*-text auf Weiß) – nie Farbpunkt.
  * Steht überall vor Personennamen in Kapseln, Chips und Zeilen (15.11.2026).
+ * size = feste Stufe (MONO_SIZE): text 20 · chip 24 · tall 30 · row 38 · button 44.
  */
-export function Monogram({ person, size = D.monogram }: { person: Pick<Person, 'name' | 'color'>; size?: number }) {
+export function Monogram({ person, size: step = 'chip' }: { person: Pick<Person, 'name' | 'color'>; size?: MonoSize }) {
+  const size = MONO_SIZE[step];
   const tone = personTone(person.color);
   return (
     <View style={[s.mono, { width: size, height: size, borderRadius: size / 2 }]} aria-hidden>

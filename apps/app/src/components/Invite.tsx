@@ -41,7 +41,7 @@ export function Invite() {
         const linked = !!p.user_id;
         return (
           <View key={p.id} style={[s.row, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
-            <Monogram person={p} size={34} />
+            <Monogram person={p} size="row" />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 16, color: t.ink }}>{p.name}{p.id === me?.id ? ' (ich)' : ''}</Text>
               <Text style={{ fontSize: 13, color: t.inkMuted }}>{linked ? 'hat ein Konto' : 'noch kein Konto'}</Text>

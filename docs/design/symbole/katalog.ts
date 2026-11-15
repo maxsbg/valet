@@ -1,6 +1,6 @@
 // Baut den Symbol-Katalog (HTML) aus dem Symbol-Pool. Benutzt von erstellen.ts (schreibt die Datei)
 // und packages/core/test/symbols.test.ts (prüft, dass symbol-katalog.html zum Code passt).
-import { ICON_SIZE, SYMBOL_GROUPS, SYMBOLS, type SymbolDef, type SymbolGroup } from '../../../packages/ui/src/symbols';
+import { ICON_SIZE, MONO_SIZE, SYMBOL_GROUPS, SYMBOLS, type SymbolDef, type SymbolGroup } from '../../../packages/ui/src/symbols';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -30,6 +30,14 @@ const SIZE_TEXT: Record<keyof typeof ICON_SIZE, string> = {
   large: 'große Einzel-Symbole (Neu-Seite, Neues Set, Geschenk-Karte)',
 };
 
+const MONO_TEXT: Record<keyof typeof MONO_SIZE, string> = {
+  text: 'neben 14-px-Text: Infozeile der Wunschlisten-Karte, Kopf einer geöffneten Liste, Balken in der Statistik',
+  chip: 'in Chips (36 hoch, Rand 6) und Kapseln (38 hoch, Rand 7) – so groß wie der Farbkreis an derselben Stelle',
+  tall: 'in hohen Chips (44 hoch, Rand 7)',
+  row: 'Listenzeile mit zwei Textzeilen (Schrank teilen) – so groß wie ein Wert-Kreis',
+  button: 'Profil-Knopf in der Kopfzeile – so groß wie die runden Knöpfe',
+};
+
 const entries = Object.entries(SYMBOLS) as [string, SymbolDef][];
 const groups = Object.keys(SYMBOL_GROUPS) as SymbolGroup[];
 const sizes = Object.entries(ICON_SIZE).map(([k, v]) => `<tr><td><code>${k}</code></td><td>${v} px</td><td>${SIZE_TEXT[k as keyof typeof ICON_SIZE]}</td></tr>`).join('');
@@ -44,6 +52,10 @@ const sections = groups.map((g) => {
       ${d.reserved ? '<span class="tag">vorgemerkt</span>' : ''}${d.src ? `<span class="tag src">${d.src}</span>` : ''}</div>`).join('')}</div>`;
 }).join('');
 
+
+const mono = (letter: string, px: number, color = '#8E2440') =>
+  `<span class="m" style="width:${px}px;height:${px}px;font-size:${Math.round(px * 0.54)}px;color:${color}">${letter}</span>`;
+const monos = Object.entries(MONO_SIZE).map(([k, v]) => `<tr><td><code>${k}</code></td><td>${v} px</td><td>${MONO_TEXT[k as keyof typeof MONO_SIZE]}</td></tr>`).join('');
 
 export function katalogHtml(): string {
   return `<!DOCTYPE html>
@@ -69,6 +81,12 @@ export function katalogHtml(): string {
   .tag { display:inline-block; margin:6px 4px 0 0; font-size:11px; font-weight:700; color:#fff; background:var(--ox); border-radius:99px; padding:1px 8px; }
   .tag.src { background:#9a8a8d; }
   code { font:12.5px ui-monospace,Menlo,monospace; }
+  .demo { padding:14px 16px; } .drow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
+  .chip, .cap { display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border:1px solid var(--line); border-radius:99px; font-size:15px; background:#fff; }
+  .cap { height:38px; padding:0 13px; gap:7px; font-weight:600; font-size:16px; } .chip.tall { height:44px; padding:0 16px; }
+  .chip.mono { padding-left:6px; } .chip.tall.mono { padding-left:7px; } .cap.mono { padding-left:6px; }
+  .m { display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:#fff; box-shadow:inset 0 0 0 1px rgba(42,26,29,.12); font-family:Georgia,serif; flex:none; }
+  .txt { gap:6px; font-size:14px; color:var(--muted); }
 </style></head><body><main>
 <h1>Valet – Symbol-Katalog</h1>
 <p class="lead">Alle ${entries.length} Symbole der App mit fester Bedeutung. Erzeugt aus <code>packages/ui/src/symbols.ts</code> – der einzigen Quelle. Stand der Regeln: 15.11.2026.</p>
@@ -90,6 +108,15 @@ export function katalogHtml(): string {
 
 <h2>Größen</h2>
 <div class="card"><table><tr><th>Stufe</th><th>Größe</th><th>Wofür</th></tr>${sizes}</table></div>
+
+<h2>Monogramme</h2>
+<p class="lead">Monogramme stehen an denselben Stellen wie Symbole und haben deshalb ebenfalls feste Stufen. In Chips und Kapseln sitzen sie konzentrisch – gleicher Rand oben, unten und links, wie die Plaketten auf der Kachel. Plaketten behalten ihre Maße aus der Kachel-Spec.</p>
+<div class="card"><table><tr><th>Stufe</th><th>Durchmesser</th><th>Wofür</th></tr>${monos}</table></div>
+<div class="card demo">
+  <div class="drow"><span class="chip">${svg(SYMBOLS.occSport as SymbolDef, ICON_SIZE.chip)}Sport</span><span class="chip mono">${mono('M', MONO_SIZE.chip)}Max</span><span class="chip tall mono">${mono('P', MONO_SIZE.tall, '#C2185B')}Paul</span></div>
+  <div class="drow"><span class="cap">${svg(SYMBOLS.label as SymbolDef, ICON_SIZE.chip)}Etikett</span><span class="cap mono">${mono('M', MONO_SIZE.chip)}Max (du)</span></div>
+  <div class="drow txt">${mono('M', MONO_SIZE.text)}<span>Max · 6 Teile · 412 €</span></div>
+</div>
 
 <h2>Bewusst an mehreren Stellen</h2>
 <div class="card"><ul>

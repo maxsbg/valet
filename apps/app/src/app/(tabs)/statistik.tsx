@@ -299,7 +299,7 @@ function Bar({ t, label, sub, value, max, text, color, dim, person }: { t: Theme
   return (
     <View style={[s.bar, dim && { opacity: 0.6 }]}>
       <View style={[s.barHead, person && { alignItems: 'center', gap: 8 }]}>
-        {person && <Monogram person={person} size={22} />}
+        {person && <Monogram person={person} size="text" />}
         <Text style={{ flex: 1, fontSize: 14, color: t.ink }} numberOfLines={1}>{label}{sub ? <Text style={{ fontSize: 12, color: t.inkMuted }}>  {sub}</Text> : null}</Text>
         <Text style={{ fontSize: 14, color: t.inkMuted }}>{text}</Text>
       </View>
