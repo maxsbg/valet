@@ -21,7 +21,6 @@ export const Icons = {
   pencil: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M4 20h4L19 9l-4-4L4 16Z" {...stroke(color)} /></Svg>),
   check: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="m5 12.5 4.5 4.5L19 7" {...stroke(color, 2.4)} /></Svg>),
   calendar: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Rect x={4} y={5} width={16} height={15} rx={3} {...stroke(color)} /><Path d="M4 10h16M9 3v4M15 3v4" {...stroke(color)} /></Svg>),
-  closet: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Rect x={5} y={3} width={14} height={18} rx={2} {...stroke(color)} /><Path d="M12 3v18M10 12h.01M14 12h.01" {...stroke(color)} /></Svg>),
   share: ({ size = 20, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M12 3v12M8 7l4-4 4 4" {...stroke(color)} /><Path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" {...stroke(color)} /></Svg>),
   link: ({ size = 22, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" {...stroke(color)} /><Path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" {...stroke(color)} /></Svg>),
   chevron: ({ size = 16, color }: P) => (<Svg width={size} height={size} viewBox="0 0 24 24"><Path d="m9 6 6 6-6 6" {...stroke(color)} /></Svg>),
