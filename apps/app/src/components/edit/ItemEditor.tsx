@@ -282,8 +282,10 @@ export function ItemEditor(p: Props) {
                     const pp = p.persons.find((x) => x.id === r.personId);
                     return (
                       <View key={r.personId} style={[s.shareRow, { borderBottomColor: t.hairline }]}>
-                        {pp && <Monogram person={pp} size={28} />}
-                        <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>{pp ? name(pp) : '?'}</Text>
+                        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                          {pp ? <Capsule label={name(pp)} selected leading={<Monogram person={pp} />} />
+                            : <Text style={{ fontSize: 15, color: t.ink }}>?</Text>}
+                        </View>
                         <Text style={{ fontSize: 13, color: t.inkMuted }}>{r.pct} %</Text>
                         {f.splitMode === 'custom' ? (
                           <View style={{ width: 104 }}>
@@ -388,7 +390,7 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Gloock_400Regular', fontSize: detail.font.sheetTitle, lineHeight: 24, textAlign: 'center' },
   kiCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1 },
   bar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2, marginTop: 4 },
-  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, borderBottomWidth: 1 },
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingVertical: 8, borderBottomWidth: 1 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
   delete: { height: 48, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
