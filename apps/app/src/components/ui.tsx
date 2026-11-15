@@ -33,31 +33,41 @@ export function TopTint() {
   return <View style={[FIXED, { top: 0, left: 0, right: 0, height: 8, zIndex: 5, backgroundColor: t.bg }]} />;
 }
 
-/** Kopfzeile: Profil (Monogramm) links, Schriftzug „valet“ mittig, Einstellungen rechts */
-export function Header({ tint = true }: { tint?: boolean }) {
+/**
+ * Kopfzeile der Tabs (entschieden 15.11.2026): links der Tab-Name in Gloock (ink, also weiß bzw. schwarz),
+ * rechts nur das Profil-Monogramm – darüber auch die Einstellungen. Der Schriftzug „valet“ sitzt am Seitenende (`PageEnd`).
+ */
+export function Header({ title, tint = true }: { title: string; tint?: boolean }) {
   const t = useTheme();
   const { wardrobe, session } = useSession();
-  const [sheet, setSheet] = useState<'profile' | 'settings' | null>(null);
+  const [open, setOpen] = useState(false);
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
   const tone = t.person[personKey(me?.color ?? null)];
   const letter = (me?.name ?? session?.user.email ?? '?').trim().slice(0, 1).toUpperCase();
   return (
     <View style={s.header}>
       {tint && <TopTint />}
-      <Pressable accessibilityRole="button" accessibilityLabel="Profil" onPress={() => setSheet('profile')} hitSlop={4}
+      <Text style={[s.title, { color: t.ink }]} numberOfLines={1} accessibilityRole="header">{title}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Profil und Einstellungen" onPress={() => setOpen(true)} hitSlop={4}
         style={({ pressed }) => [s.mono, { borderColor: tone + '73', backgroundColor: tone + '1F', opacity: pressed ? 0.7 : 1 }]}>
         <Text style={[s.monoText, { color: tone }]}>{letter}</Text>
       </Pressable>
-      <Text style={[s.wordmark, { color: t.dark ? t.accent : '#722638' }]} accessibilityRole="header">valet</Text>
-      <RoundButton label="Einstellungen" size={44} onPress={() => setSheet('settings')}><Icons.gear color={t.ink} size={21} /></RoundButton>
-      <Sheet open={sheet === 'profile'} onClose={() => setSheet(null)} title={me?.name ?? 'Profil'}
-        footer={<SheetButton label="Abmelden" onPress={() => { setSheet(null); supabase.auth.signOut(); }} />}>
+      <Sheet open={open} onClose={() => setOpen(false)} title={me?.name ?? 'Profil'}
+        footer={<SheetButton label="Abmelden" onPress={() => { setOpen(false); supabase.auth.signOut(); }} />}>
         <Text style={{ fontSize: 15, color: t.inkMuted }}>{session?.user.email}</Text>
-        {wardrobe && <Text style={{ fontSize: 15, color: t.inkMuted, marginTop: 4 }}>Schrank „{wardrobe.name}“</Text>}
+        {wardrobe && <Text style={{ fontSize: 15, color: t.inkMuted, marginTop: 4, marginBottom: space.sm }}>Schrank „{wardrobe.name}“</Text>}
+        <OptionRow label="Alte Bilder zuordnen" selected={false} last onPress={() => { setOpen(false); router.push('/bilder-zuordnen'); }} />
       </Sheet>
-      <Sheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Einstellungen">
-        <OptionRow label="Alte Bilder zuordnen" selected={false} last onPress={() => { setSheet(null); router.push('/bilder-zuordnen'); }} />
-      </Sheet>
+    </View>
+  );
+}
+
+/** Schriftzug „valet“ am Ende jeder Tab-Seite: mittig, Abstand zur letzten Karte und zur Tab-Leiste (wie vorher im Kopf) */
+export function PageEnd() {
+  const t = useTheme();
+  return (
+    <View style={s.end} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Text style={[s.wordmark, { color: t.dark ? t.accent : '#722638' }]}>valet</Text>
     </View>
   );
 }
@@ -257,6 +267,8 @@ const s = StyleSheet.create({
   mono: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   monoText: { fontFamily: DISPLAY, fontSize: 20, lineHeight: 24 },
   wordmark: { fontFamily: DISPLAY, fontSize: 32, lineHeight: 38 },
+  title: { flex: 1, fontFamily: DISPLAY, fontSize: 30, lineHeight: 36, marginRight: space.sm },
+  end: { alignSelf: 'stretch', alignItems: 'center', marginTop: space.xl },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 40, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: 14, flex: 1 },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 0 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1 },

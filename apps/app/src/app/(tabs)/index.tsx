@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { CATEGORIES, lentDue } from '@valet/core';
-import { Header, Chip, Fab, Empty, glass } from '@/components/ui';
+import { Header, Chip, Fab, Empty, PageEnd, glass } from '@/components/ui';
 import { ClosetBar } from '@/components/ClosetBar';
 import { Page } from '@/components/Page';
 import { Mosaic } from '@/components/Mosaic';
@@ -76,14 +76,14 @@ export default function Schrank() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <Page
-        contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + 90, alignItems: 'center' }}
+        contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
         keyboardShouldPersistTaps="handled"
         scrollY={scrollY}
         stickyHeaderIndices={web ? undefined : [1]}
       >
         <View style={{ width: barW }} onLayout={(e) => setHeadH(e.nativeEvent.layout.height)}>
-          <Header tint={!stuck} />
+          <Header title="Schrank" tint={!stuck} />
         </View>
         {/* klebt beim Scrollen oben; reicht bis unter die Statusleiste, Kacheln laufen darunter durch.
             Hintergrund sitzt direkt auf der klebenden Fläche: Safari tönt danach den Bereich hinter der Uhr
@@ -117,6 +117,7 @@ export default function Schrank() {
             <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
           )}
         </View>
+        <PageEnd />
       </Page>
       <Fab bottom={scr.fabBottom} onPress={() => router.push('/neu')} />
       <Sheet open={sheet === 'sort'} onClose={() => setSheet(null)} title="Sortieren"

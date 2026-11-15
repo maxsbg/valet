@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Page } from '@/components/Page';
 import { categoryLabel, closetStats, formatEur, spendStats, wearStats, IDLE_DAYS, type StatItem, type WearLog, type WearPeriod, type Outfit as CoreOutfit } from '@valet/core';
 import { OutfitBoard } from '@/components/OutfitBoard';
-import { Header, Chip, Empty } from '@/components/ui';
+import { Header, Chip, Empty, PageEnd } from '@/components/ui';
 import { TileIcon } from '@/components/tile/TileIcons';
 import { ItemPicture } from '@/components/ItemPicture';
 import { Invite } from '@/components/Invite';
@@ -239,7 +239,7 @@ export default function Statistik() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <Page contentContainerStyle={{ paddingTop: scr.top, paddingBottom: scr.barTop + space.lg, alignItems: 'center' }}>
-        <View style={{ width: scr.content + 2 * space.md }}><Header /></View>
+        <View style={{ width: scr.content + 2 * space.md }}><Header title="Statistik" /></View>
         <View style={{ width: scr.content }}>
           {persons.length > 0 && (
             <View style={[s.wrap, { marginBottom: space.sm }]}>
@@ -269,6 +269,7 @@ export default function Statistik() {
             </Text>
           </Pressable>
         </View>
+        <PageEnd />
       </Page>
     </View>
   );
