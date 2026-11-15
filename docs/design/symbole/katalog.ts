@@ -32,8 +32,7 @@ const SIZE_TEXT: Record<keyof typeof ICON_SIZE, string> = {
 
 const MONO_TEXT: Record<keyof typeof MONO_SIZE, string> = {
   text: 'neben 14-px-Text: Infozeile der Wunschlisten-Karte, Kopf einer geöffneten Liste, Balken in der Statistik',
-  chip: 'in Chips (36 hoch, Rand 6) und Kapseln (38 hoch, Rand 7) – so groß wie der Farbkreis an derselben Stelle',
-  tall: 'in hohen Chips (44 hoch, Rand 7)',
+  chip: 'in allen Chips und Kapseln – genau die Plakette der Kachel (20 px, Buchstabe 11 px), konzentrisch (Rand Chip 8, Kapsel 9, hoher Chip 12)',
   row: 'Listenzeile mit zwei Textzeilen (Schrank teilen) – so groß wie ein Wert-Kreis',
   button: 'Profil-Knopf in der Kopfzeile – so groß wie die runden Knöpfe',
 };
@@ -54,7 +53,7 @@ const sections = groups.map((g) => {
 
 
 const mono = (letter: string, px: number, color = '#8E2440') =>
-  `<span class="m" style="width:${px}px;height:${px}px;font-size:${Math.round(px * 0.54)}px;color:${color}">${letter}</span>`;
+  `<span class="m" style="width:${px}px;height:${px}px;font-size:${Math.round(px * 0.55)}px;color:${color}">${letter}</span>`;
 const monos = Object.entries(MONO_SIZE).map(([k, v]) => `<tr><td><code>${k}</code></td><td>${v} px</td><td>${MONO_TEXT[k as keyof typeof MONO_SIZE]}</td></tr>`).join('');
 
 export function katalogHtml(): string {
@@ -84,7 +83,7 @@ export function katalogHtml(): string {
   .demo { padding:14px 16px; } .drow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
   .chip, .cap { display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border:1px solid var(--line); border-radius:99px; font-size:15px; background:#fff; }
   .cap { height:38px; padding:0 13px; gap:7px; font-weight:600; font-size:16px; } .chip.tall { height:44px; padding:0 16px; }
-  .chip.mono { padding-left:6px; } .chip.tall.mono { padding-left:7px; } .cap.mono { padding-left:6px; }
+  .chip.mono { padding-left:7px; } .chip.tall.mono { padding-left:11px; } .cap.mono { padding-left:8px; }
   .m { display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:#fff; box-shadow:inset 0 0 0 1px rgba(42,26,29,.12); font-family:Georgia,serif; flex:none; }
   .txt { gap:6px; font-size:14px; color:var(--muted); }
 </style></head><body><main>
@@ -110,10 +109,10 @@ export function katalogHtml(): string {
 <div class="card"><table><tr><th>Stufe</th><th>Größe</th><th>Wofür</th></tr>${sizes}</table></div>
 
 <h2>Monogramme</h2>
-<p class="lead">Monogramme stehen an denselben Stellen wie Symbole und haben deshalb ebenfalls feste Stufen. In Chips und Kapseln sitzen sie konzentrisch – gleicher Rand oben, unten und links, wie die Plaketten auf der Kachel. Plaketten behalten ihre Maße aus der Kachel-Spec.</p>
+<p class="lead">Monogramme stehen an denselben Stellen wie Symbole und haben deshalb ebenfalls feste Stufen. In Chips und Kapseln ist das Monogramm genau die Plakette der Kachel (weiße Scheibe 20 px, Buchstabe 11 px) – so sehen Kapsel und Kachel gleich aus, und die Scheibe wirkt nur so groß wie ein Symbol. Sie sitzt konzentrisch: Rand links = Rand oben und unten.</p>
 <div class="card"><table><tr><th>Stufe</th><th>Durchmesser</th><th>Wofür</th></tr>${monos}</table></div>
 <div class="card demo">
-  <div class="drow"><span class="chip">${svg(SYMBOLS.occSport as SymbolDef, ICON_SIZE.chip)}Sport</span><span class="chip mono">${mono('M', MONO_SIZE.chip)}Max</span><span class="chip tall mono">${mono('P', MONO_SIZE.tall, '#C2185B')}Paul</span></div>
+  <div class="drow"><span class="chip">${svg(SYMBOLS.occSport as SymbolDef, ICON_SIZE.chip)}Sport</span><span class="chip mono">${mono('M', MONO_SIZE.chip)}Max</span><span class="chip tall mono">${mono('P', MONO_SIZE.chip, '#B00E28')}Paul</span></div>
   <div class="drow"><span class="cap">${svg(SYMBOLS.label as SymbolDef, ICON_SIZE.chip)}Etikett</span><span class="cap mono">${mono('M', MONO_SIZE.chip)}Max (du)</span></div>
   <div class="drow txt">${mono('M', MONO_SIZE.text)}<span>Max · 6 Teile · 412 €</span></div>
 </div>

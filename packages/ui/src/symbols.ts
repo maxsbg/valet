@@ -247,14 +247,19 @@ export const ICON_SIZE = { mini: 12, inline: 16, chip: 18, row: 20, button: 22, 
 export type IconSize = keyof typeof ICON_SIZE;
 
 /**
- * Feste Monogramm-Größen (Durchmesser in px), passend zu den Symbol-Stufen (15.11.2026).
- * In Chips und Kapseln sitzt das Monogramm konzentrisch – gleicher Rand oben, unten und links wie die Plaketten
- * auf der Kachel – und ist so groß wie der Farbkreis (detail.colorDot) an derselben Stelle.
- * text: neben 14-px-Text (Infozeilen, Balken, Kopf einer Liste) · chip: Chips (36 hoch, Rand 6) und Kapseln (38, Rand 7)
- * tall: hohe Chips (44, Rand 7) · row: Listenzeile mit zwei Textzeilen (= Wert-Kreis 38) · button: Profil-Knopf (= runde Knöpfe 44)
- * Plaketten (Kachel, Outfit-Karte, Detail-Bild) behalten ihre Maße aus itemTile.badge.
+ * Feste Monogramm-Größen (Durchmesser in px, entschieden 15.11.2026 mit Max: Variante A „wie die Kachel-Plakette“).
+ * In Chips und Kapseln ist das Monogramm genau die Plakette der Kachel: weiße Scheibe 20 px, Gloock-Buchstabe 55 %
+ * (= 11 px) in der Personen-Textfarbe – damit Kapsel und Kachel gleich aussehen und die Scheibe nur so groß wie ein
+ * Symbol (chip 18) wirkt. Sitzt konzentrisch: Rand links = Rand oben/unten (Chip 36 → 8, Kapsel 38 → 9, hoher Chip 44 → 12).
+ * text: neben 14-px-Text (Infozeilen, Balken, Kopf einer Liste) · chip: alle Chips und Kapseln
+ * row: Listenzeile mit zwei Textzeilen (= Wert-Kreis 38) · button: Profil-Knopf (= runde Knöpfe 44)
+ * Plaketten (Kachel, Outfit-Karte, Detail-Bild) haben ihre Maße in itemTile.badge (Kachel: 20 / 11, gleich wie chip).
  */
-export const MONO_SIZE = { text: 20, chip: 24, tall: 30, row: 38, button: 44 } as const;
+export const MONO_SIZE = { text: 18, chip: 20, row: 38, button: 44 } as const;
+/** Buchstabe im Monogramm: Anteil am Durchmesser (wie auf der Kachel 11/20) */
+export const MONO_LETTER = 0.55;
+/** Rand links eines Monogramms in einer Pille dieser Höhe (konzentrisch, von der Außenkante; bei 1-px-Rand padding = Wert − 1) */
+export const monoInset = (height: number) => (height - MONO_SIZE.chip) / 2;
 export type MonoSize = keyof typeof MONO_SIZE;
 
 /** Oberkategorie → Symbol (Schrank-Chips) */

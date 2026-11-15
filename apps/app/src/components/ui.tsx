@@ -7,7 +7,7 @@ import { useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import { personKey, type Person } from '@/lib/wardrobe';
 import { Monogram } from './Monogram';
-import { MONO_SIZE } from '@valet/ui';
+import { MONO_SIZE, monoInset } from '@valet/ui';
 import { Icon } from '@/components/Icon';
 
 type Theme = ReturnType<typeof useTheme>;
@@ -97,9 +97,9 @@ export function Chip({ label, count, selected, onPress, onLongPress, person, ico
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} onLongPress={onLongPress} delayLongPress={400}
       accessibilityLabel={fold ? (count != null ? `${label}, ${count}` : label) : undefined}
-      style={[s.chip, tall && s.chipTall, fold && s.chipFold, person && { paddingLeft: tall ? 7 : 6 }, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
+      style={[s.chip, tall && s.chipTall, fold && s.chipFold, person && { paddingLeft: monoInset(tall ? 44 : 36) - 1 }, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
       {icon}
-      {person && <Monogram person={person} size={tall ? 'tall' : 'chip'} />}
+      {person && <Monogram person={person} />}
       {fold ? <FoldLabel label={label} open={!!selected} color={color} onWidth={onLabelWidth} /> : <Text style={[s.chipText, { color }]}>{label}</Text>}
       {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }, fold && s.chipCountFold]}>{count}</Text>}
     </Pressable>
