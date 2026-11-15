@@ -124,3 +124,10 @@ test('Speichern: Wunschteil – Preis = Listenpreis, beim Anlegen „Preis beim 
   assert.equal('price_paid' in r.change, false);
   assert.equal('owner_ids' in r.change, false);
 });
+
+test('Speichern: ohne Kategorie leerer Text (Spalte ist not null)', () => {
+  const r = editChange(base());
+  assert.ok('change' in r);
+  assert.deepEqual([r.change.category, r.change.subcategory, r.change.item_type], ['', null, null]);
+  assert.equal(toEditForm({ name: 'X', category: '' }).category, null);
+});
