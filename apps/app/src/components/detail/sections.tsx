@@ -161,6 +161,8 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
   const disc = discountPct(price, row.list_price);
   const shares = shareRows(price, f.qty, (row.payers ?? []).map((p) => ({ personId: p.person_id ?? null, amount: p.amount ?? null })));
   const person = (id: string) => persons.find((p) => p.id === id);
+  // Eine Person hat allein bezahlt (ohne Zahler: der einzige Besitzer) → klein unter dem Preis statt eigener Aufteilung
+  const solo = !f.gift && price != null && shares.length === 0 && f.payers.length === 1 ? person(f.payers[0]) : undefined;
   const facts: [string, string][] = [
     [f.gift ? 'Bekommen am' : 'Gekauft', f.purchaseDate ? shortDate(f.purchaseDate, '0000') : ''],
     ['Shop', f.shop], ['Artikelnummer', f.articleNo],
@@ -184,6 +186,13 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
             {disc != null && <Text style={{ fontSize: 13, fontWeight: '600', color: t.actionText }}>−{disc} %</Text>}
           </View>
           {f.qty > 1 && <Text style={{ fontSize: 13, color: t.inkMuted }}>je Stück · {f.qty} Stück zusammen {formatPrice(price * f.qty)}</Text>}
+          {solo && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+              <Text style={{ fontSize: 13, color: t.inkMuted }}>bezahlt von</Text>
+              <Monogram person={solo} size={22} />
+              <Text style={{ fontSize: 15, color: t.ink }}>{solo.id === meId ? `${solo.name} (du)` : solo.name}</Text>
+            </View>
+          )}
         </View>
       ) : (
         <Pressable onPress={onEdit} accessibilityRole="button"><Text style={{ fontSize: 15, color: t.accent }}>Preis fehlt – eintragen</Text></Pressable>
