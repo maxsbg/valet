@@ -52,9 +52,9 @@ Wunschteil-Übersicht: Zeile mit der Liste (nur Name; die Kategorie steht unten 
 
 Karten **Aussehen** (Kategorie, Saison, Farben, Muster, Material, Größe), **Tragen**, **Details** (Stil, Kragen, Verschluss), **Pflege**. Zeilen: Bezeichnung links (15 px, `ink-muted`), Werte rechts als gefüllte Kapseln bzw. Kreise, gleichmäßig umbrochen.
 
-- Kategorie: nur die letzte gewählte Stufe (z. B. „Flannel“), kein Pfad.
+- Kategorie: nur die letzte gewählte Stufe (z. B. „Kurzarmhemd“), kein Pfad. Typnamen sind deshalb immer allein verständlich (Liste und Namensregeln im Doc „Valet – KI-Funktionen“, Abschnitt Steckbrief).
 - **Tragen als Skalen, nicht als Kapseln:**
-  - Passform: zwei 5er-Skalen – Weite (schmal → weit) und Länge (kurz → lang), rechts das Wort (z. B. „eher weit“). „Oversized“ = weit + lang, „Boxy“ = weit + kurz, kein eigener Wert. Shop-Begriffe rechnet die KI auf die beiden Stufen um.
+  - Passform: zwei 5er-Skalen – Weite (schmal → weit) und Länge (kurz → lang), rechts das Wort (z. B. „eher weit“). Bei Hose und Rock dazu eine 3er-Skala Bund (tief · normal · hoch). Kleid und Rock nur Länge (Mini · über Knie · Knie · Midi · Maxi), keine Weite. „Oversized“ = weit + lang, „Boxy“ = weit + kurz, kein eigener Wert. Shop-Begriffe rechnet die KI auf die beiden Stufen um.
   - Lagen: 4 Stufen von innen nach außen (Unterlage, Mitte zu, Mitte offen, Außen), mehrere möglich, rechts „auch allein tragbar“.
   - Wetter: Balken für Wärme (0–3: sehr leicht, leicht, mittel, warm) und Regen (schlecht, mittel, gut).
 - Pflege als Symbol-Kreise in der Reihenfolge Waschen, Bleichen, Trocknen, Bügeln, Professionell. Ohne Angabe: „noch leer“ mit „Etikett“ und „Selbst wählen“.
@@ -101,7 +101,7 @@ Verkauft     <circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.6a4.5 4.5 0
 - Bild-Kachel (Radius 28) mit „Foto ändern“ (bei wendbaren Teilen „Foto Seite A/B ändern“ für die gerade gezeigte Seite, Wende-Plakette + Punkte wie in der Ansicht) und **„Infos auslesen“**: Blatt mit Etikett (Pflegesymbole, Material in %, Größe, Artikelnummer), Shop-Screenshot (Name, Marke, Preis, Streichpreis, Farbe, Passform, Material), Bestellbestätigung (bezahlter Preis, Kaufdatum, Shop, Größe), dann Kamera oder Fotos. Die KI erkennt die Art des Bildes auch selbst; Ergebnisse landen als KI-Vorschlag in den Feldern.
 - KI-Hinweis, Name und Marke als Textfelder, Reiter **Steckbrief · Kauf**.
 - Jede Eigenschaft ist eine **aufklappbare Zeile**: zu = gewählte Werte rechts (genau wie in der Ansicht), auf = Auswahl darunter, Pfeil dreht sich. Felder, die die KI vorausgefüllt hat, tragen eine kleine „KI“-Markierung, bis sie bestätigt oder geändert sind.
-- **Kategorie:** Oberkategorie, Art und Typ (nur wo es Typen gibt, bisher Oberteile › Hemden) stehen untereinander, alle umbrechend, kleine Überschrift je Ebene. Nichts verschwindet beim Wählen, keine Suche, kein X. Neue Oberkategorie setzt Art und Typ zurück. Die Zeile zeigt nur die letzte Stufe als Kapsel.
+- **Kategorie:** Kategorie, Unterkategorie und Typ (nur wo es Typen gibt) stehen untereinander, alle umbrechend, kleine Überschrift je Ebene. Nichts verschwindet beim Wählen, keine Suche, kein X. Neue Oberkategorie setzt Art und Typ zurück. Die Zeile zeigt nur die letzte Stufe als Kapsel.
 - **Farben:**
   1. Alle eigenständigen Farben (Hauptfarben, Türkis, Neutral, Sonder) als Kapseln mit Farbkreis.
   2. Hauptfarbe antippen → gewählt, ihre Nuancen erscheinen in einer leicht abgesetzten Fläche darunter (Überschrift = Hauptfarbe, ohne Trennlinie). Die anderen Hauptfarben bleiben wählbar.
