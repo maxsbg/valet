@@ -90,7 +90,8 @@ test('Speichern: Spiegel, Passform nur passend zur Kategorie, Farben B nur bei W
   assert.equal(c.color, 'Weiß/Schwarz');
   assert.equal(c.material, 'Leder');
   assert.equal(c.style, 'Street');
-  assert.deepEqual([c.fit_width, c.fit_length, c.fit_rise], [null, null, null]);
+  // ausgeblendet, aber nicht gelöscht (Spec 8a)
+  assert.deepEqual([c.fit_width, c.fit_length, c.fit_rise], [2, 2, 1]);
   assert.deepEqual(c.colors_b, []);
   assert.equal(c.price_paid, 120);
   assert.equal(c.qty, 2);
