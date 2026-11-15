@@ -2,9 +2,8 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, necklineOf, setOrder, shareRows,
-  showField, sizeKindOf, type FieldKey,
-  shortDate, shortUrl, splitLabel, statFontSize, type CareGroup, type EditForm, type StatTile,
+  CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows,
+  shortDate, shortUrl, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme, DISPLAY } from '@/lib/theme';
@@ -71,14 +70,11 @@ function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
  */
 export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void }) {
   const t = useTheme();
-  // Felder je Kategorie (Spec 8a): nicht passende Zeilen und leere Karten entfallen
-  const show = (k: FieldKey) => showField(k, f.category, f.subcategory);
-  const reversible = f.reversible && show('reversible');
-  const neck = necklineOf(f.category, f.subcategory);
-  const sizeKind = sizeKindOf(f.category, f.subcategory);
   const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x) => <ValueCapsule key={x} label={x} />);
   const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={c} outline><ColorDot name={c} /></ValueCircle>);
-  const scales = show('fit') ? fitScalesOf(f.category) : [];
+  const fx = fieldsFor(f.category, f.subcategory);
+  const rev = fx.reversible && f.reversible;
+  const scales = fitScalesOf(f.category);
   const fit = scales.filter((sc) => f.fit[sc.key] != null).map((sc) => (
     <ValueScale key={sc.key} caption={sc.label} steps={sc.steps.length} on={(i) => i === f.fit[sc.key]} a11y={`${sc.label} ${sc.steps[f.fit[sc.key]!]}`} />
   ));
@@ -88,28 +84,29 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
   const aussehen: [string, React.ReactNode[]][] = [
     ['Kategorie', caps([categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })])],
     ['Saison', SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><DetailIcon name={SEASON_ICON[x]!} color={t.bg} /></ValueCircle>)],
-    [reversible ? 'Farben Seite A' : 'Farben', colors(f.colors)],
-    ...(reversible ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
-    ...(show('pattern') ? [[reversible ? 'Muster Seite A' : 'Muster', caps([f.pattern])] as [string, React.ReactNode[]]] : []),
-    ...(show('pattern') && reversible ? [['Muster Seite B', caps([f.patternB])] as [string, React.ReactNode[]]] : []),
+    [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
+    ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
+    [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([f.pattern]) : []],
+    ...(rev && fx.pattern ? [['Muster Seite B', caps([f.patternB])] as [string, React.ReactNode[]]] : []),
     ['Material', caps(f.materials.map((m) => (m.pct ? `${m.name} ${m.pct} %` : m.name)))],
-    ...(sizeKind ? [[sizeKind === 'ring' ? 'Ringgröße' : 'Größe', caps([f.size, hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null])] as [string, React.ReactNode[]]] : []),
+    ['Größe', fx.size ? caps([f.size, fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
   ];
   const tragen: [string, React.ReactNode[]][] = [
     ['Passform', fit.length ? [...fit, <Text key="w" style={{ fontSize: 13, color: t.inkMuted }}>{fitWord}</Text>] : []],
-    ['Lagen', !show('layers') ? [] : [
+    ['Lagen', !fx.layers ? [] : [
       ...(f.layers.length ? [<ValueScale key="l" steps={LAYERS.length} on={(i) => f.layers.includes(i)} a11y={`Lagen: ${f.layers.map((i) => LAYERS[i]).join(', ')}`} />] : []),
       ...(f.standalone ? [<Text key="a" style={{ fontSize: 13, color: t.inkMuted }}>auch allein tragbar</Text>] : []),
     ]],
-    ['Wetter', !show('weather') ? [] : [
+    ['Wetter', !fx.weather ? [] : [
       ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <DetailIcon name="thermo" size={16} color={c} />} />] : []),
       ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <DetailIcon name="drop" size={16} color={c} />} />] : []),
     ]],
   ];
   const details: [string, React.ReactNode[]][] = [
     ['Stil', caps(f.styles)],
-    ...(neck ? [[neck.label, caps([f.collar])] as [string, React.ReactNode[]]] : []),
-    ['Verschluss', show('closure') ? caps([f.closure]) : []],
+    [fx.neckline?.label ?? 'Kragen', fx.neckline ? caps([f.collar]) : []],
+    ['Verschluss', fx.closure ? caps([f.closure]) : []],
+    ['Trägerart', fx.strap ? caps([f.strap]) : []],
   ];
   const has = (rows: [string, React.ReactNode[]][]) => rows.some(([, v]) => v.length > 0);
   return (
@@ -117,7 +114,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
       {has(aussehen) && <EditCard title="Aussehen" rows><Rows rows={aussehen} /></EditCard>}
       {has(tragen) && <EditCard title="Tragen" rows><Rows rows={tragen} /></EditCard>}
       {has(details) && <EditCard title="Details" rows><Rows rows={details} /></EditCard>}
-      {show('care') && <EditCard title="Pflege" rows={care.length > 0}>
+      {fx.care && <EditCard title="Pflege" rows={care.length > 0}>
         {care.length ? (
           <View style={{ paddingBottom: 12 }}>
             <View style={[s.row, { justifyContent: 'flex-start' }]}>
@@ -246,7 +243,8 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
 // ---------- Set (Spec 3.3) ----------
 
 /** Kleine Kacheln aller Teile, von oben nach unten am Körper; aktuelles Teil in accent umrandet */
-export function SetCard({ name, members, currentId, onOpen, onEdit }: { name: string | null; members: Tile[]; currentId: string; onOpen: (id: string) => void; onEdit: () => void }) {
+/** Bearbeitet wird das Set in Bearbeiten (Zeile „Set“ unter „Wendbar“, entschieden 15.11.2026) – hier nur Ansicht */
+export function SetCard({ name, members, currentId, onOpen }: { name: string | null; members: Tile[]; currentId: string; onOpen: (id: string) => void }) {
   const t = useTheme();
   const sorted = setOrder(members);
   const tiles = sorted.map((m) => {
@@ -262,7 +260,7 @@ export function SetCard({ name, members, currentId, onOpen, onEdit }: { name: st
     );
   });
   return (
-    <EditCard title={name ? `Set · ${name}` : 'Set'} action={{ label: 'Bearbeiten', onPress: onEdit }}>
+    <EditCard title={name ? `Set · ${name}` : 'Set'}>
       {sorted.length > 3
         ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>{tiles}</ScrollView>
         : <View style={{ flexDirection: 'row', gap: 8 }}>{tiles}</View>}

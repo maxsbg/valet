@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  toEditForm, emptyEditForm, setField, confirmAi, toggleMaterial, materialRank, pickSizeSystem, isCustomSize, pickFit, togglePayer,
+  toEditForm, emptyEditForm, setField, confirmAi, toggleMaterial, materialRank, pickSizeSystem, setCategory, pickFit, togglePayer,
   splitView, qtyHint, editChange, totalOf, type EditForm,
 } from '../src/edit';
 
@@ -32,12 +32,10 @@ test('Material: Rang nach Reihenfolge, abwählen rückt nach', () => {
   assert.equal(materialRank(m, 'Baumwolle'), 1);
 });
 
-test('Größe: Systemwechsel setzt die Größe zurück, One Size bleibt; eigene Angabe erkannt', () => {
+test('Größe: Systemwechsel setzt die Größe zurück, One Size bleibt', () => {
   const f = base({ sizeSystem: 'letters', size: 'M' });
   assert.deepEqual([pickSizeSystem(f, 'numbers').sizeSystem, pickSizeSystem(f, 'numbers').size], ['numbers', null]);
   assert.equal(pickSizeSystem(base({ sizeSystem: 'letters', size: 'One Size' }), 'numbers').size, 'One Size');
-  assert.ok(isCustomSize({ size: 'W30/L32' }));
-  assert.ok(!isCustomSize({ size: '50' }));
 });
 
 test('Passform: Strich antippen setzt, erneut hebt auf', () => {
@@ -90,7 +88,7 @@ test('Speichern: Spiegel, Passform nur passend zur Kategorie, Farben B nur bei W
   assert.equal(c.color, 'Weiß/Schwarz');
   assert.equal(c.material, 'Leder');
   assert.equal(c.style, 'Street');
-  // ausgeblendet, aber nicht gelöscht (Spec 8a)
+  // Spec 8a: Passform wird beim Schuh nicht gezeigt, gespeicherte Werte bleiben aber erhalten
   assert.deepEqual([c.fit_width, c.fit_length, c.fit_rise], [2, 2, 1]);
   assert.deepEqual(c.colors_b, []);
   assert.equal(c.price_paid, 120);
@@ -131,4 +129,26 @@ test('Speichern: ohne Kategorie leerer Text (Spalte ist not null)', () => {
   assert.ok('change' in r);
   assert.deepEqual([r.change.category, r.change.subcategory, r.change.item_type], ['', null, null]);
   assert.equal(toEditForm({ name: 'X', category: '' }).category, null);
+});
+
+test('Größe beim Laden: Schuh → EU, Jeans W/L, Kappe „7 3/8 (58,7 cm)“ → Fitted 7 3/8', () => {
+  assert.equal(toEditForm({ name: 'S', category: 'Schuh', subcategory: 'Sneaker', size: '44', size_system: 'numbers' }).sizeSystem, 'eu');
+  assert.equal(toEditForm({ name: 'J', category: 'Hose', subcategory: 'Jeans', size: 'W30/L34' }).sizeSystem, 'wl');
+  assert.equal(toEditForm({ name: 'J', category: 'Hose', subcategory: 'Jeans', size: 'L', size_system: 'letters' }).sizeSystem, 'letters');
+  const cap = toEditForm({ name: 'C', category: 'Kopfbedeckung', subcategory: 'Kappe', size: '7 3/8 (58,7 cm)' });
+  assert.deepEqual([cap.sizeSystem, cap.size], ['cap', '7 3/8']);
+  assert.equal(toEditForm({ name: 'C', category: 'Kopfbedeckung', subcategory: 'Kappe', size: 'One Size' }).size, 'Verstellbar');
+});
+
+test('Kategorie-Wechsel: Größen-System passt sich an', () => {
+  const f = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Hose', subcategory: 'Jeans', type: null });
+  assert.deepEqual([f.sizeSystem, f.size], ['letters', 'M']);
+  const e = setCategory(base({ category: 'Oberteil', sizeSystem: 'numbers', size: '50' }), { category: 'Hose', subcategory: 'Jeans', type: null });
+  assert.deepEqual([e.sizeSystem, e.size], ['wl', null]);
+  const h = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Schuh', subcategory: 'Sneaker', type: null });
+  assert.deepEqual([h.sizeSystem, h.size], ['eu', null]);
+  const b = setCategory(base({ category: 'Hose', sizeSystem: 'letters', size: 'L' }), { category: 'Oberteil', subcategory: null, type: null });
+  assert.deepEqual([b.sizeSystem, b.size], ['letters', 'L']);
+  const g = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Oberbekleidung', subcategory: null, type: null });
+  assert.deepEqual([g.sizeSystem, g.size], ['letters', 'M']);
 });

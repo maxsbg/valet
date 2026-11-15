@@ -1,154 +1,127 @@
-// Welche Felder je Kategorie (VALET_DETAILSEITE_SPEC.md, Abschnitt 8a) – eine Quelle für Bearbeiten, Ansicht und KI-Prompt.
-// Nicht gezeigte Felder bleiben in der Datenbank erhalten, sie werden nur ausgeblendet.
+// Welche Felder je Kategorie (VALET_DETAILSEITE_SPEC.md, Abschnitt 8a, entschieden 15.11.2026)
+// Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten und Ansicht nicht gezeigt.
+// Gespeicherte Werte bleiben in der Datenbank. Eine Karte ohne sichtbare Zeile entfällt.
 
-import { CATEGORY_NAMES } from './categories';
-import { COLLARS, ONE_SIZE, SIZES, type SizeSystem } from './attributes';
+import { COLLARS, SIZES, ONE_SIZE, sizeSystemOf, type SizeSystem } from './attributes';
 
-/** Felder, die von der Kategorie abhängen (immer gezeigt: Kategorie, Saison, Farben, Material, Stil) */
-export type FieldKey = 'pattern' | 'reversible' | 'size' | 'fit' | 'layers' | 'weather' | 'neckline' | 'closure' | 'strap' | 'care';
-export const ALWAYS_FIELDS = ['category', 'seasons', 'colors', 'material', 'style'] as const;
+/** Art der Größenangabe */
+export type SizeKind =
+  | 'clothing' // Buchstaben / Zahlen 44–60 (+ One Size), Hemd zusätzlich Kragenweite
+  | 'pants'    // W/L (Standard) oder Buchstaben; Shorts und Pyjama-Hose nur Bundweite
+  | 'shoe'     // EU
+  | 'cap'      // Kappe: verstellbar oder Fitted (mit Größe)
+  | 'ring';    // Ringgröße
 
-/** true = ganze Kategorie, Liste = nur diese Unterkategorien, fehlt = nicht gezeigt */
-type Rule = Partial<Record<string, true | readonly string[]>>;
-const except = (...cats: string[]): Rule => Object.fromEntries(CATEGORY_NAMES.filter((c) => !cats.includes(c)).map((c) => [c, true as const]));
-
-/** Pflege bei Accessoire nur für Textiles */
-const ACC_CARE = ['Unterwäsche', 'Socke', 'Strumpfhose', 'Bademode', 'Schal', 'Anzug-Accessoire', 'Handschuh', 'Traditionelle Kleidung', 'Stulpe'] as const;
-/** Wetter bei Accessoire nur für diese */
-const ACC_WEATHER = ['Schal', 'Handschuh', 'Socke', 'Strumpfhose', 'Stulpe', 'Bademode'] as const;
-
-/** Tabelle aus Spec 8a */
-export const FIELD_RULES: Readonly<Record<FieldKey, Rule>> = {
-  pattern: except('Schuh', 'Schmuck'),
-  reversible: except('Schuh', 'Schmuck'),
-  size: { ...except('Tasche', 'Schmuck'), Schmuck: ['Ring'] },
-  fit: { Oberteil: true, Kleid: true, Hose: true, Rock: true },
-  layers: { Oberteil: true, Oberbekleidung: true },
-  weather: { ...except('Tasche', 'Schmuck', 'Accessoire'), Accessoire: ACC_WEATHER },
-  neckline: { Oberteil: true, Kleid: true, Oberbekleidung: true },
-  closure: { Oberteil: ['Hemd', 'Bluse', 'Polohemd', 'Body'], Oberbekleidung: true, Schuh: true, Tasche: true, Accessoire: ['Gürtel', 'Handschuh'] },
-  strap: { Tasche: true },
-  care: { ...except('Schuh', 'Tasche', 'Schmuck', 'Accessoire'), Accessoire: ACC_CARE },
+export type Fields = {
+  pattern: boolean;
+  reversible: boolean;
+  size: SizeKind | null;
+  /** Passform-Skalen kommen aus fitScalesOf (categories.ts) */
+  layers: boolean;
+  weather: boolean;
+  /** „Kragen“ oder „Ausschnitt“ – eine Zeile, Name und Werte nach Unterkategorie */
+  neckline: { label: 'Kragen' | 'Ausschnitt'; options: readonly string[] } | null;
+  closure: boolean;
+  strap: boolean;
+  care: boolean;
 };
-
-/**
- * Feld für diese Kategorie zeigen?
- * Ohne Kategorie (neues Teil) wird alles gezeigt außer der Trägerart. Bei einer Liste von Unterkategorien
- * erscheint das Feld erst, wenn eine passende Unterkategorie gewählt ist.
- */
-export function showField(key: FieldKey, category: string | null | undefined, subcategory?: string | null): boolean {
-  if (!category) return key !== 'strap';
-  const r = FIELD_RULES[key][category];
-  if (r === true) return true;
-  if (!r) return false;
-  return !!subcategory && r.includes(subcategory);
-}
-
-/** Alle Felder, die für diese Kategorie gezeigt werden (Reihenfolge wie im Steckbrief) – auch für den KI-Prompt */
-export function fieldsFor(category: string | null | undefined, subcategory?: string | null): string[] {
-  const keys: FieldKey[] = ['pattern', 'reversible', 'size', 'fit', 'layers', 'weather', 'neckline', 'closure', 'strap', 'care'];
-  return [...ALWAYS_FIELDS, ...keys.filter((k) => showField(k, category, subcategory))];
-}
-
-// ---------- Ausschnitt / Kragen ----------
 
 export const NECKLINES = ['Rundhals', 'V-Ausschnitt', 'Knopfleiste', 'Polokragen', 'Rollkragen', 'Stehkragen', 'Kapuze'] as const;
-export const OUTER_COLLARS = [...COLLARS, 'Kapuze'] as const;
+export const OUTER_COLLARS = [...COLLARS.filter((c) => c !== 'ohne Kragen'), 'Kapuze', 'ohne Kragen'] as const;
+/** Trägerart bei Taschen (bestätigt 15.11.2026) */
+export const STRAPS = ['Henkel', 'Schultergurt', 'Umhängegurt', 'Rucksackgurte', 'Kette', 'ohne'] as const;
 
-/**
- * Eine Zeile, Name und Werte nach Unterkategorie (gespeichert in items.collar):
- * Hemd, Bluse → „Kragen“; übrige Oberteile und Kleid → „Ausschnitt“; Oberbekleidung → „Kragen“ + Kapuze.
- * Ohne Kategorie: „Kragen“ wie bisher.
- */
-export function necklineOf(category: string | null | undefined, subcategory?: string | null): { label: 'Kragen' | 'Ausschnitt'; options: readonly string[] } | null {
-  if (!showField('neckline', category, subcategory)) return null;
-  if (!category) return { label: 'Kragen', options: COLLARS };
-  if (category === 'Oberbekleidung') return { label: 'Kragen', options: OUTER_COLLARS };
-  if (category === 'Oberteil' && (subcategory === 'Hemd' || subcategory === 'Bluse')) return { label: 'Kragen', options: COLLARS };
-  return { label: 'Ausschnitt', options: NECKLINES };
-}
+const ACC_CARE = new Set(['Unterwäsche', 'Socke', 'Strumpfhose', 'Bademode', 'Schal', 'Anzug-Accessoire', 'Handschuh', 'Traditionelle Kleidung', 'Stulpe']);
+const ACC_WEATHER = new Set(['Schal', 'Handschuh', 'Socke', 'Strumpfhose', 'Stulpe', 'Bademode']);
+const TOP_CLOSURE = new Set(['Hemd', 'Bluse', 'Polohemd', 'Body']);
+const ACC_CLOSURE = new Set(['Gürtel', 'Handschuh']);
 
-// ---------- Größe je Kategorie ----------
-
-/**
- * clothes = Buchstaben/Zahlen (bisher); pants = W/L oder Buchstaben; waist = nur Bundweite (Shorts, Pyjama-Hose) oder Buchstaben;
- * shoe = EU; cap = Kappe (Verstellbar/Fitted); ring = Ringgröße.
- */
-export type SizeKind = 'clothes' | 'pants' | 'waist' | 'shoe' | 'cap' | 'ring';
-
-export function sizeKindOf(category: string | null | undefined, subcategory?: string | null): SizeKind | null {
-  if (!showField('size', category, subcategory)) return null;
-  switch (category) {
-    case 'Hose': return subcategory === 'Shorts' || subcategory === 'Pyjama-Hose' ? 'waist' : 'pants';
-    case 'Schuh': return 'shoe';
-    case 'Kopfbedeckung': return subcategory === 'Kappe' ? 'cap' : 'clothes';
-    case 'Schmuck': return 'ring';
-    default: return 'clothes';
-  }
-}
-
-export const WAISTS: readonly number[] = Array.from({ length: 15 }, (_, i) => 26 + i); // W26–W40
-export const INSEAMS: readonly number[] = Array.from({ length: 9 }, (_, i) => 28 + i); // L28–L36
-export const SHOE_SIZES: readonly string[] = Array.from({ length: 27 }, (_, i) => { const n = 35 + i / 2; return Number.isInteger(n) ? String(n) : `${Math.floor(n)},5`; });
-export const CAP_SIZES = ['Verstellbar', 'Fitted'] as const;
-export const RING_SIZES: readonly string[] = Array.from({ length: 19 }, (_, i) => String(48 + i)); // 48–66
-
-/** Wählbare Systeme je Größen-Art (leer = kein System-Wähler); das erste ist der Standard */
-export function sizeSystemsFor(kind: SizeKind | null): SizeSystem[] {
-  if (kind === 'clothes') return ['letters', 'numbers'];
-  if (kind === 'pants' || kind === 'waist') return ['wl', 'letters'];
-  return [];
-}
-
-/** System, das gerade gilt: bei Hosen ist W/L Standard */
-export function effectiveSizeSystem(kind: SizeKind | null, system: SizeSystem | null): SizeSystem | null {
-  const list = sizeSystemsFor(kind);
-  if (system && list.includes(system)) return system;
-  return kind === 'pants' || kind === 'waist' ? 'wl' : null;
-}
-
-/** Größen zum Antippen (W/L hat eigene Reihen → leer) */
-export function sizeOptions(kind: SizeKind | null, system: SizeSystem | null): readonly string[] {
-  switch (kind) {
-    case 'shoe': return SHOE_SIZES;
-    case 'cap': return CAP_SIZES;
-    case 'ring': return RING_SIZES;
-    case 'pants': case 'waist': return effectiveSizeSystem(kind, system) === 'letters' ? SIZES.letters : [];
-    case 'clothes': return system === 'letters' || system === 'numbers' ? SIZES[system] : [ONE_SIZE];
-    default: return [];
-  }
-}
-
-/** Freie Angabe erlaubt? Bei Hosen nicht mehr (Spec 7: kein Freitext). */
-export const allowsCustomSize = (kind: SizeKind | null) => kind != null && kind !== 'pants' && kind !== 'waist';
-
-// ---------- Hosengröße W/L ----------
-
-export type WL = { w: number | null; l: number | null };
-
-/**
- * Freitext → Bundweite/Länge. Erkennt „W28/L32“, „W 28 / L 32“, „28/32“, „28x32“, „W30 L34“, „W30“.
- * Alles andere (z. B. „L“, „50“) → null.
- */
-export function parseWL(size: string | null | undefined): WL | null {
-  const s = (size ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
-  if (!s) return null;
-  let m = /^W ?(\d{2})(?: ?[/X×]? ?L ?(\d{2}))?$/.exec(s);
-  if (!m) m = /^(\d{2}) ?[/X×] ?(\d{2})$/.exec(s);
-  if (!m) return null;
-  const w = Number(m[1]), l = m[2] ? Number(m[2]) : null;
-  if (w < 20 || w > 50 || (l != null && (l < 24 || l > 40))) return null;
-  return { w, l };
-}
-
-/** Bundweite/Länge → Text für items.size („W28/L32“, nur Bund „W30“, nur Länge „L32“) */
-export function formatWL(v: WL): string | null {
-  if (v.w == null && v.l == null) return null;
-  return [v.w != null ? `W${v.w}` : null, v.l != null ? `L${v.l}` : null].filter(Boolean).join('/');
-}
-
-/** Hosengröße im W/L-Format vereinheitlichen; passt sie nicht, bleibt sie unverändert (→ Liste für Max). */
-export const normalizeWL = (size: string | null | undefined): string | null => {
-  const p = parseWL(size);
-  return p ? formatWL(p) : null;
+/** Ohne Kategorie: alles zeigen (nichts verstecken, solange nichts gewählt ist) */
+const ALL: Fields = {
+  pattern: true, reversible: true, size: 'clothing', layers: true, weather: true,
+  neckline: { label: 'Kragen', options: COLLARS }, closure: true, strap: false, care: true,
 };
+
+export function fieldsFor(category: string | null | undefined, sub?: string | null): Fields {
+  switch (category) {
+    case 'Oberteil': {
+      const shirt = sub === 'Hemd' || sub === 'Bluse';
+      return { pattern: true, reversible: true, size: 'clothing', layers: true, weather: true,
+        neckline: shirt ? { label: 'Kragen', options: COLLARS } : { label: 'Ausschnitt', options: NECKLINES },
+        closure: !sub || TOP_CLOSURE.has(sub), strap: false, care: true };
+    }
+    case 'Kleid':
+      return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: true, neckline: { label: 'Ausschnitt', options: NECKLINES }, closure: false, strap: false, care: true };
+    case 'Hose':
+      return { pattern: true, reversible: true, size: 'pants', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
+    case 'Rock':
+      return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
+    case 'Oberbekleidung':
+      return { pattern: true, reversible: true, size: 'clothing', layers: true, weather: true, neckline: { label: 'Kragen', options: OUTER_COLLARS }, closure: true, strap: false, care: true };
+    case 'Schuh':
+      return { pattern: false, reversible: false, size: 'shoe', layers: false, weather: true, neckline: null, closure: true, strap: false, care: false };
+    case 'Tasche':
+      return { pattern: true, reversible: true, size: null, layers: false, weather: false, neckline: null, closure: true, strap: true, care: false };
+    case 'Kopfbedeckung':
+      return { pattern: true, reversible: true, size: sub === 'Kappe' ? 'cap' : 'clothing', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
+    case 'Schmuck':
+      return { pattern: false, reversible: false, size: sub === 'Ring' ? 'ring' : null, layers: false, weather: false, neckline: null, closure: false, strap: false, care: false };
+    case 'Accessoire':
+      return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: !!sub && ACC_WEATHER.has(sub), neckline: null,
+        closure: !!sub && ACC_CLOSURE.has(sub), strap: false, care: !!sub && ACC_CARE.has(sub) };
+    default:
+      return ALL;
+  }
+}
+
+// ---------- Größen je Art ----------
+
+const range = (a: number, b: number, step = 1) => Array.from({ length: Math.round((b - a) / step) + 1 }, (_, i) => a + i * step);
+
+export const PANTS_WAIST = range(26, 40).map((n) => `W${n}`);
+export const PANTS_LENGTH = range(28, 36).map((n) => `L${n}`);
+/** EU-Schuhgrößen 35–48 in halben Schritten (bestätigt 15.11.2026) */
+export const SHOE_SIZES = range(35, 48, 0.5).map((n) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)},5`));
+export const CAP_ADJUSTABLE = 'Verstellbar';
+/** Fitted-Größen (US, Kopfumfang) */
+export const CAP_FITTED = ['6 7/8', '7', '7 1/8', '7 1/4', '7 3/8', '7 1/2', '7 5/8', '7 3/4', '7 7/8', '8'] as const;
+/** Ringgrößen (Innenumfang in mm, bestätigt 15.11.2026) */
+export const RING_SIZES = range(48, 66).map(String);
+
+/** Hose ohne Länge: Shorts und Pyjama-Hose (Spec 7) */
+export const pantsWaistOnly = (sub: string | null | undefined) => sub === 'Shorts' || sub === 'Pyjama-Hose';
+
+/** „W32/L32“ → { w: 'W32', l: 'L32' } */
+export function parseWL(size: string | null | undefined): { w: string | null; l: string | null } {
+  const m = /^\s*(W\d{2})\s*(?:\/\s*(L\d{2}))?\s*$/i.exec(size ?? '');
+  return m ? { w: m[1]!.toUpperCase(), l: m[2] ? m[2].toUpperCase() : null } : { w: null, l: null };
+}
+export const composeWL = (w: string | null, l: string | null) => (w ? (l ? `${w}/${l}` : w) : l ? l : null);
+
+/** Kappe: alte Angaben wie „7 3/8 (58,7 cm)“ oder „One Size“ erkennen */
+export function capSize(size: string | null | undefined): string | null {
+  const s = (size ?? '').trim();
+  if (!s) return null;
+  if (s === ONE_SIZE || /verstell/i.test(s)) return CAP_ADJUSTABLE;
+  const hit = [...CAP_FITTED].sort((a, b) => b.length - a.length).find((f) => s.startsWith(f));
+  return hit ?? null;
+}
+
+/** Alle Größen-Systeme (items.size_system) */
+export type SizeSystemAny = SizeSystem | 'wl' | 'eu' | 'cap' | 'ring';
+
+/** Größen-System beim Laden passend zur Art bestimmen (alte Daten: Schuhe „numbers“ → EU, Jeans „W30/L34“ → W/L) */
+export function sizeSystemOn(kind: SizeKind | null, stored: string | null | undefined, size: string | null | undefined): SizeSystemAny | null {
+  switch (kind) {
+    case null: return null;
+    case 'shoe': return 'eu';
+    case 'cap': return 'cap';
+    case 'ring': return 'ring';
+    case 'pants':
+      if (stored === 'letters' || (size && SIZES.letters.includes(size))) return 'letters';
+      return 'wl'; // Standard bei Hosen
+    default:
+      if (stored === 'letters' || stored === 'numbers') return stored;
+      return sizeSystemOf(size);
+  }
+}

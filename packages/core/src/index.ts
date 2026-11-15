@@ -16,3 +16,4 @@ export * from './status';
 export * from './fields';
 export * from './edit';
 export * from './detail';
+export * from './fields';

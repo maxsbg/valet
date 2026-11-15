@@ -1,7 +1,10 @@
 // Auswahlen in aufgeklappten Zeilen: Farben, Skalen, Pflege (Spec 7)
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   CARE, COLORS, LAYERS, RAIN, WARMTH, nuancesOf, tapMainColor, tapNuance, type Care, type CareGroup, type ColorPick, type FitScale,
+  CAP_ADJUSTABLE, CAP_FITTED, COLLAR_SIZES, ONE_SIZE, PANTS_LENGTH, PANTS_WAIST, RING_SIZES, SHOE_SIZES, SIZES, SIZE_SYSTEMS,
+  composeWL, hasCollarSize, pantsWaistOnly, parseWL, type SizeKind, type SizeSystemAny,
 } from '@valet/core';
 import { useTheme } from '@/lib/theme';
 import { Capsule, FieldLabel, Hint, Wrap } from '@/components/detail/parts';
@@ -157,3 +160,60 @@ const s = StyleSheet.create({
   seg: { flex: 1, minWidth: 0, minHeight: 44, justifyContent: 'center', gap: 6 },
   bar: { height: 8, borderRadius: 4, width: '100%' },
 });
+
+// ---------- Größe je Art (Spec 7 und 8a) ----------
+
+
+type SizeProps = {
+  kind: SizeKind; sub: string | null; system: SizeSystemAny | null; size: string | null; collarSize: string | null;
+  onSystem: (s: SizeSystemAny) => void; onSize: (s: string | null) => void; onCollar: (s: string | null) => void;
+};
+
+/** Größe: Kleidung (Buchstaben/Zahlen), Hose (W/L oder Buchstaben), Schuh (EU), Kappe (verstellbar/Fitted), Ring */
+export function SizePicker({ kind, sub, system, size, collarSize, onSystem, onSize, onCollar }: SizeProps) {
+  const [fitted, setFitted] = useState(!!size && (CAP_FITTED as readonly string[]).includes(size));
+  const caps = (list: readonly string[], cur: string | null, pick: (v: string | null) => void) =>
+    <Wrap>{list.map((x) => <Capsule key={x} label={x} selected={cur === x} onPress={() => pick(cur === x ? null : x)} />)}</Wrap>;
+  if (kind === 'shoe') return <View style={{ gap: 8 }}><FieldLabel>EU-Größe</FieldLabel>{caps(SHOE_SIZES, size, onSize)}</View>;
+  if (kind === 'ring') return <View style={{ gap: 8 }}><FieldLabel>Ringgröße</FieldLabel>{caps(RING_SIZES, size, onSize)}</View>;
+  if (kind === 'cap') {
+    return (
+      <View style={{ gap: 10 }}>
+        <Wrap>
+          <Capsule label={CAP_ADJUSTABLE} selected={size === CAP_ADJUSTABLE} onPress={() => { setFitted(false); onSize(size === CAP_ADJUSTABLE ? null : CAP_ADJUSTABLE); }} />
+          <Capsule label="Fitted" selected={fitted} onPress={() => { setFitted(!fitted); if (size === CAP_ADJUSTABLE || fitted) onSize(null); }} />
+        </Wrap>
+        {fitted && <><FieldLabel>Fitted-Größe</FieldLabel>{caps(CAP_FITTED, size, onSize)}</>}
+      </View>
+    );
+  }
+  if (kind === 'pants') {
+    const wl = system !== 'letters';
+    const { w, l } = parseWL(size);
+    return (
+      <View style={{ gap: 10 }}>
+        <FieldLabel>System</FieldLabel>
+        <Wrap>
+          <Capsule label="W/L" selected={wl} onPress={() => onSystem('wl')} />
+          <Capsule label="Buchstaben" selected={!wl} onPress={() => onSystem('letters')} />
+        </Wrap>
+        {wl ? <>
+          <FieldLabel>Bundweite</FieldLabel>
+          {caps(PANTS_WAIST, w, (v) => onSize(composeWL(v, pantsWaistOnly(sub) ? null : l)))}
+          {!pantsWaistOnly(sub) && <><FieldLabel>Länge</FieldLabel>{caps(PANTS_LENGTH, l, (v) => onSize(composeWL(w, v)))}</>}
+        </> : <><FieldLabel>Größe</FieldLabel>{caps(SIZES.letters, size, onSize)}</>}
+      </View>
+    );
+  }
+  // Kleidung
+  const sys = system === 'letters' || system === 'numbers' ? system : null;
+  return (
+    <View style={{ gap: 10 }}>
+      <FieldLabel>System</FieldLabel>
+      <Wrap>{(Object.keys(SIZE_SYSTEMS) as ('letters' | 'numbers')[]).map((k) => <Capsule key={k} label={SIZE_SYSTEMS[k]} selected={sys === k} onPress={() => onSystem(k)} />)}</Wrap>
+      <FieldLabel>Größe</FieldLabel>
+      {caps(sys ? SIZES[sys] : [ONE_SIZE], size, onSize)}
+      {hasCollarSize(sub) && <><FieldLabel>Kragenweite</FieldLabel>{caps(COLLAR_SIZES, collarSize, onCollar)}</>}
+    </View>
+  );
+}
