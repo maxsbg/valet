@@ -19,7 +19,7 @@ import { canExport, fileName, itemPng } from '@/lib/share';
 import { Page } from '@/components/Page';
 import { Empty, useToast } from '@/components/ui';
 import { ExportSheet } from '@/components/ExportSheet';
-import { StatusMenu, anchorFromPress, type Anchor } from '@/components/StatusMenu';
+import { StatusMenu, type Anchor } from '@/components/StatusMenu';
 import { StatusSheet } from '@/components/StatusSheet';
 import { TileIcon } from '@/components/tile/TileIcons';
 import { useTilePeople } from '@/components/Mosaic';
@@ -205,7 +205,7 @@ function ClosetDetail({ id }: { id: string }) {
 
       <Toolbar
         left={[
-          { label: `Status: ${statusDef(statusKey(it.status)).label}, ändern`, icon: (c) => <TileIcon name={statusKey(it.status)} color={c} size={detail.toolbar.icon} />, onPress: (e) => setMenu(anchorFromPress(e)) },
+          { label: `Status: ${statusDef(statusKey(it.status)).label}, ändern`, icon: (c) => <TileIcon name={statusKey(it.status)} color={c} size={detail.toolbar.icon} />, onPress: (_e, g) => setMenu(g) },
           { label: reservedToday ? 'Reserviert – neue Reservierung' : 'Reservieren', active: reservedToday, icon: (c) => <Glyph d={GLYPHS.reserve} color={c} />, onPress: () => setReserve(true) },
         ]}
         right={[{ label: 'Outfit damit', icon: (c) => <Glyph d={GLYPHS.dice} color={c} />, onPress: () => router.push(`/outfit-bauen?item=${id}`) }]}

@@ -262,7 +262,7 @@ export const detail = {
   /** Werkzeugleiste unten (ersetzt die Tab-Leiste) */
   toolbar: { height: 52, button: 44, main: 52, icon: 22, side: 16, bottom: 28, gap: 8 },
   /** Pull-down-Menü (Status) */
-  menu: { width: 250, radius: 18, row: 46, check: 18, icon: 20, font: 16 },
+  menu: { width: 250, radius: 26, row: 48, icon: 20, font: 17, gap: 10 },
   /** Bild-Kachel oben */
   image: { width: 358, height: 380, radius: 28, badge: 40, inset: 8, badgeIcon: 22 },
   /** Karten im Inhalt */

@@ -1,26 +1,32 @@
-// Status-Menü wie bei Apple (Pull-down) – Spec 6, Leinwand „D · Status-Menü“
-// Symbol links, Name rechts daneben, ohne Haken; der aktuelle Status ist nur etwas kräftiger gesetzt (Max, 15.11.2026).
-import { useEffect, useRef, useState } from 'react';
+// Pull-down-Menü wie bei Apple (Spec 6, Leinwand „D · Status-Menü“; Vorbild „Wo ist?“, Max 15.11.2026):
+// Symbol links, Name rechts daneben, keine Punkte, keine Trennlinien zwischen den Zeilen (nur zwischen Abschnitten,
+// eingerückt). Der aktuelle Eintrag ist etwas kräftiger gesetzt. Linksbündig mit der Glas-Gruppe darunter.
+// Genutzt für den Status (Schrank-Teil) und die Kategorie (Wunschteil).
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions, AccessibilityInfo } from 'react-native';
 import { STATUS_LIST, type StatusKey } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
-import { TileIcon } from './tile/TileIcons';
+import { TileIcon, type TileIconName } from './tile/TileIcons';
 
 const M = detail.menu;
 
-/** Rechteck des auslösenden Knopfs im Fenster (measureInWindow) */
+/** Rechteck des auslösenden Knopfs bzw. der Glas-Gruppe im Fenster */
 export type Anchor = { x: number; y: number; width: number; height: number };
 
-type Props = {
+export type MenuEntry = { key: string; label: string; icon?: TileIconName; current?: boolean; a11y?: string };
+
+type MenuProps = {
   open: boolean;
   anchor: Anchor | null;
-  current: StatusKey;
-  onPick: (k: StatusKey) => void;
+  label: string;
+  /** Abschnitte; zwischen ihnen eine eingerückte Trennlinie */
+  sections: MenuEntry[][];
+  onPick: (key: string) => void;
   onClose: () => void;
 };
 
-export function StatusMenu({ open, anchor, current, onPick, onClose }: Props) {
+export function PullMenu({ open, anchor, label, sections, onPick, onClose }: MenuProps) {
   const t = useTheme();
   const { width: W, height: H } = useWindowDimensions();
   const [shown, setShown] = useState(open);
@@ -38,9 +44,9 @@ export function StatusMenu({ open, anchor, current, onPick, onClose }: Props) {
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!shown) return null;
 
-  // Über dem Knopf, linksbündig mit ihm (bleibt im Bildschirm)
-  const left = Math.max(16, Math.min((anchor?.x ?? 16), W - M.width - 16));
-  const bottom = anchor ? Math.max(16, H - anchor.y + 12) : 92;
+  // Über der Gruppe, linke Kante bündig mit ihr (bleibt im Bildschirm)
+  const left = Math.max(8, Math.min(anchor?.x ?? 16, W - M.width - 8));
+  const bottom = anchor ? Math.max(16, H - anchor.y + M.gap) : 92;
   const scale = a.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] });
   const blur = Platform.OS === 'web' ? ({ backdropFilter: 'blur(30px) saturate(1.6)', WebkitBackdropFilter: 'blur(30px) saturate(1.6)' } as object) : {};
 
@@ -49,36 +55,41 @@ export function StatusMenu({ open, anchor, current, onPick, onClose }: Props) {
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.18)', opacity: a }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Menü schließen" />
       </Animated.View>
-      <Animated.View accessibilityRole="menu" aria-label="Status"
+      <Animated.View accessibilityRole="menu" aria-label={label}
         style={[s.menu, blur, { left, bottom, backgroundColor: t.glass, borderColor: t.glassBorder, opacity: a,
           transformOrigin: 'bottom left', transform: [{ scale }] } as object]}>
-        {STATUS_LIST.map((d, i) => {
-          const on = d.key === current;
-          return (
-            <Pressable key={d.key} accessibilityRole="menuitem" accessibilityState={{ checked: on }} accessibilityLabel={`${d.label}${d.details ? ', mit Angaben' : ''}`}
-              onPress={() => onPick(d.key)}
-              style={({ pressed }) => [s.row, i < STATUS_LIST.length - 1 && { borderBottomWidth: 1, borderBottomColor: t.hairline }, pressed && { backgroundColor: t.hairline }]}>
-              <View style={s.icon}><TileIcon name={d.icon} color={t.ink} size={M.icon} /></View>
-              <Text style={[s.label, { color: t.ink }, on && { fontWeight: '600' }]}>{d.label}{d.details ? ' …' : ''}</Text>
-            </Pressable>
-          );
-        })}
+        {sections.filter((x) => x.length).map((sec, si) => (
+          <Fragment key={si}>
+            {si > 0 && <View style={[s.divider, { backgroundColor: t.hairline }]} />}
+            {sec.map((d) => (
+              <Pressable key={d.key} accessibilityRole="menuitem" accessibilityState={{ checked: !!d.current }} accessibilityLabel={d.a11y ?? d.label}
+                onPress={() => onPick(d.key)}
+                style={({ pressed }) => [s.row, pressed && { backgroundColor: t.hairline }]}>
+                <View style={s.icon}>{d.icon && <TileIcon name={d.icon} color={t.ink} size={M.icon} />}</View>
+                <Text numberOfLines={1} style={[s.label, { color: t.ink }, d.current && { fontWeight: '600' }]}>{d.label}</Text>
+              </Pressable>
+            ))}
+          </Fragment>
+        ))}
       </Animated.View>
     </Modal>
   );
 }
 
+type StatusProps = { open: boolean; anchor: Anchor | null; current: StatusKey; onPick: (k: StatusKey) => void; onClose: () => void };
+
+/** Status-Menü (Schrank-Teil) */
+export function StatusMenu({ open, anchor, current, onPick, onClose }: StatusProps) {
+  const entries: MenuEntry[] = STATUS_LIST.map((d) => ({
+    key: d.key, label: d.label, icon: d.icon, current: d.key === current, a11y: `${d.label}${d.details ? ', mit Angaben' : ''}`,
+  }));
+  return <PullMenu open={open} anchor={anchor} label="Status" sections={[entries]} onPick={(k) => onPick(k as StatusKey)} onClose={onClose} />;
+}
+
 const s = StyleSheet.create({
-  menu: { position: 'absolute', width: M.width, borderRadius: M.radius, borderWidth: 1, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.35)' },
-  row: { height: M.row, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
+  menu: { position: 'absolute', width: M.width, borderRadius: M.radius, borderWidth: 1, overflow: 'hidden', paddingVertical: 6, boxShadow: '0 12px 40px rgba(0,0,0,0.35)' },
+  row: { height: M.row, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18 },
   icon: { width: M.icon + 4, alignItems: 'center' },
   label: { flex: 1, fontSize: M.font },
+  divider: { height: StyleSheet.hairlineWidth * 2, marginHorizontal: 18, marginVertical: 6 },
 });
-
-/** Anker aus dem Tipp-Ereignis (Fensterkoordinaten; im Web scrollt das Dokument → Scrollstand abziehen) */
-export function anchorFromPress(e: { nativeEvent: { pageX?: number; pageY?: number } }): Anchor {
-  const sx = Platform.OS === 'web' && typeof window !== 'undefined' ? window.scrollX : 0;
-  const sy = Platform.OS === 'web' && typeof window !== 'undefined' ? window.scrollY : 0;
-  const x = (e.nativeEvent.pageX ?? 0) - sx, y = (e.nativeEvent.pageY ?? 0) - sy;
-  return { x: x - 22, y: y - 22, width: 44, height: 44 };
-}
