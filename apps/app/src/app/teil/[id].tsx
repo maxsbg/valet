@@ -147,11 +147,13 @@ function ClosetDetail({ id }: { id: string }) {
             {card.details.length > 0 && <Text style={{ fontSize: 13, color: t.inkMuted }}>{card.details.join(' · ')}</Text>}
             {card.warn && <Text style={{ fontSize: 13, fontWeight: '600', color: t.accent }}>{card.warn}</Text>}
           </View>
-          <Pressable hitSlop={8} accessibilityRole="button" onPress={() => {
+          <Pressable hitSlop={6} accessibilityRole="button" onPress={() => {
             const to = card.action.to;
             if (to === 'sheet:sold') setStatusSheet('sold');
             else applyStatus(statusChange(to, sInfo, today)).catch(fail);
-          }}><Text style={{ fontSize: 15, fontWeight: '600', color: t.actionText }}>{card.action.label}</Text></Pressable>
+          }} style={({ pressed }) => [s.statusAction, { backgroundColor: t.actionText + '24', opacity: pressed ? 0.6 : 1 }]}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: t.actionText }} numberOfLines={1}>{card.action.label}</Text>
+          </Pressable>
         </View>
       )}
       <StatTiles tiles={tiles} onEditPrice={() => edit('kauf')} />
@@ -231,6 +233,8 @@ const s = StyleSheet.create({
   brand: { fontSize: detail.font.brand, fontWeight: '600', letterSpacing: 0.4 },
   name: { fontFamily: DISPLAY, fontSize: detail.font.name, lineHeight: 36 },
   statusCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1, padding: 14 },
+  /** Schnellaktion als Kapsel (38 hoch wie Spec-Kapseln), leicht getönt, damit sie als Knopf erkennbar ist */
+  statusAction: { height: 38, borderRadius: 19, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   statusIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   holdRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 36 },
 });
