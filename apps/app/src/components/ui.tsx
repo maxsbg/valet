@@ -34,7 +34,7 @@ export function TopTint() {
 }
 
 /**
- * Kopfzeile der Tabs (entschieden 15.11.2026): links der Tab-Name in Gloock (ink, also weiß bzw. schwarz),
+ * Kopfzeile der Tabs (entschieden 15.11.2026): links der Tab-Name in Gloock 34 (ink, also weiß bzw. schwarz),
  * rechts nur das Profil-Monogramm – darüber auch die Einstellungen. Der Schriftzug „valet“ sitzt am Seitenende (`PageEnd`).
  */
 export function Header({ title, tint = true }: { title: string; tint?: boolean }) {
@@ -263,11 +263,13 @@ export function Empty({ title, text }: { title: string; text: string }) {
 }
 
 const s = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md, paddingVertical: space.xs },
+  // Maße wie der große Titel in Apple Music (15.11.2026): Titel 34, Monogramm 44 mittig daneben, seitlich bündig mit dem Inhalt,
+  // oben knapp unter der Statusleiste (8 = Höhe von TopTint), darunter 24 Luft bis zur ersten Leiste/Karte
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md, paddingTop: space.xs, paddingBottom: space.lg },
   mono: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   monoText: { fontFamily: DISPLAY, fontSize: 20, lineHeight: 24 },
   wordmark: { fontFamily: DISPLAY, fontSize: 32, lineHeight: 38 },
-  title: { flex: 1, fontFamily: DISPLAY, fontSize: 30, lineHeight: 36, marginRight: space.sm },
+  title: { flex: 1, fontFamily: DISPLAY, fontSize: 34, lineHeight: 41, marginRight: space.sm },
   // sichtbar gleicher Abstand oben und unten (≈ 31 pt): Gloock lässt über „l“ ca. 8, unter der Grundlinie ca. 7 pt Luft
   end: { alignSelf: 'stretch', alignItems: 'center', marginTop: space.lg - 1 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 40, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: 14, flex: 1 },
