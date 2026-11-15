@@ -147,14 +147,17 @@ export function Hint({ children, accent }: { children: React.ReactNode; accent?:
 }
 
 /** Textfeld mit Beschriftung */
-export function TextField({ label, value, onChange, placeholder, keyboardType, autoFocus }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboardType?: 'default' | 'decimal-pad'; autoFocus?: boolean;
+export function TextField({ label, value, onChange, placeholder, keyboardType, autoFocus, extra, inputMode }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboardType?: 'default' | 'decimal-pad' | 'url'; autoFocus?: boolean;
+  /** neben der Beschriftung, z. B. KI-Markierung */
+  extra?: React.ReactNode; inputMode?: 'text' | 'decimal' | 'url';
 }) {
   const t = useTheme();
   return (
     <View style={{ gap: 6, flex: 1, minWidth: 0 }}>
-      <FieldLabel>{label}</FieldLabel>
-      <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={t.inkMuted} keyboardType={keyboardType} autoFocus={autoFocus}
+      {extra ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><FieldLabel>{label}</FieldLabel>{extra}</View> : label ? <FieldLabel>{label}</FieldLabel> : null}
+      <TextInput value={value} onChangeText={onChange} placeholder={placeholder} accessibilityLabel={label || placeholder} placeholderTextColor={t.inkMuted} keyboardType={keyboardType} autoFocus={autoFocus} inputMode={inputMode}
+        autoCapitalize={keyboardType === 'url' ? 'none' : undefined}
         style={[s.input, { backgroundColor: t.surfaceSunken, borderColor: t.hairline, color: t.ink }, web ? ({ outlineStyle: 'none' } as object) : null]} />
     </View>
   );
@@ -174,7 +177,8 @@ export function DateField({ label, value, onChange, optional }: { label: string;
           onChange: (e: { target: { value: string } }) => onChange(e.target.value || (optional ? null : value)),
           style: {
             height: D.field.height, borderRadius: D.field.radius, border: `1px solid ${t.hairline}`, background: t.surfaceSunken, color: t.ink,
-            fontSize: 16, padding: '0 12px', boxSizing: 'border-box', width: '100%', fontFamily: 'inherit', WebkitAppearance: 'none', minWidth: 0,
+            fontSize: 16, padding: '0 12px', boxSizing: 'border-box', width: '100%', WebkitAppearance: 'none', minWidth: 0,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif', colorScheme: t.dark ? 'dark' : 'light',
           },
         })}
       </View>

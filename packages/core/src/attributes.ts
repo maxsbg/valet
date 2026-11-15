@@ -169,3 +169,19 @@ export const confirmCare = (care: Care, g: CareGroup): Care => (care[g] ? { ...c
 /** Ein Etikett ersetzt jede Schätzung */
 export const careFromLabel = (found: Partial<Record<CareGroup, string>>): Care =>
   Object.fromEntries(Object.entries(found).filter(([, v]) => !!v).map(([k, v]) => [k, { v: v!, src: 'etikett' as const }]));
+
+/** Nächstliegende Farbe der Palette (Haupt- oder Nuance, ohne „Bunt“) zu einem Hex-Wert – Vorschlag aus dem Foto */
+export function nearestColor(hex: string | null | undefined): string | null {
+  if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return null;
+  const rgb = (h: string) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
+  const [r, g, b] = rgb(hex);
+  let best: string | null = null, dist = Infinity;
+  for (const [name, h] of Object.entries(HEX)) {
+    if (!h) continue;
+    const [r2, g2, b2] = rgb(h);
+    // gewichtete Distanz (Rot/Blau weniger empfindlich als Grün)
+    const d = 2 * (r! - r2!) ** 2 + 4 * (g! - g2!) ** 2 + 3 * (b! - b2!) ** 2;
+    if (d < dist) { dist = d; best = name; }
+  }
+  return best;
+}

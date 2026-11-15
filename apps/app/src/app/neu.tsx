@@ -7,12 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { Icons } from '@/components/Icon';
 import { PhotoPicker } from '@/components/PhotoPicker';
-import { ItemFormFields, emptyForm, readForm, type ItemForm } from '@/components/ItemForm';
+import { ItemEditor } from '@/components/edit/ItemEditor';
+import { editChange, emptyEditForm, nearestColor, setField, type EditForm } from '@valet/core';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
 import { canCutout, cutout, modelCached, original, type Picture } from '@/lib/cutout';
-import { createItem, type NewItem } from '@/lib/item';
-import { hexToName } from '@/lib/wardrobe';
+import { createItem } from '@/lib/item';
 
 type Step = 'start' | 'work' | 'review' | 'form';
 const MAROON = '#722638';
@@ -35,8 +35,9 @@ export default function Neu() {
   const [progress, setProgress] = useState<{ text: string; p?: number }>({ text: '' });
   const [failure, setFailure] = useState<string | null>(null);
   const [cached, setCached] = useState(true);
-  const [f, setF] = useState<ItemForm | null>(null);
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [f, setF] = useState<EditForm | null>(null);
+  // Wendeteil: Foto der Seite B (im Formular gewählt)
+  const [picB, setPicB] = useState<Picture | null>(null);
   const [saving, setSaving] = useState(false);
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
@@ -78,22 +79,22 @@ export default function Neu() {
   /** Weiter zum Formular; Farbe aus dem Bild vorschlagen, solange noch keine gewählt ist */
   function toForm(p: Picture | null) {
     setPicture(p);
-    const base = f ?? emptyForm(me?.id ?? null, wish);
-    const top = p?.colors[0]?.h;
-    const suggestion = top ? hexToName(top) : null;
-    setF(base.colors.length || !suggestion ? base : { ...base, colors: [suggestion] });
+    const base = f ?? emptyEditForm({ ownerId: me?.id ?? null, wish });
+    const suggestion = nearestColor(p?.colors[0]?.h);
+    // Farbe aus dem Bild vorschlagen (als KI-Vorschlag markiert), solange noch keine gewählt ist
+    setF(base.colors.length || !suggestion ? base : { ...setField(base, 'colors', [suggestion]), aiPending: [...base.aiPending, 'colors'] });
     setStep('form');
   }
 
   async function save() {
     if (!f || !wardrobe) return;
-    const r = readForm(f);
+    const r = editChange(f, { isNew: true });
     if ('error' in r) return toast.show(r.error);
     // Leere Angaben weglassen → Standardwerte der Datenbank
-    const data = Object.fromEntries(Object.entries(r.change).filter(([, v]) => v !== null && v !== '')) as NewItem;
+    const data = Object.fromEntries(Object.entries(r.change).filter(([, v]) => v !== null && v !== ''));
     setSaving(true);
     try {
-      await createItem(wardrobe.id, data, picture);
+      await createItem(wardrobe.id, data, picture, f.reversible ? picB : null);
       await reload();
       close();
     } catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
@@ -102,6 +103,16 @@ export default function Neu() {
 
   const glow = picture?.colors[0]?.h ?? '#d8d2c8';
   const accent = t.dark ? t.accent : MAROON;
+
+  if (step === 'form' && f) return (
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
+        wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
+        onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
+        saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }} />
+      {toast.node}
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
@@ -183,24 +194,6 @@ export default function Neu() {
             </View>
           )}
 
-          {step === 'form' && f && (
-            <>
-              <View style={s.formHead}>
-                <View style={[s.mini, { boxShadow: `inset 0 0 14px 2px ${glow}73, 0 1px 4px rgba(42,26,29,0.10)` }]}>
-                  {picture ? <Image source={{ uri: picture.preview }} resizeMode="contain" style={{ position: 'absolute', top: 6, bottom: 6, left: 6, right: 6 }} />
-                    : <Text style={{ fontSize: 12, color: t.inkMuted, textAlign: 'center' }}>Kein Foto</Text>}
-                </View>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ fontSize: 15, color: t.ink }}>{picture ? (picture.kind === 'cutout' ? 'Freigestellt' : 'Original') : 'Ohne Foto'}</Text>
-                  <Pressable onPress={() => { run.current++; setStep('start'); }} hitSlop={8}>
-                    <Text style={{ fontSize: 15, color: accent, fontWeight: '600' }}>{picture ? 'Foto ändern' : 'Foto hinzufügen'}</Text>
-                  </Pressable>
-                </View>
-              </View>
-              <ItemFormFields f={f} onChange={setF} persons={wardrobe?.persons ?? []} wishlists={wardrobe?.wishlists} open={open} onOpen={setOpen} />
-              <Btn primary label={saving ? 'Speichert …' : 'Teil sichern'} onPress={saving ? undefined : save} style={{ marginTop: space.md }} />
-            </>
-          )}
         </View>
       </Page>
       {toast.node}

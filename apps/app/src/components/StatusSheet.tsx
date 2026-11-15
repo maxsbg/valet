@@ -6,7 +6,7 @@ import { STATUS_LIST, STORED_PLACES, SOLD_PLACES, statusChange, statusDef, statu
 import { Sheet } from './Sheet';
 import { TileIcon } from './tile/TileIcons';
 import { Capsule, DateField, FieldLabel, Hint, Monogram, SheetHead, TextField, Wrap } from './detail/parts';
-import { eur } from './ItemForm';
+import { eur } from '@/lib/format';
 import type { Person } from '@/lib/wardrobe';
 
 type Props = {

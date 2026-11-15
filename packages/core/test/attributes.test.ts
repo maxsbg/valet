@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   COLORS, colorHex, colorFamily, tapMainColor, tapNuance, rankInk, migrateSeasons, MATERIALS, PATTERNS, CLOSURES, sizeSystemOf, hasCollarSize,
-  careList, confirmCare, careFromLabel, careLabel, type ColorPick,
+  careList, confirmCare, careFromLabel, careLabel, nearestColor, type ColorPick,
 } from '../src/attributes';
 
 const empty: ColorPick = { colors: [], open: null, full: false };
@@ -88,4 +88,12 @@ test('Pflege: Reihenfolge, Bestätigen, Etikett ersetzt Schätzung', () => {
   assert.equal(confirmCare(care, 'wash').wash!.src, 'hand');
   assert.deepEqual(careFromLabel({ wash: 'w40' }), { wash: { v: 'w40', src: 'etikett' } });
   assert.equal(careLabel('iron', 'iron2'), 'Bügeln: 2 Punkte');
+});
+
+test('Farbvorschlag aus dem Foto: nächstliegende Palettenfarbe', () => {
+  assert.equal(nearestColor('#1a1a1a'), 'Schwarz');
+  assert.equal(nearestColor('#f4f4f6'), 'Weiß');
+  assert.equal(nearestColor('#1f2f50'), 'Marineblau');
+  assert.equal(nearestColor('#6b7a3d'), 'Olivgrün');
+  assert.equal(nearestColor(null), null);
 });
