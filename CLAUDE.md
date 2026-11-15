@@ -73,6 +73,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
+- **Teil-Detail, Wunschteil-Detail, Bearbeiten (entschieden 15.11.2026):** verbindlich `docs/design/detailseite/VALET_DETAILSEITE_SPEC.md` (Regeln + offene Punkte), visuelle Referenz Leinwand „Valet – Teil-Detailseite“ auf claude.ai (Link in der Spec). Bei Widerspruch gilt die Spec. Offene Punkte dort (Abschnitt 8) erst mit Max klären.
 - Web: Das Dokument selbst scrollt (kein innerer Scroll-Kasten), nur so zeigt Safari den Inhalt auch unter seiner Leiste. Seiten nutzen `src/components/Page.tsx` (iOS: ScrollView, Web: normaler Fluss + Scroll-Stand je Seite gemerkt); klebende Leisten über `STICKY`, feste (Tab-Leiste, Plus, Hinweise) über `position: fixed` (`FIXED` in `ui.tsx`). Abstände unten aus `src/lib/bottomInset.ts`. Web nutzt `Slot` statt `Stack` (Stack schneidet jede Seite in einen Rahmen) → Seiten werden beim Wechsel abgebaut, Zustand wie Kategorie/Filter bei Bedarf modulweit merken.
 
 ## Freistellen (entschieden)
