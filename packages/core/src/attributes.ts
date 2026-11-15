@@ -116,10 +116,11 @@ export const CLOSURES = ['Knöpfe', 'Reißverschluss', 'Druckknöpfe', 'Schnüru
 
 // ---------- Größe ----------
 
-export const SIZE_SYSTEMS = { letters: 'Buchstaben', numbers: 'Zahlen' } as const;
+/** wl = Hosengröße Bundweite/Länge (in der DB als leeres size_system gespeichert, Standard bei Hosen) */
+export const SIZE_SYSTEMS = { letters: 'Buchstaben', numbers: 'Zahlen', wl: 'W/L' } as const;
 export type SizeSystem = keyof typeof SIZE_SYSTEMS;
 export const ONE_SIZE = 'One Size';
-export const SIZES: Readonly<Record<SizeSystem, readonly string[]>> = {
+export const SIZES: Readonly<Record<'letters' | 'numbers', readonly string[]>> = {
   letters: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', ONE_SIZE],
   numbers: ['44', '46', '48', '50', '52', '54', '56', '58', '60', ONE_SIZE],
 };
