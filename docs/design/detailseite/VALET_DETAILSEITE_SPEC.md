@@ -21,7 +21,7 @@ Stand: 15.11.2026. Verbindliche Regeln aus der Abstimmung mit Max für die Seite
 - **Status-Symbole** einfarbig in Schriftfarbe, keine Statusfarben in den Symbolen. In gefüllten (hellen) Kapseln nimmt das Symbol die Schriftfarbe der Kapsel an (nicht weiß auf weiß).
 - **Kopfzeilen:** Titel exakt mittig (Raster `1fr auto 1fr`, nicht mittig zwischen ungleich breiten Knöpfen). Knöpfe als **runde 44-px-Kreise mit Symbol statt Text:** X = Abbrechen (Glas), Haken = Fertig (`accent`), Pfeil gegen den Uhrzeigersinn = Zurücksetzen (Glas, nicht rot).
 - **Preise:** unter 100 € mit Cent (8,43 €, 59,00 €), ab 100 € ganze Euro mit Tausenderpunkt (143 €, 4.643 €).
-- **Symbol-Schalter** statt iOS-Schalter für Eigenschaften, die eine Kachel-Plakette haben (Geschenk, Wendbar): runder 38-px-Knopf rechts neben der Bezeichnung mit dem Plaketten-Symbol, leer = aus, gefüllt = an. So lernt man das Symbol für die Kachel.
+- **Symbol-Schalter** statt iOS-Schalter für Eigenschaften, die eine Kachel-Plakette haben (Geschenk, Wendbar): runder 38-px-Knopf mit dem Plaketten-Symbol, leer = aus, gefüllt = an. So lernt man das Symbol für die Kachel. **Position (15.11.2026):** in der Wertespalte, rechtsbündig mit den Kapseln/Kreisen der anderen Zeilen – also links von der Pfeil-Spalte (16 px Pfeil + 10 px Abstand bleiben frei), nicht ganz am rechten Rand.
 
 ## 2. Detailseite – Aufbau
 
@@ -111,7 +111,7 @@ Verkauft     <circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.6a4.5 4.5 0
   4. Höchstens 3 Farben, Rang als Zahl im Farbkreis (dunkel auf hellen, weiß auf dunklen Farben). Bei der vierten: Hinweis in `accent` „Höchstens 3 Farben – erst eine abwählen.“
   5. Zeile zu: nur die Farbkreise in runden Kreisen, ohne Namen, ohne Zahl.
 - **Material:** mehrfach, Rang im Chip, 1 = Hauptmaterial.
-- **Größe:** System (Buchstaben / Zahlen 44–60), dann Größe (+ One Size); bei Hemden zusätzlich Kragenweite. Systemwechsel setzt die Größe zurück.
+- **Größe:** System (Buchstaben / Zahlen 44–60), dann Größe (+ One Size); bei Hemden zusätzlich Kragenweite. Systemwechsel setzt die Größe zurück. **Hose (15.11.2026):** System W/L (Standard) oder Buchstaben. W/L = zwei Auswahlreihen Bundweite W26–W40 und Länge L28–L36 (je 1er-Schritte), kein Freitext; Shorts und Pyjama-Hose nur Bundweite. In der Zeile eine Kapsel „W32/L32“. Größen je Kategorie und welche Kategorie überhaupt eine Größe hat: Abschnitt 8a.
 - **Passform, Lagen, Wetter:** antippbare Skalen (Strich antippen, 44 px Tippfläche). Lagen mehrfach, darunter ein Schalter „Auch allein tragbar“.
 - **Pflege:** je Gruppe (Waschen, Bleichen, Trocknen, Bügeln, Professionell) Chips mit Symbol und kurzer Beschriftung („nicht“, „niedrig“ – die Gruppe sagt den Rest; Screenreader-Text vollständig, z. B. „Bügeln: 2 Punkte“), je Gruppe ein Wert, alles optional. Die KI füllt Pflege aus einem Etikett- oder Shop-Bild aus; ohne Bild schätzt sie nach den Regeln in Abschnitt 4 (grau mit Stern). Antippen und Bestätigen macht eine Schätzung zum festen Wert.
 - **Wendbar** (Symbol-Schalter direkt unter den Farben): an → „Farben Seite A“ und „Farben Seite B“, Foto je Seite.
@@ -171,6 +171,30 @@ Shop-Begriffe rechnet die KI um (Slim = schmal, Relaxed = eher weit, Oversized =
 **Weitere Listen:** Material zusätzlich Flanell und Lammfell, Muster zusätzlich Zopfmuster und Rippstrick, Verschluss zusätzlich Schnalle (z. B. Tasche mit Schnallen). Kragenweite bei der Größe nur für Unterkategorie Hemd.
 
 **Umstellung vorhandener Teile:** Alte Kategorien und Arten beim Laden bzw. per einmaligem Skript auf die neue Liste abbilden (Plural → Einzahl, „Oberteile › Hemden › Flannel“ → „Oberteil › Hemd“ + Material Flanell, Mini-/Midi-/Maxi-Röcke → Rock + Länge, Pelz-/Fleece-/Daunenjacke → Material). Was sich nicht eindeutig abbilden lässt: Liste für Max zum Nachsehen, nicht raten.
+
+## 8a. Welche Felder je Kategorie (entschieden 15.11.2026)
+
+Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten **und** in der Ansicht gar nicht gezeigt (keine leere Zeile, kein „Auswählen“). Eine Karte ohne sichtbare Zeile entfällt ganz. Bereits gespeicherte Werte bleiben in der DB, werden aber nicht angezeigt. Die KI füllt nur die gezeigten Felder.
+
+| Feld | Oberteil | Kleid | Hose | Rock | Oberbekl. | Schuh | Tasche | Kopfbed. | Schmuck | Accessoire |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Kategorie, Saison, Farben, Material, Stil | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Muster | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ | – | ✓ |
+| Wendbar | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ | – | ✓ |
+| Größe | ✓ | ✓ | ✓ (W/L) | ✓ | ✓ | ✓ (EU) | – | ✓ (Kappe: verstellbar/Fitted) | nur Ring | ✓ |
+| Passform | Weite, Länge | Länge | Weite, Länge, Bund | Länge, Bund | – | – | – | – | – | – |
+| Lagen + „auch allein tragbar“ | ✓ | – | – | – | ✓ | – | – | – | – | – |
+| Wetter | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | – | ✓ |
+| Ausschnitt / Kragen | ✓ | ✓ (Ausschnitt) | – | – | ✓ (Kragen) | – | – | – | – | – |
+| Verschluss | ✓ | – | – | – | ✓ | ✓ | ✓ | – | – | ✓ |
+| Trägerart | – | – | – | – | – | – | ✓ | – | – | – |
+| Pflege | ✓ | ✓ | ✓ | ✓ | ✓ | – | – | ✓ | – | nur Textil* |
+
+- **Ausschnitt oder Kragen:** eine Zeile, Name und Werte nach Unterkategorie. Hemd und Bluse → „Kragen“ (Klassischer Kragen, Button-down, Stehkragen, Reverskragen, ohne Kragen). Übrige Oberteile und Kleid → „Ausschnitt“ (Rundhals, V-Ausschnitt, Knopfleiste, Polokragen, Rollkragen, Stehkragen, Kapuze). Oberbekleidung → „Kragen“ (wie Hemd + Kapuze).
+- **Verschluss** bei Oberteil nur, wo es einen gibt (Hemd, Bluse, Polohemd, Body); bei Accessoire nur Gürtel und Handschuh.
+- \* **Pflege bei Accessoire** nur für Unterwäsche, Socke, Strumpfhose, Bademode, Schal, Anzug-Accessoire, Handschuh, Traditionelle Kleidung, Stulpe.
+- **Wetter bei Accessoire** nur Schal, Handschuh, Socke, Strumpfhose, Stulpe, Bademode.
+- **Wechsel der Kategorie** im Bearbeiten blendet die Zeilen sofort passend ein und aus.
 
 ## 9. Offen – Max fragen, nicht selbst entscheiden
 
