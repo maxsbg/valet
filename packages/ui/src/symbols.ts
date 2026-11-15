@@ -246,6 +246,17 @@ export const strokeFor = (name: SymbolName) => (((SYMBOLS[name] as SymbolDef).gr
 export const ICON_SIZE = { mini: 12, inline: 16, chip: 18, row: 20, button: 22, bar: 24, large: 28 } as const;
 export type IconSize = keyof typeof ICON_SIZE;
 
+/**
+ * Feste Monogramm-Größen (Durchmesser in px), passend zu den Symbol-Stufen (15.11.2026).
+ * In Chips und Kapseln sitzt das Monogramm konzentrisch – gleicher Rand oben, unten und links wie die Plaketten
+ * auf der Kachel – und ist so groß wie der Farbkreis (detail.colorDot) an derselben Stelle.
+ * text: neben 14-px-Text (Infozeilen, Balken, Kopf einer Liste) · chip: Chips (36 hoch, Rand 6) und Kapseln (38, Rand 7)
+ * tall: hohe Chips (44, Rand 7) · row: Listenzeile mit zwei Textzeilen (= Wert-Kreis 38) · button: Profil-Knopf (= runde Knöpfe 44)
+ * Plaketten (Kachel, Outfit-Karte, Detail-Bild) behalten ihre Maße aus itemTile.badge.
+ */
+export const MONO_SIZE = { text: 20, chip: 24, tall: 30, row: 38, button: 44 } as const;
+export type MonoSize = keyof typeof MONO_SIZE;
+
 /** Oberkategorie → Symbol (Schrank-Chips) */
 export const CATEGORY_ICON: Record<string, SymbolName> = {'Oberbekleidung': 'catOberbekleidung', 'Oberteil': 'catOberteil', 'Kleid': 'catKleid', 'Hose': 'catHose', 'Shorts': 'catShorts', 'Rock': 'catRock', 'Schuh': 'catSchuh', 'Kopfbedeckung': 'catKopfbedeckung', 'Tasche': 'catTasche', 'Accessoire': 'catAccessoire', 'Schmuck': 'catSchmuck'};
 

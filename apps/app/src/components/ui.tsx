@@ -7,6 +7,7 @@ import { useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import { personKey, type Person } from '@/lib/wardrobe';
 import { Monogram } from './Monogram';
+import { MONO_SIZE } from '@valet/ui';
 import { Icon } from '@/components/Icon';
 
 type Theme = ReturnType<typeof useTheme>;
@@ -98,7 +99,7 @@ export function Chip({ label, count, selected, onPress, onLongPress, person, ico
       accessibilityLabel={fold ? (count != null ? `${label}, ${count}` : label) : undefined}
       style={[s.chip, tall && s.chipTall, fold && s.chipFold, person && { paddingLeft: tall ? 7 : 6 }, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
       {icon}
-      {person && <Monogram person={person} size={tall ? 30 : 24} />}
+      {person && <Monogram person={person} size={tall ? 'tall' : 'chip'} />}
       {fold ? <FoldLabel label={label} open={!!selected} color={color} onWidth={onLabelWidth} /> : <Text style={[s.chipText, { color }]}>{label}</Text>}
       {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }, fold && s.chipCountFold]}>{count}</Text>}
     </Pressable>
@@ -267,7 +268,7 @@ const s = StyleSheet.create({
   // Maße wie der große Titel in Apple Music (15.11.2026): Titel 34, Monogramm 44 mittig daneben, seitlich bündig mit dem Inhalt,
   // oben knapp unter der Statusleiste (8 = Höhe von TopTint), darunter 24 Luft bis zur ersten Leiste/Karte
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md, paddingTop: space.xs, paddingBottom: space.lg },
-  mono: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  mono: { width: MONO_SIZE.button, height: MONO_SIZE.button, borderRadius: MONO_SIZE.button / 2, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   monoText: { fontFamily: DISPLAY, fontSize: 20, lineHeight: 24 },
   wordmark: { fontFamily: DISPLAY, fontSize: 32, lineHeight: 38 },
   title: { flex: 1, fontFamily: DISPLAY, fontSize: 34, lineHeight: 41, marginRight: space.sm },

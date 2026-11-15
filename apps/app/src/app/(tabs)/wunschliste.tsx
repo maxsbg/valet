@@ -217,7 +217,7 @@ export default function Wunschliste() {
               </View>
               <Text style={[s.title, { color: t.ink }]} numberOfLines={2}>{list?.name ?? 'Alle Wünsche'}</Text>
               <View style={s.subLine}>
-                {owner0 && <Monogram person={owner0} size={20} />}
+                {owner0 && <Monogram person={owner0} size="text" />}
                 <Text style={{ fontSize: 14, color: t.inkMuted }}>{detailSub}</Text>
               </View>
             </View>

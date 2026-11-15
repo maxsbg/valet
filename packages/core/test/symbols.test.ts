@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CATEGORY_ICON, ICON_SIZE, SEASON_ICON, SYMBOLS, type SymbolDef } from '@valet/ui';
+import { CATEGORY_ICON, ICON_SIZE, MONO_SIZE, SEASON_ICON, SYMBOLS, type SymbolDef } from '@valet/ui';
 import { CARE, CATEGORY_NAMES, OCCASIONS, SEASONS, STATUS_LIST, WISH_TAGS } from '../src/index';
 
 const entries = Object.entries(SYMBOLS) as [string, SymbolDef][];
@@ -56,6 +56,7 @@ test('Status, Anlässe, Wunsch-Kategorien, Pflege, Saison und Oberkategorien hab
 
 test('Größen-Stufen bleiben die festgelegten', () => {
   assert.deepEqual(ICON_SIZE, { mini: 12, inline: 16, chip: 18, row: 20, button: 22, bar: 24, large: 28 });
+  assert.deepEqual(MONO_SIZE, { text: 20, chip: 24, tall: 30, row: 38, button: 44 });
 });
 
 // ---------- App-Code ----------

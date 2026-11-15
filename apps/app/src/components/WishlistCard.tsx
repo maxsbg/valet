@@ -40,7 +40,7 @@ export function WishlistCard({ title, sub, owner, items, width, onPress, onLongP
       <View style={[s.meta, { borderTopColor: t.hairline }]}>
         <Text style={[s.title, { color: t.ink }]} numberOfLines={1}>{title}</Text>
         <View style={s.line}>
-          {owner ? <View style={s.mono}><Monogram person={owner} size={18} /></View> : null}
+          {owner ? <View style={s.mono}><Monogram person={owner} size="text" /></View> : null}
           <Text style={[s.sub, { color: t.inkMuted }]} numberOfLines={1}>{sub}</Text>
         </View>
       </View>
