@@ -1,8 +1,9 @@
 // Bearbeiten-Seite (auch „Neues Teil prüfen“) – Formular-Modell (VALET_DETAILSEITE_SPEC.md, Abschnitte 7 und 7a)
 // Plattformunabhängig: Laden aus der Datenbank-Zeile, Ändern, Prüfen, zurück in eine Datenbank-Änderung.
 
-import { fitScalesOf, isValidPath, type FitScale } from './categories';
-import { MAX_COLORS, hasCollarSize, ONE_SIZE, SIZES, type Care, type MaterialPart, type SizeSystem } from './attributes';
+import { isValidPath, type FitScale } from './categories';
+import { MAX_COLORS, ONE_SIZE, type Care, type MaterialPart } from './attributes';
+import { capSize, fieldsFor, sizeSystemOn, type SizeSystemAny } from './fields';
 import { equalSplit, formatPrice, parseAmount, splitGap } from './money';
 import { isWishTag, type WishTag } from './tile';
 
@@ -12,7 +13,7 @@ export type EditRow = Partial<{
   seasons: string[] | null; colors: string[] | null; colors_b: string[] | null; pattern: string | null; pattern_b: string | null;
   materials: MaterialPart[] | null; size: string | null; size_system: string | null; collar_size: string | null;
   fit_width: number | null; fit_length: number | null; fit_rise: number | null; layers: number[] | null; standalone: boolean | null;
-  warmth: number | null; rain: number | null; styles: string[] | null; collar: string | null; closure: string | null; care: Care | null;
+  warmth: number | null; rain: number | null; styles: string[] | null; collar: string | null; closure: string | null; strap: string | null; care: Care | null;
   reversible: boolean | null; notes: string | null;
   price_paid: number | null; list_price: number | null; is_gift: boolean | null; gift_from: string | null; gift_value: number | null;
   purchase_date: string | null; shop: string | null; link: string | null; article_no: string | null;
@@ -28,10 +29,10 @@ export type EditForm = {
   name: string; brand: string;
   category: string | null; subcategory: string | null; type: string | null;
   seasons: string[]; colors: string[]; colorsB: string[]; pattern: string | null; patternB: string | null;
-  materials: MaterialPart[]; sizeSystem: SizeSystem | null; size: string | null; collarSize: string | null;
+  materials: MaterialPart[]; sizeSystem: SizeSystemAny | null; size: string | null; collarSize: string | null;
   fit: { width: number | null; length: number | null; rise: number | null };
   layers: number[]; standalone: boolean; warmth: number | null; rain: number | null;
-  styles: string[]; collar: string | null; closure: string | null; care: Care;
+  styles: string[]; collar: string | null; closure: string | null; strap: string | null; care: Care;
   reversible: boolean; notes: string;
   // Kauf (Preise als Text, wie getippt)
   price: string; listPrice: string; gift: boolean; giftFrom: string; giftValue: string;
@@ -46,13 +47,13 @@ export type EditForm = {
 };
 
 const eur = (n: number | null | undefined) => (n == null ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-const sys = (s: string | null | undefined): SizeSystem | null => (s === 'letters' || s === 'numbers' ? s : null);
 
 export function emptyEditForm(opts: { ownerId?: string | null; wish?: { wishlistId: string | null } } = {}): EditForm {
   return toEditForm({ owner_ids: opts.ownerId ? [opts.ownerId] : [], is_wish: !!opts.wish, wishlist_id: opts.wish?.wishlistId ?? null });
 }
 
 export function toEditForm(r: EditRow): EditForm {
+  const sizeKind = fieldsFor(r.category, r.subcategory).size;
   const payers = (r.payers ?? []).filter((p) => !!p?.person_id);
   const custom = payers.length > 1 && payers.some((p) => typeof p.amount === 'number');
   const owners = r.owner_ids?.length ? r.owner_ids : r.owner_id ? [r.owner_id] : [];
@@ -60,10 +61,11 @@ export function toEditForm(r: EditRow): EditForm {
     name: r.name ?? '', brand: r.brand ?? '',
     category: r.category || null, subcategory: r.subcategory ?? null, type: r.item_type ?? null,
     seasons: r.seasons ?? [], colors: r.colors ?? [], colorsB: r.colors_b ?? [], pattern: r.pattern ?? null, patternB: r.pattern_b ?? null,
-    materials: r.materials ?? [], sizeSystem: sys(r.size_system), size: r.size || null, collarSize: r.collar_size ?? null,
+    materials: r.materials ?? [], sizeSystem: sizeSystemOn(sizeKind, r.size_system, r.size), size: sizeKind === 'cap' ? capSize(r.size) ?? (r.size || null) : r.size || null,
+    collarSize: r.collar_size ?? null,
     fit: { width: r.fit_width ?? null, length: r.fit_length ?? null, rise: r.fit_rise ?? null },
     layers: r.layers ?? [], standalone: !!r.standalone, warmth: r.warmth ?? null, rain: r.rain ?? null,
-    styles: r.styles ?? [], collar: r.collar ?? null, closure: r.closure ?? null, care: r.care ?? {},
+    styles: r.styles ?? [], collar: r.collar ?? null, closure: r.closure ?? null, strap: r.strap ?? null, care: r.care ?? {},
     reversible: !!r.reversible, notes: r.notes ?? '',
     price: eur(r.price_paid), listPrice: eur(r.list_price), gift: !!r.is_gift, giftFrom: r.gift_from ?? '', giftValue: eur(r.gift_value),
     purchaseDate: r.purchase_date ?? null, shop: r.shop ?? '', link: r.link ?? '', articleNo: r.article_no ?? '',
@@ -83,6 +85,14 @@ export function toEditForm(r: EditRow): EditForm {
 export function setField<K extends keyof EditForm>(f: EditForm, k: K, v: EditForm[K]): EditForm {
   return { ...f, [k]: v, aiPending: f.aiPending.filter((x) => x !== k && !x.startsWith(`${String(k)}.`)) };
 }
+/** Kategorie ändern: Pfad setzen und das Größen-System an die neue Art anpassen (z. B. Hose → W/L, Schuh → EU) */
+export function setCategory(f: EditForm, p: { category: string | null; subcategory: string | null; type: string | null }): EditForm {
+  const before = fieldsFor(f.category, f.subcategory).size, after = fieldsFor(p.category, p.subcategory).size;
+  let next = setField(setField(setField(f, 'category', p.category), 'subcategory', p.subcategory), 'type', p.type);
+  if (before !== after) next = { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null };
+  return next;
+}
+
 /** KI-Vorschlag bestätigen (Wert bleibt) */
 export const confirmAi = (f: EditForm, k: string): EditForm => ({ ...f, aiPending: f.aiPending.filter((x) => x !== k) });
 
@@ -98,13 +108,10 @@ export function toggleMaterial(list: readonly MaterialPart[], name: string): Mat
 export const materialRank = (list: readonly MaterialPart[], name: string) => list.findIndex((m) => m.name === name) + 1;
 
 /** Größe: Systemwechsel setzt die Größe zurück (One Size bleibt) */
-export function pickSizeSystem(f: EditForm, s: SizeSystem): EditForm {
+export function pickSizeSystem(f: EditForm, s: SizeSystemAny): EditForm {
   const next = f.sizeSystem === s ? null : s;
   return setField({ ...f, size: f.size === ONE_SIZE ? ONE_SIZE : null }, 'sizeSystem', next);
 }
-/** Größe, die nicht in den Listen steht (z. B. „W30/L32“) – bleibt als eigene Angabe erhalten */
-export const isCustomSize = (f: Pick<EditForm, 'size'>) =>
-  !!f.size && !SIZES.letters.includes(f.size) && !SIZES.numbers.includes(f.size);
 
 /** Skalen-Stufe antippen; erneut tippen hebt auf */
 export function pickFit(f: EditForm, key: FitScale['key'], step: number): EditForm {
@@ -184,7 +191,6 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
   const giftValue = num('Wert', f.giftValue);
   for (const x of [price, list, giftValue]) if (isErr(x)) return x;
 
-  const scales = fitScalesOf(f.category).map((s) => s.key);
   const base: Record<string, unknown> = {
     name: f.name.trim(), brand: f.brand.trim(),
     // items.category ist „not null“ → ohne Kategorie leerer Text (beim Laden = keine Kategorie)
@@ -192,11 +198,11 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
     seasons: f.seasons, colors: f.colors.slice(0, MAX_COLORS), colors_b: f.reversible ? f.colorsB.slice(0, MAX_COLORS) : [],
     pattern: f.pattern, pattern_b: f.reversible ? f.patternB : null,
     materials: f.materials, size_system: f.sizeSystem,
-    size: f.size ?? '', collar_size: hasCollarSize(f.subcategory) ? f.collarSize : null,
-    fit_width: scales.includes('width') ? f.fit.width : null, fit_length: scales.includes('length') ? f.fit.length : null,
-    fit_rise: scales.includes('rise') ? f.fit.rise : null,
+    // Felder, die zur Kategorie nicht passen, werden nur nicht gezeigt – gespeicherte Werte bleiben (Spec 8a)
+    size: f.size ?? '', collar_size: f.collarSize,
+    fit_width: f.fit.width, fit_length: f.fit.length, fit_rise: f.fit.rise,
     layers: [...f.layers].sort(), standalone: f.standalone, warmth: f.warmth, rain: f.rain,
-    styles: f.styles, collar: f.collar, closure: f.closure, care: f.care,
+    styles: f.styles, collar: f.collar, closure: f.closure, strap: f.strap, care: f.care,
     reversible: f.reversible, notes: f.notes.trim(),
     shop: f.shop.trim(), link: f.link.trim(), article_no: f.articleNo.trim(),
     ai_pending: f.aiPending,

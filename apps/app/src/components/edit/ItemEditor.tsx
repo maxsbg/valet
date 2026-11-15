@@ -4,10 +4,9 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  CATEGORY_NAMES, CLOSURES, COLLARS, COLLAR_SIZES, MATERIALS, ONE_SIZE, PATTERNS, SEASONS, SIZES, SIZE_SYSTEMS, STYLES, LAYERS, WARMTH, RAIN, CARE,
-  careList, categoryLast, fitScalesOf, hasCollarSize, layoutKind, pickCategory, subcategoriesOf, typesOf,
-  setField, toggleIn, pickOne, toggleMaterial, materialRank, pickSizeSystem, isCustomSize, pickFit, togglePayer, splitView, qtyHint, formatPrice,
-  type ColorPick, type EditForm, type SizeSystem, type WishTag,
+  CATEGORY_NAMES, CLOSURES, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
+  layoutKind, pickCategory, subcategoriesOf, typesOf, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
+  pickSizeSystem, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -21,7 +20,7 @@ import { DetailIcon, SEASON_ICON, type DetailIconName } from '@/components/detai
 import {
   ColorDot, EditCard, EditRow, KiBadge, NotesField, Pair, PlainRow, RankBadge, Segmented, Stepper, SymbolSwitch, ValueCapsule, ValueCircle, ValueScale,
 } from './fields';
-import { CarePicker, ColorPicker, FitPicker, LayersPicker, WeatherPicker } from './pickers';
+import { CarePicker, ColorPicker, FitPicker, LayersPicker, SizePicker, WeatherPicker } from './pickers';
 import { EditImage } from './EditImage';
 import { InfoSheet } from './InfoSheet';
 import { SetPicker, type SetDraft } from './SetPicker';
@@ -77,145 +76,155 @@ export function ItemEditor(p: Props) {
   const types = typesOf(f.category, f.subcategory);
   const pickCat = (level: 'category' | 'subcategory' | 'type', name: string) => {
     const next = pickCategory({ category: f.category, subcategory: f.subcategory, type: f.type }, level, name);
-    onForm(setField(setField(setField(f, 'category', next.category), 'subcategory', next.subcategory), 'type', next.type));
+    onForm(setCategory(f, next));
   };
-  const colorRow = (side: Side) => {
+  const colorRow = (side: Side, last = false) => {
     const list = side === 'a' ? f.colors : f.colorsB;
     const key = side === 'a' ? 'colors' : 'colorsB';
     const pick: ColorPick = { colors: list, ...colorUi[side] };
     return (
-      <EditRow key={key} label={f.reversible ? (side === 'a' ? 'Farben Seite A' : 'Farben Seite B') : 'Farben'} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)}
+      <EditRow key={key} label={fieldsFor(f.category, f.subcategory).reversible && f.reversible ? (side === 'a' ? 'Farben Seite A' : 'Farben Seite B') : 'Farben'} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last}
         values={list.map((c) => <ValueCircle key={c} a11y={c} outline><ColorDot name={c} /></ValueCircle>)}>
         <ColorPicker pick={pick} onChange={(n) => { setColorUi((u) => ({ ...u, [side]: { open: n.open, full: n.full } })); set(key, n.colors); }} />
       </EditRow>
     );
   };
-  const textRow = (key: 'pattern' | 'patternB' | 'collar' | 'closure', label: string, opts: readonly string[]) => {
+  type Row = ((last: boolean) => React.ReactNode) | null | false;
+  /** Sichtbare Zeilen einer Karte; die letzte ohne Trennlinie. Keine Zeile → Karte entfällt (Spec 8a) */
+  const card = (title: string, rows: Row[], extra?: React.ReactNode) => {
+    const shown = rows.filter((r): r is (last: boolean) => React.ReactNode => !!r);
+    return shown.length ? <EditCard title={title} rows>{shown.map((r, i) => <View key={i}>{r(i === shown.length - 1)}</View>)}{extra}</EditCard> : null;
+  };
+  const textRow = (key: 'pattern' | 'patternB' | 'collar' | 'closure' | 'strap', label: string, opts: readonly string[]): Row => (last) => {
     const v = f[key];
     return (
-      <EditRow key={key} label={label} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} values={v ? [<ValueCapsule key={v} label={v} />] : []}>
+      <EditRow label={label} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last} values={v ? [<ValueCapsule key={v} label={v} />] : []}>
         <Wrap>{opts.map((o) => <Capsule key={o} label={o} selected={v === o} onPress={() => set(key, pickOne(v, o))} />)}</Wrap>
       </EditRow>
     );
   };
-  const sizeValues = [f.size, hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null].filter((x): x is string => !!x);
-  const sizeOpts = f.sizeSystem ? SIZES[f.sizeSystem] : [ONE_SIZE];
+  const fx = fieldsFor(f.category, f.subcategory);
+  const reversible = fx.reversible && f.reversible;
+  const sizeValues = [f.size, fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null].filter((x): x is string => !!x);
 
   const steckbrief = (
     <>
-      <EditCard title="Aussehen" rows>
-        <EditRow label="Kategorie" open={!!open.cat} onToggle={() => toggle('cat')} ai={ai('category')}
-          values={f.category ? [<ValueCapsule key="c" label={categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })} />] : []}>
-          <FieldLabel>Kategorie</FieldLabel>
-          <Wrap>{CATEGORY_NAMES.map((c) => <Capsule key={c} label={c} selected={f.category === c} onPress={() => pickCat('category', c)} />)}</Wrap>
-          {f.category && <>
-            <FieldLabel>Unterkategorie</FieldLabel>
-            <Wrap>{subs.map((c) => <Capsule key={c} label={c} selected={f.subcategory === c} onPress={() => pickCat('subcategory', c)} />)}</Wrap>
-          </>}
-          {types.length > 0 && <>
-            <FieldLabel>Typ</FieldLabel>
-            <Wrap>{types.map((c) => <Capsule key={c} label={c} selected={f.type === c} onPress={() => pickCat('type', c)} />)}</Wrap>
-          </>}
-        </EditRow>
-        <EditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')}
-          values={SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><DetailIcon name={SEASON_ICON[x]!} color={t.bg} /></ValueCircle>)}>
-          <Wrap>{SEASONS.map((x) => <Capsule key={x} label={x} selected={f.seasons.includes(x)} onPress={() => set('seasons', toggleIn(f.seasons, x))}
-            icon={(c) => <DetailIcon name={SEASON_ICON[x]!} size={18} color={c} />} />)}</Wrap>
-        </EditRow>
-        {colorRow('a')}
-        <PlainRow label="Wendbar" inset>
-          <SymbolSwitch on={f.reversible} label="Wendbar" onToggle={() => set('reversible', !f.reversible)}>
-            {(c) => <TileIcon name="reversible" color={c} size={20} />}
-          </SymbolSwitch>
-        </PlainRow>
-        {f.reversible && colorRow('b')}
-        {p.set && !f.isWish && (
-          <PlainRow label="Set" inset
-            below={p.set.draft.on ? <SetPicker draft={p.set.draft} onChange={p.set.onChange} items={p.set.items} width={col}
-              current={{ id: p.set.currentId, name: f.name.trim(), setId: p.set.setId }} /> : null}>
-            <SymbolSwitch on={p.set.draft.on} label="Set" onToggle={() => p.set!.onChange({ ...p.set!.draft, on: !p.set!.draft.on })}>
+      {card('Aussehen', [
+        (last) => (
+          <EditRow label="Kategorie" open={!!open.cat} onToggle={() => toggle('cat')} ai={ai('category')} last={last}
+            values={f.category ? [<ValueCapsule key="c" label={categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })} />] : []}>
+            <FieldLabel>Kategorie</FieldLabel>
+            <Wrap>{CATEGORY_NAMES.map((c) => <Capsule key={c} label={c} selected={f.category === c} onPress={() => pickCat('category', c)} />)}</Wrap>
+            {f.category && <>
+              <FieldLabel>Unterkategorie</FieldLabel>
+              <Wrap>{subs.map((c) => <Capsule key={c} label={c} selected={f.subcategory === c} onPress={() => pickCat('subcategory', c)} />)}</Wrap>
+            </>}
+            {types.length > 0 && <>
+              <FieldLabel>Typ</FieldLabel>
+              <Wrap>{types.map((c) => <Capsule key={c} label={c} selected={f.type === c} onPress={() => pickCat('type', c)} />)}</Wrap>
+            </>}
+          </EditRow>
+        ),
+        (last) => (
+          <EditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')} last={last}
+            values={SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><DetailIcon name={SEASON_ICON[x]!} color={t.bg} /></ValueCircle>)}>
+            <Wrap>{SEASONS.map((x) => <Capsule key={x} label={x} selected={f.seasons.includes(x)} onPress={() => set('seasons', toggleIn(f.seasons, x))}
+              icon={(c) => <DetailIcon name={SEASON_ICON[x]!} size={18} color={c} />} />)}</Wrap>
+          </EditRow>
+        ),
+        (last) => colorRow('a', last),
+        fx.reversible && ((last) => (
+          <PlainRow label="Wendbar" inset last={last}>
+            <SymbolSwitch on={f.reversible} label="Wendbar" onToggle={() => set('reversible', !f.reversible)}>
+              {(c) => <TileIcon name="reversible" color={c} size={20} />}
+            </SymbolSwitch>
+          </PlainRow>
+        )),
+        reversible && ((last) => colorRow('b', last)),
+        !!p.set && !f.isWish && ((last) => (
+          <PlainRow label="Set" inset last={last}
+            below={p.set!.draft.on ? <SetPicker draft={p.set!.draft} onChange={p.set!.onChange} items={p.set!.items} width={col}
+              current={{ id: p.set!.currentId, name: f.name.trim(), setId: p.set!.setId }} /> : null}>
+            <SymbolSwitch on={p.set!.draft.on} label="Set" onToggle={() => p.set!.onChange({ ...p.set!.draft, on: !p.set!.draft.on })}>
               {(c) => <DetailIcon name="link" size={20} color={c} />}
             </SymbolSwitch>
           </PlainRow>
-        )}
-        {textRow('pattern', f.reversible ? 'Muster Seite A' : 'Muster', PATTERNS)}
-        {f.reversible && textRow('patternB', 'Muster Seite B', PATTERNS)}
-        <EditRow label="Material" open={!!open.material} onToggle={() => toggle('material')} ai={ai('materials')}
-          values={capsules(f.materials.map((m) => (m.pct ? `${m.name} ${m.pct} %` : m.name)))}>
-          <Wrap>{MATERIALS.map((m) => {
-            const r = materialRank(f.materials, m);
-            return <Capsule key={m} label={m} selected={r > 0} a11y={r ? `${m}, Rang ${r}` : m} leading={r ? <RankBadge n={r} /> : undefined}
-              onPress={() => set('materials', toggleMaterial(f.materials, m))} />;
-          })}</Wrap>
-          <Hint>Die Zahl ist die Reihenfolge nach Anteil, 1 = Hauptmaterial.</Hint>
-        </EditRow>
-        <EditRow label="Größe" open={!!open.size} onToggle={() => toggle('size')} ai={ai('size')} last values={capsules(sizeValues)}>
-          <FieldLabel>System</FieldLabel>
-          <Wrap>{(Object.keys(SIZE_SYSTEMS) as SizeSystem[]).map((k) => <Capsule key={k} label={SIZE_SYSTEMS[k]} selected={f.sizeSystem === k} onPress={() => onForm(pickSizeSystem(f, k))} />)}</Wrap>
-          <FieldLabel>Größe</FieldLabel>
-          <Wrap>{sizeOpts.map((x) => <Capsule key={x} label={x} selected={f.size === x} onPress={() => set('size', pickOne(f.size, x))} />)}</Wrap>
-          <TextField label="Eigene Angabe (z. B. W30/L32)" value={isCustomSize(f) ? f.size ?? '' : ''} onChange={(v) => set('size', v.trim() ? v : null)} />
-          {hasCollarSize(f.subcategory) && <>
-            <FieldLabel>Kragenweite</FieldLabel>
-            <Wrap>{COLLAR_SIZES.map((x) => <Capsule key={x} label={x} selected={f.collarSize === x} onPress={() => set('collarSize', pickOne(f.collarSize, x))} />)}</Wrap>
-          </>}
-        </EditRow>
-      </EditCard>
+        )),
+        fx.pattern && textRow('pattern', reversible ? 'Muster Seite A' : 'Muster', PATTERNS),
+        fx.pattern && reversible && textRow('patternB', 'Muster Seite B', PATTERNS),
+        (last) => (
+          <EditRow label="Material" open={!!open.material} onToggle={() => toggle('material')} ai={ai('materials')} last={last}
+            values={capsules(f.materials.map((m) => (m.pct ? `${m.name} ${m.pct} %` : m.name)))}>
+            <Wrap>{MATERIALS.map((m) => {
+              const r = materialRank(f.materials, m);
+              return <Capsule key={m} label={m} selected={r > 0} a11y={r ? `${m}, Rang ${r}` : m} leading={r ? <RankBadge n={r} /> : undefined}
+                onPress={() => set('materials', toggleMaterial(f.materials, m))} />;
+            })}</Wrap>
+            <Hint>Die Zahl ist die Reihenfolge nach Anteil, 1 = Hauptmaterial.</Hint>
+          </EditRow>
+        ),
+        !!fx.size && ((last) => (
+          <EditRow label="Größe" open={!!open.size} onToggle={() => toggle('size')} ai={ai('size')} last={last} values={capsules(sizeValues)}>
+            <SizePicker kind={fx.size!} sub={f.subcategory} system={f.sizeSystem} size={f.size} collarSize={f.collarSize}
+              onSystem={(sys) => onForm(pickSizeSystem(f, sys))} onSize={(v) => set('size', v)} onCollar={(v) => set('collarSize', v)} />
+          </EditRow>
+        )),
+      ])}
 
-      <EditCard title="Tragen" rows>
-        {scales.length > 0 && (
-          <EditRow label="Passform" open={!!open.fit} onToggle={() => toggle('fit')} ai={ai('fit')}
+      {card('Tragen', [
+        scales.length > 0 && ((last) => (
+          <EditRow label="Passform" open={!!open.fit} onToggle={() => toggle('fit')} ai={ai('fit')} last={last}
             values={scales.filter((sc) => f.fit[sc.key] != null).map((sc) => (
               <ValueScale key={sc.key} caption={sc.label} steps={sc.steps.length} on={(i) => i === f.fit[sc.key]} a11y={`${sc.label} ${sc.steps[f.fit[sc.key]!]}`} />
             ))}>
             <FitPicker scales={scales} fit={f.fit} onPick={(k, i) => onForm(pickFit(f, k, i))} />
           </EditRow>
-        )}
-        <EditRow label="Lagen" open={!!open.layers} onToggle={() => toggle('layers')} ai={ai('layers')}
-          values={[
-            ...(f.layers.length ? [<ValueScale key="l" steps={LAYERS.length} on={(i) => f.layers.includes(i)} a11y={`Lagen: ${f.layers.map((i) => LAYERS[i]).join(', ')}`} />] : []),
-            ...(f.standalone ? [<ValueCapsule key="s" label="allein" />] : []),
-          ]}>
-          <LayersPicker layers={f.layers} standalone={f.standalone} onToggle={(i) => set('layers', toggleIn(f.layers, i))} onStandalone={() => set('standalone', !f.standalone)} />
-        </EditRow>
-        <EditRow label="Wetter" open={!!open.weather} onToggle={() => toggle('weather')} ai={ai('warmth') || ai('rain')} last
-          values={[
-            ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <DetailIcon name="thermo" size={16} color={c} />} />] : []),
-            ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <DetailIcon name="drop" size={16} color={c} />} />] : []),
-          ]}>
-          <WeatherPicker warmth={f.warmth} rain={f.rain} onWarmth={(v) => set('warmth', v)} onRain={(v) => set('rain', v)} />
-        </EditRow>
-      </EditCard>
+        )),
+        fx.layers && ((last) => (
+          <EditRow label="Lagen" open={!!open.layers} onToggle={() => toggle('layers')} ai={ai('layers')} last={last}
+            values={[
+              ...(f.layers.length ? [<ValueScale key="l" steps={LAYERS.length} on={(i) => f.layers.includes(i)} a11y={`Lagen: ${f.layers.map((i) => LAYERS[i]).join(', ')}`} />] : []),
+              ...(f.standalone ? [<ValueCapsule key="s" label="allein" />] : []),
+            ]}>
+            <LayersPicker layers={f.layers} standalone={f.standalone} onToggle={(i) => set('layers', toggleIn(f.layers, i))} onStandalone={() => set('standalone', !f.standalone)} />
+          </EditRow>
+        )),
+        fx.weather && ((last) => (
+          <EditRow label="Wetter" open={!!open.weather} onToggle={() => toggle('weather')} ai={ai('warmth') || ai('rain')} last={last}
+            values={[
+              ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <DetailIcon name="thermo" size={16} color={c} />} />] : []),
+              ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <DetailIcon name="drop" size={16} color={c} />} />] : []),
+            ]}>
+            <WeatherPicker warmth={f.warmth} rain={f.rain} onWarmth={(v) => set('warmth', v)} onRain={(v) => set('rain', v)} />
+          </EditRow>
+        )),
+      ])}
 
-      <EditCard title="Details" rows>
-        <EditRow label="Stil" open={!!open.style} onToggle={() => toggle('style')} ai={ai('styles')} values={capsules(f.styles)}>
-          <Wrap>{STYLES.map((x) => <Capsule key={x} label={x} selected={f.styles.includes(x)} onPress={() => set('styles', toggleIn(f.styles, x))} />)}</Wrap>
-        </EditRow>
-        {textRow('collar', 'Kragen', COLLARS)}
-        <View>{/* letzte Zeile ohne Trennlinie */}
-          {(() => {
-            const v = f.closure;
-            return (
-              <EditRow label="Verschluss" open={!!open.closure} onToggle={() => toggle('closure')} ai={ai('closure')} last values={v ? [<ValueCapsule key={v} label={v} />] : []}>
-                <Wrap>{CLOSURES.map((o) => <Capsule key={o} label={o} selected={v === o} onPress={() => set('closure', pickOne(v, o))} />)}</Wrap>
-              </EditRow>
-            );
-          })()}
-        </View>
-      </EditCard>
+      {card('Details', [
+        (last) => (
+          <EditRow label="Stil" open={!!open.style} onToggle={() => toggle('style')} ai={ai('styles')} last={last} values={capsules(f.styles)}>
+            <Wrap>{STYLES.map((x) => <Capsule key={x} label={x} selected={f.styles.includes(x)} onPress={() => set('styles', toggleIn(f.styles, x))} />)}</Wrap>
+          </EditRow>
+        ),
+        !!fx.neckline && textRow('collar', fx.neckline!.label, fx.neckline!.options),
+        fx.closure && textRow('closure', 'Verschluss', CLOSURES),
+        fx.strap && textRow('strap', 'Trägerart', STRAPS),
+      ])}
 
-      <EditCard title="Pflege" rows>
-        <EditRow label="Pflegehinweise" open={!!open.care} onToggle={() => toggle('care')} ai={ai('care')} last
-          values={careList(f.care).map((c) => {
-            const g = CARE.find((x) => x.key === c.group)!;
-            const o = g.options.find((x) => x.id === c.v);
-            return <ValueCircle key={c.group} a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={c.src === 'geschaetzt'}>
-              <DetailIcon name={c.v as DetailIconName} size={22} color={c.src === 'geschaetzt' ? t.inkMuted : t.bg} />
-            </ValueCircle>;
-          })}>
-          <CarePicker care={f.care} onChange={(c) => set('care', c)} />
-        </EditRow>
-      </EditCard>
+      {card('Pflege', [
+        fx.care && ((last) => (
+          <EditRow label="Pflegehinweise" open={!!open.care} onToggle={() => toggle('care')} ai={ai('care')} last={last}
+            values={careList(f.care).map((c) => {
+              const g = CARE.find((x) => x.key === c.group)!;
+              const o = g.options.find((x) => x.id === c.v);
+              return <ValueCircle key={c.group} a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={c.src === 'geschaetzt'}>
+                <DetailIcon name={c.v as DetailIconName} size={22} color={c.src === 'geschaetzt' ? t.inkMuted : t.bg} />
+              </ValueCircle>;
+            })}>
+            <CarePicker care={f.care} onChange={(c) => set('care', c)} />
+          </EditRow>
+        )),
+      ])}
 
       <EditCard title="Notizen">
         <NotesField value={f.notes} onChange={(v) => set('notes', v)} />
