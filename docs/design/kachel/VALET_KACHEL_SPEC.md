@@ -63,7 +63,7 @@ Ermittlung der Highlight-Farbe aus dem Foto (so im Entwurf): Pixel des freigeste
 | Unschärfe | `backdrop-filter: blur(10px) saturate(1.8)` (+ `-webkit-`) |
 | Kanten/Schatten | `box-shadow: inset 0 0.5px 0 #fff, inset 0 0 0 0.5px rgba(255,255,255,0.7), 0 0 0 0.5px rgba(42,26,29,0.10), 0 2px 6px rgba(42,26,29,0.12)` |
 | Symbolfarbe | ink `#2a1a1d` (Ausnahmen: Bügel und Monogramm, siehe unten) |
-| Symbole | 24er-Raster, Linien, `stroke-width` 2,2–2,4, runde Enden; gerendert 11 px (Bügel 12 px) |
+| Symbole | 24er-Raster, Linien, `stroke-width` 2 (seit 15.11.2026, vorher 2,2–2,4), runde Enden; gerendert 11 px (Bügel 12 px). Formen aus dem Symbol-Pool `packages/ui/src/symbols.ts` |
 
 Leistung (Web): Die Unschärfe bei 100+ Kacheln auf dem iPhone testen. Ruckelt das Scrollen, `backdrop-filter` weglassen, das Aussehen auf Weiß ändert sich dadurch kaum.
 
@@ -156,6 +156,8 @@ Symbol in ink. `aria-label` = Statusname.
 
 ## 6. Symbole (SVG, viewBox 0 0 24 24, fill none, stroke currentColor, linecap/linejoin round)
 
+**Seit 15.11.2026 überholt:** Alle Formen kommen aus dem Symbol-Pool `packages/ui/src/symbols.ts` (Regeln: `docs/design/symbole/VALET_SYMBOLE.md`). Die Liste unten ist nur noch der Ursprungsstand.
+
 ```
 Bügel:      <path d="M12 7.5a2.2 2.2 0 1 1 2.2-2.2"/><path d="M12 7.5v1.2L3.2 15.6a1 1 0 0 0 .6 1.8h16.4a1 1 0 0 0 .6-1.8L12 8.7"/>
 Wäsche:     <path d="M4 10h16l-1.6 8.8a1.6 1.6 0 0 1-1.6 1.2H7.2a1.6 1.6 0 0 1-1.6-1.2z"/><path d="M8.5 10l3-6"/><path d="M15.5 10l-3-6"/>
@@ -165,7 +167,7 @@ eingelagert:<path d="M4.5 9h15v10a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z"/><path d="M3
 verkauft:   <path d="M3.5 12V4.5a1 1 0 0 1 1-1H12l8.5 8.5-8.5 8.5z"/><circle cx="8" cy="8" r="1.4"/>
 Wendbar:    <path d="M4.5 11a7.5 7.5 0 0 1 13-4.5L19.5 8.5"/><path d="M19.5 4v4.5H15"/><path d="M19.5 13a7.5 7.5 0 0 1-13 4.5L4.5 15.5"/><path d="M4.5 20v-4.5H9"/>
 ```
-Strichstärke: Status/Wendbar 2,2 bei 11 px; Bügel 2,4 bei 12 px.
+Strichstärke: seit 15.11.2026 überall 2 (vorher Status/Wendbar 2,2 bei 11 px, Bügel 2,4 bei 12 px).
 
 ## 7. Neue Tokens (für `tokens.ts` / Designsystem)
 

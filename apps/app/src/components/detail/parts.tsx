@@ -1,64 +1,24 @@
 // Bausteine für Teil-Detail, Wunschteil und Bearbeiten (VALET_DETAILSEITE_SPEC.md, Abschnitt 1)
 import { Children, createElement, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 import { detail, personText } from '@valet/ui';
 import { balanceRows, splitRows } from '@valet/core';
 import { useTheme, DISPLAY } from '@/lib/theme';
 import { personTone, type Person } from '@/lib/wardrobe';
 import { glass } from '@/components/ui';
-import { WORN_TODAY_D } from '@/components/tile/TileIcons';
+import { Icon } from '@/components/Icon';
+import type { SymbolName } from '@valet/ui';
 
 const D = detail;
 const web = Platform.OS === 'web';
 
-/** Linien-Symbol im 24er-Raster (Pfade „d“ und Kreise „c:cx,cy,r“) */
-export function Glyph({ d, size = D.headIcon, color, stroke = 2 }: { d: string[]; size?: number; color: string; stroke?: number }) {
-  const p = { fill: 'none', stroke: color, strokeWidth: stroke, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-      {d.map((x, i) => {
-        if (x.startsWith('c:')) { const [cx, cy, r] = x.slice(2).split(',').map(Number); return <Circle key={i} cx={cx} cy={cy} r={r} {...p} />; }
-        if (x.startsWith('f:')) { const [cx, cy, r] = x.slice(2).split(',').map(Number); return <Circle key={i} cx={cx} cy={cy} r={r} fill={color} />; }
-        return <Path key={i} d={x} {...p} />;
-      })}
-    </Svg>
-  );
-}
-
-/** Symbole der Bedien-Ebene (Kopf, Werkzeugleiste) – aus der Leinwand */
-export const GLYPHS = {
-  back: ['M15 5l-7 7 7 7'],
-  share: ['M12 3v12', 'M7 8l5-5 5 5', 'M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6'],
-  edit: ['M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z', 'M13.5 6.5l4 4'],
-  close: ['M6.5 6.5l11 11', 'M17.5 6.5l-11 11'],
-  check: ['M5 12.5l4.5 4.5L19 7.5'],
-  reset: ['M4 12a8 8 0 1 0 2.4-5.7', 'M4 4v4.5h4.5'],
-  calendar: ['M6.5 5h11a3 3 0 0 1 3 3v9.5a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z', 'M8 3v4', 'M16 3v4', 'M3.5 10h17', 'M9.5 15l2 2 3.5-3.5'],
-  plus: ['M12 5v14', 'M5 12h14'],
-  /** Werkzeugleiste (Leinwand „D · Übersicht“) */
-  reserve: ['M6.5 5h11a3 3 0 0 1 3 3v9.5a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z', 'M8 3v4', 'M16 3v4', 'M3.5 10h17', 'M9.5 15l2 2 3.5-3.5'],
-  dice: ['M7.5 3.5h9a4 4 0 0 1 4 4v9a4 4 0 0 1-4 4h-9a4 4 0 0 1-4-4v-9a4 4 0 0 1 4-4z', 'f:8.5,8.5,1.1', 'f:15.5,15.5,1.1', 'f:12,12,1.1'],
-  /** Heute tragen – gleicher Bügel wie die Kachel-Plakette (WORN_TODAY_D, einzige Quelle) */
-  wornToday: [WORN_TODAY_D],
-  external: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4'],
-  chevron: ['M9 6l6 6-6 6'],
-  more: ['f:5,12,1.7', 'f:12,12,1.7', 'f:19,12,1.7'],
-  search: ['c:11,11,6.5', 'M16 16l4.5 4.5'],
-  minus: ['M5 12h14'],
-  /** Wunschteil: Gekauft (Einkaufstüte mit Haken, Leinwand „E · Übersicht“) */
-  bagCheck: ['M5 8h14l-1 12H6z', 'M9 8V6.5a3 3 0 0 1 6 0V8', 'M9.2 14.2l2 2 3.6-3.6'],
-  /** Wunschteil ohne Kategorie: leerer Kreis */
-  tagNone: ['c:12,12,7.5'],
-} satisfies Record<string, string[]>;
-
 /** Runder 44-px-Kopfknopf: Glas (Zurück, Teilen, Bearbeiten, X, Zurücksetzen) oder accent (Haken = Fertig) */
-export function HeadButton({ glyph, label, onPress, primary, disabled }: { glyph: keyof typeof GLYPHS; label: string; onPress?: () => void; primary?: boolean; disabled?: boolean }) {
+export function HeadButton({ glyph, label, onPress, primary, disabled }: { glyph: SymbolName; label: string; onPress?: () => void; primary?: boolean; disabled?: boolean }) {
   const t = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} disabled={disabled} hitSlop={4}
       style={({ pressed }) => [s.head, primary ? { backgroundColor: t.accent, borderWidth: 0 } : glass(t), { opacity: disabled ? 0.4 : pressed ? 0.7 : 1 }]}>
-      <Glyph d={GLYPHS[glyph]} color={primary ? t.onAccent : t.ink} stroke={glyph === 'close' || glyph === 'check' ? 2.2 : 2} />
+      <Icon name={glyph} size="button" color={primary ? t.onAccent : t.ink} />
     </Pressable>
   );
 }

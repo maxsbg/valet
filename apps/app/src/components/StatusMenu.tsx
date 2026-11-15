@@ -7,14 +7,15 @@ import { Animated, Easing, Modal, Platform, Pressable, StyleSheet, Text, View, u
 import { STATUS_LIST, type StatusKey } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
-import { TileIcon, type TileIconName } from './tile/TileIcons';
+import { Icon } from '@/components/Icon';
+import type { SymbolName } from '@valet/ui';
 
 const M = detail.menu;
 
 /** Rechteck des auslösenden Knopfs bzw. der Glas-Gruppe im Fenster */
 export type Anchor = { x: number; y: number; width: number; height: number };
 
-export type MenuEntry = { key: string; label: string; icon?: TileIconName; current?: boolean; a11y?: string };
+export type MenuEntry = { key: string; label: string; icon?: SymbolName; current?: boolean; a11y?: string };
 
 type MenuProps = {
   open: boolean;
@@ -65,7 +66,7 @@ export function PullMenu({ open, anchor, label, sections, onPick, onClose }: Men
               <Pressable key={d.key} accessibilityRole="menuitem" accessibilityState={{ checked: !!d.current }} accessibilityLabel={d.a11y ?? d.label}
                 onPress={() => onPick(d.key)}
                 style={({ pressed }) => [s.row, pressed && { backgroundColor: t.hairline }]}>
-                <View style={s.icon}>{d.icon && <TileIcon name={d.icon} color={t.ink} size={M.icon} />}</View>
+                <View style={s.icon}>{d.icon && <Icon name={d.icon} size="row" color={t.ink} />}</View>
                 <Text numberOfLines={1} style={[s.label, { color: t.ink }, d.current && { fontWeight: '600' }]}>{d.label}</Text>
               </Pressable>
             ))}

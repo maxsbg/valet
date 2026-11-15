@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BOARD_AR } from '@valet/core';
-import { Icons } from './Icon';
 import { OutfitBoard } from './OutfitBoard';
 import { useTheme, space, radius, DISPLAY } from '@/lib/theme';
 import { addDays, dateOf, fmtLong, mondayOf, plansOn, weekday, type Outfit } from '@/lib/outfits';
 import type { Tile } from '@/lib/wardrobe';
+import { Icon } from '@/components/Icon';
 
 type Props = {
   outfits: Outfit[];
@@ -85,7 +85,7 @@ export function WeekCalendar({ outfits, byId, today, width, onDay }: Props) {
       </View>
     ) : (
       <View style={[s.slot, { width: slotW, height: slotH, borderColor: isToday ? t.accent : t.hairline }, isToday && { backgroundColor: t.accent + '1A' }]}>
-        {past ? <Text style={{ fontSize: 16, color: t.inkMuted, opacity: 0.6 }}>–</Text> : <Icons.plus color={isToday ? t.accent : t.inkMuted} size={isToday ? 18 : 16} />}
+        {past ? <Text style={{ fontSize: 16, color: t.inkMuted, opacity: 0.6 }}>–</Text> : <Icon name="plus" color={isToday ? t.accent : t.inkMuted} size={isToday ? 'chip' : 'inline'} />}
       </View>
     );
   };
@@ -103,14 +103,14 @@ export function WeekCalendar({ outfits, byId, today, width, onDay }: Props) {
     <View style={[s.card, { width, backgroundColor: t.surface, borderColor: t.hairline }]}>
       <View style={s.head}>
         <Pressable onPress={prev} accessibilityRole="button" accessibilityLabel={open ? 'Voriger Monat' : 'Vorige Woche'} style={s.arrow}>
-          <Icons.back color={t.inkMuted} size={20} />
+          <Icon name="chevron" size="row" rotate={180} color={t.inkMuted} />
         </Pressable>
         <Pressable onPress={toggle} accessibilityRole="button" accessibilityLabel={open ? 'Zur Wochenansicht' : 'Monat anzeigen'} style={s.titleBtn}>
           <Text style={[s.title, { color: t.ink }]} numberOfLines={1}>{title}</Text>
-          <View style={{ transform: [{ rotate: open ? '-90deg' : '90deg' }] }}><Icons.chevron color={t.inkMuted} size={15} /></View>
+          <Icon name="chevron" size="inline" rotate={open ? -90 : 90} color={t.inkMuted} />
         </Pressable>
-        <Pressable onPress={next} accessibilityRole="button" accessibilityLabel={open ? 'Nächster Monat' : 'Nächste Woche'} style={[s.arrow, { transform: [{ rotate: '180deg' }] }]}>
-          <Icons.back color={t.inkMuted} size={20} />
+        <Pressable onPress={next} accessibilityRole="button" accessibilityLabel={open ? 'Nächster Monat' : 'Nächste Woche'} style={s.arrow}>
+          <Icon name="chevron" size="row" color={t.inkMuted} />
         </Pressable>
       </View>
 

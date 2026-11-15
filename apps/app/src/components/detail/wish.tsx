@@ -13,9 +13,9 @@ import type { Person, Tile } from '@/lib/wardrobe';
 import type { Outfit } from '@/lib/outfits';
 import { Sheet } from '@/components/Sheet';
 import { OutfitCard } from '@/components/OutfitCard';
-import { TileIcon, type TileIconName } from '@/components/tile/TileIcons';
 import { EditCard } from '@/components/edit/fields';
-import { Capsule, DateField, FieldLabel, Glyph, GLYPHS, Hint, IconCircle, Monogram, SheetHead, TextField, Wrap } from './parts';
+import { Capsule, DateField, FieldLabel, Hint, IconCircle, Monogram, SheetHead, TextField, Wrap } from './parts';
+import { Icon } from '@/components/Icon';
 
 /** Reihenfolge der Kategorien wie in Bearbeiten (Spec 7a) */
 export const WISH_ORDER: WishTag[] = ['nextcop', 'grail', 'watchlist', 'someday', 'gift'];
@@ -33,7 +33,7 @@ export function WishListRow({ name, saved, onPress }: { name: string | null; sav
         <Text numberOfLines={1} style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: name ? t.ink : t.inkMuted }}>{name ?? 'Keine Liste'}</Text>
       </View>
       {saved && <Text style={{ fontSize: 13, color: t.inkMuted }}>gemerkt {saved}</Text>}
-      <Glyph d={GLYPHS.chevron} size={16} color={t.inkMuted} />
+      <Icon name="chevron" size="inline" color={t.inkMuted} />
     </Pressable>
   );
 }
@@ -71,7 +71,7 @@ export function TryOnCard({ outfits, byId, width, onOpen, onTry }: { outfits: Ou
       ) : (
         <Text style={{ fontSize: 15, lineHeight: 21, color: t.inkMuted }}>Stell das Teil mit Sachen aus deinem Schrank zusammen, bevor du es kaufst.</Text>
       )}
-      <Wrap><Capsule label="Im Baukasten ausprobieren" onPress={onTry} icon={(c) => <Glyph d={GLYPHS.dice} size={18} color={c} />} /></Wrap>
+      <Wrap><Capsule label="Im Baukasten ausprobieren" onPress={onTry} icon={(c) => <Icon name="outfitNew" size="chip" color={c} />} /></Wrap>
     </EditCard>
   );
 }
@@ -106,12 +106,12 @@ export function WishKaufView({ row, link, onEdit }: { row: WishRow; link: string
       {!!link && (
         <Pressable accessibilityRole="link" onPress={() => Linking.openURL(/^https?:\/\//.test(link) ? link : `https://${link}`)}
           style={({ pressed }) => [s.link, { backgroundColor: t.surfaceSunken, borderColor: t.hairline, opacity: pressed ? 0.7 : 1 }]}>
-          <Glyph d={GLYPHS.external} size={18} color={t.accent} />
+          <Icon name="external" size="chip" color={t.accent} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: 15, lineHeight: 19, fontWeight: '600', color: t.accent }}>Produktseite öffnen</Text>
             <Text numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, color: t.inkMuted }}>{shortUrl(link)}</Text>
           </View>
-          <Glyph d={GLYPHS.chevron} size={16} color={t.accent} />
+          <Icon name="chevron" size="inline" color={t.accent} />
         </Pressable>
       )}
     </EditCard>

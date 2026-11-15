@@ -11,10 +11,11 @@ import { personKey, type Person, type Tile } from '@/lib/wardrobe';
 import type { Outfit } from '@/lib/outfits';
 import { OutfitCard } from '@/components/OutfitCard';
 import { ItemPicture } from '@/components/ItemPicture';
-import { TileIcon } from '@/components/tile/TileIcons';
 import { ColorDot, EditCard, ValueCapsule, ValueCircle, ValueScale } from '@/components/edit/fields';
-import { DetailIcon, SEASON_ICON, type DetailIconName } from './DetailIcons';
-import { Capsule, Glyph, GLYPHS, Hint, Monogram, Wrap } from './parts';
+import { SEASON_ICON } from '@valet/ui';
+import { Capsule, Hint, Monogram, Wrap } from './parts';
+import { Icon } from '@/components/Icon';
+import type { SymbolName } from '@valet/ui';
 
 const S = detail.stat;
 
@@ -83,7 +84,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
   const estimated = care.some((c) => c.src === 'geschaetzt');
   const aussehen: [string, React.ReactNode[]][] = [
     ['Kategorie', caps([categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })])],
-    ['Saison', SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><DetailIcon name={SEASON_ICON[x]!} color={t.bg} /></ValueCircle>)],
+    ['Saison', SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.bg} /></ValueCircle>)],
     [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
     ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
     [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([f.pattern]) : []],
@@ -98,8 +99,8 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
       ...(f.standalone ? [<Text key="a" style={{ fontSize: 13, color: t.inkMuted }}>auch allein tragbar</Text>] : []),
     ]],
     ['Wetter', !fx.weather ? [] : [
-      ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <DetailIcon name="thermo" size={16} color={c} />} />] : []),
-      ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <DetailIcon name="drop" size={16} color={c} />} />] : []),
+      ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <Icon name="thermo" size="inline" color={c} />} />] : []),
+      ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <Icon name="drop" size="inline" color={c} />} />] : []),
     ]],
   ];
   const details: [string, React.ReactNode[]][] = [
@@ -125,7 +126,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
                   const est = c.src === 'geschaetzt';
                   const circle = (
                     <ValueCircle a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={est}>
-                      <DetailIcon name={c.v as DetailIconName} size={22} color={est ? t.inkMuted : t.bg} />
+                      <Icon name={c.v as SymbolName} size="button" color={est ? t.inkMuted : t.bg} />
                     </ValueCircle>
                   );
                   return est
@@ -140,7 +141,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
           <View style={{ gap: 10 }}>
             <Text style={{ fontSize: 15, color: t.inkMuted }}>noch leer</Text>
             <Wrap>
-              <Capsule label="Etikett" icon={(c) => <DetailIcon name="label" size={18} color={c} />} onPress={onEdit} />
+              <Capsule label="Etikett" icon={(c) => <Icon name="label" size="chip" color={c} />} onPress={onEdit} />
               <Capsule label="Selbst wählen" onPress={onEdit} />
             </Wrap>
           </View>
@@ -172,7 +173,7 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
       {f.gift ? (
         <View style={{ gap: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TileIcon name="gift" color={t.ink} size={26} />
+            <Icon name="gift" size="large" color={t.ink} />
             <Text style={{ fontFamily: DISPLAY, fontSize: detail.font.price, lineHeight: 36, color: t.ink }}>Geschenk</Text>
           </View>
           {!!f.giftFrom && <Text style={{ fontSize: 15, color: t.ink }}>von {f.giftFrom}</Text>}
@@ -239,12 +240,12 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
       {!!f.link && (
         <Pressable accessibilityRole="link" onPress={() => Linking.openURL(/^https?:\/\//.test(f.link) ? f.link : `https://${f.link}`)}
           style={({ pressed }) => [s.link, { backgroundColor: t.surfaceSunken, borderColor: t.hairline, opacity: pressed ? 0.7 : 1 }]}>
-          <Glyph d={GLYPHS.external} size={18} color={t.accent} />
+          <Icon name="external" size="chip" color={t.accent} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: 15, lineHeight: 19, fontWeight: '600', color: t.accent }}>Produktseite öffnen</Text>
             <Text numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, color: t.inkMuted }}>{shortUrl(f.link)}</Text>
           </View>
-          <Glyph d={GLYPHS.chevron} size={16} color={t.accent} />
+          <Icon name="chevron" size="inline" color={t.accent} />
         </Pressable>
       )}
     </EditCard>
@@ -287,7 +288,7 @@ export function OutfitsCard({ outfits, byId, width, onOpen, onNew }: { outfits: 
     return (
       <View style={[s.plainRow, { backgroundColor: t.surface, borderColor: t.hairline }]}>
         <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>Noch in keinem Outfit</Text>
-        <Capsule label="Outfit damit" onPress={onNew} icon={(c) => <Glyph d={GLYPHS.dice} size={18} color={c} />} />
+        <Capsule label="Outfit damit" onPress={onNew} icon={(c) => <Icon name="outfitNew" size="chip" color={c} />} />
       </View>
     );
   }

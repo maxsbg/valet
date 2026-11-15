@@ -123,14 +123,14 @@ export const itemTile = {
     saturate: 1.8,
     shadow: 'inset 0 0.5px 0 #fff, inset 0 0 0 0.5px rgba(255,255,255,0.7), 0 0 0 0.5px rgba(42,26,29,0.10), 0 2px 6px rgba(42,26,29,0.12)',
     ink: '#2A1A1D',
-    /** Symbole (24er-Raster): gerenderte Größe und Strichstärke */
-    icon: { size: 11, stroke: 2.2 },
+    /** Symbole (24er-Raster): gerenderte Größe und Strichstärke (Strich 2 wie überall, entschieden 15.11.2026; vorher 2,2) */
+    icon: { size: 11, stroke: 2 },
     /**
-     * „Heute getragen“-Bügel (WORN_TODAY_D in TileIcons.tsx, gleiche Form wie „Heute tragen“ im Teil-Detail):
+     * „Heute getragen“-Bügel (Symbol `wornToday` im Pool packages/ui/src/symbols.ts, gleiche Form wie „Heute tragen“ im Teil-Detail):
      * liegt im 24er-Raster nicht mittig (Inhalt y 4…18 → Mitte 11 statt 12).
      * offsetY schiebt ihn optisch in die Mitte: (12 − 11) / 24 × 12 px = 0,5 px. Bei neuem Symbol neu rechnen.
      */
-    wornToday: { size: 12, stroke: 2.4, offsetY: 0.5 },
+    wornToday: { size: 12, stroke: 2, offsetY: 0.5 },
     /** font-badge-num: Ziffern (Anzahl, „+N“) */
     num: { size: 8.5, weight: '700', letterSpacing: -0.3 },
     /** font-badge-sym: Beizeichen × und + */

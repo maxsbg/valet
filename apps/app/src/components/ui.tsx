@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { Icons } from './Icon';
 import { Sheet, SheetButton, OptionRow } from './Sheet';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 import { useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import { personKey, type Person } from '@/lib/wardrobe';
 import { Monogram } from './Monogram';
+import { Icon } from '@/components/Icon';
 
 type Theme = ReturnType<typeof useTheme>;
 
@@ -216,10 +216,10 @@ export function SearchField({ value, onChange, onClose }: { value: string; onCha
   const t = useTheme();
   return (
     <View style={[s.search, { backgroundColor: t.surface, borderColor: t.hairline }]}>
-      <Icons.search color={t.inkMuted} size={18} />
+      <Icon name="search" size="chip" color={t.inkMuted} />
       <TextInput autoFocus value={value} onChangeText={onChange} placeholder="Suchen" placeholderTextColor={t.inkMuted}
         style={[s.searchInput, { color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
-      <Pressable accessibilityLabel="Suche schließen" onPress={onClose} hitSlop={10}><Icons.close color={t.inkMuted} /></Pressable>
+      <Pressable accessibilityLabel="Suche schließen" onPress={onClose} hitSlop={10}><Icon name="close" size="inline" color={t.inkMuted} /></Pressable>
     </View>
   );
 }
@@ -230,7 +230,7 @@ export function Fab({ onPress, bottom, label = 'Teil hinzufügen' }: { onPress?:
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
       style={({ pressed }) => [s.fab, ...glass(t), FIXED, { bottom, transform: [{ scale: pressed ? 0.94 : 1 }] }]}>
-      <Icons.plus color={t.dark ? t.accent : '#722638'} size={22} />
+      <Icon name="plus" size="button" color={t.dark ? t.accent : '#722638'} />
     </Pressable>
   );
 }

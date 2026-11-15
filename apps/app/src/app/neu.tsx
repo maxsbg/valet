@@ -5,7 +5,6 @@ import { Page, STICKY } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
-import { Icons } from '@/components/Icon';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
 import { editChange, emptyEditForm, nearestColor, setField, type EditForm } from '@valet/core';
@@ -14,6 +13,7 @@ import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
 import { canCutout, cutout, modelCached, original, type Picture } from '@/lib/cutout';
 import { createItem, saveSet } from '@/lib/item';
 import type { SetDraft } from '@/components/edit/SetPicker';
+import { Icon } from '@/components/Icon';
 
 type Step = 'start' | 'work' | 'review' | 'form';
 const MAROON = '#722638';
@@ -140,7 +140,7 @@ export default function Neu() {
               {canCutout ? (
                 <PhotoPicker onPick={pick} label="Foto aufnehmen oder auswählen" style={{ marginTop: space.md }}>
                   <View style={[s.drop, { borderColor: t.hairline, backgroundColor: t.surface }]}>
-                    <View style={[s.dropIcon, { backgroundColor: '#FF641F' }]}><Icons.plus color="#2a1a1d" size={30} /></View>
+                    <View style={[s.dropIcon, { backgroundColor: '#FF641F' }]}><Icon name="plus" size="large" color="#2a1a1d" /></View>
                     <Text style={[s.dropTitle, { color: t.ink }]}>Foto aufnehmen{'\n'}oder auswählen</Text>
                     <Text style={[s.hint, { color: t.inkMuted }]}>Das Teil wird automatisch freigestellt. Am besten liegt es ganz im Bild auf ruhigem Untergrund.</Text>
                   </View>

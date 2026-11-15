@@ -8,14 +8,13 @@ import { WishlistCard, NewListCard, euros } from '@/components/WishlistCard';
 import { ClosetBar, type BarChip } from '@/components/ClosetBar';
 import { Mosaic } from '@/components/Mosaic';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
-import { TileIcon } from '@/components/tile/TileIcons';
-import { Icons } from '@/components/Icon';
 import { useSession } from '@/lib/session';
 import { useTheme, space, radius, DISPLAY } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { usePersisted } from '@/lib/usePersisted';
 import { type Tile, type Wishlist } from '@/lib/wardrobe';
 import { Monogram } from '@/components/Monogram';
+import { Icon } from '@/components/Icon';
 import {
   WISH_SORTS, NO_WISH_FILTERS, applyWishFilters, createList, deleteList, matchesWish, ownOrder, renameList, setListOrder,
   sortWishes, type WishFilters, type WishSortId,
@@ -103,7 +102,7 @@ export default function Wunschliste() {
       const on = oneTag === w.id;
       return {
         key: w.id, label: w.label, count: tagCounts.get(w.id) ?? 0, selected: on,
-        icon: <TileIcon name={w.id} color={on ? t.bg : t.ink} size={15} />,
+        icon: <Icon name={w.id} size="chip" color={on ? t.bg : t.ink} />,
         onPress: () => setFilters({ ...filters, tags: on ? [] : [w.id] }),
       };
     }),
@@ -213,8 +212,8 @@ export default function Wunschliste() {
             <View style={{ paddingHorizontal: space.md }}>
               {!stuck && <TopTint />}
               <View style={s.top}>
-                <RoundButton label="Zurück" onPress={() => openList(null)}><Icons.back color={t.ink} /></RoundButton>
-                {list && <RoundButton label="Liste bearbeiten" onPress={() => menu(list)}><Icons.more color={t.ink} /></RoundButton>}
+                <RoundButton label="Zurück" onPress={() => openList(null)}><Icon name="back" size="button" color={t.ink} /></RoundButton>
+                {list && <RoundButton label="Liste bearbeiten" onPress={() => menu(list)}><Icon name="more" size="button" color={t.ink} /></RoundButton>}
               </View>
               <Text style={[s.title, { color: t.ink }]} numberOfLines={2}>{list?.name ?? 'Alle Wünsche'}</Text>
               <View style={s.subLine}>
@@ -286,7 +285,7 @@ export default function Wunschliste() {
           <View style={s.wrap}>
             {WISH_TAGS.map((w) => {
               const on = draft.tags.includes(w.id);
-              return <Chip key={w.id} label={w.label} selected={on} onPress={() => toggleTag(w.id)} icon={<TileIcon name={w.id} color={on ? t.bg : t.ink} size={15} />} />;
+              return <Chip key={w.id} label={w.label} selected={on} onPress={() => toggleTag(w.id)} icon={<Icon name={w.id} size="chip" color={on ? t.bg : t.ink} />} />;
             })}
           </View>
         </>}
@@ -353,10 +352,10 @@ export default function Wunschliste() {
                 {!!priceLabel(it.price) && <Text style={{ fontSize: 13, color: t.inkMuted }}>{priceLabel(it.price)} €</Text>}
               </View>
               <Pressable onPress={() => move(n, -1)} disabled={n === 0} hitSlop={6} accessibilityLabel="Nach oben" style={[s.arrow, { opacity: n === 0 ? 0.25 : 1 }]}>
-                <View style={{ transform: [{ rotate: '-90deg' }] }}><Icons.chevron color={t.ink} size={20} /></View>
+                <Icon name="arrowUp" size="row" color={t.ink} />
               </Pressable>
               <Pressable onPress={() => move(n, 1)} disabled={n === order.length - 1} hitSlop={6} accessibilityLabel="Nach unten" style={[s.arrow, { opacity: n === order.length - 1 ? 0.25 : 1 }]}>
-                <View style={{ transform: [{ rotate: '90deg' }] }}><Icons.chevron color={t.ink} size={20} /></View>
+                <Icon name="arrowDown" size="row" color={t.ink} />
               </Pressable>
             </View>
           );

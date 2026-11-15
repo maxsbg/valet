@@ -1,5 +1,5 @@
 // Anlässe für Outfits – feste Liste (entschieden 14.11.2026, ersetzt die alten freien Anlässe).
-// Gespeichert wird der Name (outfits.occasions text[]), das Symbol hängt am Schlüssel `icon` (TileIcons in der App).
+// Gespeichert wird der Name (outfits.occasions text[]), das Symbol hängt am Schlüssel `icon` (Symbol-Pool SYMBOLS in @valet/ui).
 
 export const OCCASIONS = [
   { label: 'Alltag', icon: 'occAlltag' },

@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { STATUS_LIST, STORED_PLACES, SOLD_PLACES, statusChange, statusDef, statusError, parseAmount, type StatusInfo, type StatusKey } from '@valet/core';
 import { Sheet } from './Sheet';
-import { TileIcon } from './tile/TileIcons';
 import { Capsule, DateField, FieldLabel, Hint, Monogram, SheetHead, TextField, Wrap } from './detail/parts';
 import { eur } from '@/lib/format';
 import type { Person } from '@/lib/wardrobe';
+import { Icon } from '@/components/Icon';
 
 type Props = {
   open: boolean;
@@ -64,7 +64,7 @@ export function StatusSheet({ open, start, info, persons, today, onSave, onClose
         <Wrap>
           {STATUS_LIST.map((s) => (
             <Capsule key={s.key} label={s.label} selected={d.key === s.key} onPress={() => pick(s.key)}
-              icon={(c) => <TileIcon name={s.icon} color={c} size={18} />} />
+              icon={(c) => <Icon name={s.icon} size="chip" color={c} />} />
           ))}
         </Wrap>
 
