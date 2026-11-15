@@ -1,4 +1,6 @@
 // Kategorie → Unterkategorie → Typ (VALET_DETAILSEITE_SPEC.md, Abschnitt 8, Stand 15.11.2026)
+// Reihenfolge nach Lagen: von außen/oben nach unten, Accessoires und Schmuck am Ende (Max, 15.11.2026).
+// Shorts sind seit 15.11.2026 eine eigene Kategorie (vorher Hose › Shorts, Typen → Unterkategorien).
 // Namensregeln: immer Einzahl, jeder Typ allein verständlich, kein „&“, Typ = nur Form.
 // Gespeichert werden die Namen selbst (items.category / subcategory / item_type).
 
@@ -12,6 +14,10 @@ const sub = (s: string) => {
 const cat = (name: string, subs: string[]): CategoryNode => ({ name, subs: subs.map(sub) });
 
 export const CATEGORY_TREE: readonly CategoryNode[] = [
+  cat('Oberbekleidung', ['Mantel (Chesterfield-Mantel, Peacoat, Covert-Mantel, Duster-Mantel, Carcoat)', 'Trenchcoat', 'Parka', 'Steppjacke',
+    'Blazer (Einreihiger Blazer, Zweireihiger Blazer)', 'Weste (Anzugweste, Steppweste, Strickweste)', 'Strickjacke', 'Sweatjacke (Zip-Hoodie)',
+    'Hemdjacke', 'Shearlingjacke', 'Blouson (Bomberjacke, Harrington-Jacke)', 'Collegejacke', 'Coachjacke', 'Truckerjacke', 'Bikerjacke', 'Feldjacke',
+    'Sportjacke (Anorak, Regenjacke, Windbreaker, Trainingsjacke, Thermojacke)', 'Bolero', 'Sonstiges (Poncho, Cape, Morgenmantel)']),
   cat('Oberteil', ['T-Shirt (Henley-T-Shirt)', 'Langarmshirt (Henley-Langarmshirt)', 'Ärmelloses Shirt', 'Trägertop', 'Trägerloses Top', 'Crop Top',
     'Polohemd (Kurzarm-Polohemd, Langarm-Polohemd)', 'Hemd (Kurzarmhemd, Langarmhemd)', 'Bluse (Kurzarmbluse, Langarmbluse, Ärmellose Bluse)',
     'Sweatshirt', 'Kapuzenpullover', 'Pullover', 'Pullunder', 'Sporttop (Trikot, Funktionsshirt, Sport-BH)', 'Body',
@@ -19,12 +25,9 @@ export const CATEGORY_TREE: readonly CategoryNode[] = [
   cat('Kleid', ['T-Shirt-Kleid', 'Hemdkleid', 'Etuikleid', 'A-Linien-Kleid', 'Wickelkleid', 'Bodycon-Kleid', 'Shiftkleid', 'Slipdress', 'Skaterkleid',
     'Stufenkleid', 'Tunika', 'Mantelkleid', 'Jumpsuit', 'Playsuit', 'Sonstiges']),
   cat('Hose', ['Jeans', 'Stoffhose (Chino, Anzughose, Bundfaltenhose)', 'Cargohose', 'Jogginghose (Trainingshose)', 'Leggings', 'Latzhose',
-    'Shorts (Sportshorts, Cargoshorts, Bermudashorts, Anzugshorts)', 'Pyjama-Hose (Schlafshorts)', 'Sonstiges']),
+    'Pyjama-Hose (Schlafshorts)', 'Sonstiges']),
+  cat('Shorts', ['Sportshorts', 'Cargoshorts', 'Bermudashorts', 'Anzugshorts', 'Sonstiges']),
   cat('Rock', ['A-Linien-Rock', 'Bleistiftrock', 'Wickelrock', 'Plisseerock', 'Stufenrock', 'Tellerrock', 'Meerjungfrau-Rock', 'Sonstiges']),
-  cat('Oberbekleidung', ['Mantel (Chesterfield-Mantel, Peacoat, Covert-Mantel, Duster-Mantel, Carcoat)', 'Trenchcoat', 'Parka', 'Steppjacke',
-    'Blazer (Einreihiger Blazer, Zweireihiger Blazer)', 'Weste (Anzugweste, Steppweste, Strickweste)', 'Strickjacke', 'Sweatjacke (Zip-Hoodie)',
-    'Hemdjacke', 'Shearlingjacke', 'Blouson (Bomberjacke, Harrington-Jacke)', 'Collegejacke', 'Coachjacke', 'Truckerjacke', 'Bikerjacke', 'Feldjacke',
-    'Sportjacke (Anorak, Regenjacke, Windbreaker, Trainingsjacke, Thermojacke)', 'Bolero', 'Sonstiges (Poncho, Cape, Morgenmantel)']),
   cat('Schuh', ['Sneaker (Low-Top-Sneaker, Mid-Top-Sneaker, High-Top-Sneaker, Chunky Sneaker, Plateau-Sneaker)',
     'Sportschuh (Laufschuh, Fußballschuh, Hallenschuh, Basketballschuh, Tennisschuh, Trainingsschuh)',
     'Halbschuh (Oxford-Schuh, Derby-Schuh, Monkstrap-Schuh, Loafer, Wholecut-Schuh, Bootsschuh, Mokassin)', 'Slip-On (Espadrille, Slipper)',
@@ -32,16 +35,16 @@ export const CATEGORY_TREE: readonly CategoryNode[] = [
     'Wanderschuh (Wanderstiefel, Wanderhalbschuh, Trailrunning-Schuh)', 'Sandale (Trekkingsandale, Riemchensandale, Gladiatorensandale)',
     'Pantolette (Badelatsche, Flip-Flop, Mule)', 'Hausschuh', 'Clog', 'Flacher Schuh (Ballerina, Mary-Jane-Schuh, Slingback)',
     'High Heel (Pumps, Stiletto, Blockabsatzschuh, Keilabsatzschuh, Plateau-Heel, Sandalette, Mule Heel)', 'Sonstiges']),
+  cat('Kopfbedeckung', ['Kappe (Baseball-Cap, Flat-Brim-Cap, Trucker-Cap, 5-Panel-Cap, Dad Cap)', 'Hut (Fedora, Bucket Hat, Sonnenhut, Panamahut)',
+    'Mütze (Beanie, Baskenmütze, Schiebermütze)', 'Hijab', 'Sonstiges']),
   cat('Tasche', ['Handtasche (Shopper, Hobo-Bag, Bowlingtasche, Satchel, Baguette-Bag, Halbmondtasche, Satteltasche, Barrel-Bag)',
     'Clutch (Minaudière)', 'Rucksack', 'Bauchtasche', 'Stoffbeutel (Jutebeutel, Turnbeutel)', 'Reisetasche (Weekender, Duffel-Bag, Sporttasche)',
     'Arbeitstasche (Aktentasche, Laptoptasche)', 'Koffer', 'Sonstiges']),
-  cat('Kopfbedeckung', ['Kappe (Baseball-Cap, Flat-Brim-Cap, Trucker-Cap, 5-Panel-Cap, Dad Cap)', 'Hut (Fedora, Bucket Hat, Sonnenhut, Panamahut)',
-    'Mütze (Beanie, Baskenmütze, Schiebermütze)', 'Hijab', 'Sonstiges']),
-  cat('Schmuck', ['Ohrring', 'Halskette', 'Armband', 'Ring', 'Brosche', 'Uhr', 'Sonstiges']),
   cat('Accessoire', ['Unterwäsche (Boxershorts, Slip, Unterhemd, BH, Thermowäsche)', 'Socke (Sneakersocke, Sportsocke, Stutzen, Kniestrumpf)',
     'Strumpfhose', 'Bademode (Badeshorts, Badehose, Bikini, Badeanzug)', 'Gürtel', 'Schal (Strickschal, Loop-Schal, Halstuch, Bandana)',
     'Anzug-Accessoire (Krawatte, Fliege, Einstecktuch, Manschettenknopf)', 'Handschuh (Fingerhandschuh, Fäustling, Sporthandschuh, Torwarthandschuh)',
     'Brille (Sehbrille, Sonnenbrille)', 'Haarschmuck', 'Geldbörse', 'Handyhülle', 'Traditionelle Kleidung', 'Stulpe', 'Sonstiges']),
+  cat('Schmuck', ['Ohrring', 'Halskette', 'Armband', 'Ring', 'Brosche', 'Uhr', 'Sonstiges']),
 ];
 
 export type CategoryName = string;
@@ -87,6 +90,7 @@ const RISE: FitScale = { key: 'rise', label: 'Bund', steps: ['tief', 'normal', '
 export const FIT_SCALES: Readonly<Record<string, readonly FitScale[]>> = {
   Oberteil: [WIDTH, LENGTH],
   Hose: [WIDTH, LENGTH, RISE],
+  Shorts: [WIDTH, LENGTH, RISE],
   Kleid: [DRESS_LENGTH],
   Rock: [DRESS_LENGTH, RISE],
 };
@@ -112,7 +116,8 @@ export function layoutKind(category: string | null | undefined, subcategory?: st
       if (subcategory === 'Sweatshirt' || subcategory === 'Kapuzenpullover' || subcategory === 'Pullover' || subcategory === 'Pullunder') return 'pullover';
       return subcategory === 'Sporttop' ? 'sport' : 'oberteil';
     case 'Kleid': return 'kleid';
-    case 'Hose': return subcategory === 'Shorts' || subcategory === 'Pyjama-Hose' ? 'shorts' : 'hose';
+    case 'Hose': return subcategory === 'Pyjama-Hose' ? 'shorts' : 'hose';
+    case 'Shorts': return 'shorts';
     case 'Rock': return 'rock';
     case 'Oberbekleidung':
       return subcategory === 'Mantel' || subcategory === 'Trenchcoat' || subcategory === 'Parka' ? 'mantel' : 'jacke';
@@ -129,7 +134,7 @@ export const SIDE_CATEGORIES: ReadonlySet<string> = new Set(['Tasche', 'Kopfbede
 // ---------- Reihenfolge am Körper (Set-Karte, Spec 3) ----------
 
 /** Kopf → Oberbekleidung → Oberteil/Kleid → Hose/Rock → Schuhe → Taschen, Schmuck, Sonstiges */
-const BODY_ORDER: Record<string, number> = { Kopfbedeckung: 0, Oberbekleidung: 1, Oberteil: 2, Kleid: 2, Hose: 3, Rock: 3, Schuh: 4, Tasche: 5, Schmuck: 5, Accessoire: 5 };
+const BODY_ORDER: Record<string, number> = { Kopfbedeckung: 0, Oberbekleidung: 1, Oberteil: 2, Kleid: 2, Hose: 3, Shorts: 3, Rock: 3, Schuh: 4, Tasche: 5, Schmuck: 5, Accessoire: 5 };
 /** Lagen innerhalb einer Kategorie: außen vor innen (kleiner = weiter außen) */
 const OUTER_FIRST: Record<string, number> = {
   Mantel: 0, Trenchcoat: 0, Parka: 0, Steppjacke: 1, Shearlingjacke: 1, Bikerjacke: 1, Feldjacke: 1, Sportjacke: 1, Blouson: 1, Collegejacke: 1,

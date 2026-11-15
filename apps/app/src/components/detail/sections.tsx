@@ -284,7 +284,7 @@ export function OutfitsCard({ outfits, byId, width, onOpen, onNew }: { outfits: 
   return (
     <EditCard title={`In ${outfits.length} ${outfits.length === 1 ? 'Outfit' : 'Outfits'}`}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-        {outfits.map((o) => <OutfitCard key={o.id} outfit={o} byId={byId} width={cardW} onPress={() => onOpen(o.id)} />)}
+        {outfits.map((o) => <OutfitCard key={o.id} outfit={o} byId={byId} width={cardW} small onPress={() => onOpen(o.id)} />)}
       </ScrollView>
     </EditCard>
   );

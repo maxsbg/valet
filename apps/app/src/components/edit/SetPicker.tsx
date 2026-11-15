@@ -16,7 +16,7 @@ type Props = {
   draft: SetDraft;
   onChange: (d: SetDraft) => void;
   /** Teil, das gerade bearbeitet wird (beim neuen Teil ohne ID) */
-  current: { id: string | null; name: string; setId: string | null };
+  current: { id: string | null; name: string; setId: string | null; thumb?: string | null; kind?: string; hex?: string | null };
   items: Tile[];
   width: number;
 };
@@ -33,8 +33,9 @@ export function SetPicker({ draft, onChange, current, items, width }: Props) {
       <FieldLabel>Teile im Set</FieldLabel>
       <View style={s.grid}>
         <View style={{ width: col, gap: 4 }}>
-          <View style={[s.tile, s.self, { height: col, borderColor: t.accent }]}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: t.ink, textAlign: 'center' }} numberOfLines={2}>{current.name || 'Dieses Teil'}</Text>
+          {/* Wie die übrigen Set-Teile mit Bild; accent-Ring markiert das Teil, das gerade bearbeitet wird */}
+          <View style={[s.tile, { height: col, boxShadow: `inset 0 0 0 2px ${t.accent}` }]} accessibilityLabel={current.name || 'Dieses Teil'}>
+            <ItemPicture uri={current.thumb} inset={8} category={current.kind ?? 'oberteil'} color={current.hex ?? '#d8d2c8'} />
           </View>
           <Text style={{ fontSize: 12, fontWeight: '600', color: t.ink }}>Dieses Teil</Text>
         </View>
@@ -106,7 +107,6 @@ function SetPickSheet({ open, selected, current, items, onDone, onClose }: {
 const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: { borderRadius: 14, backgroundColor: '#fff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  self: { borderWidth: 2, borderStyle: 'dashed', padding: 8, backgroundColor: 'transparent' },
   add: { borderWidth: 1, borderStyle: 'dashed', backgroundColor: 'transparent' },
   check: { position: 'absolute', right: 6, bottom: 6, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
 });

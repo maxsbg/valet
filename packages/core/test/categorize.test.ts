@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { categorizeLegacy, parseLegacyMaterial, parseLegacyColors } from '../src/import/categorize';
+import { categorizeLegacy, parseLegacyMaterial, parseLegacyColors, normalizeCategory } from '../src/import/categorize';
 
 const cat = (category: string, name: string, desc = '', brand = '') => {
   const r = categorizeLegacy({ category, name, desc, brand });
@@ -14,7 +14,7 @@ test('Altdaten: eindeutige Fälle', () => {
   assert.deepEqual(cat('mantel', 'Beiger Trenchcoat'), ['Oberbekleidung', 'Trenchcoat', null, true]);
   assert.deepEqual(cat('mantel', '109 - Maxi Coat'), ['Oberbekleidung', 'Mantel', null, true]);
   assert.deepEqual(cat('jacke', 'Navy Peacoat'), ['Oberbekleidung', 'Mantel', 'Peacoat', true]);
-  assert.deepEqual(cat('shorts', 'AVEL SHORTS', 'Weite Bermuda-Shorts'), ['Hose', 'Shorts', 'Bermudashorts', true]);
+  assert.deepEqual(cat('shorts', 'AVEL SHORTS', 'Weite Bermuda-Shorts'), ['Shorts', 'Bermudashorts', null, true]);
   assert.deepEqual(cat('tasche', 'Debossed Weekender Bag'), ['Tasche', 'Reisetasche', 'Weekender', true]);
   assert.deepEqual(cat('accessoire', 'PRX Powermatic 80', 'Rundes Uhrengehäuse'), ['Schmuck', 'Uhr', null, true]);
   assert.deepEqual(cat('accessoire', '05', 'Quadratische Sonnenbrille'), ['Accessoire', 'Brille', 'Sonnenbrille', true]);
@@ -58,4 +58,10 @@ test('Farben: alte Namen → Palette, Grau nach Foto-Helligkeit', () => {
   assert.deepEqual(parseLegacyColors('Grau', '#c6c6c7').colors, ['Hellgrau']);
   assert.deepEqual(parseLegacyColors('Grau', '#383838').colors, ['Dunkelgrau']);
   assert.deepEqual(parseLegacyColors('Grau'), { colors: [], unclear: ['Grau'] });
+});
+
+test('normalizeCategory: Hose › Shorts › Typ → Shorts › Typ', () => {
+  assert.deepEqual(normalizeCategory({ category: 'Hose', subcategory: 'Shorts', item_type: 'Cargoshorts' }), { category: 'Shorts', subcategory: 'Cargoshorts', type: null });
+  assert.deepEqual(normalizeCategory({ category: 'Hose', subcategory: 'Shorts', item_type: null }), { category: 'Shorts', subcategory: null, type: null });
+  assert.deepEqual(normalizeCategory({ category: 'Hose', subcategory: 'Jeans', item_type: null }), { category: 'Hose', subcategory: 'Jeans', type: null });
 });

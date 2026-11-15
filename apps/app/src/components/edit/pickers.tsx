@@ -165,12 +165,12 @@ const s = StyleSheet.create({
 
 
 type SizeProps = {
-  kind: SizeKind; sub: string | null; system: SizeSystemAny | null; size: string | null; collarSize: string | null;
+  kind: SizeKind; category: string | null; sub: string | null; system: SizeSystemAny | null; size: string | null; collarSize: string | null;
   onSystem: (s: SizeSystemAny) => void; onSize: (s: string | null) => void; onCollar: (s: string | null) => void;
 };
 
 /** Größe: Kleidung (Buchstaben/Zahlen), Hose (W/L oder Buchstaben), Schuh (EU), Kappe (verstellbar/Fitted), Ring */
-export function SizePicker({ kind, sub, system, size, collarSize, onSystem, onSize, onCollar }: SizeProps) {
+export function SizePicker({ kind, category, sub, system, size, collarSize, onSystem, onSize, onCollar }: SizeProps) {
   const [fitted, setFitted] = useState(!!size && (CAP_FITTED as readonly string[]).includes(size));
   const caps = (list: readonly string[], cur: string | null, pick: (v: string | null) => void) =>
     <Wrap>{list.map((x) => <Capsule key={x} label={x} selected={cur === x} onPress={() => pick(cur === x ? null : x)} />)}</Wrap>;
@@ -199,8 +199,8 @@ export function SizePicker({ kind, sub, system, size, collarSize, onSystem, onSi
         </Wrap>
         {wl ? <>
           <FieldLabel>Bundweite</FieldLabel>
-          {caps(PANTS_WAIST, w, (v) => onSize(composeWL(v, pantsWaistOnly(sub) ? null : l)))}
-          {!pantsWaistOnly(sub) && <><FieldLabel>Länge</FieldLabel>{caps(PANTS_LENGTH, l, (v) => onSize(composeWL(w, v)))}</>}
+          {caps(PANTS_WAIST, w, (v) => onSize(composeWL(v, pantsWaistOnly(category, sub) ? null : l)))}
+          {!pantsWaistOnly(category, sub) && <><FieldLabel>Länge</FieldLabel>{caps(PANTS_LENGTH, l, (v) => onSize(composeWL(w, v)))}</>}
         </> : <><FieldLabel>Größe</FieldLabel>{caps(SIZES.letters, size, onSize)}</>}
       </View>
     );

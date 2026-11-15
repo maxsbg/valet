@@ -29,8 +29,11 @@ const T = itemTile;
 const B = T.badge;
 const web = Platform.OS === 'web';
 
-/** Seitenverhältnis (Höhe : Breite) im Mosaik je Form (layoutKind) – wie im alten Valet, dazu Kleid, Rock, Kopf. */
-export const RATIO: Record<string, number> = { mantel: 1.6, kleid: 1.55, hose: 1.45, jacke: 1.2, pullover: 1.15, oberteil: 1.1, sport: 1.1, rock: 1.05, shorts: 0.95, tasche: 0.95, schuhe: 0.72, kopf: 0.72, accessoire: 0.72 };
+/**
+ * Seitenverhältnis (Höhe : Breite) im Mosaik je Form (layoutKind) – wie im alten Valet, dazu Kleid, Rock, Kopf.
+ * Alle Oberteile (auch Pullover/Sweatshirts) gleich hoch, sonst wirkt der Oberteil-Filter unruhig (Max, 15.11.2026).
+ */
+export const RATIO: Record<string, number> = { mantel: 1.6, kleid: 1.55, hose: 1.45, jacke: 1.2, pullover: 1.1, oberteil: 1.1, sport: 1.1, rock: 1.05, shorts: 0.95, tasche: 0.95, schuhe: 0.72, kopf: 0.72, accessoire: 0.72 };
 /** Kachelhöhe; nimmt die Form (kind) oder notfalls die Kategorie */
 export const tileHeight = (kindOrCategory: string, width: number) =>
   Math.round(width * (RATIO[kindOrCategory] ?? RATIO[layoutKind(kindOrCategory)] ?? 0.9));

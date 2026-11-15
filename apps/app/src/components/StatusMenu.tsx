@@ -1,11 +1,11 @@
 // Status-Menü wie bei Apple (Pull-down) – Spec 6, Leinwand „D · Status-Menü“
+// Symbol links, Name rechts daneben, ohne Haken; der aktuelle Status ist nur etwas kräftiger gesetzt (Max, 15.11.2026).
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions, AccessibilityInfo } from 'react-native';
 import { STATUS_LIST, type StatusKey } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
 import { TileIcon } from './tile/TileIcons';
-import { Glyph, GLYPHS } from './detail/parts';
 
 const M = detail.menu;
 
@@ -58,9 +58,8 @@ export function StatusMenu({ open, anchor, current, onPick, onClose }: Props) {
             <Pressable key={d.key} accessibilityRole="menuitem" accessibilityState={{ checked: on }} accessibilityLabel={`${d.label}${d.details ? ', mit Angaben' : ''}`}
               onPress={() => onPick(d.key)}
               style={({ pressed }) => [s.row, i < STATUS_LIST.length - 1 && { borderBottomWidth: 1, borderBottomColor: t.hairline }, pressed && { backgroundColor: t.hairline }]}>
-              <View style={s.check}>{on && <Glyph d={GLYPHS.check} size={M.check} color={t.ink} stroke={2.4} />}</View>
-              <Text style={[s.label, { color: t.ink }]}>{d.label}{d.details ? ' …' : ''}</Text>
-              <TileIcon name={d.icon} color={t.ink} size={M.icon} />
+              <View style={s.icon}><TileIcon name={d.icon} color={t.ink} size={M.icon} /></View>
+              <Text style={[s.label, { color: t.ink }, on && { fontWeight: '600' }]}>{d.label}{d.details ? ' …' : ''}</Text>
             </Pressable>
           );
         })}
@@ -71,8 +70,8 @@ export function StatusMenu({ open, anchor, current, onPick, onClose }: Props) {
 
 const s = StyleSheet.create({
   menu: { position: 'absolute', width: M.width, borderRadius: M.radius, borderWidth: 1, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.35)' },
-  row: { height: M.row, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 },
-  check: { width: M.check, alignItems: 'center' },
+  row: { height: M.row, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
+  icon: { width: M.icon + 4, alignItems: 'center' },
   label: { flex: 1, fontSize: M.font },
 });
 
