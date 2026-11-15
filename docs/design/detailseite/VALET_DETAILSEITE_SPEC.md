@@ -52,7 +52,7 @@ Wunschteil-Übersicht: Zeile mit der Liste (nur Name; die Kategorie steht unten 
 
 Karten **Aussehen** (Kategorie, Saison, Farben, Muster, Material, Größe), **Tragen**, **Details** (Stil, Kragen, Verschluss), **Pflege**. Zeilen: Bezeichnung links (15 px, `ink-muted`), Werte rechts als gefüllte Kapseln bzw. Kreise, gleichmäßig umbrochen.
 
-- Kategorie: nur die letzte gewählte Stufe (z. B. „Kurzarmhemd“), kein Pfad. Typnamen sind deshalb immer allein verständlich (Liste und Namensregeln im Doc „Valet – KI-Funktionen“, Abschnitt Steckbrief).
+- Kategorie: nur die letzte gewählte Stufe (z. B. „Kurzarmhemd“), kein Pfad. Typnamen sind deshalb immer allein verständlich (Liste und Namensregeln in Abschnitt 8).
 - **Tragen als Skalen, nicht als Kapseln:**
   - Passform: zwei 5er-Skalen – Weite (schmal → weit) und Länge (kurz → lang), rechts das Wort (z. B. „eher weit“). Bei Hose und Rock dazu eine 3er-Skala Bund (tief · normal · hoch). Kleid und Rock nur Länge (Mini · über Knie · Knie · Midi · Maxi), keine Weite. „Oversized“ = weit + lang, „Boxy“ = weit + kurz, kein eigener Wert. Shop-Begriffe rechnet die KI auf die beiden Stufen um.
   - Lagen: 4 Stufen von innen nach außen (Unterlage, Mitte zu, Mitte offen, Außen), mehrere möglich, rechts „auch allein tragbar“.
@@ -116,7 +116,49 @@ Verkauft     <circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.6a4.5 4.5 0
 - **Kauf:** Bezahlt | Listenpreis (nebeneinander), Geschenk (Symbol-Schalter; an → Von, Bekommen am, Wert; Bezahlt, Listenpreis, Bezahlt von und Kaufdatum entfallen), Bezahlt von (Monogramm-Kapseln), bei zwei oder mehr Personen Aufteilung „Gleich“ / „Eigene Beträge“ mit Balken und Summenprüfung („Summe passt“ / „Es fehlen noch …“ in `accent`), Kaufdatum | Shop, Produktlink, Artikelnummer.
 - **Besitz:** Gehört (Monogramm-Kapseln), Anzahl (− / +; der Preis gilt für alle zusammen, Hinweis „je Stück …“, Kachel zeigt „n×“). „Teil löschen“ am Ende.
 
-## 8. Offen – Max fragen, nicht selbst entscheiden
+## 8. Kategorie, Unterkategorie, Typ und Passform (entschieden 15.11.2026)
+
+Ersetzt die alte Acloset-Liste (Plural, übersetzte Typen wie „Denimjacke“ unter Hemden). Dieselbe Liste steht im Doc „Valet – KI-Funktionen“ (Steckbrief); bei Widerspruch gilt diese Datei. Gehört als feste Liste nach `packages/core` (Formular, Filter, KI-Prompt und Antwort-Prüfung lesen von dort).
+
+**Namensregeln**
+- Immer **Einzahl** (Jeans, Shorts, Leggings, Boxershorts, Pumps sind schon Einzahl).
+- Jeder **Typ ist allein verständlich**, weil er oft allein angezeigt wird (eingeklappte Zeile, Detailansicht, Suche, KI): Kurzarmhemd statt Kurzarm, Low-Top-Sneaker statt Low-Top. Feste deutsche Wörter zusammen, englische Begriffe mit Bindestrich.
+- Kein „&“ in Namen. Kein Name wiederholt die Ebene darüber.
+- **Typ = nur Form.** Material, Muster, Kragen/Ausschnitt, Verschluss, Stil, Länge und Bund haben eigene Felder: Flanellhemd = Hemd + Material Flanell, Lederjacke = Bikerjacke + Leder, Fleecejacke = Sweatjacke + Fleece, Daunenjacke = Steppjacke + Daunen.
+- **Anzug und Pyjama** sind keine Kategorie, sondern ein Set (Blazer + Anzughose, Pyjama-Oberteil + Pyjama-Hose).
+- **Oberbekleidung** = was man über etwas anzieht und vorne öffnen kann. Hemden bleiben Oberteil.
+- Typ ist optional; ohne Klammer gibt es keinen Typ.
+
+| Kategorie | Unterkategorie (Typ) |
+|---|---|
+| Oberteil | T-Shirt (Henley-T-Shirt), Langarmshirt (Henley-Langarmshirt), Ärmelloses Shirt, Trägertop, Trägerloses Top, Crop Top, Polohemd (Kurzarm-Polohemd, Langarm-Polohemd), Hemd (Kurzarmhemd, Langarmhemd), Bluse (Kurzarmbluse, Langarmbluse, Ärmellose Bluse), Sweatshirt, Kapuzenpullover, Pullover, Pullunder, Sporttop (Trikot, Funktionsshirt, Sport-BH), Body, Pyjama-Oberteil (Pyjama-Shirt, Nachthemd), Sonstiges |
+| Kleid | T-Shirt-Kleid, Hemdkleid, Etuikleid, A-Linien-Kleid, Wickelkleid, Bodycon-Kleid, Shiftkleid, Slipdress, Skaterkleid, Stufenkleid, Tunika, Mantelkleid, Jumpsuit, Playsuit, Sonstiges |
+| Hose | Jeans, Stoffhose (Chino, Anzughose, Bundfaltenhose), Cargohose, Jogginghose (Trainingshose), Leggings, Latzhose, Shorts (Sportshorts, Cargoshorts, Bermudashorts, Anzugshorts), Pyjama-Hose (Schlafshorts), Sonstiges |
+| Rock | A-Linien-Rock, Bleistiftrock, Wickelrock, Plisseerock, Stufenrock, Tellerrock, Meerjungfrau-Rock, Sonstiges |
+| Oberbekleidung | Mantel (Chesterfield-Mantel, Caban-Mantel, Covert-Mantel, Duster-Mantel, Carcoat), Trenchcoat, Parka, Steppjacke, Blazer (Einreihiger Blazer, Zweireihiger Blazer), Weste (Anzugweste, Steppweste, Strickweste), Strickjacke, Sweatjacke, Hemdjacke, Shearlingjacke, Blouson, Collegejacke, Coachjacke, Truckerjacke, Bikerjacke, Feldjacke, Sportjacke (Anorak, Regenjacke, Windbreaker, Trainingsjacke, Thermojacke), Bolero, Sonstiges (Poncho, Cape, Morgenmantel) |
+| Schuh | Sneaker (Low-Top-Sneaker, Mid-Top-Sneaker, High-Top-Sneaker, Chunky Sneaker, Plateau-Sneaker), Sportschuh (Laufschuh, Fußballschuh, Hallenschuh, Basketballschuh, Tennisschuh, Trainingsschuh), Halbschuh (Oxford-Schuh, Derby-Schuh, Monkstrap-Schuh, Loafer, Wholecut-Schuh, Bootsschuh, Mokassin), Slip-On (Espadrille, Slipper), Stiefel (Chelsea Boot, Desert Boot, Schnürboot, Westernstiefel, Gummistiefel, Lammfellstiefel, Kniestiefel, Overknee-Stiefel), Wanderschuh (Wanderstiefel, Wanderhalbschuh, Trailrunning-Schuh), Sandale (Trekkingsandale, Riemchensandale, Gladiatorensandale), Pantolette (Badelatsche, Flip-Flop, Mule), Hausschuh, Clog, Flacher Schuh (Ballerina, Mary-Jane-Schuh, Slingback), High Heel (Pumps, Stiletto, Blockabsatzschuh, Keilabsatzschuh, Plateau-Heel, Sandalette, Mule Heel), Sonstiges |
+| Tasche | Handtasche (Shopper, Hobo-Bag, Bowlingtasche, Beuteltasche, Satchel, Baguette-Bag, Halbmondtasche, Satteltasche, Barrel-Bag), Clutch (Minaudière), Rucksack, Bauchtasche, Stoffbeutel (Jutebeutel, Turnbeutel), Reisetasche (Weekender, Duffel-Bag, Sporttasche), Arbeitstasche (Aktentasche, Laptoptasche), Koffer, Sonstiges |
+| Kopfbedeckung | Kappe (Baseball-Cap, Flat-Brim-Cap, Trucker-Cap, 5-Panel-Cap, Dad Cap), Hut (Fedora, Bucket Hat, Sonnenhut, Panamahut), Mütze (Beanie, Baskenmütze, Schiebermütze), Hijab, Sonstiges |
+| Schmuck | Ohrring, Halskette, Armband, Ring, Brosche, Uhr, Sonstiges |
+| Accessoire | Unterwäsche (Boxershorts, Slip, Unterhemd, BH, Thermowäsche), Socke (Sneakersocke, Sportsocke, Stutzen, Kniestrumpf), Strumpfhose, Bademode (Badeshorts, Badehose, Bikini, Badeanzug), Gürtel, Schal (Strickschal, Loop-Schal, Halstuch, Bandana), Anzug-Accessoire (Krawatte, Fliege, Einstecktuch, Manschettenknopf), Handschuh (Fingerhandschuh, Fäustling, Sporthandschuh, Torwarthandschuh), Brille (Sehbrille, Sonnenbrille), Haarschmuck, Geldbörse, Handyhülle, Traditionelle Kleidung, Stulpe, Sonstiges |
+
+**Passform je Kategorie** (Skalen, Werte als Stufen-Index speichern, nicht als Text):
+
+| Kategorie | Skalen |
+|---|---|
+| Oberteil | Weite 5 (schmal, eher schmal, normal, eher weit, weit) · Länge 5 (kurz, eher kurz, normal, eher lang, lang) |
+| Hose | Weite 5 · Länge 5 · Bund 3 (tief, normal, hoch) |
+| Kleid | Länge 5 (Mini, über Knie, Knie, Midi, Maxi) |
+| Rock | Länge 5 (wie Kleid) · Bund 3 |
+| alle anderen | keine Passform-Zeile |
+
+Shop-Begriffe rechnet die KI um (Slim = schmal, Relaxed = eher weit, Oversized = weit + lang, Boxy = weit + kurz, Cropped = kurz, Baggy = weit, High Waist = Bund hoch, Low Rise = Bund tief). Tapered, Bootcut und Flared entfallen.
+
+**Weitere Listen:** Material zusätzlich Flanell und Lammfell, Muster zusätzlich Zopfmuster und Rippstrick. Kragenweite bei der Größe nur für Unterkategorie Hemd.
+
+**Umstellung vorhandener Teile:** Alte Kategorien und Arten beim Laden bzw. per einmaligem Skript auf die neue Liste abbilden (Plural → Einzahl, „Oberteile › Hemden › Flannel“ → „Oberteil › Hemd“ + Material Flanell, Mini-/Midi-/Maxi-Röcke → Rock + Länge, Pelz-/Fleece-/Daunenjacke → Material). Was sich nicht eindeutig abbilden lässt: Liste für Max zum Nachsehen, nicht raten.
+
+## 9. Offen – Max fragen, nicht selbst entscheiden
 
 - **Geschätzte Pflegehinweise:** Idee „Symbole grau mit Stern = geschätzt“ ist vorgemerkt, **nicht umsetzen**, bis Max es sagt.
 - **Bearbeiten für Wunschteile** (Liste, Kategorie, Preis statt Bezahlt, gewünschte Größe, geplanter Kauftag) ist noch nicht entworfen.
