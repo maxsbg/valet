@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { Page } from '@/components/Page';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { categoryLabel, formatEur, parseAmount } from '@valet/core';
+import { categoryLast, formatEur, parseAmount } from '@valet/core';
 import { Icons } from '@/components/Icon';
 import { ItemPicture } from '@/components/ItemPicture';
 import { RoundButton, Empty, Chip, useToast } from '@/components/ui';
@@ -191,7 +191,7 @@ export default function Teil() {
     .sort((a, b) => Number(setEdit.members.includes(b.id)) - Number(setEdit.members.includes(a.id)) || a.name.localeCompare(b.name, 'de')) : [];
 
   const info: [string, string | null | undefined][] = [
-    ['Kategorie', categoryLabel(it.category)],
+    ['Kategorie', categoryLast({ category: it.category, subcategory: it.subcategory, type: it.item_type })],
     ['Farbe', [it.color, it.alt_color].filter(Boolean).join(' · ')],
     ['Größe', it.size],
     ['Material', it.material],

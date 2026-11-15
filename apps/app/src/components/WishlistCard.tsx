@@ -31,7 +31,7 @@ export function WishlistCard({ title, sub, dot, items, width, onPress, onLongPre
           const glow = glowFor(it.hex, it.highlight);
           return (
             <View key={it.id} style={[s.cell, { width: cell, height: cell, backgroundColor: itemTile.bg, boxShadow: `inset 0 0 ${itemTile.glow.blur}px ${itemTile.glow.spread}px ${glow.css}` }]}>
-              <ItemPicture uri={it.thumb} category={it.category} color={it.hex ?? itemTile.glow.fallback} inset="10%" />
+              <ItemPicture uri={it.thumb} category={it.kind} color={it.hex ?? itemTile.glow.fallback} inset="10%" />
             </View>
           );
         })}

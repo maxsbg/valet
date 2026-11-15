@@ -1,5 +1,5 @@
 import { Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { CATEGORIES, SEASONS, STYLES, WISH_TAGS, isWishTag, parseAmount, type WishTag } from '@valet/core';
+import { CATEGORIES, SEASONS, STYLES, subcategoriesOf, typesOf, pickCategory, migrateSeasons, LEGACY_STYLES, WISH_TAGS, isWishTag, parseAmount, type WishTag } from '@valet/core';
 import { Chip } from './ui';
 import { Icons } from './Icon';
 import { useTheme, space, radius } from '@/lib/theme';
@@ -22,7 +22,7 @@ export function toIso(de: string): string | null | undefined {
 }
 
 export type ItemForm = {
-  name: string; brand: string; category: string; owners: string[]; price: string; qty: string;
+  name: string; brand: string; category: string; subcategory: string | null; type: string | null; owners: string[]; price: string; qty: string;
   colors: string[]; size: string; list: string; date: string; shop: string; link: string;
   seasons: string[]; style: string | null; material: string; reversible: boolean; notes: string;
   /** Wunschliste: Wunschteil, Liste und Kategorie (Grail, Watchlist …) */
@@ -31,23 +31,23 @@ export type ItemForm = {
 
 export function toForm(i: ItemRow): ItemForm {
   return {
-    name: i.name ?? '', brand: i.brand ?? '', category: i.category, owners: i.owner_ids ?? (i.owner_id ? [i.owner_id] : []), price: eur(i.price_paid),
+    name: i.name ?? '', brand: i.brand ?? '', category: i.category, subcategory: i.subcategory, type: i.item_type, owners: i.owner_ids ?? (i.owner_id ? [i.owner_id] : []), price: eur(i.price_paid),
     qty: String(i.qty ?? 1), colors: (i.color ?? '').split('/').map((c) => c.trim()).filter(Boolean), size: i.size ?? '',
     list: eur(i.list_price), date: toDe(i.purchase_date), shop: i.shop ?? '', link: i.link ?? '',
-    seasons: i.seasons ?? [], style: i.style, material: i.material ?? '', reversible: !!i.reversible, notes: i.notes ?? '',
+    seasons: migrateSeasons(i.seasons), style: i.style ? LEGACY_STYLES[i.style] ?? i.style : null, material: i.material ?? '', reversible: !!i.reversible, notes: i.notes ?? '',
     isWish: !!i.is_wish, wishlistId: i.wishlist_id ?? null, wishTag: isWishTag(i.wish_tag) ? i.wish_tag : null,
   };
 }
 
 export function emptyForm(ownerId: string | null, wish?: { wishlistId: string | null }): ItemForm {
   return {
-    name: '', brand: '', category: '', owners: ownerId ? [ownerId] : [], price: '', qty: '1', colors: [], size: '', list: '', date: '',
+    name: '', brand: '', category: '', subcategory: null, type: null, owners: ownerId ? [ownerId] : [], price: '', qty: '1', colors: [], size: '', list: '', date: '',
     shop: '', link: '', seasons: [], style: null, material: '', reversible: false, notes: '',
     isWish: !!wish, wishlistId: wish?.wishlistId ?? null, wishTag: null,
   };
 }
 
-/** Prüft die Eingaben (Pflicht ist nur der Name; ohne Kategorie → „Sonstiges“); liefert die Änderung für die Datenbank oder eine Fehlermeldung */
+/** Prüft die Eingaben (Pflicht ist nur der Name; Kategorie optional); liefert die Änderung für die Datenbank oder eine Fehlermeldung */
 export function readForm(f: ItemForm) {
   const fail = (error: string) => ({ error }) as const;
   if (!f.name.trim()) return fail('Bitte einen Namen eingeben.');
@@ -59,11 +59,11 @@ export function readForm(f: ItemForm) {
   return {
     change: {
       // Textfelder sind in der Datenbank „not null default ''“ → leer statt null speichern
-      name: f.name.trim(), brand: f.brand.trim(), category: f.category || 'sonstiges',
+      name: f.name.trim(), brand: f.brand.trim(), category: f.category, subcategory: f.category ? f.subcategory : null, item_type: f.category && f.subcategory ? f.type : null,
       // mehrere Besitzer; owner_id bleibt Spiegel für die Statistik (genau einer → dessen ID, sonst null)
       owner_ids: f.owners, owner_id: f.owners.length === 1 ? f.owners[0]! : null, price_paid: price,
       qty: Math.max(1, parseInt(f.qty, 10) || 1), color: f.colors.join('/'), size: f.size.trim(), list_price: list,
-      purchase_date: date, shop: f.shop.trim(), link: f.link.trim(), seasons: f.seasons, style: f.style ?? '',
+      purchase_date: date, shop: f.shop.trim(), link: f.link.trim(), seasons: f.seasons, style: f.style ?? '', styles: f.style ? [f.style] : [],
       material: f.material.trim(), reversible: f.reversible, notes: f.notes.trim(),
       // Liste und Kategorie nur bei Wunschteilen
       ...(f.isWish ? { is_wish: true, wishlist_id: f.wishlistId, wish_tag: f.wishTag } : {}),
@@ -88,6 +88,10 @@ export function ItemFormFields({ f, onChange, persons, wishlists = [], open, onO
   const toggleIn = (k: 'seasons' | 'colors', v: string, max = 9) =>
     set(k, f[k].includes(v) ? f[k].filter((x) => x !== v) : f[k].length < max ? [...f[k], v] : [...f[k].slice(0, max - 1), v]);
   const flip = (k: string) => onOpen({ ...open, [k]: !open[k] });
+  const pickCat = (level: 'category' | 'subcategory' | 'type', name: string) => {
+    const p = pickCategory({ category: f.category || null, subcategory: f.subcategory, type: f.type }, level, name);
+    onChange({ ...f, category: p.category ?? '', subcategory: p.subcategory, type: p.type });
+  };
 
   const input = [s.input, { backgroundColor: t.surface, borderColor: t.hairline, color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null];
   // Als Funktion aufgerufen (nicht als Komponente), sonst verliert das Textfeld bei jeder Eingabe den Fokus
@@ -102,8 +106,17 @@ export function ItemFormFields({ f, onChange, persons, wishlists = [], open, onO
       {/* Das Wichtigste */}
       {Field({ label: 'Name (Pflicht)', k: 'name', placeholder: 'z. B. Wollmantel' })}
       {Field({ label: 'Marke', k: 'brand', placeholder: 'z. B. COS' })}
-      <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Kategorie <Text style={{ fontWeight: '400' }}>· optional, sonst „Sonstiges“</Text></Text>
-      <View style={s.wrap}>{CATEGORIES.map((c) => <Chip key={c.id} label={c.label} selected={f.category === c.id} onPress={() => set('category', f.category === c.id ? '' : c.id)} />)}</View>
+      {/* Übergang bis zur neuen Bearbeiten-Seite: Kategorie, Unterkategorie, Typ untereinander */}
+      <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Kategorie <Text style={{ fontWeight: '400' }}>· optional</Text></Text>
+      <View style={s.wrap}>{CATEGORIES.map((c) => <Chip key={c} label={c} selected={f.category === c} onPress={() => pickCat('category', c)} />)}</View>
+      {f.category ? <>
+        <Text style={[s.label, { color: t.inkMuted }]}>Unterkategorie</Text>
+        <View style={s.wrap}>{subcategoriesOf(f.category).map((c) => <Chip key={c} label={c} selected={f.subcategory === c} onPress={() => pickCat('subcategory', c)} />)}</View>
+      </> : null}
+      {typesOf(f.category, f.subcategory).length ? <>
+        <Text style={[s.label, { color: t.inkMuted }]}>Typ</Text>
+        <View style={s.wrap}>{typesOf(f.category, f.subcategory).map((c) => <Chip key={c} label={c} selected={f.type === c} onPress={() => pickCat('type', c)} />)}</View>
+      </> : null}
       <Text style={[s.label, { color: t.inkMuted, marginTop: space.xs }]}>Gehört <Text style={{ fontWeight: '400' }}>· mehrere möglich</Text></Text>
       <View style={s.wrap}>
         {persons.map((p) => {

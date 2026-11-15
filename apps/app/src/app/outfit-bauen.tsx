@@ -17,7 +17,7 @@ import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 import { personKey, type Tile } from '@/lib/wardrobe';
 import { allOccasions, deleteOutfit, planOutfit, saveOutfit } from '@/lib/outfits';
 
-const catIndex = (c: string) => { const n = CATEGORIES.findIndex((x) => x.id === c); return n < 0 ? 99 : n; };
+const catIndex = (c: string) => { const n = CATEGORIES.indexOf(c); return n < 0 ? 99 : n; };
 
 /** Outfit zusammenstellen oder bearbeiten. Parameter: id (bearbeiten), date + who (danach planen), item (mit diesem Teil anfangen) */
 export default function OutfitBauen() {
@@ -168,8 +168,8 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
               <RoundButton label="Suchen" onPress={() => setSearching(true)}><Icons.search color={t.ink} /></RoundButton>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: space.xs }}>
                 <Chip label="Alle" count={pool.length} selected={!cat} onPress={() => setCat(null)} />
-                {CATEGORIES.filter((c) => counts.get(c.id)).map((c) => (
-                  <Chip key={c.id} label={c.label} count={counts.get(c.id)} selected={cat === c.id} onPress={() => setCat(cat === c.id ? null : c.id)} />
+                {CATEGORIES.filter((c) => counts.get(c)).map((c) => (
+                  <Chip key={c} label={c} count={counts.get(c)} selected={cat === c} onPress={() => setCat(cat === c ? null : c)} />
                 ))}
               </ScrollView>
             </>

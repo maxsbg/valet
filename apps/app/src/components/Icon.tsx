@@ -1,3 +1,4 @@
+import { layoutKind } from '@valet/core';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 type P = { size?: number; color: string };
@@ -37,8 +38,9 @@ export function Silhouette({ category, color }: { category: string; color: strin
     cap: 'M20 60c0-22 13-36 30-36s30 14 30 36ZM50 58h40c4 0 4 8 0 8H50Z',
     bag: 'M22 40h56v46a6 6 0 0 1-6 6H28a6 6 0 0 1-6-6ZM36 40c0-16 28-16 28 0',
   };
-  const kind =
-    ({ oberteil: 'shirt', pullover: 'shirt', sport: 'shirt', hose: 'pants', shorts: 'pants', jacke: 'jacket', mantel: 'jacket', schuhe: 'shoe', tasche: 'bag', accessoire: 'cap' } as Record<string, string>)[category] ?? 'shirt';
+  const KIND: Record<string, string> = { oberteil: 'shirt', pullover: 'shirt', sport: 'shirt', kleid: 'shirt', hose: 'pants', shorts: 'pants', rock: 'pants', jacke: 'jacket', mantel: 'jacket', schuhe: 'shoe', tasche: 'bag', kopf: 'cap', accessoire: 'cap' };
+  // Form (layoutKind) oder Kategorie-Name
+  const kind = KIND[category] ?? KIND[layoutKind(category)] ?? 'shirt';
   return (
     <Svg width="62%" height="62%" viewBox="0 0 100 100">
       <Path d={d[kind]} fill={color} opacity={0.9} />

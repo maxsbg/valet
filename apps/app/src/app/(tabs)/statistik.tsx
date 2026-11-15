@@ -189,7 +189,7 @@ export default function Statistik() {
           )}
 
           <Panel t={t} title="Lange nicht getragen">
-            <Text style={[s.psub, { color: t.inkMuted }]}>Nur Teile für {r.season === 'Übergang' ? 'die Übergangszeit' : `den ${r.season}`} (und ganzjährige), ab {IDLE_DAYS} Tagen</Text>
+            <Text style={[s.psub, { color: t.inkMuted }]}>Nur Teile für den {r.season} (und ganzjährige), ab {IDLE_DAYS} Tagen</Text>
             {r.idle.length ? (
               <PGrid t={t} width={W} list={g(r.idle, (x: { w: string[]; days: number }) => (x.w.length ? `${x.days} Tage` : 'noch nie'), (x: { w: string[]; days: number }) => (x.w.length ? 'her' : `seit ${x.days} Tagen`))} />
             ) : <Text style={{ fontSize: 14, color: t.inkMuted }}>Nichts – alles für die Saison war in den letzten {IDLE_DAYS} Tagen dran.</Text>}

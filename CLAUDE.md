@@ -15,7 +15,7 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - `apps/app` – Expo SDK 58, Expo Router, react-native-web. Seiten in `src/app`, Rest in `src/components`, `src/lib`. Siehe `apps/app/AGENTS.md` (Expo-Regeln).
 - `packages/core` – Fachlogik + Import aus dem alten Valet (Tests mit `node --test` über `tsx`).
 - `packages/ui` – Design-Tokens (Farben, Personen, Kacheln, Schatten).
-- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`; 0005: Status `stored`; beide am 14.11.2026 angewendet). `backup/` – Sicherung der Daten aus dem alten Valet.
+- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`; 0005: Status `stored`; beide am 14.11.2026 angewendet; 0006: Felder für Detailseite/Bearbeiten, am 15.11.2026 angewendet; **0007: Umstellung der Teile auf die neue Kategorie-Liste – erst nach dem Merge von Stufe 1 anwenden**). `backup/` – Sicherung der Daten aus dem alten Valet.
 
 Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filter @valet/app build:web`.
 
@@ -73,6 +73,9 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - Tab-Leiste wie Apple Music: 58 hoch, 21 seitlich, 25 über dem Rand (Web-App), im Browser über der Safari-Leiste (`useTabBarBottom`).
 - Mosaik und Outfit-Karten aus dem alten Valet übernehmen.
 - Andere Seiten (Teil-Detail, Bearbeiten, Status, Statistik) dürfen neu gestaltet werden.
+- **Kategorien (umgesetzt 15.11.2026, Stufe 1):** feste Liste Kategorie → Unterkategorie → Typ in `packages/core/src/categories.ts` (gespeichert werden die Namen in `items.category/subcategory/item_type`), weitere Listen (Farben mit Nuancen, Material, Muster, Stil, Kragen, Verschluss, Pflege, Größe, Saison, Lagen, Wetter) in `attributes.ts`, Umbruch in `layout.ts`, Preisformat/Aufteilung in `money.ts`. Grobe Form für Mosaik/Board/Platzhalter: `layoutKind` → `Tile.kind`. Alte Kategorie-IDs rechnet `normalizeCategory` beim Laden um (Regeln in `import/categorize.ts`, auch für den frischen Import). Saison jetzt Frühling/Sommer/Herbst/Winter (Übergang → Frühling + Herbst; Statistik: Mär–Mai Frühling, Sep–Okt Herbst). Stil: neue Liste, Schick → Klassisch. Grau → Hell-/Dunkelgrau nach Foto-Helligkeit. Jacken/Mäntel ohne Lage → Außen.
+  - Später (Max, 15.11.2026): Erinnerung bei „Verliehen – zurück bis“ vorerst nur als Hinweis in der App; Push-Nachricht später. „Lohnt sich das?“ vorerst nur Platzhalter.
+  - Reihenfolge der Stufen: 1 Kategorien → 2 Status → 3 Bearbeiten → 4 Detail Schrank-Teil → 5 Detail Wunschteil.
 - **Teil-Detail, Wunschteil-Detail, Bearbeiten (entschieden 15.11.2026):** verbindlich `docs/design/detailseite/VALET_DETAILSEITE_SPEC.md` (Regeln + offene Punkte), visuelle Referenz Leinwand „Valet – Teil-Detailseite“ auf claude.ai (Link in der Spec). Bei Widerspruch gilt die Spec. Dort auch die Kategorie-Liste mit Typen und die Passform je Kategorie (Abschnitt 8). Offene Punkte (Abschnitt 9) erst mit Max klären.
 - Web: Das Dokument selbst scrollt (kein innerer Scroll-Kasten), nur so zeigt Safari den Inhalt auch unter seiner Leiste. Seiten nutzen `src/components/Page.tsx` (iOS: ScrollView, Web: normaler Fluss + Scroll-Stand je Seite gemerkt); klebende Leisten über `STICKY`, feste (Tab-Leiste, Plus, Hinweise) über `position: fixed` (`FIXED` in `ui.tsx`). Abstände unten aus `src/lib/bottomInset.ts`. Web nutzt `Slot` statt `Stack` (Stack schneidet jede Seite in einen Rahmen) → Seiten werden beim Wechsel abgebaut, Zustand wie Kategorie/Filter bei Bedarf modulweit merken.
 

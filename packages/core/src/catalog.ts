@@ -1,26 +1,8 @@
-// Kategorien und Status – 1:1 aus dem bisherigen Valet übernommen
+// Status (Kategorien: categories.ts, weitere Listen: attributes.ts)
+export { CATEGORY_NAMES as CATEGORIES, SIDE_CATEGORIES } from './categories';
 
-export const CATEGORIES = [
-  { id: 'mantel', label: 'Mäntel' },
-  { id: 'jacke', label: 'Jacken' },
-  { id: 'pullover', label: 'Pullover & Hoodies' },
-  { id: 'oberteil', label: 'Oberteile' },
-  { id: 'hose', label: 'Hosen' },
-  { id: 'shorts', label: 'Shorts' },
-  { id: 'schuhe', label: 'Schuhe' },
-  { id: 'sport', label: 'Sport' },
-  { id: 'tasche', label: 'Taschen' },
-  { id: 'accessoire', label: 'Accessoires' },
-  { id: 'sonstiges', label: 'Sonstiges' },
-] as const;
-
-export type CategoryId = (typeof CATEGORIES)[number]['id'];
-
-/** Kategorien, die im Outfit „nebenbei“ laufen (keine Hauptlage). */
-export const SIDE_CATEGORIES: ReadonlySet<string> = new Set(['accessoire', 'tasche', 'sonstiges']);
-
-export const categoryLabel = (id: string): string =>
-  CATEGORIES.find((c) => c.id === id)?.label ?? 'Sonstiges';
+/** Anzeigename einer Kategorie (gespeichert wird der Name selbst) */
+export const categoryLabel = (name: string | null | undefined): string => name || 'Ohne Kategorie';
 
 export const STATUSES = {
   wash: { label: 'Wäsche', color: '#3b7bbf' },
@@ -36,5 +18,3 @@ export type ItemStatus = keyof typeof STATUSES;
 export const isItemStatus = (s: unknown): s is ItemStatus =>
   typeof s === 'string' && s in STATUSES;
 
-export const SEASONS = ['Sommer', 'Übergang', 'Winter'] as const;
-export const STYLES = ['Casual', 'Streetwear', 'Schick', 'Business', 'Sport'] as const;
