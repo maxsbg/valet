@@ -2,7 +2,7 @@
 
 Stand: 15.11.2026. Verbindliche Regeln aus der Abstimmung mit Max für die Seiten **Teil-Detail** (`src/app/teil/[id].tsx`), **Wunschteil-Detail** und **Bearbeiten** (`src/components/ItemForm.tsx`, auch für „Neues Teil“).
 
-- **Visuelle Referenz:** Leinwand „Valet – Teil-Detailseite“ auf claude.ai (dunkles Thema): https://claude.ai/artifact/257e6JVHkfBnrNxKjnWLha – drei Reihen: Detailseite Schrank-Teil, Detailseite Wunschteil, Bearbeiten. Die Bearbeitungsseite ist dort antippbar (Kategorie, Farben, alle Zeilen, Aufteilung, Geschenk, Wendbar, Anzahl).
+- **Visuelle Referenz:** Leinwand „Valet – Teil-Detailseite“ auf claude.ai (dunkles Thema): https://claude.ai/artifact/257e6JVHkfBnrNxKjnWLha – drei Reihen: Detailseite Schrank-Teil, Detailseite Wunschteil, Bearbeiten. Die Bearbeitungsseite ist dort antippbar (Kategorie, Farben, alle Zeilen, Aufteilung, Geschenk, Wendbar, Anzahl). Seit 15.11.2026 auch: „D · Status-Menü“, „D · Übersicht, leere Zustände“, „E · Wunschteil – Steckbrief (Pflege geschätzt)“, „H · Wunschteil bearbeiten“ und eine Reihe „Helles Thema“.
 - **Dieselben Regeln** stehen im Valet-Designsystem auf claude.ai (Abschnitt „Teil-Detailseite, Wunschteil und Bearbeiten“).
 - Die Leinwand zeigt das Ergebnis, diese Datei das Warum und die Ausnahmen. **Bei Widerspruch gilt diese Datei.** Die Beispielwerte (COS, 59,00 €, Flannel) sind ausgedacht.
 - Werte als Tokens in `packages/ui/src/tokens.ts`, Logik (Rang, Verteilung, Preisformat, Set-Reihenfolge) in `packages/core`, mit Tests.
