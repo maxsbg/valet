@@ -77,11 +77,23 @@ Sieben Status, Blatt über den Status-Knopf unten. Kapseln mit Symbol (einfarbig
 | Wäsche | Waschmaschine | – |
 | Reparatur | Schere | seit, wo (optional) |
 | Verliehen | schräg aufsteigender Pfeil | an wen (Monogramm-Kapseln, + andere Person), seit, zurück bis (optional, mit Erinnerung) |
-| Eingelagert | **offen, siehe 8.** | wo (Keller, Dachboden, bei den Eltern, + Ort) |
-| Aussortiert | Kiste | – |
+| Eingelagert | Ablage (offene Schale mit Fach) | wo (Keller, Dachboden, bei den Eltern, + Ort) |
+| Aussortiert | Kiste (Deckel + Griffleiste), ohne Pfeil | – |
 | Verkauft | Euro im Kreis | Erlös, Datum, wo (Vinted, eBay, Kleinanzeigen, Freunde, Sonstiges); Erlös mindert „netto ausgegeben“ |
 
-Auf der Kachel als Plakette oben links. Einfache Status ohne Angaben erklären im Blatt in einem Satz, was sie bewirken.
+Symbole genau wie im Entwurf (Leinwand, Zeichenfläche D-Status); sie ersetzen die bisherigen Status-Symbole in `TileIcons.tsx`. Auf der Kachel als Plakette oben links. Einfache Status ohne Angaben erklären im Blatt in einem Satz, was sie bewirken.
+
+SVG-Pfade der Status-Symbole (viewBox 0 0 24, Strich 2, `currentColor`, ohne Füllung):
+
+```
+Im Schrank   <rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M12 3v18"></path><path d="M9.5 11v2"></path><path d="M14.5 11v2"></path>
+Wäsche       <rect x="4" y="3" width="16" height="18" rx="2.5"></rect><circle cx="12" cy="13" r="4.5"></circle><path d="M7.5 6.5h2"></path>
+Reparatur    <circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M20 4L8.1 15.9"></path><path d="M14.5 14.5L20 20"></path><path d="M8.1 8.1L12 12"></path>
+Verliehen    <path d="M7 17L17 7"></path><path d="M9 7h8v8"></path>
+Eingelagert  <path d="M4 13l2-8h12l2 8v6H4z"></path><path d="M4 13h5l1 2h4l1-2h5"></path>
+Aussortiert  <rect x="3" y="4" width="18" height="5" rx="1.5"></rect><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"></path><path d="M10 13h4"></path>
+Verkauft     <circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.6a4.5 4.5 0 1 0 0 6.8"></path><path d="M7 11h6"></path><path d="M7 13.4h6"></path>
+```
 
 ## 7. Bearbeiten (auch „Neues Teil prüfen“)
 
@@ -106,7 +118,6 @@ Auf der Kachel als Plakette oben links. Einfache Status ohne Angaben erklären i
 
 ## 8. Offen – Max fragen, nicht selbst entscheiden
 
-- **Symbol „Eingelagert“:** In `CLAUDE.md` steht „eingelagert = Kiste, aussortiert = Kiste mit Pfeil nach oben“. Am 15.11.2026 hat Max „aussortiert = Kiste“ bestätigt; für „eingelagert“ zeigt der Entwurf eine Ablage. Vor dem Umsetzen klären.
 - **Geschätzte Pflegehinweise:** Idee „Symbole grau mit Stern = geschätzt“ ist vorgemerkt, **nicht umsetzen**, bis Max es sagt.
 - **Bearbeiten für Wunschteile** (Liste, Kategorie, Preis statt Bezahlt, gewünschte Größe, geplanter Kauftag) ist noch nicht entworfen.
 - **Status-Knopf:** Ob einfache Status (Wäsche, Aussortiert, Im Schrank) direkt aus einem kleinen Menü gesetzt werden und nur Status mit Angaben ein Blatt öffnen, ist noch nicht entschieden. Bis dahin öffnet der Knopf immer das Blatt.
