@@ -89,8 +89,6 @@ export const itemTile = {
   edgeWidth: 1,
   /** Innenabstand des Fotos rundum */
   photoInset: 10,
-  /** abwesende Teile (verliehen, Reparatur, eingelagert, verkauft): Foto abblenden */
-  away: { opacity: 0.42, grayscale: 0.5 },
   /** Innenschein: inset 0 0 blur spread rgba(farbe, alpha) – Farbe nach Steckbrief (core/glow.ts) */
   glow: {
     blur: 22,          // glow-blur
