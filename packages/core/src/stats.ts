@@ -192,7 +192,7 @@ export function closetStats(all: StatItem[], personId: string | null) {
   const wishes = all.filter((i) => i.isWish && (!personId || i.ownerId === personId));
   const m = new Map<string, number>();
   for (const i of owned) if (i.status !== 'sold' && i.status !== 'out') m.set(i.category, (m.get(i.category) ?? 0) + qtyOf(i));
-  const status = (['wash', 'repair', 'lent', 'out', 'sold'] as const).map((k) => ({ key: k, value: owned.filter((i) => i.status === k).length })).filter((r) => r.value);
+  const status = (['wash', 'repair', 'lent', 'stored', 'out', 'sold'] as const).map((k) => ({ key: k, value: owned.filter((i) => i.status === k).length })).filter((r) => r.value);
   return {
     pieces: owned.reduce((s, i) => s + qtyOf(i), 0),
     distinct: owned.length,
