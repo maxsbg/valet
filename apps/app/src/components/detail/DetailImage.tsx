@@ -20,6 +20,8 @@ const K = I.badge / B.size; // 2
 export type DetailImageItem = {
   id: string; name: string; kind: string; hex: string | null; colors: readonly string[]; status: ItemStatus | null;
   reversible: boolean; qty: number; owners: string[];
+  /** Set-Kennung – Set-Plakette oben rechts links neben Wendbar */
+  setId?: string | null;
   /** Hauptbild (volle Auflösung) und Bild der anderen Seite */
   image: string | null; imageBack: string | null;
   /** Wunschteil (Kachel-Regeln der Wunschliste × 2): oben links Kategorie, unten links Preis, kein Status, kein Bügel */
@@ -34,12 +36,12 @@ export function DetailImage({ item, width, me, person, today }: {
   const glow = glowFor(item.colors, item.hex);
   const wish = item.wish ?? null;
   const price = wish ? priceLabel(wish.price) : null;
-  const tr = topRightFor(item.reversible, item.qty);
+  const tr = topRightFor(item.reversible, item.qty, !!item.setId);
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
   const todayP = today && !wish ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
   const flip = useFlip(tr?.reversible && item.imageBack ? item.imageBack : null, item.id);
   const label = wish ? [item.name, wish.tag ? wishTagLabel(wish.tag) : null, price ? `${price} Euro` : null].filter(Boolean).join(', ') : tileA11yLabel({
-    name: item.name, status: item.status, reversible: item.reversible, qty: item.qty, today: todayP,
+    name: item.name, status: item.status, reversible: item.reversible, set: !!item.setId, qty: item.qty, today: todayP,
     owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
   });
   const inset = Math.round(itemTile.photoInset * K);
@@ -71,11 +73,19 @@ export function DetailImage({ item, width, me, person, today }: {
         )}
         {tr && (
           <View style={s.tr}>
-            {tr.reversible && (flip.can ? (
-              <Pressable onPress={flip.toggle} hitSlop={4} accessibilityRole="button" accessibilityLabel={flip.back ? 'Wenden, zeigt Seite B' : 'Wenden, zeigt Seite A'}>
-                <Glass scale={K}><Animated.View style={flip.iconStyle}><TileIcon name="reversible" color={B.ink} scale={K} /></Animated.View></Glass>
-              </Pressable>
-            ) : <Glass scale={K} label="Wendbar"><TileIcon name="reversible" color={B.ink} scale={K} /></Glass>)}
+            {/* Wendbar in der Ecke und obenauf, Set links dahinter leicht überlappt (wie die Monogramme) */}
+            <View style={s.trRow}>
+              {tr.set && <View style={{ zIndex: 1 }}><Glass scale={K} label="Set"><TileIcon name="link" color={B.ink} scale={K} /></Glass></View>}
+              {tr.reversible && (
+                <View style={[tr.set && { marginLeft: -B.ownerOverlap * K }, { zIndex: 2 }]}>
+                  {flip.can ? (
+                    <Pressable onPress={flip.toggle} hitSlop={4} accessibilityRole="button" accessibilityLabel={flip.back ? 'Wenden, zeigt Seite B' : 'Wenden, zeigt Seite A'}>
+                      <Glass scale={K}><Animated.View style={flip.iconStyle}><TileIcon name="reversible" color={B.ink} scale={K} /></Animated.View></Glass>
+                    </Pressable>
+                  ) : <Glass scale={K} label="Wendbar"><TileIcon name="reversible" color={B.ink} scale={K} /></Glass>}
+                </View>
+              )}
+            </View>
             {tr.count && <Glass scale={K} shape={tr.count.shape} label={`${tr.count.n} Stück`}><Num num={tr.count.num} sym={tr.count.sym} scale={K} /></Glass>}
           </View>
         )}
@@ -113,7 +123,8 @@ const s = StyleSheet.create({
   tile: { borderRadius: I.radius, backgroundColor: '#fff', overflow: 'hidden' },
   hidden: { opacity: 0 },
   tl: { position: 'absolute', top: I.inset, left: I.inset },
-  tr: { position: 'absolute', top: I.inset, right: I.inset, alignItems: 'center', gap: B.stackGap * K },
+  tr: { position: 'absolute', top: I.inset, right: I.inset, alignItems: 'flex-end', gap: B.stackGap * K },
+  trRow: { flexDirection: 'row', alignItems: 'center' },
   bl: { position: 'absolute', bottom: I.inset, left: I.inset },
   br: { position: 'absolute', bottom: I.inset, right: I.inset, flexDirection: 'row' },
   edge: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: I.radius, boxShadow: 'inset 0 0 0 1px rgba(42,26,29,0.09)' },
