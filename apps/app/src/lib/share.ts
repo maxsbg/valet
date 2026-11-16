@@ -21,6 +21,9 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 const toPng = (c: HTMLCanvasElement) =>
   new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('Bild konnte nicht erstellt werden.'))), 'image/png'));
 
+/** Ergebnis eines Exports: Bild + ggf. Hinweis, was fehlt */
+export type Exported = { blob: Blob; warning?: string };
+
 /** Dateiname ohne Sonderzeichen */
 export const fileName = (s: string) =>
   (s || 'valet').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'valet';
@@ -72,8 +75,9 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 /**
  * Outfit als Bild: weiße Outfit-Fläche (gleiche Anordnung wie in der App) auf Elfenbein,
  * darunter der Name und klein der Schriftzug „valet“.
+ * Fehlen Teil-Bilder (ohne Bild oder nicht ladbar), gibt es einen Hinweis; fehlen alle, schlägt der Export fehl.
  */
-export async function outfitPng(pieces: OutfitPiece[], byId: Map<string, Tile>, title: string): Promise<Blob> {
+export async function outfitPng(pieces: OutfitPiece[], byId: Map<string, Tile>, title: string): Promise<Exported> {
   const items = pieces.map((p) => byId.get(p.id)).filter((i): i is Tile => !!i);
   const placed = boardLayout(items, Object.fromEntries(pieces.map((p) => [p.id, p])));
   const imgs = await Promise.all(placed.map((p) => {
@@ -81,6 +85,8 @@ export async function outfitPng(pieces: OutfitPiece[], byId: Map<string, Tile>, 
     const url = it.image ?? it.thumb;
     return url ? loadImage(url).catch(() => null) : Promise.resolve(null);
   }));
+  const missing = imgs.filter((i) => !i).length;
+  if (placed.length && missing === placed.length) throw new Error('Keines der Teil-Bilder konnte geladen werden. Bitte Verbindung prüfen und erneut versuchen.');
 
   const W = 1080, pad = 60;
   const bw = W - 2 * pad, bh = Math.round(bw * BOARD_AR);
@@ -122,7 +128,8 @@ export async function outfitPng(pieces: OutfitPiece[], byId: Map<string, Tile>, 
   ctx.fillStyle = OXBLOOD;
   ctx.font = '36px Gloock_400Regular, Georgia, serif';
   ctx.fillText('valet', W / 2, pad + bh + 150);
-  return toPng(c);
+  const blob = await toPng(c);
+  return { blob, warning: missing ? `${missing === 1 ? '1 Teil fehlt' : `${missing} Teile fehlen`} im Bild (Bild nicht ladbar).` : undefined };
 }
 
 export const canExport = Platform.OS === 'web';
