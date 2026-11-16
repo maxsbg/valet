@@ -2,12 +2,6 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-/** Als Web-App vom Home-Bildschirm geöffnet (ohne Safari-Leisten) */
-export function isStandalone(): boolean {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
-  return (navigator as { standalone?: boolean }).standalone === true || window.matchMedia?.('(display-mode: standalone)').matches === true;
-}
-
 /**
  * Im Web scrollt die Seite selbst; feste Leisten hängen per position:fixed am Bildschirm.
  * Gemessen wird, wie weit „bottom: 0“ eines festen Elements unter dem sichtbaren Bereich liegt

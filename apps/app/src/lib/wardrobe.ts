@@ -171,21 +171,6 @@ export function nameToHex(name: string | null): string | null {
   return first ? NAMED[first] ?? null : null;
 }
 
-/** Nächstliegender Farbname zu einer Hex-Farbe (Vorschlag beim Anlegen) */
-export function hexToName(hex: string): string | null {
-  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const [r, g, b] = rgb(hex);
-  if ([r, g, b].some(Number.isNaN)) return null;
-  let best: string | null = null, bestD = Infinity;
-  for (const [name, h] of Object.entries(NAMED)) {
-    const [r2, g2, b2] = rgb(h);
-    // gewichteter Abstand (Auge reagiert stärker auf Grün)
-    const d = 2 * (r - r2) ** 2 + 4 * (g - g2) ** 2 + 3 * (b - b2) ** 2;
-    if (d < bestD) { bestD = d; best = name; }
-  }
-  return best && best[0].toUpperCase() + best.slice(1);
-}
-
 /** Personenfarbe auf der Kachel: „Rosa“/„Rot“, sonst keine (→ ink/schwarz) */
 export function personTone(color: string | null): 'pink' | 'red' | null {
   if (!color) return null;

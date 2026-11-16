@@ -105,7 +105,6 @@ export default function Neu() {
     finally { setSaving(false); }
   }
 
-  const glow = picture?.colors[0]?.h ?? '#d8d2c8';
   const accent = t.dark ? t.accent : MAROON;
 
   if (step === 'form' && f) return (
@@ -124,13 +123,7 @@ export default function Neu() {
       <View style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
         <Pressable onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
         <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>{wish ? 'Neuer Wunsch' : 'Neues Teil'}</Text>
-        <View style={[s.barSide, { alignItems: 'flex-end' }]}>
-          {step === 'form' && (
-            <Pressable onPress={save} disabled={saving} hitSlop={10}>
-              <Text style={{ fontSize: 17, fontWeight: '700', color: accent, opacity: saving ? 0.4 : 1 }}>{saving ? 'Speichert …' : 'Sichern'}</Text>
-            </Pressable>
-          )}
-        </View>
+        <View style={s.barSide} />
       </View>
 
       <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">

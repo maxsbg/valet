@@ -59,13 +59,6 @@ export async function saveStatus(itemId: string, info: StatusInfo) {
   if (r.error) throw r.error;
 }
 
-export async function setStatus(itemId: string, status: ItemRow['status'], lentTo?: string | null) {
-  const r = await supabase.from('items')
-    .update({ status, status_at: status ? todayLocal() : null, lent_to: status === 'lent' ? lentTo ?? '' : '' })
-    .eq('id', itemId);
-  if (r.error) throw r.error;
-}
-
 export type ItemChange = Partial<Pick<ItemRow, 'name' | 'brand' | 'category' | 'subcategory' | 'item_type' | 'owner_id' | 'owner_ids' | 'color' | 'size' | 'material' | 'style' | 'seasons' | 'qty' | 'price_paid' | 'list_price' | 'purchase_date' | 'shop' | 'link' | 'notes' | 'reversible' | 'is_wish' | 'wishlist_id' | 'wish_tag'>> & { styles?: string[] };
 
 export async function updateItem(id: string, change: ItemChange | Record<string, unknown>) {
