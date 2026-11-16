@@ -9,9 +9,9 @@ const corsHeaders = {
 };
 
 // Anbieter über Secrets wählbar (OpenAI-kompatible Schnittstelle): KI_ENDPOINT, KI_MODEL, KI_API_KEY.
-// Standard: Mistral (Free mode, ohne Karte), Bildmodell mistral-small.
-const DEFAULT_ENDPOINT = "https://api.mistral.ai/v1/chat/completions";
-const DEFAULT_MODEL = "mistral-small-latest";
+// Ohne KI_ENDPOINT: Gemini-Schlüssel (beginnt mit „AIza“) → Gemini über dessen OpenAI-Schnittstelle, sonst Mistral.
+const GEMINI = { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-flash-latest" };
+const MISTRAL = { endpoint: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" };
 const DEFAULT_STORAGE_BUCKET = "items";
 
 // Allgemeiner KI-Durchreicher (Valet): Bild + Prompt + JSON-Schema → OpenAI-kompatibler Anbieter → JSON.
@@ -108,9 +108,10 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const modelToken = Deno.env.get("KI_API_KEY");
-    const endpoint = Deno.env.get("KI_ENDPOINT")?.trim() || DEFAULT_ENDPOINT;
-    const model = Deno.env.get("KI_MODEL")?.trim() || DEFAULT_MODEL;
+    const modelToken = (Deno.env.get("KI_API_KEY") || Deno.env.get("GEMINI_API_KEY"))?.trim();
+    const preset = modelToken?.startsWith("AIza") ? GEMINI : MISTRAL;
+    const endpoint = Deno.env.get("KI_ENDPOINT")?.trim() || preset.endpoint;
+    const model = Deno.env.get("KI_MODEL")?.trim() || preset.model;
     const storageBucket = Deno.env.get("ITEMS_BUCKET_NAME")?.trim() || DEFAULT_STORAGE_BUCKET;
 
     if (!supabaseUrl || !supabaseAnonKey || !modelToken) {
