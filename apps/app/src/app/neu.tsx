@@ -10,7 +10,7 @@ import { ItemEditor } from '@/components/edit/ItemEditor';
 import { editChange, emptyEditForm, nearestColor, setField, type EditForm } from '@valet/core';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
-import { canCutout, cutout, modelCached, original, type Picture } from '@/lib/cutout';
+import { canCutout, cutout, modelCached, original, precutNote, type Picture } from '@/lib/cutout';
 import { createItem, saveSet } from '@/lib/item';
 import type { SetDraft } from '@/components/edit/SetPicker';
 import { Icon } from '@/components/Icon';
@@ -50,16 +50,16 @@ export default function Neu() {
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
-  async function pick(file: File) {
+  async function pick(file: File, model = false) {
     const n = ++run.current;
     setPhoto({ file, url: keep(URL.createObjectURL(file)) });
     setPicture(null); setFailure(null);
     if (!canCutout) return keepOriginal(file);
     setStep('work'); setProgress({ text: 'Starte Freistellen …', p: 0 });
     try {
-      const p = await cutout(file, (text, p) => n === run.current && setProgress({ text, p }));
+      const p = await cutout(file, (text, p) => n === run.current && setProgress({ text, p }), { model });
       if (n !== run.current) return;
-      keep(p.preview); setPicture(p); setCached(true);
+      keep(p.preview); setPicture(p); if (p.source === 'model') setCached(true);
     } catch (e) {
       if (n !== run.current) return;
       setFailure((e as Error).message || String(e));
@@ -189,8 +189,10 @@ export default function Neu() {
                 </View>
               )}
               {picture && <Text style={[s.question, { color: t.ink }]}>Passt das so?</Text>}
+              {!!precutNote(picture) && <Text style={[s.small, { color: t.inkMuted, marginTop: -space.xs }]}>{precutNote(picture)}</Text>}
               <View style={{ gap: space.xs }}>
                 {picture && <Btn primary label="Passt" onPress={() => toForm(picture)} />}
+                {!!precutNote(picture) && photo && <Btn label="Mit Modell freistellen" onPress={() => pick(photo.file, true)} />}
                 <Btn label="Original behalten" onPress={() => keepOriginal()} />
                 <PhotoPicker onPick={pick} label="Nochmal mit neuem Foto">
                   <Btn label={picture ? 'Nochmal (neues Foto)' : 'Anderes Foto'} />

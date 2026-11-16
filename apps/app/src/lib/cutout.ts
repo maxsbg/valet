@@ -1,6 +1,7 @@
 // Freistellen im Browser mit RMBG-1.4 (public/freistellen/rmbg.js) und Bildaufbereitung fürs Hochladen.
 // Nur im Web verfügbar; in der iOS-App kommt später Apple Vision dazu.
 import { Platform } from 'react-native';
+import { analyzePrecut } from '@valet/core';
 
 type RmbgResult = { canvas: HTMLCanvasElement; file: Blob; thumb: Blob | null; info: Record<string, unknown> };
 type Rmbg = {
@@ -22,6 +23,8 @@ export type Picture = {
   /** Anzeige vor dem Speichern (Objekt-URL) */
   preview: string;
   colors: { h: string; s: number }[];
+  /** Wie freigestellt: Modell, schon sauber (nur zugeschnitten) oder Schatten entfernt (ohne Modell) */
+  source?: 'model' | 'clean' | 'shadow';
 };
 
 /** Größte Kante des gespeicherten Hauptbildes – hält den kostenlosen Speicher (1 GB) lange frei */
@@ -49,9 +52,16 @@ export async function modelCached(): Promise<boolean> {
 
 /**
  * Stellt das Teil frei (Variante „Neues Alt“).
+ * Schon freigestellte Bilder (durchsichtiger Rand) gehen nicht durchs Modell: sauber → nur zuschneiden,
+ * mit Schatten → Schatten entfernen und zuschneiden (`analyzePrecut` in core). opts.model erzwingt das Modell.
  * onStep meldet Fortschritt: beim ersten Mal den Download des Modells, danach die Durchgänge.
  */
-export async function cutout(file: Blob, onStep: (text: string, p?: number) => void): Promise<Picture> {
+export async function cutout(file: Blob, onStep: (text: string, p?: number) => void, opts: { model?: boolean } = {}): Promise<Picture> {
+  if (!opts.model) {
+    onStep('Prüfe Bild …', 0);
+    const pre = await precut(file).catch(() => null);
+    if (pre) return pre;
+  }
   const R = await loadScript();
   if (!R.ready) {
     const cached = await R.isCached();
@@ -62,7 +72,34 @@ export async function cutout(file: Blob, onStep: (text: string, p?: number) => v
   onStep('Bild wird vorbereitet …', 1);
   const main = await toWebp(r.canvas, MAIN_EDGE, 0.9);
   const thumb = r.thumb ?? await toWebp(r.canvas, THUMB_EDGE, 0.85);
-  return { kind: 'cutout', main, thumb, preview: URL.createObjectURL(main), colors: mainColors(r.canvas) };
+  return { kind: 'cutout', main, thumb, preview: URL.createObjectURL(main), colors: mainColors(r.canvas), source: 'model' };
+}
+
+/** Größte Kante beim Prüfen schon freigestellter Bilder (wie die Arbeitsgröße des Modells) */
+const PRECUT_EDGE = 2000;
+
+/** Schon freigestelltes Bild ohne Modell aufbereiten; null = normales Foto (oder kaum Deckendes) → Modell */
+async function precut(file: Blob): Promise<Picture | null> {
+  const c = await fileToCanvas(file, PRECUT_EDGE);
+  const W = c.width, H = c.height, x = c.getContext('2d', { willReadFrequently: true })!;
+  const img = x.getImageData(0, 0, W, H), d = img.data, alpha = new Uint8Array(W * H);
+  for (let i = 0; i < alpha.length; i++) alpha[i] = d[i * 4 + 3]!;
+  const r = analyzePrecut(alpha, W, H);
+  if (r.kind === 'photo' || !r.box) return null;
+  if (r.kind === 'shadow') { for (let i = 0; i < alpha.length; i++) d[i * 4 + 3] = r.alpha[i]!; x.putImageData(img, 0, 0); }
+  const { x0, y0, x1, y1 } = r.box, out = document.createElement('canvas');
+  out.width = x1 - x0; out.height = y1 - y0;
+  out.getContext('2d')!.drawImage(c, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+  const main = await toWebp(out, MAIN_EDGE, 0.9);
+  const thumb = await toWebp(out, THUMB_EDGE, 0.85);
+  return { kind: 'cutout', main, thumb, preview: URL.createObjectURL(main), colors: mainColors(out), source: r.kind };
+}
+
+/** Hinweis im „Passt das so?“-Schritt, wenn das Modell übersprungen wurde */
+export function precutNote(p: Picture | null): string | null {
+  if (p?.source === 'clean') return 'War schon freigestellt – nur zugeschnitten.';
+  if (p?.source === 'shadow') return 'War schon freigestellt – Schatten entfernt und zugeschnitten.';
+  return null;
 }
 
 /** Foto unverändert übernehmen (nur verkleinert). Keine Farbanalyse – sie würde den Hintergrund mitzählen. */

@@ -5,7 +5,7 @@ import { ActivityIndicator, Animated, Image, Platform, Pressable, StyleSheet, Te
 import { glowFor } from '@valet/core';
 import { detail, itemTile } from '@valet/ui';
 import { useTheme, DISPLAY } from '@/lib/theme';
-import { canCutout, cutout, original, type Picture } from '@/lib/cutout';
+import { canCutout, cutout, original, precutNote, type Picture } from '@/lib/cutout';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemPicture } from '@/components/ItemPicture';
 import { TileIcon } from '@/components/tile/TileIcons';
@@ -137,14 +137,14 @@ export function usePictureFlow(onAccept: (p: Picture) => void) {
   const keep = (u: string) => { urls.current.push(u); return u; };
   useEffect(() => () => { run.current++; urls.current.forEach((u) => URL.revokeObjectURL(u)); }, []);
 
-  async function pick(file: File) {
+  async function pick(file: File, model = false) {
     const n = ++run.current;
     setPhoto({ file, url: keep(URL.createObjectURL(file)) });
     setPicture(null); setFailure(null);
     if (!canCutout) return keepOriginal(file);
     setStep('work'); setProgress({ text: 'Starte Freistellen …', p: 0 });
     try {
-      const p = await cutout(file, (text, p) => n === run.current && setProgress({ text, p }));
+      const p = await cutout(file, (text, p) => n === run.current && setProgress({ text, p }), { model });
       if (n !== run.current) return;
       keep(p.preview); setPicture(p);
     } catch (e) { if (n === run.current) setFailure((e as Error).message || String(e)); }
@@ -191,7 +191,9 @@ function FlowPanel({ flow, width }: { flow: Flow; width: number }) {
       ) : (
         <View style={{ gap: 8 }}>
           {picture && <Text style={{ fontFamily: DISPLAY, fontSize: 22, textAlign: 'center', color: t.ink }}>Passt das so?</Text>}
+          {!!precutNote(picture) && <Text style={{ fontSize: 13, lineHeight: 18, textAlign: 'center', color: t.inkMuted }}>{precutNote(picture)}</Text>}
           {picture && <FlowBtn primary label="Passt" onPress={() => flow.accept(picture)} />}
+          {!!precutNote(picture) && photo && <FlowBtn label="Mit Modell freistellen" onPress={() => flow.pick(photo.file, true)} />}
           <FlowBtn label="Original behalten" onPress={() => flow.keepOriginal()} />
           <PhotoPicker onPick={flow.pick} label="Anderes Foto wählen"><FlowBtn label="Anderes Foto" /></PhotoPicker>
           <FlowBtn label="Abbrechen" onPress={flow.cancel} />
