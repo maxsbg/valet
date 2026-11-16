@@ -94,6 +94,13 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - **Teil-Detail, Wunschteil-Detail, Bearbeiten (entschieden 15.11.2026):** verbindlich `docs/design/detailseite/VALET_DETAILSEITE_SPEC.md` (Regeln, Felder je Kategorie in Abschnitt 8a, offene Punkte), visuelle Referenz Leinwand „Valet – Teil-Detailseite“ auf claude.ai (Link in der Spec). Bei Widerspruch gilt die Spec. Dort auch die Kategorie-Liste mit Typen und die Passform je Kategorie (Abschnitt 8). Offene Punkte (Abschnitt 9) erst mit Max klären.
 - Web: Das Dokument selbst scrollt (kein innerer Scroll-Kasten), nur so zeigt Safari den Inhalt auch unter seiner Leiste. Seiten nutzen `src/components/Page.tsx` (iOS: ScrollView, Web: normaler Fluss + Scroll-Stand je Seite gemerkt); klebende Leisten über `STICKY`, feste (Tab-Leiste, Plus, Hinweise) über `position: fixed` (`FIXED` in `ui.tsx`). Abstände unten aus `src/lib/bottomInset.ts`. Web nutzt `Slot` statt `Stack` (Stack schneidet jede Seite in einen Rahmen) → Seiten werden beim Wechsel abgebaut, Zustand wie Kategorie/Filter bei Bedarf modulweit merken.
 
+## KI (entschieden 16.11.2026)
+- Edge Function `supabase/functions/ki` = allgemeiner Durchreicher (Bild + Prompt + JSON-Schema → OpenAI-kompatible Schnittstelle → JSON). Prompts, Schemas (striktes JSON-Schema, nur Werte aus den festen Listen) und Prüfung liegen in `packages/core/src/ai/` (`analyzeItem.ts` = Teil erkennen, `readInfo.ts` = Infos auslesen); App-Aufrufe in `apps/app/src/lib/ki.ts`. KI füllt nur leere oder noch unbestätigte Felder und markiert sie (`aiPending`).
+- **Bilder:** Gemini über Secret `GEMINI_API_KEY`, zuerst `gemini-3.5-flash-lite` (reicht laut Max), bei Überlastung Ersatzmodelle; je Modell max. 20 s, insgesamt 50 s. Farben kommen nur von der KI (keine Pixel-Farbe vorab).
+- **Nur Text** (Würfel/Tagesvorschlag, Kauf-Check, Anlässe, Bestellmail): später Groq `openai/gpt-oss-120b` (kostenlos, ohne Karte), Secret `GROQ_API_KEY`. Dafür muss `ki` Anfragen ohne Bild und einen zweiten Anbieter können.
+- **Outfit-Vorschläge:** Der Code sortiert vorab aus (Saison, Wetter, Status, Lagen, Farben), die KI wählt nur unter den passenden Kandidaten.
+- Ausprobiert und verworfen: GitHub Models (eingestellt 30.07.2026), Mistral (Free-Plan ohne API), Gemini-Studentenangebot (nur App, keine API). Vor neuen Diensten aktuellen Stand prüfen.
+
 ## Freistellen (entschieden)
 - Modell **RMBG-1.4 von BRIA** (nur nicht-kommerziell!), im Browser auf dem Grafikchip (WebGPU, 1024 px), sonst Prozessor (512 px).
 - Dateien: `apps/app/public/freistellen/` – `rmbg.js` (Rechenkern aus dem alten Valet + Ablauf), `rmbg14.bin` (44 MB, int8) + `rmbg14.json`. Modell wird in IndexedDB `valet-ki` gespeichert.
