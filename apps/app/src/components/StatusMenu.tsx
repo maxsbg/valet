@@ -54,7 +54,7 @@ export function PullMenu({ open, anchor, label, sections, onPick, onClose }: Men
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.18)', opacity: a }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Menü schließen" />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Menü schließen" />
       </Animated.View>
       <Animated.View accessibilityRole="menu" aria-label={label}
         style={[s.menu, blur, { left, bottom, backgroundColor: t.glass, borderColor: t.glassBorder, opacity: a,

@@ -45,7 +45,7 @@ export default function Login() {
           <Text style={s.btnText}>{busy ? (signUp ? 'Konto wird angelegt …' : 'Anmelden …') : signUp ? 'Konto anlegen' : 'Anmelden'}</Text>
         </Pressable>
         {invited && (
-          <Pressable onPress={() => { setSignUp(!signUp); setMsg(null); }} hitSlop={8} style={{ alignSelf: 'center', marginTop: space.xs }}>
+          <Pressable accessibilityRole="button" onPress={() => { setSignUp(!signUp); setMsg(null); }} hitSlop={8} style={{ alignSelf: 'center', marginTop: space.xs }}>
             <Text style={{ fontSize: 15, color: t.inkMuted }}>{signUp ? 'Schon ein Konto? Anmelden' : 'Noch kein Konto? Konto anlegen'}</Text>
           </Pressable>
         )}

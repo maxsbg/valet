@@ -105,18 +105,18 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
   const piece = (i: Tile) => (
     <View key={i.id} style={[s.ctile, { opacity: i.isWish ? 0.5 : 1 }]}>
       {i.thumb || i.image
-        ? <Image source={{ uri: i.thumb ?? i.image! }} resizeMode="contain" style={StyleSheet.absoluteFill} />
+        ? <Image source={{ uri: i.thumb ?? i.image! }} resizeMode="contain" style={StyleSheet.absoluteFill} accessibilityLabel={i.name || 'Teil'} />
         : <ItemPicture uri={null} inset={0} category={i.category} color={i.hex ?? '#c4bfb4'} />}
-      <Pressable onPress={() => toggle(i)} hitSlop={8} accessibilityLabel={`${i.name || 'Teil'} entfernen`} style={s.x}><Icon name="close" size="mini" color="#fff" /></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => toggle(i)} hitSlop={11} accessibilityLabel={`${i.name || 'Teil'} entfernen`} style={s.x}><Icon name="close" size="mini" color="#fff" /></Pressable>
     </View>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <View onLayout={(e) => setBarH(e.nativeEvent.layout.height)} style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
-        <Pressable onPress={close} hitSlop={8}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={close} hitSlop={8}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
         <Text style={[s.title, { color: t.ink }]}>{old ? 'Outfit bearbeiten' : 'Neues Outfit'}</Text>
-        <Pressable onPress={save} disabled={saving} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={save} disabled={saving} hitSlop={8}>
           <Text style={{ fontSize: 17, fontWeight: '700', color: saving ? t.inkMuted : t.accent }}>{saving ? 'Speichert …' : 'Speichern'}</Text>
         </Pressable>
       </View>
