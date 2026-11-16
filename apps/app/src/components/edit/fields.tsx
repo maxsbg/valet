@@ -106,11 +106,11 @@ export function ValueCapsule({ label, icon }: { label: string; icon?: (color: st
 }
 
 /** Wert rechts in einer Zeile: runder Kreis mit Symbol (Saison, Pflege, Farbe) */
-export function ValueCircle({ a11y, children, estimated, outline }: { a11y: string; children: React.ReactNode; /** geschätzte Pflege: ohne Füllung + Stern */ estimated?: boolean; /** Farbkreis: nur Rand */ outline?: boolean }) {
+export function ValueCircle({ a11y, children, estimated }: { a11y: string; children: React.ReactNode; /** geschätzte Pflege: ohne Füllung + Stern */ estimated?: boolean }) {
   const t = useTheme();
   return (
     <View accessibilityRole="image" accessibilityLabel={estimated ? `${a11y} (geschätzt)` : a11y}
-      style={[s.vcircle, estimated || outline ? { borderWidth: 1, borderColor: t.hairline, backgroundColor: 'transparent' } : { backgroundColor: t.ink }]}>
+      style={[s.vcircle, estimated ? { borderWidth: 1, borderColor: t.hairline, backgroundColor: 'transparent' } : { backgroundColor: t.ink }]}>
       {children}
       {estimated && <Text style={[s.star, { color: t.inkMuted }]}>✱</Text>}
     </View>
@@ -131,12 +131,14 @@ export function ValueScale({ caption, steps, on, icon, a11y }: { caption?: strin
   );
 }
 
-/** Farbkreis 24 px (überall gleich), optional mit Rang-Ziffer; „Bunt“ als Farbrad */
-export function ColorDot({ name, rank, size = D.colorDot }: { name: string; rank?: number; size?: number }) {
+/** Farbkreis 24 px (überall gleich), optional mit Rang-Ziffer; „Bunt“ als Farbrad.
+ *  `onFill`: liegt auf einem gefüllten Wert-Kreis (Zeile/Steckbrief) → graue Kontur, damit
+ *  Weiß auf Creme bzw. Schwarz auf Schwarz sichtbar bleibt. */
+export function ColorDot({ name, rank, size = D.colorDot, onFill }: { name: string; rank?: number; size?: number; onFill?: boolean }) {
   const hex = colorHex(name);
   const r = size / 2;
   return (
-    <View style={{ width: size, height: size, borderRadius: r, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: hex ?? '#ccc', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.18)' }}>
+    <View style={{ width: size, height: size, borderRadius: r, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: hex ?? '#ccc', boxShadow: `inset 0 0 0 1px ${onFill ? 'rgba(127,127,127,0.6)' : 'rgba(0,0,0,0.18)'}` }}>
       {name === MULTICOLOR && (
         <Svg width={size} height={size} viewBox="0 0 24 24" style={StyleSheet.absoluteFill}>
           {MULTICOLOR_STOPS.map((c, i) => {
