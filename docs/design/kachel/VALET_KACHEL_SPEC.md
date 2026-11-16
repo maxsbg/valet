@@ -69,12 +69,12 @@ Leistung (Web): Die Unschärfe bei 100+ Kacheln auf dem iPhone testen. Ruckelt d
 
 ### 5.1 Oben links – Status (eines davon oder nichts)
 | Status | Symbol |
-|---|---| |
+|---|---|
 | Wäsche | Korb |
 | Reparatur | Schere |
 | verliehen | Pfeil schräg nach oben rechts (getauscht 14.11.2026; der gerade Pfeil gehört jetzt „Next Cop“ in der Wunschliste) |
 | eingelagert / aussortiert | Kiste |
-| verkauft | Etikett
+| verkauft | Etikett |
 
 Symbol in ink. `aria-label` = Statusname.
 
