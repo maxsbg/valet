@@ -97,9 +97,22 @@ export function migrateSeasons(old: readonly string[] | null | undefined): Seaso
   return SEASONS.filter((s) => out.has(s));
 }
 
-export const MATERIALS = ['Baumwolle', 'Canvas', 'Polyester', 'Nylon', 'Denim', 'Leder', 'Kunstleder', 'Wolle', 'Merinowolle', 'Elasthan', 'Leinen', 'Acryl', 'Seide',
-  'Viskose', 'Tweed', 'Samt', 'Chiffon', 'Wildleder', 'Cord', 'Spitze', 'Pelz', 'Daunen', 'Fleece', 'Mesh', 'Lyocell', 'Metall', 'Kunststoff/Gummi',
-  'Cupro', 'Kaschmir', 'Mohair', 'Angora', 'Alpaka', 'Flanell', 'Lammfell', 'Andere Materialien'] as const;
+export const MATERIALS = [
+  // Pflanzenfasern
+  'Baumwolle', 'Leinen',
+  // Tierfasern
+  'Wolle', 'Merinowolle', 'Kaschmir', 'Alpaka', 'Mohair', 'Angora', 'Seide',
+  // Zellulosefasern
+  'Viskose', 'Lyocell', 'Cupro',
+  // Kunstfasern
+  'Polyester', 'Nylon', 'Elasthan', 'Acryl',
+  // Stoffarten
+  'Denim', 'Canvas', 'Cord', 'Flanell', 'Tweed', 'Bouclé', 'Samt', 'Fleece', 'Chiffon', 'Mesh', 'Spitze',
+  // Leder, Fell, Füllung
+  'Leder', 'Wildleder', 'Kunstleder', 'Lammfell', 'Pelz', 'Daunen',
+  // Sonstiges
+  'Metall', 'Kunststoff/Gummi', 'Andere Materialien',
+] as const;
 export type MaterialPart = { name: string; pct?: number | null };
 
 export const PATTERNS = ['Unifarben', 'Gestreift', 'Grafisch', 'Gepunktet', 'Animalmuster', 'Blumenmuster', 'Tropisch', 'Paisley', 'Argyle', 'Camouflage',
