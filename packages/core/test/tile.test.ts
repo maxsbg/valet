@@ -1,42 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { glowFor, ownersFor, countLabel, topRightFor, isAway, tileA11yLabel } from '../src/tile';
-
-// ---------- Innenschein: Beispiele aus Spec 3 / Referenz (Farben aus der Referenz-HTML) ----------
-const glow = (main: string | null, hl: string | null = null) => glowFor(main, hl).css;
-
-test('Innenschein: farbige Teile → Hauptfarbe 52 %', () => {
-  assert.equal(glow('#2a5bb2'), 'rgba(42,91,178,0.52)');   // blaues Tanktop
-  assert.equal(glow('#b8a269'), 'rgba(184,162,105,0.52)'); // Asics gelb/silber
-  assert.equal(glow('#462b1f'), 'rgba(70,43,31,0.52)');    // braune Loafer
-});
-
-test('Innenschein: neutral mit Highlight → Highlight 52 %', () => {
-  assert.equal(glow('#bbb4ab', '#3e3c53'), 'rgba(62,60,83,0.52)'); // Cap creme mit Navy
-});
-
-test('Innenschein: neutral ohne Highlight → Hauptfarbe 28 %', () => {
-  assert.equal(glow('#1a191e'), 'rgba(26,25,30,0.28)');    // schwarze Hose
-  assert.equal(glow('#a2a2a2'), 'rgba(162,162,162,0.28)'); // silberne Tasche
-  assert.equal(glow('#61605b'), 'rgba(97,96,91,0.28)');    // silberner Sneaker
-  assert.equal(glow('#b6ab9c'), 'rgba(182,171,156,0.28)'); // beige Jacke
-});
-
-test('Innenschein: neutral und sehr hell (v > 0,85) → #d8d2c8 28 %', () => {
-  assert.equal(glow('#e0e2e4'), 'rgba(216,210,200,0.28)'); // weißes Shirt
-});
-
-test('Innenschein: ohne (gültige) Hauptfarbe → #d8d2c8 28 %, Highlight allein zählt nicht', () => {
-  assert.equal(glow(null), 'rgba(216,210,200,0.28)');
-  assert.equal(glow(''), 'rgba(216,210,200,0.28)');
-  assert.equal(glow('kein-hex'), 'rgba(216,210,200,0.28)');
-  assert.equal(glow(null, '#3e3c53'), 'rgba(216,210,200,0.28)');
-});
-
-test('Innenschein: farbig ignoriert Highlight; dunkel (v < 0,20) gilt als neutral', () => {
-  assert.equal(glow('#2a5bb2', '#ff0000'), 'rgba(42,91,178,0.52)');
-  assert.equal(glow('#30000a', '#3e3c53'), 'rgba(62,60,83,0.52)'); // sehr dunkles Rot: v ≈ 0,19
-});
+import { ownersFor, countLabel, topRightFor, isAway, tileA11yLabel } from '../src/tile';
 
 // ---------- Besitzer: alle Zeilen aus Spec 5.4 ----------
 const M = 'max', P = 'paul', L = 'lea', J = 'jo';

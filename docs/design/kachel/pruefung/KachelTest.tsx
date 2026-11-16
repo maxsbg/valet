@@ -25,10 +25,11 @@ const PEOPLE: Record<string, PersonLook> = Object.fromEntries(
 );
 const person = (id: string) => PEOPLE[id] ?? (/^X\d+$/.test(id) ? { name: id, letter: 'X', stroke: itemTile.badge.ink, text: itemTile.badge.ink } : undefined);
 
-// Farben aus der Referenz (Hauptfarbe, Highlight)
-const C: Record<string, [string, string | null]> = {
-  sneaker: ['#b8a269', null], tank: ['#2a5bb2', null], pants: ['#1a191e', null], bag: ['#a2a2a2', null], cap: ['#bbb4ab', '#3e3c53'],
-  tee: ['#e0e2e4', null], silver: ['#61605b', null], jacket: ['#b6ab9c', null], loafer: ['#462b1f', null], penny: ['#3f3b3c', null],
+// Foto-Farbe (Platzhalter) und Steckbrief-Farben (bestimmen den Schein, core/glow.ts)
+const C: Record<string, [string, string[]]> = {
+  sneaker: ['#b8a269', ['Gelb', 'Silber']], tank: ['#2a5bb2', ['Blau']], pants: ['#1a191e', ['Schwarz']], bag: ['#a2a2a2', ['Silber']],
+  cap: ['#bbb4ab', ['Elfenbein', 'Marineblau']], tee: ['#e0e2e4', ['Weiß']], silver: ['#61605b', ['Silber', 'Schwarz']],
+  jacket: ['#b6ab9c', ['Beige']], loafer: ['#462b1f', ['Braun']], penny: ['#3f3b3c', ['Schwarz', 'Bunt']],
 };
 
 type Demo = { img: string; h: number; item: TileItem; today: string | null };
@@ -36,7 +37,7 @@ const item = (k: string, h: number, x: Partial<TileItem> & { today?: string } = 
   const { today, ...rest } = x;
   return {
     img: k, h, today: today ?? null,
-    item: { name: k, category: 'oberteil', hex: C[k]![0], highlight: C[k]![1], status: null, reversible: false, qty: 1, thumb: img(k), owners: ['M'], isWish: false, ...rest },
+    item: { name: k, category: 'oberteil', hex: C[k]![0], colors: C[k]![1], status: null, reversible: false, qty: 1, thumb: img(k), owners: ['M'], isWish: false, ...rest },
   };
 };
 

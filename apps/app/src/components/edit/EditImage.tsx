@@ -9,9 +9,12 @@ import { canCutout, cutout, original, type Picture } from '@/lib/cutout';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemPicture } from '@/components/ItemPicture';
 import { TileIcon } from '@/components/tile/TileIcons';
+import { TileGlow, glowBoxShadow } from '@/components/tile/TileGlow';
 import { Icon } from '@/components/Icon';
 
 const I = detail.image;
+/** Schein wie auf der Bild-Kachel im Teil-Detail */
+const GLOW = { blur: 52, spread: 8 };
 const web = Platform.OS === 'web';
 type Side = 'a' | 'b';
 
@@ -30,15 +33,17 @@ type Props = {
   reversible: boolean;
   /** Form für den Platzhalter (layoutKind) */
   kind: string;
-  /** Hauptfarbe / Highlight für den Innenschein */
+  /** Foto-Farbe (Platzhalter; Schein nur ohne Steckbrief-Farben) */
   hex: string | null;
-  highlight?: string | null;
+  /** Steckbrief-Farben je Seite (live aus dem Formular) – bestimmen den Innenschein */
+  colors: readonly string[];
+  colorsB?: readonly string[];
   onInfo: () => void;
   /** Neues Teil: „Foto ändern“ führt zurück zum Fotoschritt */
   onChangePhoto?: () => void;
 };
 
-export function EditImage({ width, current, pics, onPick, reversible, kind, hex, highlight, onInfo, onChangePhoto }: Props) {
+export function EditImage({ width, current, pics, onPick, reversible, kind, hex, colors, colorsB, onInfo, onChangePhoto }: Props) {
   const t = useTheme();
   const [side, setSide] = useState<Side>('a');
   useEffect(() => { if (!reversible) setSide('a'); }, [reversible]);
@@ -46,8 +51,8 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
   useEffect(() => { Animated.timing(fade, { toValue: side === 'b' ? 1 : 0, duration: 260, useNativeDriver: true }).start(); }, [side, fade]);
 
   const flow = usePictureFlow((p) => onPick(side, p));
-  const glow = glowFor(pics[side]?.colors[0]?.h ?? hex, highlight ?? null);
-  const shadow = `inset 0 0 52px 8px rgba(${glow.rgb.join(',')},${glow.alpha === itemTile.glow.alphaStrong ? 0.42 : 0.3})`;
+  const glow = glowFor(side === 'b' && reversible && colorsB?.length ? colorsB : colors, pics[side]?.colors[0]?.h ?? hex);
+  const shadow = glowBoxShadow(glow, GLOW.blur, GLOW.spread);
   const sideName = side === 'a' ? 'Seite A' : 'Seite B';
   const h = Math.round(I.height * 300 / 380);
 
@@ -69,6 +74,7 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
   return (
     <View style={{ alignItems: 'center' }}>
       <View style={[s_.tile, { width, height: h, boxShadow: shadow }]}>
+        <TileGlow glow={glow} radius={I.radius} blur={GLOW.blur} spread={GLOW.spread} />
         {layer('a')}
         {reversible && layer('b')}
         <View pointerEvents="none" style={s_.edge} />

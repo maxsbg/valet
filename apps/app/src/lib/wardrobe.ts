@@ -50,8 +50,6 @@ export type Tile = {
   style: string | null;
   /** Hauptfarbe für den Farbschein (aus der Farbanalyse des Bildes, sonst aus dem Farbnamen) */
   hex: string | null;
-  /** Highlight-Farbe (zweite, auffällige Farbe am Teil) für den Innenschein */
-  highlight: string | null;
   /** Vorschaubild (400 px) für Kacheln */
   thumb: string | null;
   /** Wendeteile: Vorschaubild der anderen Seite (Kachel dreht sich beim Tippen auf „Wendbar“) */
@@ -87,7 +85,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,subcategory,item_type,colors,layers,color,owner_id,owner_ids,highlight_color,status,status_until,qty,reversible,main_side,set_id,is_wish,is_gift,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,subcategory,item_type,colors,layers,color,owner_id,owner_ids,status,status_until,qty,reversible,main_side,set_id,is_wish,is_gift,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
     supabase.from('wishlists').select('id,name,owner_id,item_order,created_at').eq('wardrobe_id', w.id).order('created_at'),
@@ -140,7 +138,6 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     seasons: migrateSeasons(i.seasons),
     style: i.style,
     hex: pick(colorsBy, i.id, i.main_side) ?? nameToHex(i.color),
-    highlight: i.highlight_color ?? null,
     thumb: pick(thumbBy, i.id, i.main_side),
     thumbBack: i.reversible ? other(thumbBy, i.id, i.main_side) : null,
     image: pick(imageBy, i.id, i.main_side),

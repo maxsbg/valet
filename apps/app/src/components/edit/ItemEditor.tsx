@@ -42,7 +42,6 @@ type Props = {
   pics: Record<Side, Picture | null>;
   onPic: (side: Side, p: Picture | null) => void;
   hex: string | null;
-  highlight?: string | null;
   saving: boolean;
   onCancel: () => void;
   onSave: () => void;
@@ -362,7 +361,7 @@ export function ItemEditor(p: Props) {
       <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ width: col, paddingTop: 12, gap: 14 }}>
           <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={f.reversible} kind={layoutKind(f.category, f.subcategory)}
-            hex={p.hex} highlight={p.highlight} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto} />
+            hex={p.hex} colors={f.colors} colorsB={f.colorsB} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto} />
           {f.aiPending.length > 0 && (
             <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
               <KiBadge />

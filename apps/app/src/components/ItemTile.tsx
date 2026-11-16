@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { isFlipped, setFlipped } from '@/lib/flipped';
 import { Animated, Easing, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { layoutKind, glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
+import { TileGlow, glowBoxShadow } from './tile/TileGlow';
 import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
 import { Glass, Mono, Num, Price, WaitRing } from './tile/TileBadge';
@@ -56,10 +57,10 @@ export type TileItem = {
   category: string;
   /** Grobe Form (layoutKind) für Höhe und Platzhalter */
   kind?: string;
-  /** Hauptfarbe (Farbanalyse) */
+  /** Hauptfarbe (Farbanalyse) – Platzhalterfarbe, Schein nur ohne Steckbrief-Farben */
   hex: string | null;
-  /** zweite, auffällige Farbe am Teil */
-  highlight: string | null;
+  /** Steckbrief-Farben in Rang-Reihenfolge – bestimmen den Innenschein (core/glow.ts) */
+  colors?: readonly string[];
   status: ItemStatus | null;
   reversible: boolean;
   qty: number;
@@ -101,7 +102,7 @@ type Props = {
 
 export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend }: Props) {
   const h = height ?? tileHeight(item.kind ?? item.category, width);
-  const glow = glowFor(item.hex, item.highlight);
+  const glow = glowFor(item.colors, item.hex);
   const away = isAway(item.status);
   const tr = topRightFor(item.reversible, item.qty);
   // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)
@@ -128,9 +129,10 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
       accessibilityState={selected != null ? { selected } : undefined}
       style={({ pressed }) => [
         s.tile,
-        { width, height: h, boxShadow: `inset 0 0 ${T.glow.blur}px ${T.glow.spread}px ${glow.css}`, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        { width, height: h, boxShadow: glowBoxShadow(glow, T.glow.blur, T.glow.spread), transform: [{ scale: pressed ? 0.97 : 1 }] },
       ]}
     >
+      <TileGlow glow={glow} radius={T.radius} blur={T.glow.blur} spread={T.glow.spread} />
       <Animated.View style={[StyleSheet.absoluteFill, away && s.away, away && awayWeb, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null, flip.style]}>
         <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
           <ItemPicture uri={item.thumb} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />

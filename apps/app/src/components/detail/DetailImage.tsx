@@ -9,14 +9,17 @@ import { ItemPicture } from '@/components/ItemPicture';
 import { useFlip, type PersonLook } from '@/components/ItemTile';
 import { Glass, Mono, Num, Price } from '@/components/tile/TileBadge';
 import { TileIcon } from '@/components/tile/TileIcons';
+import { TileGlow, glowBoxShadow } from '@/components/tile/TileGlow';
 
 const I = detail.image;
+/** Schein auf der großen Bild-Kachel (wie bisher, nur Farbe nach Steckbrief) */
+const GLOW = { blur: 52, spread: 8 };
 const B = itemTile.badge;
 const K = I.badge / B.size; // 2
 const web = Platform.OS === 'web';
 
 export type DetailImageItem = {
-  id: string; name: string; kind: string; hex: string | null; highlight: string | null; status: ItemStatus | null;
+  id: string; name: string; kind: string; hex: string | null; colors: readonly string[]; status: ItemStatus | null;
   reversible: boolean; qty: number; owners: string[];
   /** Hauptbild (volle Auflösung) und Bild der anderen Seite */
   image: string | null; imageBack: string | null;
@@ -29,7 +32,7 @@ export function DetailImage({ item, width, me, person, today }: {
 }) {
   const t = useTheme();
   const h = Math.round(width * I.height / I.width);
-  const glow = glowFor(item.hex, item.highlight);
+  const glow = glowFor(item.colors, item.hex);
   const wish = item.wish ?? null;
   const away = !wish && isAway(item.status);
   const price = wish ? priceLabel(wish.price) : null;
@@ -46,7 +49,8 @@ export function DetailImage({ item, width, me, person, today }: {
   return (
     <View style={{ alignItems: 'center' }}>
       <View accessibilityRole="image" accessibilityLabel={label}
-        style={[s.tile, { width, height: h, boxShadow: `inset 0 0 52px 8px ${glow.css}` }]}>
+        style={[s.tile, { width, height: h, boxShadow: glowBoxShadow(glow, GLOW.blur, GLOW.spread) }]}>
+        <TileGlow glow={glow} radius={I.radius} blur={GLOW.blur} spread={GLOW.spread} />
         <Animated.View style={[StyleSheet.absoluteFill, away && s.away, away && web ? ({ filter: `grayscale(${itemTile.away.grayscale})` } as object) : null, flip.style]}>
           <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
             <ItemPicture uri={item.image} category={item.kind} color={item.hex ?? itemTile.glow.fallback} inset={inset} />

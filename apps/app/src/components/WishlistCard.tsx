@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { glowFor } from '@valet/core';
 import { itemTile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
+import { TileGlow, glowBoxShadow } from './tile/TileGlow';
 import { useTheme, radius } from '@/lib/theme';
 import type { Person, Tile } from '@/lib/wardrobe';
 import { Monogram } from './Monogram';
@@ -29,9 +30,10 @@ export function WishlistCard({ title, sub, owner, items, width, onPress, onLongP
         {[0, 1, 2, 3].map((n) => {
           const it = items[n];
           if (!it) return <View key={n} style={[s.cell, { width: cell, height: cell, backgroundColor: t.surfaceSunken }]} />;
-          const glow = glowFor(it.hex, it.highlight);
+          const glow = glowFor(it.colors, it.hex);
           return (
-            <View key={it.id} style={[s.cell, { width: cell, height: cell, backgroundColor: itemTile.bg, boxShadow: `inset 0 0 ${itemTile.glow.blur}px ${itemTile.glow.spread}px ${glow.css}` }]}>
+            <View key={it.id} style={[s.cell, { width: cell, height: cell, backgroundColor: itemTile.bg, boxShadow: glowBoxShadow(glow, itemTile.glow.blur, itemTile.glow.spread) }]}>
+              <TileGlow glow={glow} radius={itemTile.radius} blur={itemTile.glow.blur} spread={itemTile.glow.spread} />
               <ItemPicture uri={it.thumb} category={it.kind} color={it.hex ?? itemTile.glow.fallback} inset="10%" />
             </View>
           );

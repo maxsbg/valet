@@ -7,6 +7,7 @@ export * from './import/legacy';
 export * from './board';
 export * from './stats';
 export * from './tile';
+export * from './glow';
 export * from './occasions';
 export * from './categories';
 export * from './attributes';

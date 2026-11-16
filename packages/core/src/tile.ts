@@ -1,49 +1,8 @@
 // Logik der Schrank-Kachel (ItemTile) – plattformunabhängig, für Web und iOS.
 // Verbindlich: docs/design/kachel/VALET_KACHEL_SPEC.md und valet-kachel-referenz.html.
-import { itemTile } from '@valet/ui';
 import type { ItemStatus } from './catalog';
 
-// ---------- Innenschein (Spec 3) ----------
-
-export type Rgb = [number, number, number];
-
-/** '#rrggbb' (auch ohne #, auch mit Alpha-Anteil) → [r, g, b]; ungültig → null */
-export function hexToRgb(hex: string | null | undefined): Rgb | null {
-  const h = (hex ?? '').trim().replace(/^#/, '');
-  if (!/^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(h)) return null;
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as Rgb;
-}
-
-/** Sättigung und Helligkeit (HSV), je 0–1 */
-export function toHsv([r, g, b]: Rgb): { s: number; v: number } {
-  const mx = Math.max(r, g, b) / 255;
-  const mn = Math.min(r, g, b) / 255;
-  return { s: mx === 0 ? 0 : (mx - mn) / mx, v: mx };
-}
-
-export type Glow = { rgb: Rgb; alpha: number; css: string };
-
-/**
- * Farbe des Innenscheins:
- * farbig → Hauptfarbe 52 %; neutral mit Highlight → Highlight 52 %;
- * neutral ohne Highlight → Hauptfarbe 28 % (sehr hell → Ersatzfarbe); ohne Hauptfarbe → Ersatzfarbe 28 %.
- */
-export function glowFor(main: string | null | undefined, highlight?: string | null): Glow {
-  const g = itemTile.glow;
-  const fallback = hexToRgb(g.fallback)!;
-  const m = hexToRgb(main);
-  let rgb: Rgb = fallback;
-  let alpha: number = g.alphaSoft;
-  if (m) {
-    const { s, v } = toHsv(m);
-    const neutral = s < g.satMin || v < g.valMin;
-    const hl = hexToRgb(highlight);
-    if (!neutral) { rgb = m; alpha = g.alphaStrong; }
-    else if (hl) { rgb = hl; alpha = g.alphaStrong; }
-    else rgb = v > g.valLight ? fallback : m;
-  }
-  return { rgb, alpha, css: `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})` };
-}
+// Innenschein: siehe glow.ts (Regeln seit 16.11.2026 nach Steckbrief-Farben)
 
 // ---------- Status (Spec 5.1) ----------
 
