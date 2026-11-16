@@ -67,7 +67,6 @@ export function sortWishes(items: Tile[], sort: WishSortId, seed: number, order:
 
 export type WishFilters = { person: string | null; tags: WishTag[] };
 export const NO_WISH_FILTERS: WishFilters = { person: null, tags: [] };
-export const wishFilterCount = (f: WishFilters) => (f.person ? 1 : 0) + f.tags.length;
 
 /** Person: Teil gehört ihr; Kategorien: „oder“ untereinander, „und“ zur Person */
 export function applyWishFilters(items: Tile[], f: WishFilters): Tile[] {

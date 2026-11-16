@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  buyDayHint, buyDayLabel, buyDayQuick, buyError, formatPrice, parseAmount, priceTrend, shortUrl, wishFacts, wishTagLabel,
+  buyDayHint, buyDayLabel, buyDayQuick, buyError, formatPrice, parseAmount, priceTrend, shortUrl, wishFacts,
   type WishRow, type WishTag,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -14,7 +14,7 @@ import type { Outfit } from '@/lib/outfits';
 import { Sheet } from '@/components/Sheet';
 import { OutfitCard } from '@/components/OutfitCard';
 import { EditCard } from '@/components/edit/fields';
-import { Capsule, DateField, FieldLabel, Hint, IconCircle, Monogram, SheetHead, TextField, Wrap } from './parts';
+import { Capsule, DateField, FieldLabel, Hint, Monogram, SheetHead, TextField, Wrap } from './parts';
 import { Icon } from '@/components/Icon';
 
 /** Reihenfolge der Kategorien wie in Bearbeiten (Spec 7a) */

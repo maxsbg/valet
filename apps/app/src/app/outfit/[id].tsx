@@ -1,6 +1,6 @@
 import { occasionOf } from '@valet/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useBottomInset } from '@/lib/bottomInset';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
-import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
+import { todayLocal, type Tile } from '@/lib/wardrobe';
 import { addDays, allOccasions, clashes, fmtLong, fmtShort, outfitValue, planOutfit, setOccasions, unplanOutfit } from '@/lib/outfits';
 import { Icon } from '@/components/Icon';
 

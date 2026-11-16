@@ -1,10 +1,9 @@
 // Bausteine für Teil-Detail, Wunschteil und Bearbeiten (VALET_DETAILSEITE_SPEC.md, Abschnitt 1)
 import { Children, createElement, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { detail, personText } from '@valet/ui';
+import { detail } from '@valet/ui';
 import { balanceRows, splitRows } from '@valet/core';
 import { useTheme, DISPLAY } from '@/lib/theme';
-import { personTone, type Person } from '@/lib/wardrobe';
 import { glass } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { monoInset, type SymbolName } from '@valet/ui';

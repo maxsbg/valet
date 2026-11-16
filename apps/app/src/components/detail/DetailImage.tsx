@@ -1,7 +1,7 @@
 // Bild der Detailseite als große Kachel (Spec 2): 358 × 380, Radius 28, Plaketten 40 px mit 8 px Abstand (konzentrisch 28 − 8 = 20).
 // Gleiche Plaketten-Regeln wie die Schrank-Kachel (VALET_KACHEL_SPEC.md), nur × 2. Kein randloses Bild.
 // Wendbar: Plakette oben rechts dreht das Foto (useFlip aus ItemTile, Zustand geteilt), dazu Punkte und „Seite A / B“.
-import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { glowFor, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { detail, itemTile } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -16,7 +16,6 @@ const I = detail.image;
 const GLOW = { blur: 52, spread: 8 };
 const B = itemTile.badge;
 const K = I.badge / B.size; // 2
-const web = Platform.OS === 'web';
 
 export type DetailImageItem = {
   id: string; name: string; kind: string; hex: string | null; colors: readonly string[]; status: ItemStatus | null;

@@ -11,7 +11,7 @@ import { useTheme, space } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
 import { Sheet, OptionRow, SheetButton, SectionLabel } from '@/components/Sheet';
 import { SORTS, sortTiles, applyFilters, filterCount, NO_FILTERS, SEASON_FILTERS, type SortId, type Filters } from '@/lib/sort';
-import { personKey, todayLocal } from '@/lib/wardrobe';
+import { todayLocal } from '@/lib/wardrobe';
 import { CATEGORY_ICON } from '@valet/ui';
 import { usePersisted } from '@/lib/usePersisted';
 import { Icon } from '@/components/Icon';

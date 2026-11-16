@@ -11,7 +11,7 @@ import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useTheme, space, radius } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
-import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
+import { todayLocal, type Tile } from '@/lib/wardrobe';
 import { fmtLong, plansOn, planOutfit, unplanOutfit, clashes, type Outfit } from '@/lib/outfits';
 import { OCCASIONS } from '@valet/core';
 import { itemTile } from '@valet/ui';
