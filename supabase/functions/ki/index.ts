@@ -8,15 +8,16 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "openai/gpt-4.1-mini";
+const ENDPOINT = "https://models.github.ai/inference/chat/completions";
 const DEFAULT_STORAGE_BUCKET = "items";
 
-// Allgemeiner KI-Durchreicher (Valet): Bild aus dem Storage + Prompt + Antwort-Schema → Gemini → JSON.
+// Allgemeiner KI-Durchreicher (Valet): Bild + Prompt + JSON-Schema → GitHub Models (OpenAI-kompatibel) → JSON.
 // Prompt, Schema und Prüfung der Antwort liegen in packages/core (z. B. core/src/ai/analyzeItem.ts),
 // damit sie mit denselben festen Listen arbeiten wie die App. Die App prüft die Antwort selbst.
 
 // deno-lint-ignore no-explicit-any
-type GeminiSchema = Record<string, any>;
+type JsonSchema = Record<string, any>;
 
 interface RequestPayload {
   /** Bild im Storage (bei bestehenden Teilen) … */
@@ -24,7 +25,7 @@ interface RequestPayload {
   /** … oder direkt mitgeschickt (neues Teil, noch nicht hochgeladen), Base64 ohne data:-Präfix */
   image?: { data?: string; mimeType?: string };
   prompt?: string;
-  schema?: GeminiSchema;
+  schema?: JsonSchema;
 }
 
 const MAX_PROMPT = 4000;
@@ -39,58 +40,51 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-async function callGeminiVision(params: {
-  apiKey: string;
+async function callModel(params: {
+  token: string;
   model: string;
   prompt: string;
   base64Image: string;
   mimeType: string;
-  responseSchema: GeminiSchema;
+  schema: JsonSchema;
 }): Promise<unknown> {
-  // API-Key wird sicher über den Header x-goog-api-key statt über die URL übergeben
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent`;
-
-  const response = await fetch(endpoint, {
+  const response = await fetch(ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-goog-api-key": params.apiKey,
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${params.token}`,
+      "X-GitHub-Api-Version": "2022-11-28",
     },
     body: JSON.stringify({
-      contents: [
+      model: params.model,
+      temperature: 0.2,
+      messages: [
         {
           role: "user",
-          parts: [
-            { text: params.prompt },
-            {
-              inline_data: {
-                mime_type: params.mimeType,
-                data: params.base64Image,
-              },
-            },
+          content: [
+            { type: "text", text: params.prompt },
+            { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}`, detail: "high" } },
           ],
         },
       ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: params.responseSchema,
-        temperature: 0.2,
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "antwort", strict: true, schema: params.schema },
       },
     }),
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errText}`);
+    throw new Error(`Model API error (${response.status}): ${errText.slice(0, 500)}`);
   }
 
   const data = await response.json();
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
+  const rawText = data?.choices?.[0]?.message?.content;
   if (typeof rawText !== "string") {
-    throw new Error("No text response received from Gemini.");
+    throw new Error("No text response received from model.");
   }
-
   return JSON.parse(rawText);
 }
 
@@ -113,11 +107,11 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    const geminiModel = Deno.env.get("GEMINI_MODEL")?.trim() || DEFAULT_GEMINI_MODEL;
+    const modelToken = Deno.env.get("GITHUB_MODELS_TOKEN");
+    const model = Deno.env.get("KI_MODEL")?.trim() || DEFAULT_MODEL;
     const storageBucket = Deno.env.get("ITEMS_BUCKET_NAME")?.trim() || DEFAULT_STORAGE_BUCKET;
 
-    if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !modelToken) {
       console.error("Missing required environment variables");
       return jsonResponse({ error: "Server configuration error" }, 500);
     }
@@ -177,22 +171,22 @@ Deno.serve(async (req: Request) => {
       mimeType = fileBlob.type || "image/jpeg";
     }
 
-    // 5. Gemini-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
+    // 5. Modell-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
     let lastError = "";
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const data = await callGeminiVision({
-          apiKey: geminiApiKey,
-          model: geminiModel,
+        const data = await callModel({
+          token: modelToken,
+          model,
           prompt,
           base64Image,
           mimeType,
-          responseSchema,
+          schema: responseSchema,
         });
         return jsonResponse({ data }, 200);
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
-        console.warn(`Attempt ${attempt}/2: Gemini call error`, lastError);
+        console.warn(`Attempt ${attempt}/2: model call error`, lastError);
         // Kontingent erschöpft → nicht sofort erneut versuchen
         if (lastError.includes("(429)")) return jsonResponse({ error: "rate_limited" }, 429);
       }

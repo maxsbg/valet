@@ -1,5 +1,5 @@
 // KI „Teil erkennen“: Prompt, Antwort-Schema und Prüfung der Antwort.
-// Die Edge Function `analyze-item` ist nur ein Durchreicher zu Gemini (Bild + Prompt + Schema);
+// Die Edge Function `ki` ist nur ein Durchreicher zu GitHub Models (Bild + Prompt + Schema);
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
 import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../categories';
@@ -7,19 +7,18 @@ import { COLORS, MAX_COLORS, MATERIALS, PATTERNS, STYLES, SEASONS, COLLARS, CLOS
 import { fieldsFor, NECKLINES, OUTER_COLLARS, STRAPS } from '../fields';
 import { setField, setCategory, type EditForm } from '../edit';
 
-/** Teilmenge des OpenAPI-Schemas, die Gemini als responseSchema versteht */
-export type GeminiSchema = {
-  type: 'STRING' | 'NUMBER' | 'INTEGER' | 'BOOLEAN' | 'ARRAY' | 'OBJECT';
+/**
+ * JSON-Schema für „Structured Outputs“ (OpenAI-kompatibel, strict):
+ * alle Felder Pflicht, keine Zusatzfelder, „leer“ = null bzw. leere Liste, Zahlen nur über enum.
+ */
+export type JsonSchema = {
+  type: string | string[];
   description?: string;
-  enum?: string[];
-  items?: GeminiSchema;
-  properties?: Record<string, GeminiSchema>;
+  enum?: (string | number | null)[];
+  items?: JsonSchema;
+  properties?: Record<string, JsonSchema>;
   required?: string[];
-  propertyOrdering?: string[];
-  nullable?: boolean;
-  maxItems?: number;
-  minimum?: number;
-  maximum?: number;
+  additionalProperties?: false;
 };
 
 const SEP = ' › ';
@@ -31,19 +30,19 @@ export const CATEGORY_PATHS: readonly string[] = CATEGORY_TREE.flatMap((c) => [
 const COLOR_NAMES = COLORS.flatMap((c) => [c.name, ...c.nuances.map((n) => n.name)]);
 const NECK_NAMES = [...new Set<string>([...COLLARS, ...NECKLINES, ...OUTER_COLLARS])];
 
-const str = (values: readonly string[], description: string): GeminiSchema => ({ type: 'STRING', enum: [...values], nullable: true, description });
-const list = (values: readonly string[], description: string, maxItems?: number): GeminiSchema =>
-  ({ type: 'ARRAY', items: { type: 'STRING', enum: [...values] }, description, ...(maxItems ? { maxItems } : {}) });
-const level = (max: number, description: string): GeminiSchema => ({ type: 'INTEGER', minimum: 0, maximum: max, nullable: true, description });
+const str = (values: readonly string[], description: string): JsonSchema => ({ type: ['string', 'null'], enum: [...values, null], description });
+const list = (values: readonly string[], description: string): JsonSchema => ({ type: 'array', items: { type: 'string', enum: [...values] }, description });
+const steps = (max: number) => Array.from({ length: max + 1 }, (_, i) => i);
+const level = (max: number, description: string): JsonSchema => ({ type: ['integer', 'null'], enum: [...steps(max), null], description });
 
-const PROPS: Record<string, GeminiSchema> = {
-  kategorie: { type: 'STRING', enum: [...CATEGORY_PATHS], description: 'So genau wie sicher erkennbar: Kategorie › Unterkategorie › Typ. Typ weglassen, wenn unsicher.' },
-  name: { type: 'STRING', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe und ohne Marke, z. B. „Oxford-Hemd“' },
-  marke: { type: 'STRING', nullable: true, description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
-  farben: list(COLOR_NAMES, `1 bis ${MAX_COLORS} Farben, nach Flächenanteil sortiert. Nuance statt Hauptfarbe, wenn eindeutig (z. B. Marineblau). „Bunt“ nur bei mehr als drei Farben.`, MAX_COLORS),
+const PROPS: Record<string, JsonSchema> = {
+  kategorie: { type: 'string', enum: [...CATEGORY_PATHS], description: 'So genau wie sicher erkennbar: Kategorie › Unterkategorie › Typ. Typ weglassen, wenn unsicher.' },
+  name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe und ohne Marke, z. B. „Oxford-Hemd“' },
+  marke: { type: ['string', 'null'], description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
+  farben: list(COLOR_NAMES, `1 bis ${MAX_COLORS} Farben, nach Flächenanteil sortiert. Nuance statt Hauptfarbe, wenn eindeutig (z. B. Marineblau). „Bunt“ nur bei mehr als drei Farben.`),
   muster: str(PATTERNS, 'Muster des Stoffs'),
-  material: list(MATERIALS, 'Geschätzte Materialien, Hauptmaterial zuerst. Leer, wenn nicht sinnvoll schätzbar.', 3),
-  stil: list(STYLES, 'Passende Stile, höchstens 3', 3),
+  material: list(MATERIALS, 'Höchstens 3 geschätzte Materialien, Hauptmaterial zuerst. Leer, wenn nicht sinnvoll schätzbar.'),
+  stil: list(STYLES, 'Passende Stile, höchstens 3'),
   saison: list(SEASONS, 'Jahreszeiten, in denen man das Teil trägt'),
   kragen: str(NECK_NAMES, 'Kragen bzw. Ausschnitt, nur bei Oberteil, Kleid und Oberbekleidung'),
   verschluss: str(CLOSURES, 'Verschluss, nur wenn sichtbar'),
@@ -51,16 +50,16 @@ const PROPS: Record<string, GeminiSchema> = {
   weite: level(4, 'Passform Weite 0 schmal … 2 normal … 4 weit; nur Oberteil, Hose, Shorts'),
   laenge: level(4, 'Länge 0 kurz … 4 lang (bei Kleid/Rock: 0 Mini, 1 über Knie, 2 Knie, 3 Midi, 4 Maxi)'),
   bund: level(2, 'Bundhöhe 0 tief, 1 normal, 2 hoch; nur Hose, Shorts, Rock'),
-  lagen: { type: 'ARRAY', items: { type: 'INTEGER', minimum: 0, maximum: 3 }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} ${l}`).join(', ')}; nur Oberteil und Oberbekleidung` },
+  lagen: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} ${l}`).join(', ')}; nur Oberteil und Oberbekleidung` },
   waerme: level(3, `Wärme: ${WARMTH.map((w, i) => `${i} ${w}`).join(', ')}`),
   regen: level(2, `Regentauglich: ${RAIN.map((r, i) => `${i} ${r}`).join(', ')}`),
 };
 
-export const ANALYZE_ITEM_SCHEMA: GeminiSchema = {
-  type: 'OBJECT',
+export const ANALYZE_ITEM_SCHEMA: JsonSchema = {
+  type: 'object',
   properties: PROPS,
-  required: ['kategorie', 'name', 'farben'],
-  propertyOrdering: Object.keys(PROPS),
+  required: Object.keys(PROPS),
+  additionalProperties: false,
 };
 
 export const ANALYZE_ITEM_PROMPT = `Du siehst ein Kleidungsstück oder Accessoire (Produktbild oder Handyfoto).
