@@ -8,11 +8,18 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEFAULT_MODEL = "openai/gpt-4.1-mini";
-const ENDPOINT = "https://models.github.ai/inference/chat/completions";
+// Anbieter über Secrets wählbar (OpenAI-kompatible Schnittstelle): KI_ENDPOINT, KI_MODEL, KI_API_KEY.
+// GEMINI_API_KEY gesetzt → Gemini über dessen OpenAI-Schnittstelle (hat Vorrang), sonst KI_API_KEY mit Mistral.
+const GEMINI = { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-3.5-flash-lite" };
+/** Ersatzmodelle, wenn das gewählte überlastet ist oder hängt */
+const GEMINI_FALLBACK = ["gemini-3.8-flash", "gemini-flash-lite-latest"];
+/** Je Modell höchstens so lange warten, insgesamt höchstens TOTAL_MS (Supabase bricht nach 150 s ab) */
+const CALL_MS = 20_000;
+const TOTAL_MS = 50_000;
+const MISTRAL = { endpoint: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" };
 const DEFAULT_STORAGE_BUCKET = "items";
 
-// Allgemeiner KI-Durchreicher (Valet): Bild + Prompt + JSON-Schema → GitHub Models (OpenAI-kompatibel) → JSON.
+// Allgemeiner KI-Durchreicher (Valet): Bild + Prompt + JSON-Schema → OpenAI-kompatibler Anbieter → JSON.
 // Prompt, Schema und Prüfung der Antwort liegen in packages/core (z. B. core/src/ai/analyzeItem.ts),
 // damit sie mit denselben festen Listen arbeiten wie die App. Die App prüft die Antwort selbst.
 
@@ -41,6 +48,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 async function callModel(params: {
+  endpoint: string;
   token: string;
   model: string;
   prompt: string;
@@ -48,13 +56,12 @@ async function callModel(params: {
   mimeType: string;
   schema: JsonSchema;
 }): Promise<unknown> {
-  const response = await fetch(ENDPOINT, {
+  const response = await fetch(params.endpoint, {
     method: "POST",
+    signal: AbortSignal.timeout(CALL_MS),
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/vnd.github+json",
       Authorization: `Bearer ${params.token}`,
-      "X-GitHub-Api-Version": "2022-11-28",
     },
     body: JSON.stringify({
       model: params.model,
@@ -64,7 +71,7 @@ async function callModel(params: {
           role: "user",
           content: [
             { type: "text", text: params.prompt },
-            { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}`, detail: "high" } },
+            { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}` } },
           ],
         },
       ],
@@ -107,8 +114,11 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const modelToken = Deno.env.get("GITHUB_MODELS_TOKEN");
-    const model = Deno.env.get("KI_MODEL")?.trim() || DEFAULT_MODEL;
+    const geminiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+    const modelToken = geminiKey || Deno.env.get("KI_API_KEY")?.trim();
+    const preset = geminiKey ? GEMINI : MISTRAL;
+    const endpoint = Deno.env.get("KI_ENDPOINT")?.trim() || preset.endpoint;
+    const model = Deno.env.get("KI_MODEL")?.trim() || preset.model;
     const storageBucket = Deno.env.get("ITEMS_BUCKET_NAME")?.trim() || DEFAULT_STORAGE_BUCKET;
 
     if (!supabaseUrl || !supabaseAnonKey || !modelToken) {
@@ -172,22 +182,18 @@ Deno.serve(async (req: Request) => {
     }
 
     // 5. Modell-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
+    // Gewähltes Modell zuerst; bei Überlastung (503) die Ersatzmodelle, sonst ein Wiederholungsversuch
+    const models = [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    const started = Date.now();
+    for (const m of models) {
+      if (Date.now() - started > TOTAL_MS - CALL_MS) break;
       try {
-        const data = await callModel({
-          token: modelToken,
-          model,
-          prompt,
-          base64Image,
-          mimeType,
-          schema: responseSchema,
-        });
-        return jsonResponse({ data }, 200);
+        const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema });
+        return jsonResponse({ data, model: m }, 200);
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
-        console.warn(`Attempt ${attempt}/2: model call error`, lastError);
-        // Kontingent erschöpft → nicht sofort erneut versuchen
+        console.warn(`${m}: model call error`, lastError);
         if (lastError.includes("(429)")) return jsonResponse({ error: "rate_limited" }, 429);
       }
     }
