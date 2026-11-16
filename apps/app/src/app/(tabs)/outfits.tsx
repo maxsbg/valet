@@ -11,7 +11,7 @@ import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useTheme, space, radius } from '@/lib/theme';
 import { useScreen } from '@/lib/useScreen';
-import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
+import { todayLocal, type Tile } from '@/lib/wardrobe';
 import { fmtLong, plansOn, planOutfit, unplanOutfit, clashes, type Outfit } from '@/lib/outfits';
 import { OCCASIONS } from '@valet/core';
 import { itemTile } from '@valet/ui';
@@ -171,14 +171,14 @@ export default function Outfits() {
               const p = persons.find((x) => x.id === plan.personId);
               return (
                 <View key={plan.id} style={[s.planRow, { backgroundColor: t.surface, borderColor: t.hairline }]}>
-                  <Pressable onPress={() => { setDay(null); router.push(`/outfit/${outfit.id}`); }} style={[s.pick, { borderColor: t.hairline, width: 82 }]}>
+                  <Pressable accessibilityRole="button" onPress={() => { setDay(null); router.push(`/outfit/${outfit.id}`); }} style={[s.pick, { borderColor: t.hairline, width: 82 }]}>
                     <OutfitBoard pieces={outfit.pieces} byId={byId} width={80} />
                   </Pressable>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={{ fontSize: 16, color: t.ink }}>{outfit.pieces.length} Teile</Text>
                     <Text style={{ fontSize: 14, color: t.inkMuted }}>{[day! < today ? 'getragen' : day === today ? 'heute' : 'geplant', p?.name].filter(Boolean).join(' · ')}</Text>
                   </View>
-                  <Pressable onPress={() => unplan(plan.id)} disabled={busy} hitSlop={8} style={[s.smallBtn, { borderColor: t.hairline }]}>
+                  <Pressable accessibilityRole="button" onPress={() => unplan(plan.id)} disabled={busy} hitSlop={8} style={[s.smallBtn, { borderColor: t.hairline }]}>
                     <Text style={{ fontSize: 14, color: t.ink }}>Entfernen</Text>
                   </Pressable>
                 </View>

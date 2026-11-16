@@ -65,3 +65,9 @@ test('Geschenke: zählen nicht als „ohne Preis“, eigene Anzahl', () => {
   assert.equal(r.missing, 1);
   assert.equal(r.gifts, 1);
 });
+
+test('Bestand: eingelagerte Teile erscheinen als eigene Status-Zeile', () => {
+  const r = closetStats([item({ id: 'a', status: 'stored' }), item({ id: 'b', status: 'wash' })], null);
+  assert.deepEqual(r.status, [{ key: 'wash', value: 1 }, { key: 'stored', value: 1 }]);
+  assert.equal(r.pieces, 2);
+});

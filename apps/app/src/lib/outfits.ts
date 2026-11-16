@@ -84,9 +84,6 @@ export function plansOn(outfits: Outfit[], date: string) {
 export const outfitValue = (o: Outfit, byId: Map<string, Tile>) =>
   o.pieces.reduce((s, p) => { const i = byId.get(p.id); return s + (i && !i.isWish ? i.pricePaid ?? 0 : 0); }, 0);
 
-/** Nächster geplanter Tag ab heute */
-export const nextPlan = (o: Outfit, today = todayLocal()) => o.plans.filter((p) => p.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
-
 export type OutfitDraft = { id?: string; wardrobeId: string; ownerId: string | null; occasions: string[]; itemIds: string[] };
 
 /** Outfit anlegen oder ändern. Gespeicherte Lagen bleiben für Teile, die drin bleiben. */

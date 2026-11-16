@@ -1,6 +1,6 @@
 import { occasionOf } from '@valet/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { Sheet, SheetButton, SectionLabel } from '@/components/Sheet';
 import { useSession } from '@/lib/session';
 import { useBottomInset } from '@/lib/bottomInset';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
-import { personKey, todayLocal, type Tile } from '@/lib/wardrobe';
+import { todayLocal, type Tile } from '@/lib/wardrobe';
 import { addDays, allOccasions, clashes, fmtLong, fmtShort, outfitValue, planOutfit, setOccasions, unplanOutfit } from '@/lib/outfits';
 import { Icon } from '@/components/Icon';
 
@@ -101,7 +101,7 @@ export default function OutfitDetail() {
         <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>
           {fmtShort(p.date)}{p.date < today ? ' · getragen' : p.date === today ? ' · heute' : ' · geplant'}{w ? ` · ${w.name}` : ''}
         </Text>
-        <Pressable onPress={() => unplan(p.id)} disabled={busy} hitSlop={8} style={[s.smallBtn, { borderColor: t.hairline }]}>
+        <Pressable accessibilityRole="button" onPress={() => unplan(p.id)} disabled={busy} hitSlop={8} style={[s.smallBtn, { borderColor: t.hairline }]}>
           <Text style={{ fontSize: 14, color: t.ink }}>Entfernen</Text>
         </Pressable>
       </View>
@@ -159,7 +159,7 @@ export default function OutfitDetail() {
           <Text style={[s.section, { color: t.ink }]}>Teile</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.xs }}>
             {pieces.map((m) => (
-              <Pressable key={m.id} onPress={() => router.push(`/teil/${m.id}`)} accessibilityLabel={m.name}
+              <Pressable accessibilityRole="button" key={m.id} onPress={() => router.push(`/teil/${m.id}`)} accessibilityLabel={m.name}
                 style={[s.mini, { boxShadow: `inset 0 0 14px 2px ${(m.hex ?? '#d8d2c8')}73, 0 1px 4px rgba(42,26,29,0.10)` }]}>
                 <ItemPicture uri={m.thumb} inset={6} category={m.category} color={m.hex ?? '#8e8e93'} />
               </Pressable>

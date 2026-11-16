@@ -6,18 +6,18 @@ Zuerst als Web-App, später als iOS-App aus derselben Codebasis (Expo / React Na
 ## Aufbau
 
 ```
-packages/core/      Fachlogik ohne Oberfläche (Preise, Getragen, Wendeteile, Import aus dem alten Valet) – mit Tests
-packages/ui/        Designsystem (folgt in Phase 2)
-packages/services/  Plattform-Schnittstellen: Daten, Bilder, Freistellen, KI, Wetter … (folgt)
-apps/valet/         Expo-App für Web und iOS (folgt in Phase 3)
-supabase/           Datenbank-Schema, Zugriffsregeln, Import-Zuordnung
-docs/               Recherche, Entwicklungsplan, Abnahme-Checkliste
+packages/core/      Fachlogik ohne Oberfläche (Preise, Getragen, Kategorien, Status, Import aus dem alten Valet) – mit Tests
+packages/ui/        Designsystem: Farben, Personen, Kacheln, Symbole
+apps/app/           Expo-App (Expo Router, react-native-web) für Web und später iOS
+supabase/           Datenbank-Schema (migrations/), Zugriffsregeln, Import-Zuordnung
+docs/               Recherche, Entwicklungsplan, Design-Specs, Prüfberichte
 ```
 
 ## Stand
 
-- Phase 0: Daten des alten Valet gesichert und geprüft (172 Einträge). Bilder: noch offen.
-- Phase 1: Supabase-Schema eingespielt, Kernlogik und Import-Umwandlung mit Tests.
+- Web-App läuft: Schrank, Outfits (Kalender, Baukasten), Wunschliste, Statistik, Teil-Detail und Bearbeiten, Freistellen im Browser.
+- Live: https://maxsbg.github.io/valet/ – wird bei jedem Push auf `main` gebaut (`.github/workflows/web.yml`).
+- Bekannte Fehler stehen als GitHub-Issues mit Label `bekannter-fehler`.
 
 ## Befehle
 
@@ -25,12 +25,12 @@ docs/               Recherche, Entwicklungsplan, Abnahme-Checkliste
 pnpm install
 pnpm test
 pnpm typecheck
+pnpm --filter @valet/app build:web
 ```
 
-Die Tests laufen derzeit mit dem in Node eingebauten Test-Runner über `tsx` (ohne Zusatzpakete).
-Sobald Pakete installiert werden können, wird auf Vitest umgestellt.
+Die Tests laufen mit dem in Node eingebauten Test-Runner über `tsx`.
 
 ## Kosten
 
-Nur kostenlose Stufen (Supabase Free, Cloudflare Pages, Gemini Free, EAS Free). Keine Kreditkarte hinterlegen.
+Nur kostenlose Stufen (Supabase Free, GitHub Pages, Gemini Free, EAS Free). Keine Kreditkarte hinterlegen.
 Details: `docs/entwicklungsplan.md`, Abschnitt 9.

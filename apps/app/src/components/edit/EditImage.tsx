@@ -64,7 +64,7 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
     const sc = s === 'a' ? fade.interpolate({ inputRange: [0, 1], outputRange: [1, 0.94] }) : fade.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] });
     return (
       <Animated.View key={s} pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: reversible ? op : 1, transform: [{ scale: reversible ? sc : 1 }] }]}>
-        {pics[s] ? <Image source={{ uri: pics[s]!.preview }} resizeMode="contain" style={s_.img} />
+        {pics[s] ? <Image source={{ uri: pics[s]!.preview }} resizeMode="contain" style={s_.img} accessibilityLabel={s === 'a' ? 'Bild Seite A' : 'Bild Seite B'} />
           : <ItemPicture uri={uri} inset={20} category={kind} color={hex ?? itemTile.glow.fallback} />}
       </Animated.View>
     );
@@ -112,7 +112,7 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
         </View>
       )}
       {pics[side] && (
-        <Pressable onPress={() => onPick(side, null)} hitSlop={8} style={{ marginTop: 8 }}>
+        <Pressable accessibilityRole="button" onPress={() => onPick(side, null)} hitSlop={8} style={{ marginTop: 8 }}>
           <Text style={{ fontSize: 13, color: t.inkMuted }}>Neues Foto verwerfen</Text>
         </Pressable>
       )}
@@ -171,9 +171,9 @@ function FlowPanel({ flow, width }: { flow: Flow; width: number }) {
   return (
     <View style={{ width, gap: 12 }}>
       <View style={[s_.tile, { width, height: Math.round(I.height * 300 / 380), backgroundColor: step === 'review' && picture ? '#000' : t.surface, alignItems: 'center', justifyContent: 'center' }]}>
-        {step === 'work' && photo && <Image source={{ uri: photo.url }} resizeMode="contain" style={[StyleSheet.absoluteFill, { opacity: 0.45 }]} />}
+        {step === 'work' && photo && <Image source={{ uri: photo.url }} resizeMode="contain" style={[StyleSheet.absoluteFill, { opacity: 0.45 }]} accessibilityLabel="Foto wird freigestellt" />}
         {step === 'work' && <ActivityIndicator color={t.accent} size="large" />}
-        {step === 'review' && picture && <Image source={{ uri: picture.preview }} resizeMode="contain" style={s_.img} />}
+        {step === 'review' && picture && <Image source={{ uri: picture.preview }} resizeMode="contain" style={s_.img} accessibilityLabel="Freigestelltes Bild" />}
         {step === 'review' && !picture && (
           <View style={{ padding: 16, gap: 6 }}>
             <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink, textAlign: 'center' }}>Freistellen hat nicht geklappt</Text>

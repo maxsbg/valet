@@ -105,7 +105,6 @@ export default function Neu() {
     finally { setSaving(false); }
   }
 
-  const glow = picture?.colors[0]?.h ?? '#d8d2c8';
   const accent = t.dark ? t.accent : MAROON;
 
   if (step === 'form' && f) return (
@@ -122,15 +121,9 @@ export default function Neu() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
-        <Pressable onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Abbrechen</Text></Pressable>
         <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>{wish ? 'Neuer Wunsch' : 'Neues Teil'}</Text>
-        <View style={[s.barSide, { alignItems: 'flex-end' }]}>
-          {step === 'form' && (
-            <Pressable onPress={save} disabled={saving} hitSlop={10}>
-              <Text style={{ fontSize: 17, fontWeight: '700', color: accent, opacity: saving ? 0.4 : 1 }}>{saving ? 'Speichert …' : 'Sichern'}</Text>
-            </Pressable>
-          )}
-        </View>
+        <View style={s.barSide} />
       </View>
 
       <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + space.xxl }} keyboardShouldPersistTaps="handled">
@@ -160,7 +153,7 @@ export default function Neu() {
           {step === 'work' && (
             <View style={{ gap: space.md, marginTop: space.md }}>
               <View style={[s.stage, { backgroundColor: t.surface }]}>
-                {photo && <Image source={{ uri: photo.url }} resizeMode="contain" style={[StyleSheet.absoluteFill, { opacity: 0.45 }]} />}
+                {photo && <Image source={{ uri: photo.url }} resizeMode="contain" style={[StyleSheet.absoluteFill, { opacity: 0.45 }]} accessibilityLabel="Foto wird freigestellt" />}
                 <ActivityIndicator color={accent} size="large" />
               </View>
               <View style={{ gap: 6 }}>
@@ -177,11 +170,11 @@ export default function Neu() {
             <View style={{ gap: space.md, marginTop: space.md }}>
               {picture ? (
                 <View style={[s.stage, { backgroundColor: '#000', boxShadow: '0 2px 8px rgba(42,26,29,0.18)' }]}>
-                  <Image source={{ uri: picture.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} />
+                  <Image source={{ uri: picture.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} accessibilityLabel="Freigestelltes Bild" />
                 </View>
               ) : (
                 <View style={[s.stage, { backgroundColor: t.surface }]}>
-                  {photo && <Image source={{ uri: photo.url }} resizeMode="contain" style={[StyleSheet.absoluteFill, { opacity: 0.35 }]} />}
+                  {photo && <Image source={{ uri: photo.url }} resizeMode="contain" style={[StyleSheet.absoluteFill, { opacity: 0.35 }]} accessibilityLabel="Originalfoto" />}
                   <View style={[s.note, { backgroundColor: t.bg }]}>
                     <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink, textAlign: 'center' }}>Freistellen hat nicht geklappt</Text>
                     {!!failure && <Text style={{ fontSize: 14, color: t.inkMuted, textAlign: 'center' }}>{failure}</Text>}

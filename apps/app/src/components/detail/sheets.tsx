@@ -24,7 +24,6 @@ export function ReserveSheet({ open, persons, meId, holds, onSave, onClose }: {
   open: boolean; persons: Person[]; meId: string | null; holds: HoldRow[];
   onSave: (who: string | null, from: string, to: string) => Promise<void>; onClose: () => void;
 }) {
-  const t = useTheme();
   const today = todayLocal();
   const [who, setWho] = useState<string | null>(meId);
   const [from, setFrom] = useState(today);
