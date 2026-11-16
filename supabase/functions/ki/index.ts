@@ -8,11 +8,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEFAULT_MODEL = "openai/gpt-4.1-mini";
-const ENDPOINT = "https://models.github.ai/inference/chat/completions";
+// Anbieter über Secrets wählbar (OpenAI-kompatible Schnittstelle): KI_ENDPOINT, KI_MODEL, KI_API_KEY.
+// Standard: Mistral (Free mode, ohne Karte), Bildmodell mistral-small.
+const DEFAULT_ENDPOINT = "https://api.mistral.ai/v1/chat/completions";
+const DEFAULT_MODEL = "mistral-small-latest";
 const DEFAULT_STORAGE_BUCKET = "items";
 
-// Allgemeiner KI-Durchreicher (Valet): Bild + Prompt + JSON-Schema → GitHub Models (OpenAI-kompatibel) → JSON.
+// Allgemeiner KI-Durchreicher (Valet): Bild + Prompt + JSON-Schema → OpenAI-kompatibler Anbieter → JSON.
 // Prompt, Schema und Prüfung der Antwort liegen in packages/core (z. B. core/src/ai/analyzeItem.ts),
 // damit sie mit denselben festen Listen arbeiten wie die App. Die App prüft die Antwort selbst.
 
@@ -41,6 +43,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 async function callModel(params: {
+  endpoint: string;
   token: string;
   model: string;
   prompt: string;
@@ -48,13 +51,11 @@ async function callModel(params: {
   mimeType: string;
   schema: JsonSchema;
 }): Promise<unknown> {
-  const response = await fetch(ENDPOINT, {
+  const response = await fetch(params.endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/vnd.github+json",
       Authorization: `Bearer ${params.token}`,
-      "X-GitHub-Api-Version": "2022-11-28",
     },
     body: JSON.stringify({
       model: params.model,
@@ -64,7 +65,7 @@ async function callModel(params: {
           role: "user",
           content: [
             { type: "text", text: params.prompt },
-            { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}`, detail: "high" } },
+            { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}` } },
           ],
         },
       ],
@@ -107,7 +108,8 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const modelToken = Deno.env.get("GITHUB_MODELS_TOKEN");
+    const modelToken = Deno.env.get("KI_API_KEY");
+    const endpoint = Deno.env.get("KI_ENDPOINT")?.trim() || DEFAULT_ENDPOINT;
     const model = Deno.env.get("KI_MODEL")?.trim() || DEFAULT_MODEL;
     const storageBucket = Deno.env.get("ITEMS_BUCKET_NAME")?.trim() || DEFAULT_STORAGE_BUCKET;
 
@@ -176,6 +178,7 @@ Deno.serve(async (req: Request) => {
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const data = await callModel({
+          endpoint,
           token: modelToken,
           model,
           prompt,

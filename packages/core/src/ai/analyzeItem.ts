@@ -1,5 +1,5 @@
 // KI „Teil erkennen“: Prompt, Antwort-Schema und Prüfung der Antwort.
-// Die Edge Function `ki` ist nur ein Durchreicher zu GitHub Models (Bild + Prompt + Schema);
+// Die Edge Function `ki` ist nur ein Durchreicher zu einem OpenAI-kompatiblen Anbieter (Standard Mistral) (Bild + Prompt + Schema);
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
 import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../categories';
