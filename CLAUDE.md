@@ -16,7 +16,7 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - `apps/app` – Expo SDK 58, Expo Router, react-native-web. Seiten in `src/app`, Rest in `src/components`, `src/lib`. Siehe `apps/app/AGENTS.md` (Expo-Regeln).
 - `packages/core` – Fachlogik + Import aus dem alten Valet (Tests mit `node --test` über `tsx`).
 - `packages/ui` – Design-Tokens (Farben, Personen, Kacheln, Schatten).
-- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`; 0005: Status `stored`; beide am 14.11.2026 angewendet; 0006: Felder für Detailseite/Bearbeiten, am 15.11.2026 angewendet; 0007: Umstellung der Teile auf die neue Kategorie-Liste, am 15.11.2026 angewendet; 0008: Größen-Systeme `wl`/`eu`/`cap`/`ring` + `items.strap`, am 15.11.2026 angewendet; 0009: Shorts als eigene Kategorie, noch **nicht** angewendet – App rechnet Hose › Shorts beim Laden um). `backup/` – Sicherung der Daten aus dem alten Valet.
+- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`; 0005: Status `stored`; beide am 14.11.2026 angewendet; 0006: Felder für Detailseite/Bearbeiten, am 15.11.2026 angewendet; 0007: Umstellung der Teile auf die neue Kategorie-Liste, am 15.11.2026 angewendet; 0008: Größen-Systeme `wl`/`eu`/`cap`/`ring` + `items.strap`, am 15.11.2026 angewendet; 0009: Shorts als eigene Kategorie, am 15.11.2026 angewendet; die App rechnet alte Hose › Shorts beim Laden weiterhin um).
 
 Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filter @valet/app build:web`.
 
@@ -103,7 +103,7 @@ Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filte
 - Verworfen: Kantenfilter/Farbsaum (zeichnet Kanten unpassend nach), BiRefNet im Browser (iPhone stürzt ab), Server-Lösungen (ZeroGPU-Kontingent, Azure nicht berechtigt, Modal ohne Karte nur 1 $). Testseite: `/valet/freistell-rmbg.html`.
 
 ## Nächste Schritte
-1. ~~Teil hinzufügen~~ (Seite `src/app/neu.tsx`, Formular gemeinsam mit Bearbeiten in `src/components/ItemForm.tsx`). Bucket `items` per `supabase/migrations/0002_storage_items.sql` (öffentlich lesbar, Schreiben nur Mitglieder). Ablage `<wardrobe>/<item>/<seite>-<stempel>.webp` + `-thumb.webp`; in `item_images` je Seite eine Zeile `cutout`/`original` (mit Farben) und eine `thumb`. Kacheln zeigen nur `thumb`-Zeilen, sonst Silhouette.
+1. ~~Teil hinzufügen~~ (Seite `src/app/neu.tsx`, Formular gemeinsam mit Bearbeiten in `src/components/edit/ItemEditor.tsx`). Bucket `items` per `supabase/migrations/0002_storage_items.sql` (öffentlich lesbar, Schreiben nur Mitglieder). Ablage `<wardrobe>/<item>/<seite>-<stempel>.webp` + `-thumb.webp`; in `item_images` je Seite eine Zeile `cutout`/`original` (mit Farben) und eine `thumb`. Kacheln zeigen nur `thumb`-Zeilen, sonst Silhouette.
 2. ~~Alte Bilder~~ → **manuell zuordnen**: Seite `src/app/bilder-zuordnen.tsx` (über Statistik). Mehrere Fotos wählen → nacheinander freistellen (PNG mit durchsichtigem Rand wird direkt übernommen) → je Bild ein Teil ohne Bild antippen (ähnliche Farbe zuerst, Suche) → `saveImage`. Logik in `src/lib/assign.ts`.
    Automatisch aus dem alten Artifact geht **nicht** (getestet): kein Datei-Download (`downloads` nicht freigeschaltet, freischalten geht nicht, weil Paul dort mitschreibt), kein Teilen-Menü, kein Netz (fetch zu Supabase: „Failed to fetch“); auch die Artifact-Tools (list_assets usw.) verweigern den Zugriff. Was geht: Bild gedrückt halten → „Zu Fotos hinzufügen“ (Teil öffnen → Export-Symbol am Bild).
 3. ~~Outfits-Seite, Statistik, Paul einladen~~
