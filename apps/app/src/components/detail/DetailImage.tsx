@@ -2,7 +2,7 @@
 // Gleiche Plaketten-Regeln wie die Schrank-Kachel (VALET_KACHEL_SPEC.md), nur × 2. Kein randloses Bild.
 // Wendbar: Plakette oben rechts dreht das Foto (useFlip aus ItemTile, Zustand geteilt), dazu Punkte und „Seite A / B“.
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { glowFor, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
+import { glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { detail, itemTile } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
 import { ItemPicture } from '@/components/ItemPicture';
@@ -34,6 +34,7 @@ export function DetailImage({ item, width, me, person, today }: {
   const h = Math.round(width * I.height / I.width);
   const glow = glowFor(item.colors, item.hex);
   const wish = item.wish ?? null;
+  const away = !wish && isAway(item.status);
   const price = wish ? priceLabel(wish.price) : null;
   const tr = topRightFor(item.reversible, item.qty);
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
@@ -50,7 +51,7 @@ export function DetailImage({ item, width, me, person, today }: {
       <View accessibilityRole="image" accessibilityLabel={label}
         style={[s.tile, { width, height: h, boxShadow: glowBoxShadow(glow, GLOW.blur, GLOW.spread) }]}>
         <TileGlow glow={glow} radius={I.radius} blur={GLOW.blur} spread={GLOW.spread} />
-        <Animated.View style={[StyleSheet.absoluteFill, flip.style]}>
+        <Animated.View style={[StyleSheet.absoluteFill, away && s.away, away && web ? ({ filter: `grayscale(${itemTile.away.grayscale})` } as object) : null, flip.style]}>
           <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
             <ItemPicture uri={item.image} category={item.kind} color={item.hex ?? itemTile.glow.fallback} inset={inset} />
           </View>
@@ -112,6 +113,7 @@ export function DetailImage({ item, width, me, person, today }: {
 
 const s = StyleSheet.create({
   tile: { borderRadius: I.radius, backgroundColor: '#fff', overflow: 'hidden' },
+  away: { opacity: itemTile.away.opacity },
   hidden: { opacity: 0 },
   tl: { position: 'absolute', top: I.inset, left: I.inset },
   tr: { position: 'absolute', top: I.inset, right: I.inset, alignItems: 'center', gap: B.stackGap * K },

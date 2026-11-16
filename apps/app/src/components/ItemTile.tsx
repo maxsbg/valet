@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { isFlipped, setFlipped } from '@/lib/flipped';
 import { Animated, Easing, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import { layoutKind, glowFor, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
+import { layoutKind, glowFor, isAway, ownersFor, priceLabel, tileA11yLabel, topRightFor, wishTagLabel, wishWait, TILE_STATUS, type ItemStatus, type WishTag } from '@valet/core';
 import { TileGlow, glowBoxShadow } from './tile/TileGlow';
 import { itemTile, tile } from '@valet/ui';
 import { ItemPicture } from './ItemPicture';
@@ -103,6 +103,7 @@ type Props = {
 export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend }: Props) {
   const h = height ?? tileHeight(item.kind ?? item.category, width);
   const glow = glowFor(item.colors, item.hex);
+  const away = isAway(item.status);
   const tr = topRightFor(item.reversible, item.qty);
   // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)
   const price = item.isWish ? priceLabel(item.price) : null;
@@ -132,7 +133,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
       ]}
     >
       <TileGlow glow={glow} radius={T.radius} blur={T.glow.blur} spread={T.glow.spread} />
-      <Animated.View style={[StyleSheet.absoluteFill, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null, flip.style]}>
+      <Animated.View style={[StyleSheet.absoluteFill, away && s.away, away && awayWeb, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null, flip.style]}>
         <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
           <ItemPicture uri={item.thumb} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
         </View>
@@ -237,8 +238,12 @@ export function useFlip(backUri: string | null, id: string | undefined) {
 }
 const FLIP_HALF = 170;
 
+const awayWeb = web ? ({ filter: `grayscale(${T.away.grayscale})` } as object) : null;
+// TODO iOS: grayscale-Filter gibt es nativ nicht → dort nur Abblenden über opacity (oder Bild vorab entsättigen).
+
 const s = StyleSheet.create({
   tile: { backgroundColor: T.bg, borderRadius: T.radius, overflow: 'hidden' },
+  away: { opacity: T.away.opacity },
   hidden: { opacity: 0 },
   edge: { ...StyleSheet.absoluteFill, borderRadius: T.radius, boxShadow: `inset 0 0 0 ${T.edgeWidth}px ${T.edge}` },
   tl: { position: 'absolute', top: B.inset, left: B.inset },

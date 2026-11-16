@@ -29,7 +29,7 @@ Hinweis: Das Valet-Designsystem auf claude.ai enthält bei der Kachel noch einen
 Mosaik: 3 Spalten. Im Entwurf 8 px Abstand, Höhen je Kategorie (Schuhe/Caps/Taschen flach ≈ 1:1, Oberteile mittel ≈ 1:1,3, Jacken ≈ 1:1,4, Hosen/Mäntel hoch ≈ 1:1,65). Die Mosaik-Logik aus dem alten Valet bzw. dem Designsystem (Zeilen à 44 px, „Kachelgröße im Mosaik“ pro Teil) bleibt bestehen. Diese Spec betrifft nur die Kachel selbst.
 
 ### Abwesende Teile
-~~Foto abblenden~~ – **entfällt (16.11.2026, Max):** Bei keinem Status wird das Foto abgeblendet oder entsättigt. Der Status zeigt sich nur über die Plakette oben links.
+Status **verliehen, Reparatur, eingelagert/aussortiert, verkauft**: Foto mit `opacity: 0.42; filter: grayscale(0.5)`. Bei **Wäsche** wird das Foto *nicht* abgeblendet.
 
 ## 3. Innenschein (Farbregel)
 
@@ -68,13 +68,13 @@ Leistung (Web): Die Unschärfe bei 100+ Kacheln auf dem iPhone testen. Ruckelt d
 ```
 
 ### 5.1 Oben links – Status (eines davon oder nichts)
-| Status | Symbol |
-|---|---|
-| Wäsche | Korb |
-| Reparatur | Schere |
-| verliehen | Pfeil schräg nach oben rechts (getauscht 14.11.2026; der gerade Pfeil gehört jetzt „Next Cop“ in der Wunschliste) |
-| eingelagert / aussortiert | Kiste |
-| verkauft | Etikett |
+| Status | Symbol | Foto abgeblendet |
+|---|---|---|
+| Wäsche | Korb | nein |
+| Reparatur | Schere | ja |
+| verliehen | Pfeil schräg nach oben rechts (getauscht 14.11.2026; der gerade Pfeil gehört jetzt „Next Cop“ in der Wunschliste) | ja |
+| eingelagert / aussortiert | Kiste | ja |
+| verkauft | Etikett | ja |
 
 Symbol in ink. `aria-label` = Statusname.
 
