@@ -97,7 +97,7 @@ export function migrateSeasons(old: readonly string[] | null | undefined): Seaso
   return SEASONS.filter((s) => out.has(s));
 }
 
-export const MATERIALS = ['Baumwolle', 'Polyester', 'Nylon', 'Denim', 'Leder', 'Kunstleder', 'Wolle', 'Merinowolle', 'Elasthan', 'Leinen', 'Acryl', 'Seide',
+export const MATERIALS = ['Baumwolle', 'Canvas', 'Polyester', 'Nylon', 'Denim', 'Leder', 'Kunstleder', 'Wolle', 'Merinowolle', 'Elasthan', 'Leinen', 'Acryl', 'Seide',
   'Viskose', 'Tweed', 'Samt', 'Chiffon', 'Wildleder', 'Cord', 'Spitze', 'Pelz', 'Daunen', 'Fleece', 'Mesh', 'Lyocell', 'Metall', 'Kunststoff/Gummi',
   'Cupro', 'Kaschmir', 'Mohair', 'Angora', 'Alpaka', 'Flanell', 'Lammfell', 'Andere Materialien'] as const;
 export type MaterialPart = { name: string; pct?: number | null };
