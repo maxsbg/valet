@@ -1,5 +1,5 @@
 // „Infos auslesen“ (Spec 7, Leinwand „H · Infos auslesen“): Etikett / Shop-Screenshot / Bestellbestätigung, dann Kamera oder Fotos.
-// KI-Anbindung folgt später – bis dahin nimmt das Blatt das Bild entgegen und sagt ehrlich, dass das Auslesen noch nicht geht.
+// Die KI (lib/ki.ts → readInfo) liest das Bild aus; das Ergebnis übernimmt der Editor als markierte Vorschläge.
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/lib/theme';
@@ -8,20 +8,26 @@ import { PhotoPicker } from '@/components/PhotoPicker';
 import { Hint, SheetHead } from '@/components/detail/parts';
 import { Icon } from '@/components/Icon';
 import type { SymbolName } from '@valet/ui';
+import type { Info, InfoKind } from '@valet/core';
+import { readInfo } from '@/lib/ki';
 
-export type InfoKind = 'label' | 'shop' | 'order';
 const KINDS: { key: InfoKind; title: string; text: string; icon: SymbolName }[] = [
   { key: 'label', title: 'Etikett', text: 'Pflegesymbole, Material in Prozent, Größe, Artikelnummer', icon: 'label' },
   { key: 'shop', title: 'Shop-Screenshot', text: 'Name, Marke, Preis und Streichpreis, Farbe, Passform, Material', icon: 'phone' },
   { key: 'order', title: 'Bestellbestätigung', text: 'Bezahlter Preis, Kaufdatum, Shop, Größe', icon: 'bag' },
 ];
 
-export function InfoSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function InfoSheet({ open, onClose, onResult }: { open: boolean; onClose: () => void; onResult: (info: Info) => void }) {
   const t = useTheme();
   const [kind, setKind] = useState<InfoKind | null>(null);
-  const [file, setFile] = useState<string | null>(null);
-  const close = () => { setKind(null); setFile(null); onClose(); };
-  const pick = (f: File) => setFile(f.name || 'Bild');
+  const [state, setState] = useState<'idle' | 'busy' | 'error' | 'busyLimit'>('idle');
+  const close = () => { setKind(null); setState('idle'); onClose(); };
+  const pick = (f: File) => {
+    setState('busy');
+    readInfo(f, kind)
+      .then((info) => { onResult(info); close(); })
+      .catch((e) => setState(String(e?.message ?? e).includes('429') ? 'busyLimit' : 'error'));
+  };
   return (
     <Sheet open={open} onClose={close} title="Infos auslesen" head={<SheetHead title="Infos auslesen" onCancel={close} onDone={close} />}>
       <View style={{ gap: 14, paddingTop: 14 }}>
@@ -50,8 +56,9 @@ export function InfoSheet({ open, onClose }: { open: boolean; onClose: () => voi
             <View style={[s.src, { borderColor: t.hairline }]}><Icon name="photos" size="chip" color={t.ink} /><Text style={[s.srcText, { color: t.ink }]}>Fotos</Text></View>
           </PhotoPicker>
         </View>
-        {file
-          ? <Hint accent>Bild erhalten. Das Auslesen per KI ist noch nicht angebunden – die Felder bitte vorerst selbst ausfüllen.</Hint>
+        {state === 'busy' ? <Hint accent>Liest aus … das dauert ein paar Sekunden.</Hint>
+          : state === 'error' ? <Hint accent>Auslesen hat nicht geklappt. Bitte noch einmal versuchen oder selbst ausfüllen.</Hint>
+          : state === 'busyLimit' ? <Hint accent>KI gerade ausgelastet – bitte später noch einmal versuchen.</Hint>
           : <Hint>Die Art des Bildes erkennt die KI auch selbst. Die Auswahl hilft nur, wenn sie danebenliegt.</Hint>}
       </View>
     </Sheet>

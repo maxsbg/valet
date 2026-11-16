@@ -7,6 +7,7 @@ import {
   CATEGORY_NAMES, CLOSURES, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, subcategoriesOf, typesOf, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
+  applyInfo,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -379,7 +380,7 @@ export function ItemEditor(p: Props) {
           )}
         </View>
       </Page>
-      <InfoSheet open={info} onClose={() => setInfo(false)} />
+      <InfoSheet open={info} onClose={() => setInfo(false)} onResult={(r) => onForm(applyInfo(f, r))} />
     </KeyboardAvoidingView>
   );
 }

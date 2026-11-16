@@ -35,7 +35,7 @@ const list = (values: readonly string[], description: string): JsonSchema => ({ 
 const steps = (max: number) => Array.from({ length: max + 1 }, (_, i) => i);
 const level = (max: number, description: string): JsonSchema => ({ type: ['integer', 'null'], enum: [...steps(max), null], description });
 
-const PROPS: Record<string, JsonSchema> = {
+export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   kategorie: { type: 'string', enum: [...CATEGORY_PATHS], description: 'So genau wie sicher erkennbar: Kategorie › Unterkategorie › Typ. Typ weglassen, wenn unsicher.' },
   name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe und ohne Marke, z. B. „Oxford-Hemd“' },
   marke: { type: ['string', 'null'], description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
@@ -57,8 +57,8 @@ const PROPS: Record<string, JsonSchema> = {
 
 export const ANALYZE_ITEM_SCHEMA: JsonSchema = {
   type: 'object',
-  properties: PROPS,
-  required: Object.keys(PROPS),
+  properties: ANALYZE_ITEM_PROPS,
+  required: Object.keys(ANALYZE_ITEM_PROPS),
   additionalProperties: false,
 };
 
