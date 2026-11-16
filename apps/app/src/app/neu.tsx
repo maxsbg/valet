@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { applyAnalysis, editChange, emptyEditForm, nearestColor, setField, type EditForm } from '@valet/core';
+import { applyAnalysis, editChange, emptyEditForm, type EditForm } from '@valet/core';
 import { analyzePicture } from '@/lib/ki';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
@@ -79,13 +79,10 @@ export default function Neu() {
     } catch (e) { setFailure((e as Error).message); setStep('review'); }
   }
 
-  /** Weiter zum Formular; Farbe aus dem Bild vorschlagen, solange noch keine gewählt ist */
+  /** Weiter zum Formular; Farben und Steckbrief schlägt die KI vor (nur Werte aus den festen Listen) */
   function toForm(p: Picture | null) {
     setPicture(p);
-    const base = f ?? emptyEditForm({ ownerId: me?.id ?? null, wish });
-    const suggestion = nearestColor(p?.colors[0]?.h);
-    // Farbe aus dem Bild vorschlagen (als KI-Vorschlag markiert), solange noch keine gewählt ist
-    setF(base.colors.length || !suggestion ? base : { ...setField(base, 'colors', [suggestion]), aiPending: [...base.aiPending, 'colors'] });
+    setF(f ?? emptyEditForm({ ownerId: me?.id ?? null, wish }));
     setStep('form');
     // KI füllt im Hintergrund nur leere Felder (markiert); was du schon gewählt hast, bleibt
     if (p) analyzePicture(p.main)
