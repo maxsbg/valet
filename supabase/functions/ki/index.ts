@@ -10,9 +10,12 @@ const corsHeaders = {
 
 // Anbieter über Secrets wählbar (OpenAI-kompatible Schnittstelle): KI_ENDPOINT, KI_MODEL, KI_API_KEY.
 // GEMINI_API_KEY gesetzt → Gemini über dessen OpenAI-Schnittstelle (hat Vorrang), sonst KI_API_KEY mit Mistral.
-const GEMINI = { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-flash-latest" };
-/** Ersatzmodelle, wenn das gewählte überlastet ist (503) */
-const GEMINI_FALLBACK = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"];
+const GEMINI = { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-3.5-flash-lite" };
+/** Ersatzmodelle, wenn das gewählte überlastet ist oder hängt */
+const GEMINI_FALLBACK = ["gemini-3.8-flash", "gemini-flash-lite-latest"];
+/** Je Modell höchstens so lange warten, insgesamt höchstens TOTAL_MS (Supabase bricht nach 150 s ab) */
+const CALL_MS = 20_000;
+const TOTAL_MS = 50_000;
 const MISTRAL = { endpoint: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" };
 const DEFAULT_STORAGE_BUCKET = "items";
 
@@ -55,6 +58,7 @@ async function callModel(params: {
 }): Promise<unknown> {
   const response = await fetch(params.endpoint, {
     method: "POST",
+    signal: AbortSignal.timeout(CALL_MS),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${params.token}`,
@@ -181,7 +185,9 @@ Deno.serve(async (req: Request) => {
     // Gewähltes Modell zuerst; bei Überlastung (503) die Ersatzmodelle, sonst ein Wiederholungsversuch
     const models = [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
+    const started = Date.now();
     for (const m of models) {
+      if (Date.now() - started > TOTAL_MS - CALL_MS) break;
       try {
         const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema });
         return jsonResponse({ data, model: m }, 200);

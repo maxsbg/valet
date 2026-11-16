@@ -140,18 +140,20 @@ export function checkAnalysis(raw: unknown): Analysis {
 // ---------- Ins Formular übernehmen ----------
 
 /**
- * Vorschläge nur in leere Felder schreiben; jedes übernommene Feld kommt in `aiPending`
+ * Vorschläge nur in leere oder noch unbestätigte Felder schreiben; jedes übernommene Feld kommt in `aiPending`
  * (wird beim Ändern oder Bestätigen wieder entfernt, siehe setField / confirmAi).
  */
 export function applyAnalysis(form: EditForm, a: Analysis): EditForm {
   let f = form;
   const marked: string[] = [];
+  // Noch nicht bestätigte Vorschläge (z. B. Farbe aus dem Foto) gelten als leer und dürfen ersetzt werden
+  const open = new Set(form.aiPending);
   const put = <K extends keyof EditForm>(k: K, v: EditForm[K], empty: boolean, has: boolean) => {
-    if (!empty || !has) return;
+    if (!(empty || open.has(k)) || !has) return;
     f = setField(f, k, v);
     marked.push(k);
   };
-  if (!f.category && a.path.category) {
+  if ((!f.category || open.has('category')) && a.path.category) {
     f = setCategory(f, a.path);
     marked.push('category');
   }

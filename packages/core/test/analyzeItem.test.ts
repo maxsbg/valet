@@ -44,3 +44,11 @@ test('Übernehmen: nur leere Felder, alles Übernommene ist markiert', () => {
   assert.equal(f.collar, 'Button-down');
   assert.deepEqual([...f.aiPending].sort(), ['category', 'collar', 'name', 'styles']);
 });
+
+test('Übernehmen: unbestätigter Foto-Vorschlag wird von der KI ersetzt', () => {
+  const a = checkAnalysis({ kategorie: 'Schuh › Sneaker', farben: ['Pink', 'Weiß'] });
+  const start = { ...setField(emptyEditForm({ ownerId: 'max' }), 'colors', ['Weiß']), aiPending: ['colors'] };
+  const f = applyAnalysis(start, a);
+  assert.deepEqual(f.colors, ['Pink', 'Weiß']);
+  assert.ok(f.aiPending.includes('colors'));
+});
