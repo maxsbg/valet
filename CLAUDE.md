@@ -21,9 +21,9 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filter @valet/app build:web`.
 
 ## Veröffentlichen
-- GitHub `maxsbg/valet` (privat). Action `.github/workflows/web.yml` baut bei Push auf `main` (oder per workflow_dispatch auf einem Zweig) und schiebt nach `gh-pages`.
+- GitHub `maxsbg/valet` (privat). Action `.github/workflows/web.yml` baut bei Push auf `main` und schiebt nach `gh-pages`.
 - Live: https://maxsbg.github.io/valet/ (baseUrl `/valet`).
-- Achtung: workflow_dispatch auf einem Zweig überschreibt die Live-Seite mit diesem Zweig.
+- workflow_dispatch auf einem anderen Zweig prüft und baut nur; veröffentlicht wird nur von `main` (seit 16.11.2026).
 - PRs immer gegen `main` öffnen (PR #8 landete versehentlich in einem Feature-Zweig).
 
 ## Supabase

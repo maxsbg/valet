@@ -1,4 +1,5 @@
 # Baut die Web-App bei jeder Änderung auf main und legt sie in den Branch gh-pages (GitHub Pages).
+# Manuell auf einem anderen Zweig gestartet: nur Prüfen und Bauen, nichts veröffentlichen.
 name: Web-App veröffentlichen
 on:
   push:
@@ -24,6 +25,7 @@ jobs:
       - run: pnpm test
       - run: pnpm --filter @valet/app build:web
       - name: In gh-pages veröffentlichen
+        if: github.ref == 'refs/heads/main'
         working-directory: apps/app/dist
         run: |
           git init -q -b gh-pages
