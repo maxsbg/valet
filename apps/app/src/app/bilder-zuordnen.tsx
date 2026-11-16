@@ -145,7 +145,7 @@ export default function BilderZuordnen() {
                   : <Text style={[s.small, { color: '#ff9a8f' }]}>Foto ließ sich nicht öffnen: {current.error}</Text>}
               </View>
               <Text style={[s.small, { color: t.inkMuted }]}>
-                {current.pic ? (current.pic.kind === 'cutout' ? 'Freigestellt' : 'Original') : 'Fehler'} · noch {photos.length} Fotos{pending ? `, ${pending} in Arbeit${step ? ` (${step.replace(/ …$/, '')})` : ''}` : ''}
+                {current.pic ? (current.pic.source === 'shadow' ? 'Schatten entfernt' : current.pic.source === 'clean' ? 'Schon freigestellt' : current.pic.kind === 'cutout' ? 'Freigestellt' : 'Original') : 'Fehler'} · noch {photos.length} Fotos{pending ? `, ${pending} in Arbeit${step ? ` (${step.replace(/ …$/, '')})` : ''}` : ''}
               </Text>
               <View style={{ flexDirection: 'row', gap: space.xs }}>
                 <Small label="Später" onPress={() => later(current.id)} />

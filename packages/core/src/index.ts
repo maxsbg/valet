@@ -19,3 +19,4 @@ export * from './edit';
 export * from './detail';
 export * from './fields';
 export * from './wish';
+export * from './precut';

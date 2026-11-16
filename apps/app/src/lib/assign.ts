@@ -26,14 +26,14 @@ export async function loadMissing(items: Tile[]): Promise<Missing[]> {
 }
 
 /**
- * Foto vorbereiten: schon freigestellte Bilder (durchsichtiger Rand, z. B. aus dem alten Valet gesichert) direkt übernehmen,
- * sonst freistellen (RMBG). Klappt das Freistellen nicht, bleibt das Original.
+ * Foto vorbereiten: schon freigestellte Bilder (durchsichtiger Rand, z. B. aus dem alten Valet gesichert) ohne Modell
+ * übernehmen (zugeschnitten, Schatten entfernt – siehe `cutout`), sonst freistellen (RMBG).
+ * Klappt das Freistellen nicht, bleibt das Original.
  */
 export async function preparePhoto(file: File, onStep: (text: string, p?: number) => void): Promise<Picture> {
-  const direct = await legacyPicture(file, null, null);
-  if (direct.kind === 'cutout' || !canCutout) return withPreview(direct);
+  if (!canCutout) return withPreview(await legacyPicture(file, null, null));
   try { return await cutout(file, onStep); }
-  catch { return withPreview(direct); }
+  catch { return withPreview(await legacyPicture(file, null, null)); }
 }
 
 export async function originalPhoto(file: File): Promise<Picture> { return original(file); }
