@@ -89,7 +89,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
     ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
     [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([f.pattern]) : []],
     ...(rev && fx.pattern ? [['Muster Seite B', caps([f.patternB])] as [string, React.ReactNode[]]] : []),
-    ['Material', caps(f.materials.map((m) => (m.pct ? `${m.name} ${m.pct} %` : m.name)))],
+    ['Material', caps(f.materials.map((m) => m.name))],
     ['Größe', fx.size ? caps([f.size, fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
   ];
   const tragen: [string, React.ReactNode[]][] = [
