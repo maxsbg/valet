@@ -16,7 +16,7 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - `apps/app` – Expo SDK 58, Expo Router, react-native-web. Seiten in `src/app`, Rest in `src/components`, `src/lib`. Siehe `apps/app/AGENTS.md` (Expo-Regeln).
 - `packages/core` – Fachlogik + Import aus dem alten Valet (Tests mit `node --test` über `tsx`).
 - `packages/ui` – Design-Tokens (Farben, Personen, Kacheln, Schatten).
-- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`; 0005: Status `stored`; beide am 14.11.2026 angewendet; 0006: Felder für Detailseite/Bearbeiten, am 15.11.2026 angewendet; 0007: Umstellung der Teile auf die neue Kategorie-Liste, am 15.11.2026 angewendet; 0008: Größen-Systeme `wl`/`eu`/`cap`/`ring` + `items.strap`, am 15.11.2026 angewendet; 0009: Shorts als eigene Kategorie, noch **nicht** angewendet – App rechnet Hose › Shorts beim Laden um). `backup/` – Sicherung der Daten aus dem alten Valet.
+- `supabase/migrations` – Schema (0004: `items.wish_tag`, `wishlists.item_order`; 0005: Status `stored`; beide am 14.11.2026 angewendet; 0006: Felder für Detailseite/Bearbeiten, am 15.11.2026 angewendet; 0007: Umstellung der Teile auf die neue Kategorie-Liste, am 15.11.2026 angewendet; 0008: Größen-Systeme `wl`/`eu`/`cap`/`ring` + `items.strap`, am 15.11.2026 angewendet; 0009: Shorts als eigene Kategorie, noch **nicht** angewendet – App rechnet Hose › Shorts beim Laden um ; 0010–0012: Schrankgrenzen-Trigger, Einschränkungen/owner_ids-Prüfung, Advisor-Fixes (Indizes, Regeln je Befehl), am 16.11.2026 angewendet). `backup/` – Sicherung der Daten aus dem alten Valet.
 
 Befehle: `pnpm install`, `pnpm test`, `pnpm typecheck`, Web-Build: `pnpm --filter @valet/app build:web`.
 
