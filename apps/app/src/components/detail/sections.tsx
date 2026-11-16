@@ -72,7 +72,7 @@ function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
 export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void }) {
   const t = useTheme();
   const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x) => <ValueCapsule key={x} label={x} />);
-  const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={c} outline><ColorDot name={c} /></ValueCircle>);
+  const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={c}><ColorDot name={c} onFill /></ValueCircle>);
   const fx = fieldsFor(f.category, f.subcategory);
   const rev = fx.reversible && f.reversible;
   const scales = fitScalesOf(f.category);

@@ -84,7 +84,7 @@ export function ItemEditor(p: Props) {
     const pick: ColorPick = { colors: list, ...colorUi[side] };
     return (
       <EditRow key={key} label={fieldsFor(f.category, f.subcategory).reversible && f.reversible ? (side === 'a' ? 'Farben Seite A' : 'Farben Seite B') : 'Farben'} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last}
-        values={list.map((c) => <ValueCircle key={c} a11y={c} outline><ColorDot name={c} /></ValueCircle>)}>
+        values={list.map((c) => <ValueCircle key={c} a11y={c}><ColorDot name={c} onFill /></ValueCircle>)}>
         <ColorPicker pick={pick} onChange={(n) => { setColorUi((u) => ({ ...u, [side]: { open: n.open, full: n.full } })); set(key, n.colors); }} />
       </EditRow>
     );
