@@ -10,6 +10,7 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - Tokens/Secrets nie in Chat oder Code → GitHub- bzw. Supabase-Secrets.
 - Ehrliche Einschätzung, kurz begründet. Vor größeren Umbauten kurz rückfragen.
 - Max testet hauptsächlich am **iPhone (Safari)**.
+- **Bekannte Fehler (seit 16.11.2026):** Funde aus Prüfungen stehen als GitHub-Issues mit Label `bekannter-fehler` (Stufe `stufe-hoch/mittel/niedrig`, Aufwand `aufwand-…`; Ausgangsliste #78–#110 aus `docs/review/REVIEW_2026-11-16.html`). Sagt Max „bearbeite ausstehende bekannte Fehler“, werden **genau die offenen Issues mit diesem Label** umgesetzt, nach Stufe sortiert (hoch zuerst), außer sie tragen `zurückgestellt`. Je Issue ein Zweig + ein PR gegen `main` mit `Closes #…`. Vorher Liste der Issues zeigen. Datenbank-Änderungen (Migrationen) und das Widerrufen/Löschen von Schlüsseln oder Funktionen nur mit ausdrücklichem Okay von Max. Neue Funde bei Prüfungen als Issue mit demselben Label anlegen.
 
 ## Aufbau (pnpm-Monorepo)
 - `apps/app` – Expo SDK 58, Expo Router, react-native-web. Seiten in `src/app`, Rest in `src/components`, `src/lib`. Siehe `apps/app/AGENTS.md` (Expo-Regeln).
