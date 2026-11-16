@@ -74,7 +74,7 @@ export const SYMBOLS = {
     els: ['M5.5 3.5h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z', 'f:8.5,8.5,1.1', 'f:15.5,15.5,1.1', 'f:12,12,1.1'], reserved: true },
   external: { group: 'bedienung', meaning: 'Außerhalb öffnen', uses: ['Shop-Link öffnen'],
     els: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4'], src: 'Lucide' },
-  link: { group: 'bedienung', meaning: 'Set: verknüpfte Teile', uses: ['Set-Schalter in Bearbeiten'],
+  link: { group: 'bedienung', meaning: 'Set: verknüpfte Teile', uses: ['Set-Schalter in Bearbeiten', 'Set-Plakette auf Kachel und Detail-Bild (oben rechts, links neben Wendbar)'],
     els: ['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'], src: 'Lucide' },
   camera: { group: 'bedienung', meaning: 'Foto aufnehmen/ändern', uses: ['Foto ändern', 'Quelle „Kamera“'],
     els: ['M5 7.5h1.8l1.7-2.5h7l1.7 2.5H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5a2 2 0 0 1 2-2z', 'c:12,12.5,3.2'] },

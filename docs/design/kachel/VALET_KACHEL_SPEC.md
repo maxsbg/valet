@@ -83,6 +83,8 @@ Symbol in ink. `aria-label` = Statusname.
 - **Anzahl** (nur wenn ≥ 2), Format **„2ד, „12ד**, ab 100 **„99+“**:
   - **Allein** (kein Wendbar): voller **Kreis 20 px** in der Ecke (`top: 4px; right: 4px`).
   - **Mit Wendbar**: Wendbar in der Ecke, darunter mit 3 px Abstand eine **Kapsel 20 × 14 px** (`border-radius: 999px`), horizontal mittig zum Wendbar-Kreis.
+  - **Mit Set** (ohne Wendbar): genauso, Kapsel unter der Set-Plakette.
+- **Set** (16.11.2026, Max): runde Plakette mit dem Symbol `link` (Kettenglieder). Wendbar sitzt immer in der Ecke und liegt obenauf; das Set links daneben, um 3 px überlappt wie die Besitzer-Monogramme. Ohne Wendbar sitzt das Set in der Ecke. Die Anzahl kommt immer unter die Eck-Plakette. Gilt auch für das Detail-Bild (× 2).
 - **Zahlenschrift (gilt für Anzahl und „+N“ gleich):** Ziffern **8,5 px**, `font-weight: 700`, `letter-spacing: -0.3px`, `font-variant-numeric: tabular-nums`, ink; Beizeichen **× und + 6,5 px**, `font-weight: 600`. Ein- und zweistellig gleich groß; „12ד ist so ca. 14,3 px breit und passt mit Luft in Kreis und Kapsel. Immer mittig.
 - Nur Wendbar: Kreis in der Ecke.
 - Zentrierung von Zahl, ×, + siehe **5.5** (Pflicht).
@@ -192,7 +194,7 @@ Bestehende Tokens bleiben: `person-pink` #d9668e, `person-red` #c8102e, `ink` #2
 
 ## 10. Offene Punkte (nicht entschieden, nicht erfinden)
 
-1. **Sets**: Im alten Valet hatten Sets ein Bügel-Symbol unten links. Der Bügel bedeutet jetzt „heute“. Ob Sets ein eigenes Zeichen bekommen, ist offen.
+1. ~~Sets~~ – entschieden 16.11.2026 (Max): Set-Plakette, siehe 5.2.
 2. **Eingelagert vs. aussortiert**: beide im Entwurf mit Kiste. Ob sie getrennte Symbole bekommen, ist offen.
 3. **Wunschlisten-Kachel**: noch nicht auf die neue Kachel umgestellt (bisher Preis-Pille mit Text und Bedenkzeit-Ring). Offen.
 4. **Farben für Person 3+**: Es gibt bisher nur Farben für Max und Paul.

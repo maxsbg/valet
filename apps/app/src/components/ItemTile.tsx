@@ -12,15 +12,14 @@ import { TileIcon } from './tile/TileIcons';
 // Kein Text auf der Kachel (außer Monogramm und Zahlen), weiß auch im dunklen Modus, alle Maße aus den Tokens.
 //
 //  ┌──────────────────────┐
-//  │ [Status]     [Wend.] │  oben rechts: Wendbar, darunter Anzahl-Kapsel; ohne Wendbar Anzahl als Kreis
-//  │              [ 2× ]  │
+//  │ [Status] [Set][Wend.]│  oben rechts: Wendbar in der Ecke, Set links dahinter (überlappt), darunter Anzahl-Kapsel;
+//  │              [ 2× ]  │  ohne Wendbar Set in der Ecke; ohne beide Anzahl als Kreis
 //  │        Foto          │
 //  │ [Bügel]     [P][M]   │  unten rechts: eigenes Monogramm in der Ecke, obenauf
 //  └──────────────────────┘
 //
 // Offen (Spec 10, mit Max klären – nicht selbst entscheiden):
-//  - Sets: früher Bügel unten links. Der Bügel heißt jetzt „heute“. Eine Set-Plakette gibt es derzeit nicht;
-//    mögliche Option für später (eigenes Zeichen, Platz noch offen).
+//  - Sets: entschieden 16.11.2026 (Max) – Set-Plakette (Symbol `link`) oben rechts, links neben Wendbar.
 //  - Eingelagert vs. aussortiert: beide Kiste (Status „out“).
 //  - Farben für Person 3+: Personen ohne Farbe → Monogramm und Bügel in ink (schwarz).
 //  - Highlight-Farbe: automatisch aus dem Foto oder manuell im Teil.
@@ -63,6 +62,8 @@ export type TileItem = {
   colors?: readonly string[];
   status: ItemStatus | null;
   reversible: boolean;
+  /** Set-Kennung (items.set_id) – Set-Plakette oben rechts links neben Wendbar */
+  setId?: string | null;
   qty: number;
   thumb: string | null;
   /** Wendeteile: Vorschaubild der anderen Seite – Tippen auf „Wendbar“ dreht die Kachel um */
@@ -103,7 +104,7 @@ type Props = {
 export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend }: Props) {
   const h = height ?? tileHeight(item.kind ?? item.category, width);
   const glow = glowFor(item.colors, item.hex);
-  const tr = topRightFor(item.reversible, item.qty);
+  const tr = topRightFor(item.reversible, item.qty, !!item.setId);
   // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)
   const price = item.isWish ? priceLabel(item.price) : null;
   const wait = item.isWish ? wishWait(item.createdAt) : null;
@@ -114,6 +115,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
     name: item.name,
     status: item.status,
     reversible: item.reversible,
+    set: !!item.setId,
     qty: item.qty,
     today: todayP,
     owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
@@ -158,12 +160,23 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
         <View style={s.tr}><Glass label={`Bedenkzeit: noch ${wait.left} ${wait.left === 1 ? 'Tag' : 'Tage'}`}><WaitRing {...wait} /></Glass></View>
       ) : tr && (
         <View style={s.tr}>
-          {tr.reversible && (flip.can ? (
-            <Pressable onPress={flip.toggle} hitSlop={B.inset} accessibilityRole="button"
-              accessibilityLabel={flip.back ? 'Wendbar – Vorderseite zeigen' : 'Wendbar – andere Seite zeigen'}>
-              <Glass><Animated.View style={flip.iconStyle}><TileIcon name="reversible" color={B.ink} /></Animated.View></Glass>
-            </Pressable>
-          ) : <Glass label="Wendbar"><TileIcon name="reversible" color={B.ink} /></Glass>)}
+          {/* Wendbar in der Ecke und obenauf, Set links dahinter leicht überlappt (wie die Monogramme) */}
+          <View style={s.trRow}>
+            {tr.set && (
+              <View style={[s.owner, { zIndex: 1 }]}><Glass label="Set"><TileIcon name="link" color={B.ink} /></Glass></View>
+            )}
+            {tr.reversible && (
+              <View style={[s.owner, tr.set && s.overlap, { zIndex: 2 }]}>
+                {flip.can ? (
+                  <Pressable onPress={flip.toggle} hitSlop={B.inset} accessibilityRole="button"
+                    accessibilityLabel={flip.back ? 'Wendbar – Vorderseite zeigen' : 'Wendbar – andere Seite zeigen'}>
+                    <Glass><Animated.View style={flip.iconStyle}><TileIcon name="reversible" color={B.ink} /></Animated.View></Glass>
+                  </Pressable>
+                ) : <Glass label="Wendbar"><TileIcon name="reversible" color={B.ink} /></Glass>}
+              </View>
+            )}
+          </View>
+          {/* Anzahl unter der Eck-Plakette */}
           {tr.count && (
             <Glass shape={tr.count.shape} label={`${tr.count.n} Stück`}>
               <Num num={tr.count.num} sym={tr.count.sym} />
@@ -242,7 +255,9 @@ const s = StyleSheet.create({
   hidden: { opacity: 0 },
   edge: { ...StyleSheet.absoluteFill, borderRadius: T.radius, boxShadow: `inset 0 0 0 ${T.edgeWidth}px ${T.edge}` },
   tl: { position: 'absolute', top: B.inset, left: B.inset },
-  tr: { position: 'absolute', top: B.inset, right: B.inset, flexDirection: 'column', alignItems: 'center', gap: B.stackGap },
+  // alignItems flex-end: Anzahl-Kapsel (gleich breit wie die Plakette) sitzt mittig unter der Eck-Plakette
+  tr: { position: 'absolute', top: B.inset, right: B.inset, flexDirection: 'column', alignItems: 'flex-end', gap: B.stackGap },
+  trRow: { flexDirection: 'row', alignItems: 'center' },
   bl: { position: 'absolute', bottom: B.inset, left: B.inset },
   br: { position: 'absolute', bottom: B.inset, right: B.inset, flexDirection: 'row', alignItems: 'center' },
   owner: { position: 'relative', flexDirection: 'row' },

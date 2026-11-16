@@ -31,15 +31,21 @@ export function countLabel(n: number | null | undefined): CountLabel | null {
 
 export type TopRight = {
   reversible: boolean;
-  /** circle = allein in der Ecke (20 × 20); capsule = unter Wendbar (20 × 14) */
+  /** Teil gehört zu einem Set – Plakette links neben Wendbar (leicht überlappt wie die Monogramme), ohne Wendbar in der Ecke */
+  set: boolean;
+  /** circle = allein in der Ecke (20 × 20); capsule = unter der Eck-Plakette (Wendbar bzw. Set, 20 × 14) */
   count: (CountLabel & { shape: 'circle' | 'capsule'; n: number }) | null;
 };
 
-/** Belegung oben rechts: Wendbar in der Ecke, Anzahl darunter als Kapsel – ohne Wendbar Anzahl als Kreis in der Ecke */
-export function topRightFor(reversible: boolean, qty: number | null | undefined): TopRight | null {
+/**
+ * Belegung oben rechts (Set-Plakette seit 16.11.2026, Max):
+ * Wendbar immer in der Ecke und obenauf, links dahinter leicht überlappt das Set (wie die Monogramme);
+ * ohne Wendbar sitzt das Set in der Ecke. Anzahl als Kapsel unter der Eck-Plakette – ohne beide als Kreis in der Ecke.
+ */
+export function topRightFor(reversible: boolean, qty: number | null | undefined, set = false): TopRight | null {
   const c = countLabel(qty);
-  if (!reversible && !c) return null;
-  return { reversible, count: c ? { ...c, n: qty!, shape: reversible ? 'capsule' : 'circle' } : null };
+  if (!reversible && !set && !c) return null;
+  return { reversible, set, count: c ? { ...c, n: qty!, shape: reversible || set ? 'capsule' : 'circle' } : null };
 }
 
 // ---------- Besitzer (Spec 5.4) ----------
@@ -70,6 +76,8 @@ export type TileA11y = {
   name: string;
   status?: ItemStatus | null;
   reversible?: boolean;
+  /** gehört zu einem Set */
+  set?: boolean;
   qty?: number | null;
   /** heute getragen bzw. reserviert – mit Namen der Person, sofern bekannt */
   today?: { name?: string | null } | null;
@@ -82,6 +90,7 @@ export function tileA11yLabel(t: TileA11y): string {
   const parts = [t.name];
   if (t.status) parts.push(TILE_STATUS[t.status].label);
   if (t.reversible) parts.push('Wendbar');
+  if (t.set) parts.push('Teil eines Sets');
   if (countLabel(t.qty)) parts.push(`${t.qty} Stück`);
   if (t.today) parts.push(t.today.name ? `heute: ${t.today.name}` : 'heute getragen');
   if (t.owners?.length) parts.push(t.owners.map((o) => ('more' in o ? `${o.more} weitere` : o.name)).join(', '));
