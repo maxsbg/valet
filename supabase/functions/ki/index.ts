@@ -12,7 +12,7 @@ const corsHeaders = {
 // GEMINI_API_KEY gesetzt → Gemini über dessen OpenAI-Schnittstelle (hat Vorrang), sonst KI_API_KEY mit Mistral.
 const GEMINI = { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-flash-latest" };
 /** Ersatzmodelle, wenn das gewählte überlastet ist (503) */
-const GEMINI_FALLBACK = ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const GEMINI_FALLBACK = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"];
 const MISTRAL = { endpoint: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" };
 const DEFAULT_STORAGE_BUCKET = "items";
 
