@@ -127,3 +127,43 @@ export function sizeSystemOn(kind: SizeKind | null, stored: string | null | unde
       return sizeSystemOf(size);
   }
 }
+
+// ---------- Größe aus Text (KI „Infos auslesen“) ----------
+
+const LETTER_ALIAS: Readonly<Record<string, string>> = { '2XS': 'XXS', '2XL': 'XXL', XXXL: '3XL', OS: ONE_SIZE, 'ONE SIZE': ONE_SIZE, ONESIZE: ONE_SIZE, EINHEITSGRÖSSE: ONE_SIZE, EINHEITSGRÖßE: ONE_SIZE };
+
+/**
+ * Freie Größenangabe (z. B. „EU 42 1/2“, „32/34“, „xl“) → Wert aus den festen Listen der Größen-Art.
+ * Passt nichts, kommt null zurück – die KI schreibt nie eigene Werte in die Größe.
+ */
+export function matchSize(kind: SizeKind | null, raw: string | null | undefined, waistOnly = false): { system: SizeSystemAny; size: string } | null {
+  const s = (raw ?? '').trim().toUpperCase().replace(/^(EU|DE|GR\.?|GRÖSSE|GRÖßE|SIZE)\s*/, '').trim();
+  if (!kind || !s) return null;
+  const letter = LETTER_ALIAS[s] ?? s;
+  const isLetter = SIZES.letters.includes(letter);
+  switch (kind) {
+    case 'shoe': {
+      const m = /^(\d{2})(?:\s*(?:[.,]5|1\/2|½))?$/.exec(s);
+      if (!m) return null;
+      const v = /[.,]5|1\/2|½/.test(s) ? `${m[1]},5` : m[1]!;
+      return SHOE_SIZES.includes(v) ? { system: 'eu', size: v } : null;
+    }
+    case 'cap': {
+      const v = capSize(letter === ONE_SIZE ? ONE_SIZE : s);
+      return v ? { system: 'cap', size: v } : null;
+    }
+    case 'ring':
+      return RING_SIZES.includes(s) ? { system: 'ring', size: s } : null;
+    case 'pants': {
+      if (isLetter) return { system: 'letters', size: letter };
+      const m = /^W?\s*(\d{2})(?:\s*[/X ]\s*L?\s*(\d{2}))?$/.exec(s);
+      if (!m) return null;
+      const w = `W${m[1]}`, l = m[2] && !waistOnly ? `L${m[2]}` : null;
+      if (!PANTS_WAIST.includes(w) || (l && !PANTS_LENGTH.includes(l))) return null;
+      return { system: 'wl', size: composeWL(w, l)! };
+    }
+    default:
+      if (isLetter) return { system: 'letters', size: letter };
+      return SIZES.numbers.includes(s) ? { system: 'numbers', size: s } : null;
+  }
+}

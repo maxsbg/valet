@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { READ_INFO_SCHEMA, checkInfo, applyInfo, readInfoPrompt } from '../src/ai/readInfo';
 import { emptyEditForm, setField } from '../src/edit';
+import { CATEGORY_PATHS } from '../src/ai/analyzeItem';
 
 test('Schema: alle Felder Pflicht, Kategorie darf fehlen', () => {
   assert.deepEqual(READ_INFO_SCHEMA.required, Object.keys(READ_INFO_SCHEMA.properties!));
@@ -32,4 +33,18 @@ test('Übernehmen: Bestellung in Kauf, Wunschteil-Preis als Listenpreis', () => 
   assert.equal(w.listPrice, '59,95');
   assert.equal(w.price, '');
   assert.equal(w.purchaseDate, null);
+});
+
+test('Übernehmen: Größe nur aus der festen Liste der Größen-Art', () => {
+  const at = (path: string, groesse: string) => applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ kategorie: path, groesse }));
+  const schuh = CATEGORY_PATHS.find((p) => p.startsWith('Schuh'))!;
+  const jeans = CATEGORY_PATHS.find((p) => p.startsWith('Hose › Jeans'))!;
+  const shirt = CATEGORY_PATHS.find((p) => p.startsWith('Oberteil'))!;
+  assert.deepEqual([at(schuh, 'EU 42 1/2').size, at(schuh, 'EU 42 1/2').sizeSystem], ['42,5', 'eu']);
+  assert.deepEqual([at(jeans, '32/34').size, at(jeans, '32/34').sizeSystem], ['W32/L34', 'wl']);
+  assert.equal(at(shirt, 'xl').size, 'XL');
+  assert.equal(at(shirt, '2XL').size, 'XXL');
+  assert.ok(at(shirt, 'xl').aiPending.includes('size'));
+  assert.equal(at(shirt, 'Größe M (fällt klein aus)').size, null); // kein freier Text
+  assert.equal(applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ groesse: 'm' })).size, 'M'); // ohne Kategorie: Kleidergrößen
 });
