@@ -177,8 +177,6 @@ export const outfitCard = {
 export const tile = {
   radius: 22,
   gap: 10,
-  /** Farbschein am Rand in der Hauptfarbe des Teils: Weichzeichnung und Breite in px, Deckkraft 0–1 */
-  glow: { blur: 22, spread: 3, opacity: 0.45 },
   badge: 26,
   /** Zeilenhöhe des Mosaiks; Kacheln belegen je nach Kategorie 2–4 Zeilen */
   row: 44,
