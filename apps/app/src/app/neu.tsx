@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { editChange, emptyEditForm, nearestColor, setField, type EditForm } from '@valet/core';
+import { applyAnalysis, editChange, emptyEditForm, nearestColor, setField, type EditForm } from '@valet/core';
+import { analyzePicture } from '@/lib/ki';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
 import { canCutout, cutout, modelCached, original, precutNote, type Picture } from '@/lib/cutout';
@@ -86,6 +87,10 @@ export default function Neu() {
     // Farbe aus dem Bild vorschlagen (als KI-Vorschlag markiert), solange noch keine gewählt ist
     setF(base.colors.length || !suggestion ? base : { ...setField(base, 'colors', [suggestion]), aiPending: [...base.aiPending, 'colors'] });
     setStep('form');
+    // KI füllt im Hintergrund nur leere Felder (markiert); was du schon gewählt hast, bleibt
+    if (p) analyzePicture(p.main)
+      .then((a) => setF((cur) => (cur ? applyAnalysis(cur, a) : cur)))
+      .catch((e) => toast.show(String(e?.message ?? e).includes('429') ? 'KI gerade ausgelastet – bitte selbst ausfüllen' : 'KI-Erkennung nicht verfügbar'));
   }
 
   async function save() {

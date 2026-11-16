@@ -20,3 +20,4 @@ export * from './detail';
 export * from './fields';
 export * from './wish';
 export * from './precut';
+export * from './ai/analyzeItem';
