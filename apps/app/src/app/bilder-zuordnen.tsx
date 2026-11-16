@@ -112,7 +112,7 @@ export default function BilderZuordnen() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={[s.bar, STICKY, { paddingTop: insets.top + space.xs, backgroundColor: t.bg, borderBottomColor: t.hairline }]}>
-        <Pressable onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Fertig</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={close} hitSlop={10} style={s.barSide}><Text style={{ fontSize: 17, color: t.ink }}>Fertig</Text></Pressable>
         <Text style={{ fontFamily: DISPLAY, fontSize: 20, color: t.ink }}>Bilder zuordnen</Text>
         <View style={[s.barSide, { alignItems: 'flex-end' }]}>
           {missing && <Text style={{ fontSize: 13, color: t.inkMuted }}>{missing.length} ohne Bild</Text>}
@@ -141,7 +141,7 @@ export default function BilderZuordnen() {
           {current && (
             <>
               <View style={[s.stage, { backgroundColor: '#000', boxShadow: '0 2px 8px rgba(42,26,29,0.18)' }]}>
-                {current.pic ? <Image source={{ uri: current.pic.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} />
+                {current.pic ? <Image source={{ uri: current.pic.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} accessibilityLabel="Freigestelltes Bild" />
                   : <Text style={[s.small, { color: '#ff9a8f' }]}>Foto ließ sich nicht öffnen: {current.error}</Text>}
               </View>
               <Text style={[s.small, { color: t.inkMuted }]}>

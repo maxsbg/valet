@@ -220,7 +220,7 @@ export function SearchField({ value, onChange, onClose }: { value: string; onCha
       <Icon name="search" size="chip" color={t.inkMuted} />
       <TextInput autoFocus value={value} onChangeText={onChange} placeholder="Suchen" placeholderTextColor={t.inkMuted}
         style={[s.searchInput, { color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
-      <Pressable accessibilityLabel="Suche schließen" onPress={onClose} hitSlop={10}><Icon name="close" size="inline" color={t.inkMuted} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Suche schließen" onPress={onClose} hitSlop={10}><Icon name="close" size="inline" color={t.inkMuted} /></Pressable>
     </View>
   );
 }

@@ -75,7 +75,7 @@ export default function Statistik() {
               {brands.map((b) => <Bar key={b.key} t={t} label={b.key} sub={`${b.count} ${b.count === 1 ? 'Teil' : 'Teile'}`} value={b.value} max={maxB} text={formatEur(b.value)} />)}
               {r.noBrand > 0 && <Bar t={t} label="ohne Marke" value={r.noBrand} max={maxB} text={formatEur(r.noBrand)} color="#c4bfb4" dim />}
               {r.brands.length > 8 && (
-                <Pressable onPress={() => setAllBrands(!allBrands)} hitSlop={6}><Text style={[s.more, { color: t.accent }]}>{allBrands ? 'Weniger zeigen' : `Alle ${r.brands.length} Marken`}</Text></Pressable>
+                <Pressable accessibilityRole="button" onPress={() => setAllBrands(!allBrands)} hitSlop={6}><Text style={[s.more, { color: t.accent }]}>{allBrands ? 'Weniger zeigen' : `Alle ${r.brands.length} Marken`}</Text></Pressable>
               )}
             </Panel>
           )}
@@ -145,7 +145,7 @@ export default function Statistik() {
                   const o = wardOutfits.get(outfit.id);
                   const w = (W - 3 * 8) / 4;
                   return o ? (
-                    <Pressable key={o.id} onPress={() => router.push(`/outfit/${o.id}`)} accessibilityLabel={o.name || 'Outfit'} style={{ width: w, alignItems: 'center' }}>
+                    <Pressable accessibilityRole="button" key={o.id} onPress={() => router.push(`/outfit/${o.id}`)} accessibilityLabel={o.name || 'Outfit'} style={{ width: w, alignItems: 'center' }}>
                       <View style={[s.pim, { width: w, height: Math.round(w * 1.25), borderColor: t.hairline }]}><OutfitBoard pieces={o.pieces} byId={byId} width={w - 2} /></View>
                       <Text style={{ fontSize: 13, fontWeight: '600', marginTop: 5, color: t.ink }}>{n}×</Text>
                     </Pressable>
@@ -160,7 +160,7 @@ export default function Statistik() {
                   return (
                     <View key={n} style={[s.pair, n > 0 && { borderTopWidth: 1, borderTopColor: t.hairline }]}>
                       {[a, b].map((it) => (
-                        <Pressable key={it.id} onPress={() => router.push(`/teil/${it.id}`)} accessibilityLabel={it.name || 'Teil'} style={[s.pim, { width: 48, height: 48, borderColor: t.hairline }]}>
+                        <Pressable accessibilityRole="button" key={it.id} onPress={() => router.push(`/teil/${it.id}`)} accessibilityLabel={it.name || 'Teil'} style={[s.pim, { width: 48, height: 48, borderColor: t.hairline }]}>
                           <ItemPicture uri={it.thumb} inset="11%" category={it.category} color={it.hex ?? '#c4bfb4'} />
                         </Pressable>
                       ))}
@@ -317,12 +317,12 @@ function PGrid({ t, list, width }: { t: Theme; list: { item: Tile; value: string
   return (
     <View style={s.pgrid}>
       {list.filter((x) => x.item).map(({ item, value, sub }) => (
-        <Pressable key={item.id} onPress={() => router.push(`/teil/${item.id}`)} accessibilityLabel={item.name || 'Teil'} style={{ width: w, alignItems: 'center' }}>
+        <Pressable accessibilityRole="button" key={item.id} onPress={() => router.push(`/teil/${item.id}`)} accessibilityLabel={item.name || 'Teil'} style={{ width: w, alignItems: 'center' }}>
           <View style={[s.pim, { width: w, height: w, borderColor: t.hairline }]}>
             <ItemPicture uri={item.thumb} inset="11%" category={item.category} color={item.hex ?? '#c4bfb4'} />
           </View>
           <Text style={{ fontSize: 13, fontWeight: '600', marginTop: 5, color: t.ink }} numberOfLines={1}>{value}</Text>
-          {!!sub && <Text style={{ fontSize: 11, color: t.inkMuted }} numberOfLines={1}>{sub}</Text>}
+          {!!sub && <Text style={{ fontSize: 12, color: t.inkMuted }} numberOfLines={1}>{sub}</Text>}
         </Pressable>
       ))}
     </View>

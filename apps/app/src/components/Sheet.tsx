@@ -28,7 +28,7 @@ export function Sheet({ open, onClose, title, children, footer, head }: Props) {
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(42,26,29,0.4)', opacity: op }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Schließen" />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Schließen" />
       </Animated.View>
       <Animated.View style={[s.sheet, { backgroundColor: t.bg, maxHeight: height * 0.88, width: Math.min(width, 560), paddingBottom: Math.max(bottom, space.md), transform: [{ translateY: y }] }]}>
         <View style={[s.grab, { backgroundColor: t.hairline }]} />

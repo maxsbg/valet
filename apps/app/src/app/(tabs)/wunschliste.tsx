@@ -346,15 +346,15 @@ export default function Wunschliste() {
           if (!it) return null;
           return (
             <View key={id} style={[s.orderRow, { borderBottomColor: t.hairline, borderBottomWidth: n === order.length - 1 ? 0 : StyleSheet.hairlineWidth * 2 }]}>
-              <View style={s.thumb}>{it.thumb ? <Image source={{ uri: it.thumb }} style={s.thumbImg} resizeMode="contain" /> : null}</View>
+              <View style={s.thumb}>{it.thumb ? <Image source={{ uri: it.thumb }} style={s.thumbImg} resizeMode="contain" accessibilityLabel={it.name || 'Teil'} /> : null}</View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, color: t.ink }} numberOfLines={1}>{it.name}</Text>
                 {!!priceLabel(it.price) && <Text style={{ fontSize: 13, color: t.inkMuted }}>{priceLabel(it.price)} €</Text>}
               </View>
-              <Pressable onPress={() => move(n, -1)} disabled={n === 0} hitSlop={6} accessibilityLabel="Nach oben" style={[s.arrow, { opacity: n === 0 ? 0.25 : 1 }]}>
+              <Pressable accessibilityRole="button" onPress={() => move(n, -1)} disabled={n === 0} hitSlop={6} accessibilityLabel="Nach oben" style={[s.arrow, { opacity: n === 0 ? 0.25 : 1 }]}>
                 <Icon name="arrowUp" size="row" color={t.ink} />
               </Pressable>
-              <Pressable onPress={() => move(n, 1)} disabled={n === order.length - 1} hitSlop={6} accessibilityLabel="Nach unten" style={[s.arrow, { opacity: n === order.length - 1 ? 0.25 : 1 }]}>
+              <Pressable accessibilityRole="button" onPress={() => move(n, 1)} disabled={n === order.length - 1} hitSlop={6} accessibilityLabel="Nach unten" style={[s.arrow, { opacity: n === order.length - 1 ? 0.25 : 1 }]}>
                 <Icon name="arrowDown" size="row" color={t.ink} />
               </Pressable>
             </View>
