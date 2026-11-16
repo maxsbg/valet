@@ -91,17 +91,12 @@ export const itemTile = {
   photoInset: 10,
   /** abwesende Teile (verliehen, Reparatur, eingelagert, verkauft): Foto abblenden */
   away: { opacity: 0.42, grayscale: 0.5 },
-  /** Innenschein: inset 0 0 blur spread rgba(farbe, alpha) */
+  /** Innenschein: inset 0 0 blur spread rgba(farbe, alpha) – Farbe nach Steckbrief (core/glow.ts) */
   glow: {
     blur: 22,          // glow-blur
     spread: 3,         // glow-spread
-    alphaStrong: 0.52, // glow-alpha-strong
-    alphaSoft: 0.28,   // glow-alpha-soft
-    fallback: '#D8D2C8', // glow-fallback: ohne Hauptfarbe oder zu hell
-    /** Grenzen der Farbregel (HSV): neutral = s < satMin oder v < valMin; „sehr hell“ = v > valLight */
-    satMin: 0.25,
-    valMin: 0.2,
-    valLight: 0.85,
+    alpha: 0.6,        // für alle Farben gleich (16.11.2026)
+    fallback: '#D8D2C8', // heller Ersatzton: Weiß, ohne Farbe
   },
   badge: {
     /** size-badge: Durchmesser der runden Plakette */

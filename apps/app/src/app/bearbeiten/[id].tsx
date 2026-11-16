@@ -89,7 +89,7 @@ export default function Bearbeiten() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ItemEditor title="Bearbeiten" form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null} wishlists={wardrobe?.wishlists ?? []}
-        current={current} pics={pics} onPic={(side, p) => setPics((x) => ({ ...x, [side]: p }))} hex={tile?.hex ?? null} highlight={tile?.highlight}
+        current={current} pics={pics} onPic={(side, p) => setPics((x) => ({ ...x, [side]: p }))} hex={tile?.hex ?? null}
         saving={saving} onCancel={close} onSave={save} onDelete={() => setConfirmDelete(true)} initialTab={reiter === 'kauf' ? 'kauf' : 'steck'}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: id, setId: orig.set_id }} />
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title={f.isWish ? 'Wunsch löschen?' : 'Teil löschen?'}

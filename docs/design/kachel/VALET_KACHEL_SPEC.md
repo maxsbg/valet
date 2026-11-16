@@ -33,24 +33,11 @@ Status **verliehen, Reparatur, eingelagert/aussortiert, verkauft**: Foto mit `op
 
 ## 3. Innenschein (Farbregel)
 
-Jedes Teil hat eine **Hauptfarbe** (aus der Farbanalyse) und optional eine **Highlight-Farbe** (zweite, auffällige Farbe am Teil, z. B. Navy-Schirm einer cremefarbenen Cap).
+**Ersetzt am 16.11.2026** – verbindlich ist jetzt `VALET_SCHEIN_REGELN.md` (Lesefassung `schein-regeln.html`):
+Farbe aus den Steckbrief-Farben (Rang 1, bei neutralem Rang 1 der farbige Akzent nach Rangliste), immer 60 %,
+Weiß → Ersatzton `#d8d2c8`, Bunt → Farbkreis am Rand. Highlight-Farbe aus dem Foto und die 52/28-%-Regel entfallen.
 
-```
-hsv = toHSV(hauptfarbe)
-neutral = hsv.s < 0.25 || hsv.v < 0.20
-
-wenn nicht neutral:         farbe = hauptfarbe,  alpha = 0.52
-sonst wenn highlight da:    farbe = highlight,   alpha = 0.52
-sonst:                      farbe = hauptfarbe,  alpha = 0.28
-                            (ist die Hauptfarbe sehr hell, v > 0.85: farbe = #d8d2c8)
-keine Hauptfarbe bekannt:   farbe = #d8d2c8,     alpha = 0.28
-
-box-shadow: inset 0 0 22px 3px rgba(farbe, alpha)
-```
-
-Beispiele aus dem Entwurf: blaues Tanktop → Blau 52 %; Asics gelb/silber → Gelb-Beige 52 %; braune Loafer → Braun 52 %; Cap creme mit Navy → Navy 52 %; schwarze Hose, silberne Tasche, weißes Shirt, beige Jacke → jeweils 28 %.
-
-Ermittlung der Highlight-Farbe aus dem Foto (so im Entwurf): Pixel des freigestellten Teils mit Sättigung > 0,25 und Helligkeit > 0,15; machen sie mehr als ca. 0,5–2 % der Teilfläche aus, ist ihr Median die Highlight-Farbe. Besser: Highlight-Farbe zusätzlich im Teil bearbeiten lassen.
+Form unverändert: `box-shadow: inset 0 0 22px 3px rgba(farbe, 0.6)`
 
 ## 4. Plaketten – gemeinsames Material und Maße
 
@@ -184,8 +171,8 @@ Strichstärke: seit 15.11.2026 überall 2 (vorher Status/Wendbar 2,2 bei 11 px, 
 | `badge-glass` | rgba(255,255,255,0.62) | Plakettenfläche |
 | `tile-edge` | rgba(42,26,29,0.09) | Kachelkante |
 | `glow-blur` / `glow-spread` | 22px / 3px | Innenschein |
-| `glow-alpha-strong` / `glow-alpha-soft` | 0.52 / 0.28 | Innenschein |
-| `glow-fallback` | #d8d2c8 | Schein ohne/zu helle Farbe |
+| `glow-alpha` | 0.6 | Innenschein (alle Farben, seit 16.11.2026) |
+| `glow-fallback` | #d8d2c8 | Schein für Weiß bzw. ohne Farbe |
 | `person-pink-text` / `person-red-text` | #a8325f / #b00e28 | Monogramm-Buchstaben |
 
 Bestehende Tokens bleiben: `person-pink` #d9668e, `person-red` #c8102e, `ink` #2a1a1d, Gloock für Monogramme.
@@ -209,12 +196,12 @@ Bestehende Tokens bleiben: `person-pink` #d9668e, `person-red` #c8102e, `ink` #2
 2. **Eingelagert vs. aussortiert**: beide im Entwurf mit Kiste. Ob sie getrennte Symbole bekommen, ist offen.
 3. **Wunschlisten-Kachel**: noch nicht auf die neue Kachel umgestellt (bisher Preis-Pille mit Text und Bedenkzeit-Ring). Offen.
 4. **Farben für Person 3+**: Es gibt bisher nur Farben für Max und Paul.
-5. **Highlight-Farbe**: automatische Ermittlung vs. manuell im Teil, siehe 3.
+5. ~~Highlight-Farbe~~ – entschieden 16.11.2026: Akzent aus den Steckbrief-Farben, siehe `VALET_SCHEIN_REGELN.md`.
 
 ## 11. Abnahme (so prüfst du dein Ergebnis)
 
 1. `valet-kachel-referenz.html` im Browser öffnen und die eigene Kachel mit denselben Daten daneben rendern (gleiche Kachelbreite 114 px, gleiche Fälle wie in der Referenz: Mosaik, Besitzer-Regeln, Wendbar/Anzahl, Status/Bügel, Innenschein, Extremfälle).
 2. Maße per DevTools nachmessen: Ecken 14, Plaketten 20, Abstand 4, Kapsel 20 × 14, Stapelabstand 3, Überlappung 3.
 3. Zentrierung prüfen wie in 5.5 beschrieben: Ziffern (Systemschrift) **und** Monogramme (Gloock) liegen optisch in der Mitte (≤ 0,25 px), auch in der Kapsel und zweistellig; „12ד und „+12“ stoßen nirgends an. Gloock muss dabei wirklich geladen sein (keine Ersatzschrift).
-4. Logik mit Tests absichern: `glowFor` (Beispiele aus 3.), `ownersFor` (alle Zeilen der Tabelle in 5.4, auch aus Pauls Sicht), Anzahl-Format (`2×`, `12×`, `99+`) und Kreis vs. Kapsel je nach Wendbar.
+4. Logik mit Tests absichern: `glowFor` (siehe `glow.test.ts`), `ownersFor` (alle Zeilen der Tabelle in 5.4, auch aus Pauls Sicht), Anzahl-Format (`2×`, `12×`, `99+`) und Kreis vs. Kapsel je nach Wendbar.
 5. Offene Punkte aus 10. nicht selbst entscheiden, sondern nachfragen.

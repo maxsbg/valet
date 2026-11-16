@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valet – Innenschein-Regeln</title>
+<style>body{margin:0;background:#F5F0E8;color:#2A1A1D;font:16px/1.55 -apple-system,system-ui,sans-serif}main{max-width:680px;margin:0 auto;padding:24px 18px 60px}
+h1{font:32px/1.15 Georgia,serif;color:#722638}h2{font:22px/1.2 Georgia,serif;margin-top:30px}code{background:rgba(42,26,29,.07);border-radius:5px;padding:1px 5px;font-size:.88em}
+table{border-collapse:collapse;width:100%;font-size:14px;background:#fff;border-radius:12px;overflow:hidden}td,th{padding:8px 10px;border-bottom:1px solid rgba(42,26,29,.08);text-align:left;vertical-align:top}li{margin:4px 0}</style>
+</head><body><main><h1>Valet – Innenschein der Kacheln (Regeln)</h1>
+<p>Stand: 16.11.2026, entschieden mit Max. Ersetzt Abschnitt 3 („Innenschein“) der Kachel-Spec und die frühere Highlight-Farbe.</p>
+<p>Code: <code>packages/core/src/glow.ts</code> (<code>glowColorName</code>, <code>glowFor</code>, <code>glowShadow</code>, Ranglisten), Tests <code>packages/core/test/glow.test.ts</code>,
+Darstellung <code>apps/app/src/components/tile/TileGlow.tsx</code>, Werte <code>itemTile.glow</code> in <code>packages/ui/src/tokens.ts</code>.</p>
+<h2>1. Woher kommt die Farbe?</h2>
+<p>Aus den <strong>Farben im Steckbrief</strong> des Teils (<code>items.colors</code>, Rang-Reihenfolge, max. 3) – nicht mehr aus dem Foto.
+Jede Palettenfarbe (Haupt- und Nuance, <code>COLORS</code> in <code>attributes.ts</code>) hat genau eine Scheinfarbe: ihren eigenen Hex-Wert.</p>
+<p>Ausnahmen:
+- <strong>Weiß</strong> → heller Ersatzton <code>#D8D2C8</code> (weiß auf weißer Kachel wäre unsichtbar).
+- <strong>Bunt</strong> → Farbkreis (<code>MULTICOLOR_STOPS</code>) <strong>nur am Rand</strong>, gleiche Form wie der einfarbige Schein.
+- <strong>Teil ohne Steckbrief-Farben</strong> → nächste Palettenfarbe zur Foto-Farbe (<code>nearestColor</code>); ohne Foto-Farbe Ersatzton.</p>
+<h2>2. Welche Farbe gewinnt? (<code>glowColorName</code>)</h2>
+<ol>
+<li><strong>Rang 1 ist farbig</strong> → Rang 1. (Auch wenn eine „stärkere“ Farbe folgt: Gelb · Blau → Gelb.)</li>
+<li><strong>Rang 1 ist neutral, das Teil hat aber farbige Farben</strong> → immer eine farbige Farbe (Akzent).
+   Bei mehreren gewinnt die, die in der <strong>farbigen Rangliste</strong> weiter oben steht.
+   Beispiele: Weiß · Rot → Rot; Schwarz · Gelb → Gelb; Dunkelgrau · Rosa → Rosa; Beige · Braun → Braun.</li>
+<li><strong>Nur Neutralfarben</strong> → die, die in der <strong>neutralen Rangliste</strong> weiter oben steht.
+   Beispiele: Weiß · Silber · Schwarz → Silber; Schwarz · Beige → Beige; Schwarz · Weiß → Schwarz.</li>
+</ol>
+<p>Der Akzent ersetzt die neutrale Farbe am ganzen Rand (kein zweifarbiger Rand).</p>
+<p><strong>Neutralfarben</strong> (nie Akzent): Weiß, Elfenbein, Beige, Taupe, Hellgrau, Dunkelgrau, Schwarz, Silber.
+Alles andere ist farbig (auch Braun, Camel, Gold, Bronze, Pastelltöne).</p>
+<h2>3. Ranglisten (oben = wird auf der Kachel stärker wahrgenommen)</h2>
+<p><strong>Farbig</strong> (<code>GLOW_COLOR_RANK</code>):
+1 Bunt · 2 Magenta · 3 Rot · 4 Violett · 5 Burgunderrot · 6 Lila · 7 Blau · 8 Orange · 9 Terrakotta · 10 Koralle ·
+11 Senfgelb · 12 Pink · 13 Grün · 14 Marineblau · 15 Gelb · 16 Hellgrün · 17 Bronze · 18 Dunkelgrün · 19 Gold ·
+20 Olivgrün · 21 Cyan · 22 Türkis · 23 Petrol · 24 Braun · 25 Camel · 26 Flieder · 27 Khaki · 28 Hellgelb ·
+29 Altrosa · 30 Himmelblau · 31 Lavendel · 32 Rosa · 33 Mint</p>
+<p><strong>Neutral</strong> (<code>GLOW_NEUTRAL_RANK</code>):
+1 Silber · 2 Taupe · 3 Beige · 4 Dunkelgrau · 5 Hellgrau · 6 Elfenbein · 7 Schwarz · 8 Weiß
+(Weiß ganz unten = kein Unterschied zu „kein Schein“; Schwarz knapp darüber, weil dunkle Ränder vermieden werden sollen.)</p>
+<p>Die farbige Rangliste ist aus Farbkraft (OKLCH-Chroma) und etwas Dunkelheit berechnet und von Max so bestätigt.
+Neue Palettenfarbe → in eine der beiden Listen eintragen (Test prüft, dass beide Listen zusammen genau die Palette abdecken).</p>
+<h2>4. Darstellung</h2>
+<table>
+<thead>
+<tr>
+<th>Wert</th>
+<th>Kachel (Schrank, Wunschliste)</th>
+<th>Bild-Kachel Detail / Bearbeiten</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Form</td>
+<td><code>box-shadow: inset 0 0 22px 3px rgba(farbe, 0.6)</code></td>
+<td><code>inset 0 0 52px 8px rgba(farbe, 0.6)</code></td>
+</tr>
+<tr>
+<td>Stärke</td>
+<td><strong>60 % für alle Farben</strong></td>
+<td>60 %</td>
+</tr>
+<tr>
+<td>Bunt</td>
+<td>Ebene unter dem Foto: <code>conic-gradient</code> aus den Bunt-Farben, Deckkraft 0,6, darüber weiße Fläche (Abstand = spread, Weichzeichnung = blur/2)</td>
+<td>gleich, mit 52/8</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>In Bearbeiten folgt der Schein live den gewählten Farben (bei Wendeteilen Seite B mit den Farben von Seite B).</li>
+<li>Outfit-Karten bleiben weiß (kein Schein).</li>
+<li>iOS (nativ): Bunt-Ebene gibt es noch nicht → dort heller Ersatzton, bis eine native Lösung (z. B. SVG-Verlauf) gebaut ist.</li>
+</ul>
+<h2>5. Nicht mehr verwendet</h2>
+<ul>
+<li><code>items.highlight_color</code> (Spalte bleibt, wird nicht mehr gelesen) und die Highlight-Erkennung aus dem Foto.</li>
+<li>Die HSV-Regel „neutral = Sättigung &lt; 0,25 oder Helligkeit &lt; 0,2“ mit 52 % / 28 %.</li>
+</ul>
+<h2>Entstehung (Entwürfe auf claude.ai)</h2>
+<ul>
+<li>„Valet – Schein je Farbe“: alle Palettenfarben als Kachel, Stärke je Farbe.</li>
+<li>„Valet – Rangliste der Farben“: beide Ranglisten + Wirkung auf die echten Teile.</li>
+<li>„Valet – Schein nach Steckbrief-Farbe“: Vergleich heute/neu am ganzen Schrank.</li>
+</ul></main></body></html>
