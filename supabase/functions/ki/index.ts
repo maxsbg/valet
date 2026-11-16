@@ -11,6 +11,8 @@ const corsHeaders = {
 // Anbieter über Secrets wählbar (OpenAI-kompatible Schnittstelle): KI_ENDPOINT, KI_MODEL, KI_API_KEY.
 // GEMINI_API_KEY gesetzt → Gemini über dessen OpenAI-Schnittstelle (hat Vorrang), sonst KI_API_KEY mit Mistral.
 const GEMINI = { endpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-flash-latest" };
+/** Ersatzmodelle, wenn das gewählte überlastet ist (503) */
+const GEMINI_FALLBACK = ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const MISTRAL = { endpoint: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" };
 const DEFAULT_STORAGE_BUCKET = "items";
 
@@ -176,23 +178,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // 5. Modell-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
+    // Gewähltes Modell zuerst; bei Überlastung (503) die Ersatzmodelle, sonst ein Wiederholungsversuch
+    const models = [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    for (const m of models) {
       try {
-        const data = await callModel({
-          endpoint,
-          token: modelToken,
-          model,
-          prompt,
-          base64Image,
-          mimeType,
-          schema: responseSchema,
-        });
-        return jsonResponse({ data }, 200);
+        const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema });
+        return jsonResponse({ data, model: m }, 200);
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
-        console.warn(`Attempt ${attempt}/2: model call error`, lastError);
-        // Kontingent erschöpft → nicht sofort erneut versuchen
+        console.warn(`${m}: model call error`, lastError);
         if (lastError.includes("(429)")) return jsonResponse({ error: "rate_limited" }, 429);
       }
     }
