@@ -75,10 +75,28 @@ export async function updateItem(id: string, change: ItemChange | Record<string,
 
 export async function deleteItem(id: string) {
   const imgs = await supabase.from('item_images').select('storage_path').eq('item_id', id);
+  const before = await supabase.from('items').select('set_id').eq('id', id).maybeSingle();
   const r = await supabase.from('items').delete().eq('id', id);
   if (r.error) throw r.error;
   const paths = (imgs.data ?? []).map((x) => x.storage_path as string);
   if (paths.length) await supabase.storage.from('items').remove(paths); // Bilder aufräumen, Fehler egal
+  await cleanUpAfterDelete(id, (before.data?.set_id as string | null) ?? null); // Fehler egal, Teil ist schon weg
+}
+
+/** Nach dem Löschen: Set mit nur noch einem Teil auflösen, Teil aus eigenen Reihenfolgen austragen */
+async function cleanUpAfterDelete(id: string, setId: string | null) {
+  try {
+    if (setId) {
+      const rest = await supabase.from('items').select('id').eq('set_id', setId);
+      if (rest.data && rest.data.length === 1) await supabase.from('items').update({ set_id: null, set_name: null }).eq('set_id', setId);
+    }
+    for (const table of ['wishlists', 'persons'] as const) {
+      const rows = await supabase.from(table).select('id,item_order').contains('item_order', [id]);
+      for (const row of rows.data ?? []) {
+        await supabase.from(table).update({ item_order: (row.item_order as string[]).filter((x) => x !== id) }).eq('id', row.id);
+      }
+    }
+  } catch { /* nur Aufräumen */ }
 }
 
 /** Aktuelle Bilder je Seite (Vorschaubild, sonst Hauptbild) – für die Bearbeiten-Seite */
