@@ -82,11 +82,10 @@ const PRECUT_EDGE = 2000;
 async function precut(file: Blob): Promise<Picture | null> {
   const c = await fileToCanvas(file, PRECUT_EDGE);
   const W = c.width, H = c.height, x = c.getContext('2d', { willReadFrequently: true })!;
-  const img = x.getImageData(0, 0, W, H), d = img.data, alpha = new Uint8Array(W * H);
-  for (let i = 0; i < alpha.length; i++) alpha[i] = d[i * 4 + 3]!;
-  const r = analyzePrecut(alpha, W, H);
+  const img = x.getImageData(0, 0, W, H);
+  const r = analyzePrecut(img.data, W, H);
   if (r.kind === 'photo' || !r.box) return null;
-  if (r.kind === 'shadow') { for (let i = 0; i < alpha.length; i++) d[i * 4 + 3] = r.alpha[i]!; x.putImageData(img, 0, 0); }
+  if (r.kind === 'shadow') { img.data.set(r.data); x.putImageData(img, 0, 0); }
   const { x0, y0, x1, y1 } = r.box, out = document.createElement('canvas');
   out.width = x1 - x0; out.height = y1 - y0;
   out.getContext('2d')!.drawImage(c, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
