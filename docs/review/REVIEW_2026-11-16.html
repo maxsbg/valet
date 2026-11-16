@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valet – Prüfbericht 16.11.2026</title>
+<style>
+  :root {
+    --bg: #F5F0E8; --card: #FFFDF9; --ink: #2A1A1D; --muted: #6B5B5E; --line: #E2D9CC;
+    --brand: #722638; --code: #EFE8DC;
+    --krit: #8E1B2C; --hoch: #B4440F; --mittel: #7A5A00; --niedrig: #5A5F66;
+    --ok: #1F6B45; --vd: #6B5B5E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17110F; --card: #221A18; --ink: #F3ECE2; --muted: #B5A8A2; --line: #3A2F2C;
+      --brand: #EF91B0; --code: #2E2422;
+      --krit: #FF8A99; --hoch: #FF9A62; --mittel: #F2CF63; --niedrig: #B8BEC6;
+      --ok: #7FD3A6; --vd: #B5A8A2;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 780px; margin: 0 auto; padding: 20px 16px 64px; }
+  h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 30px; line-height: 1.15; margin: 8px 0 6px; color: var(--brand); }
+  h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 24px; margin: 40px 0 10px; }
+  h3 { font-size: 17px; margin: 26px 0 8px; }
+  p { margin: 8px 0; }
+  a { color: var(--brand); }
+  .meta { color: var(--muted); font-size: 14px; }
+  code { background: var(--code); border-radius: 5px; padding: 1px 5px; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
+  ol.fazit { padding-left: 22px; margin: 0; }
+  ol.fazit li { margin: 8px 0; }
+  .counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+  .count { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 8px; text-align: center; }
+  .count b { display: block; font-size: 26px; line-height: 1.1; }
+  .count span { font-size: 13px; color: var(--muted); }
+  .c-krit b { color: var(--krit); } .c-hoch b { color: var(--hoch); } .c-mittel b { color: var(--mittel); } .c-niedrig b { color: var(--niedrig); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--muted); font-size: 13px; }
+  tr:last-child td { border-bottom: 0; }
+  .scroll { overflow-x: auto; }
+  details.f { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--niedrig); border-radius: 12px; margin: 10px 0; }
+  details.f.hoch { border-left-color: var(--hoch); } details.f.mittel { border-left-color: var(--mittel); } details.f.krit { border-left-color: var(--krit); }
+  details.f > summary { cursor: pointer; list-style: none; padding: 12px 14px; display: block; }
+  details.f > summary::-webkit-details-marker { display: none; }
+  .id { font: 600 12px/1 ui-monospace, Menlo, monospace; color: var(--muted); margin-right: 6px; }
+  .t { font-weight: 600; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+  .tag { font-size: 12px; line-height: 1; padding: 5px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .tag.nw { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  .tag.vd { border-style: dashed; border-color: var(--vd); color: var(--vd); font-weight: 600; }
+  .body { padding: 0 14px 12px; border-top: 1px solid var(--line); }
+  .body dl { margin: 10px 0 0; }
+  .body dt { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-top: 11px; }
+  .body dd { margin: 3px 0 0; }
+  .body ul { margin: 4px 0; padding-left: 20px; }
+  .body li { margin: 3px 0; }
+  ol.top { padding-left: 24px; }
+  ol.top li { margin: 9px 0; }
+  ul.plain { padding-left: 20px; } ul.plain li { margin: 7px 0; }
+  .bar { display: flex; gap: 8px; margin: 10px 0 0; }
+  button { font: inherit; font-size: 14px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; }
+  .legend { font-size: 14px; color: var(--muted); }
+  @media print { details.f { break-inside: avoid; } .bar { display: none; } }
+</style>
+</head>
+<body>
+<main>
+
+<p class="meta">Valet · Prüfbericht</p>
+<h1>Vollständige Prüfung des Repos maxsbg/valet</h1>
+<p class="meta">Datum: 16.11.2026 · geprüfter Stand: <code>main</code> @ <code>3b85635</code> (Merge PR #77, 16.11.2026 12:41) · die Live-Seite liefert dasselbe Paket · Supabase-Projekt <code>jocjisrmmzzvfnijosgg</code>.<br>
+Es wurde nichts geändert: keine Commits, keine Migrationen, in der Datenbank nur Lese-Abfragen. Diese Datei liegt im Arbeitsordner und ist nicht eingecheckt.</p>
+
+<h2>Kurzfazit</h2>
+<div class="card">
+<ol class="fazit">
+  <li>Die Zugriffsregeln halten: In allen 14 Tabellen und im Bilder-Speicher sieht ein fremdes Konto nichts, Unangemeldete werden abgewiesen, und im gesamten Verlauf (208 Commits, 60 Zweige) liegt kein geheimer Schlüssel.</li>
+  <li>Die größten Risiken liegen daneben: Die Registrierung ist offen, jeder Angemeldete darf einen eigenen Schrank anlegen, Bilder hochladen und die nicht mehr genutzte Freistell-Funktion mit deinem Hugging-Face-Token aufrufen – und es gibt keinerlei Sicherung der Daten.</li>
+  <li>Build, Typprüfung und alle 146 Tests laufen sauber durch, getestet ist aber nur <code>packages/core</code>; ein Linter ist nicht eingerichtet, und die App selbst (Speichern, Planen, Bilder) hat keinen einzigen Test.</li>
+  <li>Im Alltag stören vor allem vier Dinge: Bilder werden auf dem iPhone als PNG statt WebP gespeichert (rund 16 MB Vorschaubilder beim ersten Laden), die Web-App lädt Daten nie nach, mehrere Seiten können im Ladekreis hängen bleiben, und Speichern läuft in mehreren ungesicherten Einzelschritten.</li>
+  <li>Die KI (Proxy zu Gemini, Prüfung gegen die festen Listen) existiert noch nicht und konnte deshalb nicht geprüft werden; alle Funde zur Oberfläche sind gelesen und nicht in der laufenden App reproduziert, weil mir kein Login zur Verfügung stand.</li>
+</ol>
+</div>
+
+<div class="counts">
+  <div class="count c-krit"><b>0</b><span>Kritisch</span></div>
+  <div class="count c-hoch"><b>4</b><span>Hoch</span></div>
+  <div class="count c-mittel"><b>17</b><span>Mittel</span></div>
+  <div class="count c-niedrig"><b>12</b><span>Niedrig</span></div>
+</div>
+<p class="legend"><span class="tag nw">nachgewiesen</span> = ausgeführt oder reproduziert (Befehl, Abfrage, Messung). <span class="tag vd">Verdacht</span> = nur im Code gelesen. Aufwand: S = bis ca. 2 Stunden, M = ein halber bis ganzer Tag, L = mehrere Tage.</p>
+
+<h2>Echte Ergebnisse der Läufe</h2>
+<div class="card scroll">
+<table>
+  <tr><th>Lauf</th><th>Ergebnis</th></tr>
+  <tr><td><code>pnpm install --frozen-lockfile</code></td><td>in Ordnung, 8,6 s</td></tr>
+  <tr><td>Typprüfung <code>pnpm -r typecheck</code></td><td>0 Fehler (core, ui, app), 11,9 s</td></tr>
+  <tr><td>Tests <code>pnpm test</code></td><td>146 von 146 bestanden, 4,8 s – alle in <code>packages/core</code> (20 Dateien). <code>apps/app</code> hat keine Tests.</td></tr>
+  <tr><td>Web-Build <code>pnpm --filter @valet/app build:web</code></td><td>in Ordnung, 38,9 s, 985 Module. Ausgabe 45 MB, davon 44 MB Freistell-Modell.</td></tr>
+  <tr><td>Linter</td><td><b>Nicht eingerichtet</b> (kein Skript, keine Konfiguration). Ersatzlauf auf einer Kopie mit ESLint 9 + <code>eslint-config-expo</code> 58: <b>145 Fehler, 31 Warnungen</b> in 111 Dateien (Details in M12).</td></tr>
+  <tr><td>Paketgröße beim Start</td><td>1,72 MB JavaScript, gepackt ca. 460 KB (<code>entry</code> 1,12 MB / 293 KB, <code>__common</code> 0,60 MB / 165 KB) + Schrift 95 KB. Unauffällig.</td></tr>
+  <tr><td>Supabase-Advisors</td><td>Sicherheit: 3 Hinweise (Stufe WARN). Leistung: 25 Fremdschlüssel ohne Index, doppelte Regeln, 1 Regel mit Neuauswertung je Zeile (Details in N4).</td></tr>
+  <tr><td>Bestand</td><td>2 Schränke, 2 Konten, 137 Teile (13 Wünsche), 26 Outfits, 8 Trage-Einträge, 248 Bilddateien = 95 MB von 1 GB; Datenbank 13 MB von 500 MB.</td></tr>
+</table>
+</div>
+
+<h2>Zugriffsregeln je Tabelle und Speicher</h2>
+<p>Alle Zeilen <span class="tag nw">nachgewiesen</span> durch Lese-Abfragen in der Datenbank mit fremder Identität und durch Aufrufe der Schnittstelle ohne Anmeldung. Schreibversuche habe ich wegen der Regel „nichts ändern“ nicht ausgeführt, sondern die Schreib-Bedingungen als Ausdruck ausgewertet.</p>
+<div class="card scroll">
+<table>
+  <tr><th>Tabelle / Speicher</th><th>Lesen</th><th>Schreiben</th></tr>
+  <tr><td><code>wardrobes</code></td><td>Mitglieder</td><td>Ändern: Besitzer. <b>Anlegen: jeder Angemeldete</b> (siehe H1). Löschen: niemand.</td></tr>
+  <tr><td><code>wardrobe_members</code></td><td>Mitglieder</td><td>nur Besitzer</td></tr>
+  <tr><td><code>wardrobe_invites</code></td><td>nur Besitzer</td><td>nur Besitzer</td></tr>
+  <tr><td><code>persons</code>, <code>wishlists</code>, <code>items</code>, <code>outfits</code>, <code>daily_suggestions</code>, <code>cutout_feedback</code></td><td>Mitglieder des Schranks</td><td>Mitglieder mit Rolle „edit“ oder Besitzer</td></tr>
+  <tr><td><code>item_images</code>, <code>wears</code>, <code>reservations</code></td><td>über das Teil → Schrank</td><td>ebenso, Rolle „edit“</td></tr>
+  <tr><td><code>outfit_items</code>, <code>outfit_plans</code></td><td>über das Outfit → Schrank</td><td>ebenso, Rolle „edit“</td></tr>
+  <tr><td>Speicher <code>items</code></td><td>Einzelnes Bild über seine Adresse ohne Anmeldung abrufbar (bewusst, siehe N10). Auflisten nur Mitglieder.</td><td>nur Mitglieder mit „edit“, höchstens 5 MB, nur PNG/JPEG/WebP</td></tr>
+</table>
+</div>
+<ul class="plain">
+  <li>Fremdes angemeldetes Konto (erfundene Kennung): <b>0 Zeilen</b> in allen 14 Tabellen und in <code>storage.objects</code>.</li>
+  <li>Testkonto: sieht seinen Test-Schrank (11 Teile) und <b>0</b> Zeilen aus „Max &amp; Paul“; Lesen, Schreiben, Verwalten und Hochladen dorthin ergeben alle „nein“.</li>
+  <li>Ohne Anmeldung: alle 14 Tabellen antworten mit 401 („permission denied for function is_member“), Auflisten des Speichers liefert eine leere Liste, <code>accept_invite</code> 401, Edge Function 401.</li>
+  <li>Schlüssel: im Code nur der öffentliche Publishable Key (<code>apps/app/src/lib/supabase.ts:7</code>). Suche nach geheimen Schlüsseln über 208 Commits in 60 Zweigen, im Zweig <code>gh-pages</code> und im gebauten Paket: kein Treffer.</li>
+</ul>
+
+<h2>Funde</h2>
+<div class="bar"><button type="button" onclick="document.querySelectorAll('details.f').forEach(function(d){d.open=true})">Alle aufklappen</button><button type="button" onclick="document.querySelectorAll('details.f').forEach(function(d){d.open=false})">Alle zuklappen</button></div>
+
+<h3>Kritisch (0)</h3>
+<div class="card">Kein Fund dieser Stufe. Fremde können weder Schränke noch Teile, Bilder-Listen oder Wunschlisten lesen oder ändern.</div>
+
+<h3>Hoch (4)</h3>
+
+<details class="f hoch" open>
+<summary><span class="id">H1</span><span class="t">Registrierung offen: Fremde können Speicher und dein Hugging-Face-Kontingent verbrauchen</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Sicherheit</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>supabase/migrations/0001_schema.sql:251</code> – Regel <code>wardrobes_insert</code>: jeder Angemeldete darf einen Schrank anlegen und wird dessen Besitzer</li>
+  <li><code>supabase/migrations/0002_storage_items.sql:27–28</code> – Hochladen für Mitglieder, also auch in den selbst angelegten Schrank</li>
+  <li>Edge Function <code>freistellen</code> in Supabase (aktiv, Version 4); im Repo nur als <code>docs/archiv/edge-function-freistellen.ts</code></li>
+  <li><code>apps/app/src/components/Login.tsx:23</code> – Registrierung mit dem öffentlichen Schlüssel</li>
+</ul></dd>
+<dt>Beleg</dt><dd>Öffentliche Auth-Einstellungen abgefragt: <code>disable_signup: false</code> (Bestätigung per Mail nötig). Regeln aus der Datenbank gelesen. Die Funktion prüft nur „angemeldet und Mitglied irgendeines Schranks“ und schickt das Bild samt deinem Token an einen fremden Hugging-Face-Space. In den letzten 24 Stunden gab es keine Aufrufe außer meinen zwei abgelehnten Tests – die App nutzt sie nicht mehr. Nicht ausgeführt: Konto anlegen und hochladen (wäre eine Änderung).</dd>
+<dt>Auswirkung</dt><dd>Deine Daten bleiben geschützt. Wer aber die Adresse der App kennt, kann ein Konto anlegen, einen eigenen Schrank erzeugen, dort Bilder öffentlich abrufbar ablegen und über die Funktion dein Grafikkarten-Kontingent verbrauchen. Sind 1 GB Speicher oder 5 GB Datenverkehr der kostenlosen Stufe voll, fällt die App für euch aus.</dd>
+<dt>Vorschlag</dt><dd><ul>
+  <li>Edge Function <code>freistellen</code> löschen und den Hugging-Face-Token widerrufen.</li>
+  <li>Regel <code>wardrobes_insert</code> entfernen (Schränke nur noch per SQL anlegen). Ein fremdes Konto kann dann nichts mehr tun.</li>
+  <li>Sobald Paul beigetreten ist: Registrierung im Supabase-Dashboard abschalten.</li>
+  <li>Für den späteren KI-Proxy von Anfang an: Mitgliedschaft prüfen und ein Tageslimit je Konto in einer Tabelle führen.</li>
+</ul></dd>
+</dl></div>
+</details>
+
+<details class="f hoch" open>
+<summary><span class="id">H2</span><span class="t">Keine Sicherung der Daten</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Datenverlust</span><span class="tag">Aufwand M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>docs/abnahme-checkliste.md:80–83</code> und <code>docs/entwicklungsplan.md:59</code> – CSV, JSON-Backup und Bilder-Export sind geplant, aber offen</li>
+  <li><code>.github/workflows/</code> enthält nur <code>web.yml</code> – kein Sicherungs- oder Wach-Lauf</li>
+  <li><code>supabase/migrations/0007_…</code> – Daten-Umstellung, direkt als SQL auf der Produktions-Datenbank ausgeführt (steht nicht im Migrationsverlauf)</li>
+</ul></dd>
+<dt>Beleg</dt><dd>Suche nach Export-Code (CSV, JSON, Backup) in <code>apps/app/src</code> ohne Treffer; „Export“ gibt es nur als Bild (Teil-PNG, Outfit-Board). Die kostenlose Supabase-Stufe hat nach meinem Stand keine automatischen Sicherungen; Projekte pausieren nach 7 Tagen ohne Aktivität und sind dann 90 Tage wiederherstellbar (<a href="https://supabase.com/docs/guides/platform/free-project-pausing">Supabase-Doku</a>).</dd>
+<dt>Auswirkung</dt><dd>Ein fehlerhaftes SQL, eine misslungene Migration oder ein versehentliches Löschen ist nicht rückholbar. Nach dem Umstieg vom alten Valet ist Supabase die einzige Quelle für 137 Teile, 26 Outfits und 95 MB Bilder.</dd>
+<dt>Vorschlag</dt><dd><ul>
+  <li>Wöchentliche GitHub Action, die alle Tabellen als JSON sichert (Schlüssel als GitHub-Secret) und die Liste der Bilddateien dazulegt; der Lauf hält das Projekt gleichzeitig wach.</li>
+  <li>In der App „Daten exportieren“ (JSON und CSV) im Profil-Blatt.</li>
+  <li>Vor jeder Migration, die Daten ändert, erst einen Export ziehen.</li>
+</ul></dd>
+</dl></div>
+</details>
+
+<details class="f hoch" open>
+<summary><span class="id">H3</span><span class="t">Bilder landen als PNG statt WebP im Speicher</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">iPhone · Ladezeit</span><span class="tag">Aufwand M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>apps/app/src/lib/cutout.ts:157–159</code> – WebP versuchen, sonst PNG</li>
+  <li><code>apps/app/public/freistellen/rmbg.js:466</code> und <code>:470</code> – derselbe Rückfall für Bild und Vorschaubild</li>
+</ul></dd>
+<dt>Beleg</dt><dd>Datenbank: <b>248 von 248</b> Dateien sind <code>image/png</code>, auch die vom 16.11. Vorschaubilder im Schnitt 135 KB (größtes 274 KB), Hauptbilder im Schnitt 648 KB (größtes 1,6 MB). Ein Vorschaubild abgerufen: PNG, 400 × 358 Pixel, 280 KB. Ursache: Safari kann aus einer Zeichenfläche kein WebP erzeugen und liefert stattdessen PNG (<a href="https://caniuse.com/mdn-api_htmlcanvaselement_toblob_type_parameter_webp">caniuse</a>, <a href="https://bugs.webkit.org/show_bug.cgi?id=226950">WebKit-Fehler 226950</a>).</dd>
+<dt>Auswirkung</dt><dd>Der Schrank mit 124 Bildern lädt beim ersten Öffnen rund 16 MB Vorschaubilder; als WebP wäre es ein Bruchteil. Im Mobilnetz und bei 150+ Teilen wird das spürbar langsam. Die Zwischenspeicherung selbst ist gut eingestellt (1 Jahr).</dd>
+<dt>Vorschlag</dt><dd>WebP-Kodierer als WebAssembly (libwebp, etwa 200 KB, nur beim Speichern nachladen) für Hauptbild und Vorschau; die 248 vorhandenen Dateien einmalig per Skript neu erzeugen.</dd>
+</dl></div>
+</details>
+
+<details class="f hoch" open>
+<summary><span class="id">H4</span><span class="t">Web-App lädt Daten nie nach; Fehlerzustand ohne „Erneut versuchen“</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Teilen · Zustände</span><span class="tag">Aufwand S–M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>apps/app/src/components/Page.tsx:15–25</code> – im Web werden alle weiteren Eigenschaften verworfen, auch das Ziehen-zum-Aktualisieren aus <code>app/(tabs)/index.tsx:83</code>, <code>outfits.tsx:102</code>, <code>wunschliste.tsx:205</code></li>
+  <li><code>apps/app/src/lib/session.tsx:43</code> – der Schrank wird nur bei der Anmeldung geladen</li>
+  <li><code>apps/app/src/app/(tabs)/index.tsx:101–102</code> – „Laden fehlgeschlagen“ mit der rohen Fehlermeldung, ohne Knopf</li>
+</ul></dd>
+<dt>Beleg</dt><dd>Gelesen. Im gesamten Code gibt es kein Nachladen bei Rückkehr in die App und keine Live-Verbindung (Suche ohne Treffer).</dd>
+<dt>Auswirkung</dt><dd>Neue Teile, Reservierungen oder Statuswechsel der zweiten Person erscheinen erst nach einem kompletten Neuladen; als App auf dem Home-Bildschirm gibt es dafür keinen Knopf. Ist beim Start kurz kein Netz da, bleibt die Fehlermeldung stehen.</dd>
+<dt>Vorschlag</dt><dd>Beim Zurückkehren in die App neu laden (höchstens alle 30–60 Sekunden); Knopf „Erneut versuchen“ im Fehlerzustand; im Web einen Aktualisieren-Knopf oder eigenes Ziehen-zum-Aktualisieren; verständlicher Text bei fehlendem Netz.</dd>
+</dl></div>
+</details>
+
+<h3>Mittel (17)</h3>
+
+<details class="f mittel">
+<summary><span class="id">M1</span><span class="t">Abfragen ohne Filter und ohne seitenweises Laden</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Daten</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/src/lib/outfits.ts:37</code> (alle Trage-Einträge), <code>apps/app/src/lib/wardrobe.ts:90</code> (alle Bildzeilen). Gegenbeispiel im selben Repo: <code>lib/assign.ts</code> lädt seitenweise.</dd>
+<dt>Beleg</dt><dd>Abfragen gelesen. Die Zeilengrenze der Schnittstelle (bei Supabase standardmäßig 1000) lässt sich per SQL nicht auslesen. Aktuell 8 Trage-Einträge und 250 Bildzeilen.</dd>
+<dt>Auswirkung</dt><dd>Ab 1000 Zeilen liefert die Schnittstelle still nur einen Teil: Getragen-Zahlen, Kosten pro Tragen und Bügel-Plaketten stimmen dann nicht mehr; ab etwa 500 Teilen fehlen Bilder auf Kacheln. Außerdem wird die gesamte Trage-Historie bei jedem Outfit-Nachladen geholt, auch nach jedem Anlass-Tipp (<code>app/outfit/[id].tsx:93</code>).</dd>
+<dt>Vorschlag</dt><dd>Nach Schrank filtern, seitenweise laden wie in <code>assign.ts</code>; für die Statistik eine Ansicht mit Anzahl und letztem Tag je Teil.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M2</span><span class="t">Bild speichern und Teil löschen laufen nicht in einem Schritt</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag nw">Folgen im Bestand nachgewiesen</span><span class="tag">Aufwand S–M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/src/lib/item.ts:134–142</code> (alte Bildzeilen löschen, dann neue einfügen; das Löschen wird nicht auf Fehler geprüft), <code>:76–82</code> (Dateien erst nach dem Löschen des Teils, Fehler werden ignoriert), <code>:103–113</code> (scheitert Seite B, bleiben die Dateien von Seite A liegen).</dd>
+<dt>Beleg</dt><dd>Ablauf gelesen. Im Bestand: 2 Dateien (820 KB) zu einem per SQL gelöschten Teil ohne Bildzeile.</dd>
+<dt>Auswirkung</dt><dd>Bricht die Verbindung zwischen Löschen und Einfügen ab, hat das Teil kein Bild mehr, und die Dateien liegen ungenutzt im Speicher.</dd>
+<dt>Vorschlag</dt><dd>Statt Löschen + Einfügen ein <code>upsert</code> auf (Teil, Seite, Art) – die Eindeutigkeit gibt es schon; dazu ein Aufräum-Lauf, der Speicher und Bildzeilen abgleicht.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M3</span><span class="t">Outfit speichern und planen in Einzelschritten; doppelte Planungen möglich</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag nw">Doppelte im Bestand nachgewiesen</span><span class="tag">Aufwand M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>apps/app/src/lib/outfits.ts:93–113</code> (drei bis fünf einzelne Aufrufe), <code>:126–134</code> (löschen → einfügen → reservieren)</li>
+  <li><code>apps/app/src/app/outfit-bauen.tsx:89–93</code> – scheitert das Planen nach dem Anlegen und man tippt erneut „Speichern“, entsteht ein zweites Outfit</li>
+  <li><code>apps/app/src/app/neu.tsx:100–101</code> – dasselbe Muster bei Teil + Set: zweites Teil</li>
+  <li><code>supabase/migrations/0001_schema.sql:168</code> – <code>outfit_plans</code> ohne Eindeutigkeit</li>
+</ul></dd>
+<dt>Beleg</dt><dd>Im Test-Schrank liegen zwei identische Planungen (gleiches Outfit, gleiche Person, gleicher Tag, in derselben Sekunde angelegt) und drei künftige Planungen ohne Reservierung.</dd>
+<dt>Auswirkung</dt><dd>Halbe Zustände (Planung ohne Reservierung, Outfit ohne die neuen Teile) und Duplikate.</dd>
+<dt>Vorschlag</dt><dd>Je Ablauf eine Datenbank-Funktion in einer Transaktion; Eindeutigkeit auf (Outfit, Person, Tag); nach einem Teilerfolg die schon erzeugte Kennung weiterverwenden statt neu anzulegen.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M4</span><span class="t">Gleichzeitige Änderungen: der Letzte gewinnt</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Datenmodell</span><span class="tag">Aufwand M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>packages/core/src/edit.ts:216–234</code> – Bearbeiten schreibt immer alle Felder; <code>apps/app/src/lib/item.ts:71–74</code> ohne Vergleich von <code>updated_at</code></li>
+  <li><code>supabase/migrations/0001_schema.sql:138</code> und <code>lib/item.ts:48–53</code> – ein Trage-Eintrag je Teil und Tag; Abwählen löscht ihn unabhängig von der Person</li>
+  <li><code>lib/outfits.ts:165–181</code> – Reservierungen ohne Sperre, nur Hinweis</li>
+</ul></dd>
+<dt>Auswirkung</dt><dd>Bearbeiten zwei Personen dasselbe Teil, überschreibt der zuletzt Speichernde alle Felder des anderen. Trägt Paul am selben Tag ein Teil von Max, ersetzt oder löscht einer den Eintrag des anderen. Doppelte Reservierungen sind möglich.</dd>
+<dt>Vorschlag</dt><dd>Beim Speichern den gelesenen Stand mitgeben und bei Abweichung „wurde inzwischen geändert“ zeigen; nur geänderte Felder schreiben; Schlüssel der Trage-Einträge um die Person erweitern.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M5</span><span class="t">Neue Wunschteile haben keinen Besitzer – der Personen-Filter blendet sie aus</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Wunschliste</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>packages/core/src/edit.ts:216–219</code> (der Wunsch-Zweig schreibt kein <code>owner_ids</code>), <code>apps/app/src/lib/wishlists.ts:75</code> (Filter nur über die Besitzer des Teils), <code>apps/app/src/app/(tabs)/wunschliste.tsx:81</code>.</dd>
+<dt>Beleg</dt><dd><code>editChange</code> mit einem Wunsch-Formular ausgeführt: kein <code>owner_ids</code> im Ergebnis. Datenbank: 9 von 9 in der App angelegten Wunschteilen sind ohne Besitzer; nur die 4 importierten haben einen.</dd>
+<dt>Auswirkung</dt><dd>Wählt man in der Wunschliste eine Person, verschwinden alle in der neuen App angelegten Wunschteile, auch aus der eigenen Liste.</dd>
+<dt>Vorschlag</dt><dd>Im Filter <code>wishOwners</code> verwenden (Teil → Besitzer der Liste); die Funktion gibt es schon in <code>packages/core/src/wish.ts:67</code>.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M6</span><span class="t">Betrag „1.200“ wird als 1,20 € gespeichert</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Preise</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>packages/core/src/money.ts:4–11</code> (<code>parseAmount</code>), genutzt in <code>edit.ts:192</code> und <code>apps/app/src/components/StatusSheet.tsx:48</code>.</dd>
+<dt>Beleg</dt><dd>Ausgeführt: „1.200“ → 1,2 · „2.000 €“ → 2 · „12abc“ → 12 · „1.234,56“ → 1234,56 (richtig). <code>editChange</code> mit Bezahlt „1.200“ ergibt <code>price_paid</code> 1,2.</dd>
+<dt>Auswirkung</dt><dd>Preise ab 1.000 € mit Tausenderpunkt werden um den Faktor 1000 zu klein gespeichert; Ausgaben und Kosten pro Tragen sind dann falsch. Im Bestand gibt es noch kein Teil ab 1.000 €.</dd>
+<dt>Vorschlag</dt><dd>Punkt gefolgt von genau drei Ziffern als Tausendertrenner lesen, Eingaben mit Buchstaben ablehnen, Fälle in <code>money.test.ts</code> ergänzen.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M7</span><span class="t">Seiten können im Ladekreis hängen bleiben</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Zustände</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>apps/app/src/app/bearbeiten/[id].tsx:36</code> und <code>:50</code> – bei einem Ladefehler wird ein Hinweis gesetzt, die Lade-Ansicht zeigt ihn aber nicht an</li>
+  <li><code>apps/app/src/app/teil/[id].tsx:74</code> und <code>apps/app/src/components/detail/WishDetail.tsx:60</code> – ist das Teil nicht im geladenen Schrank, bleibt der Ladekreis ohne Zurück-Knopf</li>
+  <li><code>apps/app/src/app/_layout.tsx:39–41</code> – leere Seite, solange die Schrift nicht geladen ist; ein Ladefehler wird nicht ausgewertet</li>
+</ul></dd>
+<dt>Auswirkung</dt><dd>Hat die andere Person ein Teil gelöscht oder neu angelegt, ist der Schrank nicht geladen oder die Schriftdatei nicht erreichbar, bleibt die Seite stehen. Als App auf dem Home-Bildschirm hilft dann nur Schließen.</dd>
+<dt>Vorschlag</dt><dd>Eine gemeinsame Fehleransicht mit „Zurück“ und „Erneut versuchen“; nach kurzer Wartezeit ohne die Schrift starten.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M8</span><span class="t">„Heute getragen“ aus einem geplanten Outfit lässt sich nicht entfernen</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Getragen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/src/app/teil/[id].tsx:79</code> und <code>:108–117</code>; <code>apps/app/src/lib/item.ts:42–46</code> (geplante Outfits zählen als getragen).</dd>
+<dt>Auswirkung</dt><dd>Stammt „heute getragen“ aus einem für heute geplanten Outfit, löscht der Knopf nichts, meldet aber „Heute getragen entfernt.“ und bleibt aktiv.</dd>
+<dt>Vorschlag</dt><dd>In dem Fall auf das Outfit verweisen („über Outfit geplant“) oder die Planung für heute mit entfernen.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M9</span><span class="t">Ohne Netz startet die App nicht</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">iPhone · offline</span><span class="tag">Aufwand M–L</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/scripts/postexport.mjs</code> und Build-Ausgabe: kein Service Worker, kein Manifest. Laut <code>docs/entwicklungsplan.md:104</code> und <code>:218</code> ist Offline „Pflicht beim Umzug“.</dd>
+<dt>Beleg</dt><dd>Gebautes Paket und Live-Seite durchsucht: kein Service Worker, kein lokaler Zwischenspeicher für Daten. „Zum Home-Bildschirm“ funktioniert (Angaben dafür sind vorhanden).</dd>
+<dt>Auswirkung</dt><dd>Im Funkloch (Keller, Umkleide) ist der Schrank nicht sichtbar.</dd>
+<dt>Vorschlag</dt><dd>Service Worker für App-Hülle und Vorschaubilder; letzten Schrank-Stand lokal ablegen und zuerst anzeigen; Schreiben ohne Netz zunächst mit Hinweis sperren.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M10</span><span class="t">Liste mit 150+ Teilen: alle Kacheln werden auf einmal aufgebaut</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">iPhone · Leistung</span><span class="tag">Aufwand M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/src/components/Mosaic.tsx:47–49</code> (kein Fenster, alle Kacheln), <code>apps/app/src/components/ItemTile.tsx:103</code> (nicht gegen erneutes Zeichnen geschützt), <code>packages/ui/src/tokens.ts:114–115</code> (jede Plakette mit Weichzeichner), <code>apps/app/src/app/outfit-bauen.tsx:180</code> (jede Auswahl zeichnet alle Kacheln neu).</dd>
+<dt>Beleg</dt><dd>Gelesen, nicht am iPhone gemessen. Die Kachel-Spec verlangt selbst einen Test mit 100+ Kacheln.</dd>
+<dt>Auswirkung</dt><dd>Viele gleichzeitige Bildabrufe und Weichzeichner-Ebenen; Ruckeln beim Scrollen und beim Auswählen im Baukasten ist wahrscheinlich.</dd>
+<dt>Vorschlag</dt><dd><code>React.memo</code> für die Kachel mit stabilen Eigenschaften, Bilder verzögert laden, Kacheln außerhalb des Bildschirms aussparen; am iPhone mit 300 Test-Teilen messen.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M11</span><span class="t">Schrank teilen ist in Produktion noch nie durchlaufen worden</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag vd">Schwachstellen: Verdacht</span><span class="tag">Aufwand S–M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/src/lib/invite.ts:15</code> (Einladung wird nur in diesem Browser gemerkt), <code>apps/app/src/app/(tabs)/index.tsx:104</code> („Kein Schrank“ ohne Ausweg), <code>apps/app/src/components/Login.tsx</code> (kein „Passwort vergessen“), <code>supabase/migrations/0001_schema.sql:297</code> (Einladung ohne Zeilensperre).</dd>
+<dt>Beleg</dt><dd>Datenbank: beide Schränke haben genau ein Mitglied, es gibt 0 Einladungen. Der Rest ist gelesen.</dd>
+<dt>Auswirkung</dt><dd>Öffnet Paul die Bestätigungs-Mail in einem anderen Browser als den Einladungslink (etwa in der Mail-App), hat er ein Konto ohne Schrank. Ein vergessenes Passwort ist eine Sackgasse.</dd>
+<dt>Vorschlag</dt><dd>Den Ablauf einmal mit dem Testkonto komplett durchspielen; auf „Kein Schrank“ ein Feld „Einladungslink einfügen“; „Passwort vergessen“ ergänzen.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M12</span><span class="t">Kein Linter; Tests laufen an der Typprüfung vorbei</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Code · CI</span><span class="tag">Aufwand S–M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>package.json:6–7</code>, <code>apps/app/package.json:34–35</code> (kein Lint-Skript), <code>.github/workflows/web.yml:23–25</code> (kein Lint; läuft nur bei Push auf <code>main</code>, nicht für PRs), <code>packages/core/tsconfig.json</code> (<code>include: ["src"]</code>).</dd>
+<dt>Beleg</dt><dd>Ersatzlauf mit den Expo-Regeln: 145 Fehler, 31 Warnungen. 86× Zugriff auf Refs während des Zeichnens (43 davon in <code>components/ClosetBar.tsx</code>), 38× doppelte Exporte in <code>packages/core/src/index.ts</code>, 12× Zustand im Effekt gesetzt, 15 ungenutzte Importe oder Variablen. Typprüfung der Tests: 19 Typfehler in <code>packages/core/test/edit.test.ts</code>.</dd>
+<dt>Auswirkung</dt><dd><code>apps/app/AGENTS.md</code> verlangt Lint vor jedem Abschluss – das kann derzeit niemand ausführen; echte Hinweise gehen unter.</dd>
+<dt>Vorschlag</dt><dd>ESLint-Konfiguration mit den Expo-Regeln einchecken (die Ref-Regeln zunächst als Warnung), Lint in CI und für PRs, Tests in die Typprüfung aufnehmen.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M13</span><span class="t">Kritische Stellen ohne Tests</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Tests</span><span class="tag">Aufwand M–L</span></div></summary>
+<div class="body"><dl>
+<dt>Ungetestet</dt><dd><ul>
+  <li><code>apps/app/src/lib/item.ts</code>: Bild speichern, Teil löschen, „Gekauft“, Sets</li>
+  <li><code>apps/app/src/lib/outfits.ts</code>: Outfit speichern, planen, reservieren, „heute getragen“</li>
+  <li><code>apps/app/src/lib/wardrobe.ts</code>, <code>wishlists.ts</code>, <code>sort.ts</code>: Laden, Umrechnen, Filter</li>
+  <li><code>apps/app/src/lib/cutout.ts</code>: Rückfall WebP → PNG</li>
+  <li>Zugriffsregeln (kein Test im Repo), Einladen, kein Ende-zu-Ende-Test</li>
+  <li>In core fehlen Fälle für Beträge mit Tausenderpunkt (M6) und für die Statistik mit gemeinsamen Teilen (M17)</li>
+</ul></dd>
+<dt>Vorschlag</dt><dd>Reine Funktionen aus <code>lib</code> nach core ziehen und dort testen; die Lese-Tests aus diesem Bericht als SQL-Skript in CI; drei Abläufe mit dem Testkonto automatisieren (Teil anlegen, Outfit planen, Wunsch → Schrank).</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M14</span><span class="t">Repo und Datenbank laufen auseinander</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Schema · Typen</span><span class="tag">Aufwand S–M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort und Beleg</dt><dd><ul>
+  <li>Am Speicher hängen zusätzlich vier alte Regeln <code>items_read</code>, <code>items_write</code>, <code>items_update</code>, <code>items_delete</code>, die in <code>supabase/migrations/0002_storage_items.sql</code> nicht vorkommen.</li>
+  <li>Migration 0007 fehlt im Migrationsverlauf der Datenbank; 0009 ist angewendet, <code>CLAUDE.md:18</code> sagt „noch nicht angewendet“.</li>
+  <li>Die Edge Function gibt es nur in Supabase, nicht unter <code>supabase/functions</code>.</li>
+  <li><code>apps/app/src/lib/supabase.ts:9</code>: Client ohne erzeugte Datenbank-Typen; vier Umwandlungen mit <code>as unknown as</code> (<code>lib/item.ts:31</code>, <code>lib/outfits.ts:43</code>, <code>:145</code>, <code>:174</code>).</li>
+</ul></dd>
+<dt>Auswirkung</dt><dd>Ein Neuaufbau aus dem Repo ergibt nicht die Produktions-Datenbank; Schema-Änderungen fallen der Typprüfung nicht auf.</dd>
+<dt>Vorschlag</dt><dd>Die vier alten Regeln per Migration entfernen, Migrationen nur noch als Migration anwenden, Typen aus der Datenbank erzeugen und in CI auf Abweichung prüfen.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M15</span><span class="t">Viele Werte stehen fest im Code statt im Designsystem</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Spec-Treue</span><span class="tag">Aufwand M</span></div></summary>
+<div class="body"><dl>
+<dt>Beleg</dt><dd>Suche in <code>apps/app/src</code>: 145 Farbwerte in 27 Dateien (12× <code>#722638</code>, 10× <code>#2a1a1d</code>); 212 feste Schriftgrößen gegenüber 16 aus Tokens; 71 feste Radien gegenüber 34 aus Tokens.</dd>
+<dt>Ort (Beispiele)</dt><dd><code>app/neu.tsx:19</code>, <code>:143</code> · <code>components/Login.tsx:38</code>, <code>:42</code>, <code>:64–65</code> · <code>lib/share.ts:8–9</code> · <code>app/outfit-bauen.tsx:109</code>, <code>:138</code>, <code>:184</code>, <code>:212</code> · <code>app/outfit/[id].tsx:194</code> · <code>components/edit/EditImage.tsx:22</code> (Milchglas-Werte der Plakette als Kopie) · <code>lib/wardrobe.ts:163–168</code> (eigene Farbtabelle neben <code>attributes.ts</code>).</dd>
+<dt>Abweichung von der Spec</dt><dd><code>apps/app/src/app/outfit/[id].tsx:163</code>: Mini-Kacheln mit eigenem Schein (14 px, 2 px, 45 %, Farbe aus dem Foto) statt der Regel aus <code>docs/design/kachel/VALET_SCHEIN_REGELN.md</code> (22 px, 3 px, 60 %, Farbe aus dem Steckbrief).</dd>
+<dt>Auswirkung</dt><dd>Änderungen am Designsystem greifen an diesen Stellen nicht; im dunklen Thema bleiben einzelne Flächen fest hell (z. B. <code>outfit-bauen.tsx:212</code>).</dd>
+<dt>Vorschlag</dt><dd>Farben wie Oxblood, Tinte, Warnrot und Platzhalter als Tokens; Schriftstufen aus <code>packages/ui/src/tokens.ts:202–210</code> über einen Text-Baustein; Mini-Kachel über <code>glowFor</code>.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M16</span><span class="t">Fachlogik außerhalb von core – erschwert eine native iOS-App</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Code · iOS</span><span class="tag">Aufwand M–L</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li><code>apps/app/src/lib/outfits.ts:60–90</code> (wer trägt heute was), <code>lib/sort.ts</code>, <code>lib/wishlists.ts:48–80</code>, <code>lib/wardrobe.ts:163–214</code></li>
+  <li>Doppelt: <code>lib/item.ts:42–46</code> ist eine Kopie von <code>packages/core/src/wear.ts:11–18</code></li>
+  <li>Datums-Helfer siebenfach: <code>lib/wardrobe.ts:214</code>, <code>lib/outfits.ts:196–197</code>, <code>components/detail/sheets.tsx:13</code>, <code>components/WeekCalendar.tsx:26</code>, core <code>wear.ts:6</code>, <code>wish.ts:8–9</code>, <code>stats.ts:103</code></li>
+  <li><code>docs/entwicklungsplan.md:190–198</code> sieht <code>packages/services</code> vor; das Paket gibt es nicht, Bildschirme rufen Supabase-Funktionen direkt (z. B. <code>app/teil/[id].tsx:16–17</code>)</li>
+  <li>Große Dateien mit Darstellung und Regeln gemischt: <code>components/edit/ItemEditor.tsx</code> (25 KB), <code>app/(tabs)/wunschliste.tsx</code> (22 KB), <code>app/(tabs)/statistik.tsx</code> (22 KB)</li>
+</ul></dd>
+<dt>Auswirkung</dt><dd>Bleibt es bei Expo, ist das unkritisch. Für eine native Swift-App müsste alles in <code>lib</code> neu geschrieben werden, ohne Tests als Vorlage.</dd>
+<dt>Vorschlag</dt><dd>Reine Funktionen nach core (mit Tests), Datenzugriffe hinter eine schmale Schnittstelle, ein gemeinsames Datums-Modul.</dd>
+</dl></div>
+</details>
+
+<details class="f mittel">
+<summary><span class="id">M17</span><span class="t">Statistik je Person lässt gemeinsame Teile weg</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Statistik</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>packages/core/src/stats.ts:117</code> (Getragen) und <code>:191–192</code> (Bestand) filtern über <code>ownerId</code>; bei zwei Besitzern ist dieser Wert leer.</dd>
+<dt>Beleg</dt><dd>Beispiel mit einem gemeinsamen Teil ausgeführt: Es fehlt in „Getragen“ und „Bestand“ der Person. Aktuell haben alle 122 Teile genau einen Besitzer, der Fehler zeigt sich also erst mit dem ersten gemeinsamen Teil.</dd>
+<dt>Vorschlag</dt><dd>Über <code>owner_ids</code> filtern und den Spiegel <code>owner_id</code> abschaffen.</dd>
+</dl></div>
+</details>
+
+<h3>Niedrig (12)</h3>
+
+<details class="f">
+<summary><span class="id">N1</span><span class="t">Verweise über Schrankgrenzen werden nicht verhindert</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>supabase/migrations/0001_schema.sql:280</code> prüft bei <code>outfit_items</code> nur das Outfit, nicht das Teil; gleiches gilt für Person und Planung in <code>wears</code> und <code>reservations</code>.</dd>
+<dt>Auswirkung</dt><dd>Kein Lesezugriff auf Fremdes, nur unsaubere Verweise möglich. Im Bestand geprüft: 0 Fälle.</dd>
+<dt>Vorschlag</dt><dd>Zusätzliche Prüfung in den Regeln oder ein Trigger.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N2</span><span class="t">Fehlende Einschränkungen im Schema</span>
+<div class="tags"><span class="tag nw">teils nachgewiesen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>supabase/migrations/0001_schema.sql:168</code> (Planung nicht eindeutig), <code>:201</code> (Eindeutigkeit greift bei leerer Person nicht), <code>:178</code> (keine Prüfung „von ≤ bis“), <code>0003_item_owners_highlight.sql:8</code> (<code>owner_ids</code> ohne Fremdschlüssel); keine Prüfung für Anzahl ≥ 1 und Preise ≥ 0; Kategorie frei.</dd>
+<dt>Beleg</dt><dd>Ausgeführt: Bearbeiten ohne Kategorie speichert eine leere Kategorie; im Test-Schrank liegt ein solches Wunschteil.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N3</span><span class="t">Verwaistes im Bestand</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Beleg</dt><dd><ul>
+  <li>2 Dateien (820 KB) ohne Bildzeile</li>
+  <li>4 Bildzeilen ohne Datei – vier importierte Wunschteile, Pfad <code>…/a.webp</code> wurde nie hochgeladen</li>
+  <li>1 Set mit nur einem Teil; <code>apps/app/src/lib/item.ts:76–82</code> löst Sets beim Löschen nicht auf und räumt die eigene Reihenfolge der Wunschlisten nicht auf</li>
+  <li>17 abgelaufene Reservierungen</li>
+</ul></dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N4</span><span class="t">Hinweise der Supabase-Advisors</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Sicherheit</dt><dd><ul>
+  <li><code>storage_wardrobe</code> ohne festen Suchpfad (<code>supabase/migrations/0002_storage_items.sql:14</code>) – <a href="https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable">Abhilfe</a></li>
+  <li>Prüfung auf geleakte Passwörter ist aus – <a href="https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection">Abhilfe</a></li>
+  <li><code>accept_invite</code> und <code>is_member</code> sind für Angemeldete aufrufbar (beabsichtigt) – <a href="https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable">Hinweis</a></li>
+</ul></dd>
+<dt>Leistung</dt><dd>25 Fremdschlüssel ohne Index (<a href="https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys">Hinweis</a>); je Tabelle zwei Regeln für das Lesen (<a href="https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies">Hinweis</a>); <code>wardrobes_insert</code> wertet die Anmeldung je Zeile aus (<a href="https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select">Hinweis</a>). Bei der heutigen Datenmenge ohne spürbare Wirkung.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N5</span><span class="t">„Eingelagert“ fehlt in der Bestands-Statistik</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>packages/core/src/stats.ts:195</code> zählt nur Wäsche, Reparatur, Verliehen, Aussortiert, Verkauft; <code>apps/app/src/app/(tabs)/statistik.tsx:20</code> hat den Text für „eingelagert“ schon.</dd>
+<dt>Beleg</dt><dd>Ausgeführt: ein eingelagertes Teil ergibt keine Status-Zeile.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N6</span><span class="t">Toter Code</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li>Nirgends verwendet: <code>lib/item.ts:62</code> (<code>setStatus</code>), <code>lib/outfits.ts</code> (<code>nextPlan</code>), <code>lib/wardrobe.ts:175</code> (<code>hexToName</code>), <code>lib/format.ts</code> (<code>toDe</code>, <code>toIso</code>), <code>lib/wishlists.ts</code> (<code>wishFilterCount</code>), <code>lib/bottomInset.ts</code> (<code>isStandalone</code>), <code>lib/flipped.ts</code> (<code>useFlipped</code>)</li>
+  <li><code>app/neu.tsx:108</code> (Variable <code>glow</code>) und <code>:128</code> (Zweig, der nie erreicht wird)</li>
+  <li>15 ungenutzte Importe (Liste aus dem Lint-Lauf)</li>
+  <li>In core nur von Tests genutzt: <code>costPerWear</code>, <code>isAvailable</code>, <code>isGone</code>, <code>sideColor</code>, <code>sideImage</code>, <code>convert</code></li>
+</ul></dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N7</span><span class="t">Veraltete Doku</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>README.md:11–12</code> (nennt <code>apps/valet</code> und <code>packages/services</code>), <code>README.md:35</code> (Cloudflare Pages statt GitHub Pages), <code>CLAUDE.md:18</code> (0009 „nicht angewendet“; Ordner <code>backup/</code> gibt es nicht), <code>CLAUDE.md:105</code> (<code>ItemForm.tsx</code> wurde entfernt).</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N8</span><span class="t">Bedienbarkeit: Rollen, kleine Schrift, kleine Tippfläche</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><ul>
+  <li>14 von 92 Tippflächen ohne Rolle für die Vorlesefunktion, z. B. <code>app/outfit-bauen.tsx:117</code>, <code>:119</code>, <code>app/neu.tsx:125</code>, <code>:129</code></li>
+  <li>Schrift 10–11 px: <code>app/(tabs)/_layout.tsx:44</code>, <code>components/WeekCalendar.tsx:179</code>, <code>components/edit/fields.tsx:237</code>, <code>:250</code>, <code>app/(tabs)/statistik.tsx:325</code></li>
+  <li>Entfernen-Kreuz im Baukasten 22 px, mit Zugabe 38 px statt 44: <code>app/outfit-bauen.tsx:110</code>, <code>:215</code></li>
+  <li>11 von 12 Bildern ohne Beschreibung; die Kacheln selbst sind beschriftet (<code>components/ItemTile.tsx:126–128</code>)</li>
+</ul></dd>
+<dt>Beleg</dt><dd>Gezählt per Suche; nicht mit VoiceOver geprüft.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N9</span><span class="t">Bild-Export verschluckt Fehler</span>
+<div class="tags"><span class="tag vd">Verdacht</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/src/lib/share.ts:82</code> – ein nicht ladbares Teil-Bild wird im Outfit-Bild still weggelassen; <code>apps/app/src/components/ExportSheet.tsx:32</code> – nach einem Fehler zeigt der Knopf weiter „Wird erstellt …“.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N10</span><span class="t">Bilder sind über ihre Adresse ohne Anmeldung abrufbar (bewusst)</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Aufwand M</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>supabase/migrations/0002_storage_items.sql:4</code> dokumentiert das so.</dd>
+<dt>Beleg</dt><dd>Ein Vorschaubild ohne jeden Schlüssel abgerufen: 200. Auflisten ohne Mitgliedschaft: leere Liste.</dd>
+<dt>Auswirkung</dt><dd>Adressen sind nicht erratbar, bleiben aber gültig, auch wenn jemand aus dem Schrank entfernt wird.</dd>
+<dt>Vorschlag</dt><dd>Später privater Speicher mit signierten Adressen.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N11</span><span class="t">60 Zweige; manueller Lauf überschreibt die Live-Seite</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">Aufwand S</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>.github/workflows/web.yml:6</code> – <code>workflow_dispatch</code> ohne Einschränkung auf <code>main</code> (in <code>CLAUDE.md</code> als Warnung vermerkt).</dd>
+<dt>Vorschlag</dt><dd>Zusammengeführte Zweige löschen; den Veröffentlichungs-Schritt an <code>main</code> binden.</dd>
+</dl></div>
+</details>
+
+<details class="f">
+<summary><span class="id">N12</span><span class="t">Lizenz des Freistell-Modells: nur nicht-kommerziell</span>
+<div class="tags"><span class="tag nw">nachgewiesen</span><span class="tag">bekannt</span></div></summary>
+<div class="body"><dl>
+<dt>Ort</dt><dd><code>apps/app/public/freistellen/LIZENZ.txt</code> (RMBG-1.4 von BRIA).</dd>
+<dt>Auswirkung</dt><dd>Für euch beide unkritisch; vor App Store oder Bezahl-Funktionen klären oder das Modell tauschen.</dd>
+</dl></div>
+</details>
+
+<h2>Die 10 Dinge, die du zuerst beheben solltest</h2>
+<div class="card">
+<ol class="top">
+  <li><b>Freistell-Funktion löschen, Token widerrufen, Schrank-Anlegen schließen</b> (H1, S). Kleinster Aufwand, größtes Risiko weg.</li>
+  <li><b>Sicherung einrichten</b> (H2, M): wöchentlicher Export per GitHub Action, vor jeder Daten-Migration ein Export.</li>
+  <li><b>Betragseingabe reparieren</b> (M6, S), bevor ein teures Teil falsch gespeichert wird.</li>
+  <li><b>Besitzer bei Wunschteilen</b> im Filter berücksichtigen (M5, S).</li>
+  <li><b>Einladen einmal mit dem Testkonto durchspielen</b>, dann Paul einladen und die Registrierung abschalten (M11 + H1, S–M).</li>
+  <li><b>Nachladen bei Rückkehr in die App und „Erneut versuchen“</b> (H4, S–M).</li>
+  <li><b>Hänger beseitigen</b>: Bearbeiten, Teil-Detail, Schrift, „Heute getragen“ (M7 + M8, S).</li>
+  <li><b>WebP auf dem iPhone</b> und vorhandene Bilder neu erzeugen (H3, M).</li>
+  <li><b>Speichern in einem Schritt</b>: Bild, Outfit, Planung als Datenbank-Funktion, Eindeutigkeit für Planungen, Abfragen filtern (M1–M3, M).</li>
+  <li><b>Linter, Tests für <code>lib</code> und ein Test der Zugriffsregeln in CI</b> (M12 + M13, M).</li>
+</ol>
+</div>
+
+<h2>Was gut gelöst ist und so bleiben soll</h2>
+<div class="card">
+<ul class="plain">
+  <li><b>Zugriffsregeln mit einer zentralen Funktion</b> <code>is_member</code> und drei Rollen; jede Tabelle hat Regeln, Funktionen mit festem Suchpfad, kein Ausführungsrecht für Unangemeldete.</li>
+  <li><b>Keine Geheimnisse im Repo</b>: im Code nur der öffentliche Schlüssel, im Verlauf nichts.</li>
+  <li><b>Speicher sauber begrenzt</b>: 5 MB je Datei, nur Bildtypen, Pfad mit Schrank-Kennung, Auflisten gesperrt; neuer Dateiname bei jedem Speichern plus ein Jahr Zwischenspeicherung.</li>
+  <li><b>Fachlogik in core mit 146 Tests</b>: Kategorien, Bearbeiten, Status, Statistik, Kachel-Regeln, Schein, Analyse schon freigestellter Bilder. Feste Listen stehen an genau einer Stelle.</li>
+  <li><b>Kachel-Tokens stimmen 1:1 mit der Spec</b> (Radius 14, Abstand 4, Plakette 20, Überlappung 3, Schein 22/3/60 %); der Plaketten-Radius wird gerechnet statt abgeschrieben.</li>
+  <li><b>Symbol-Pool</b>: alle 83 Symbol-Aufrufe laufen über den Pool mit benannten Größenstufen; ein Test prüft Doppelungen und den Katalog.</li>
+  <li><b>Fehlerbehandlung in den Blättern</b> (Status, Reservieren, Gekauft) und beim Freistellen: Abbruch über Laufnummer, Rückfall vom Grafikchip auf den Prozessor, klare Meldung „Kein Teil erkannt“.</li>
+  <li><b>Datumswerte als Text mit lokaler Tagesgrenze</b> – keine Zeitzonen-Fallen bei „heute“.</li>
+  <li><b>CI veröffentlicht erst nach Typprüfung und Tests</b>; helles und dunkles Thema kommen aus den Tokens.</li>
+</ul>
+</div>
+
+<h2>Was ich nicht prüfen konnte und warum</h2>
+<div class="card">
+<ul class="plain">
+  <li><b>KI (Prüfbereich 4)</b>: nicht gebaut. Es gibt keinen Proxy zu Gemini, keine Prompts und keine Antwort-Prüfung – weder im Repo noch in Supabase. Vorbereitet sind nur das Feld <code>ai_pending</code>, die Tabelle <code>daily_suggestions</code> und Platzhalter in der Oberfläche. Auch der Schritt „KI-Erkennung“ beim Anlegen fehlt deshalb.</li>
+  <li><b>Laufende App mit Anmeldung</b>: Ich hatte kein Passwort für das Testkonto, und ein neues Konto anzulegen wäre eine Änderung gewesen. Deshalb sind alle Abläufe und Zustände der Oberfläche (leer, lädt, Fehler, sehr lange Namen, 0 und 1 Teil, hell/dunkel) nur gelesen.</li>
+  <li><b>Messungen am iPhone</b>: Ladezeit, Speicherverbrauch beim Freistellen, flüssiges Scrollen und VoiceOver brauchen ein echtes Gerät. Gemessen habe ich Paketgröße und Bildgrößen.</li>
+  <li><b>Schreibversuche gegen die Zugriffsregeln</b>: bewusst nicht ausgeführt (Regel „nichts ändern“); die Schreib-Bedingungen sind als Ausdruck ausgewertet.</li>
+  <li><b>Zeilengrenze der Schnittstelle</b> (M1): per SQL nicht auslesbar; ich gehe vom Supabase-Standard 1000 aus.</li>
+  <li><b>Weitere Auth-Einstellungen</b> (Mail-Limits, Passwort-Regeln im Dashboard): nur die öffentlich abfragbaren Werte gesehen.</li>
+  <li><b>Hugging-Face-Seite der alten Funktion</b>: ob der Token noch gültig ist und was der fremde Space damit sieht.</li>
+  <li><b>Sichtvergleich mit den Referenzen</b> (HTML-Referenzen, Leinwände und Designsystem auf claude.ai): Die App wurde nicht gerendert; verglichen sind die Token-Werte und Regeln, nicht Pixel. Die Listen im Dokument „Valet – KI-Funktionen“ habe ich nicht gegen <code>categories.ts</code> abgeglichen.</li>
+  <li><b>Native iOS</b>: kein Build, keine Prüfung von Weichzeichner und Grau-Filter auf dem Gerät.</li>
+</ul>
+</div>
+
+<h2>Was ich ausgeführt habe</h2>
+<div class="card">
+<ul class="plain">
+  <li>Lokal: Installation, Typprüfung, Tests, Web-Build; ESLint und die Typprüfung der Tests auf einer Kopie außerhalb des Repos; kleine Skripte gegen <code>packages/core</code> (Beträge, Bearbeiten, Statistik).</li>
+  <li>Supabase: nur Lese-Abfragen (Regeln, Funktionen, Bestand, Abgleich Speicher ↔ Bildzeilen), Lesetests mit gewechselter Rolle in zurückgerollten Transaktionen, Advisors für Sicherheit und Leistung, Quelltext der Edge Function, Logs der letzten 24 Stunden.</li>
+  <li>Schnittstelle von außen: Auth-Einstellungen, Lesen aller Tabellen ohne Anmeldung, Auflisten des Speichers, ein Vorschaubild abgerufen (danach gelöscht), zwei Aufrufe der Edge Function ohne Anmeldung (beide abgelehnt), Live-Seite.</li>
+  <li>Verlauf: 208 Commits in 60 Zweigen und der Zweig <code>gh-pages</code> auf Schlüssel durchsucht.</li>
+</ul>
+</div>
+
+</main>
+</body>
+</html>
