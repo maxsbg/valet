@@ -33,9 +33,12 @@ interface RequestPayload {
   image?: { data?: string; mimeType?: string };
   prompt?: string;
   schema?: JsonSchema;
+  /** Nur Text, ohne Bild (z. B. ausgelesene Produktseite) – wird hinter den Prompt gehängt */
+  text?: string;
 }
 
 const MAX_PROMPT = 4000;
+const MAX_TEXT = 20000;
 const MAX_SCHEMA = 60000;
 const MAX_IMAGE_B64 = 6_000_000; // ≈ 4,5 MB
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
@@ -52,10 +55,17 @@ async function callModel(params: {
   token: string;
   model: string;
   prompt: string;
-  base64Image: string;
+  /** null = nur Text */
+  base64Image: string | null;
   mimeType: string;
   schema: JsonSchema;
 }): Promise<unknown> {
+  const content = params.base64Image
+    ? [
+      { type: "text", text: params.prompt },
+      { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}` } },
+    ]
+    : params.prompt;
   const response = await fetch(params.endpoint, {
     method: "POST",
     signal: AbortSignal.timeout(CALL_MS),
@@ -69,10 +79,7 @@ async function callModel(params: {
       messages: [
         {
           role: "user",
-          content: [
-            { type: "text", text: params.prompt },
-            { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}` } },
-          ],
+          content,
         },
       ],
       response_format: {
@@ -148,20 +155,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const imagePath = payload.imagePath?.trim();
-    const prompt = payload.prompt?.trim();
+    const basePrompt = payload.prompt?.trim();
+    const text = typeof payload.text === "string" ? payload.text.trim() : "";
     const responseSchema = payload.schema;
     const inline = payload.image;
-    if ((!imagePath && !inline?.data) || !prompt || !responseSchema || typeof responseSchema !== "object") {
-      return jsonResponse({ error: "imagePath or image, prompt and schema are required" }, 400);
+    if ((!imagePath && !inline?.data && !text) || !basePrompt || !responseSchema || typeof responseSchema !== "object") {
+      return jsonResponse({ error: "imagePath, image or text, prompt and schema are required" }, 400);
     }
-    if (prompt.length > MAX_PROMPT || JSON.stringify(responseSchema).length > MAX_SCHEMA) {
-      return jsonResponse({ error: "prompt or schema too large" }, 413);
+    if (basePrompt.length > MAX_PROMPT || text.length > MAX_TEXT || JSON.stringify(responseSchema).length > MAX_SCHEMA) {
+      return jsonResponse({ error: "prompt, text or schema too large" }, 413);
     }
+    const prompt = text ? `${basePrompt}\n\n---\n${text}` : basePrompt;
 
     // 4. Bild: mitgeschickt oder aus dem Storage-Bucket (respektiert RLS des Users)
-    let base64Image: string;
-    let mimeType: string;
-    if (inline?.data) {
+    let base64Image: string | null = null;
+    let mimeType = "image/jpeg";
+    if (!imagePath && !inline?.data) {
+      // nur Text
+    } else if (inline?.data) {
       mimeType = inline.mimeType || "image/jpeg";
       if (!IMAGE_TYPES.includes(mimeType) || inline.data.length > MAX_IMAGE_B64) {
         return jsonResponse({ error: "unsupported or too large image" }, 413);

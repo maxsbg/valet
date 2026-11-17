@@ -1,5 +1,5 @@
 // KI über die Edge Function `ki` (Durchreicher zu Gemini). Prompt, Schema und Prüfung kommen aus @valet/core.
-import { ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, checkAnalysis, checkInfo, readInfoPrompt, type Analysis, type Info, type InfoKind } from '@valet/core';
+import { ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, checkAnalysis, checkInfo, readInfoPrompt, readPagePrompt, type PageFacts, type Analysis, type Info, type InfoKind } from '@valet/core';
 import { supabase } from './supabase';
 
 /** Blob → Base64 ohne data:-Präfix */
@@ -51,4 +51,13 @@ export async function readInfo(file: Blob, kind: InfoKind | null): Promise<Info>
 /** Teil auf dem Bild erkennen. Wirft bei Fehler; „rate_limited“ = Gratis-Kontingent gerade erschöpft. */
 export async function analyzePicture(image: Blob): Promise<Analysis> {
   return checkAnalysis(await ask(image, ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA));
+}
+
+/** Text einer Produktseite auslesen (Beschreibung, Material, Pflege, Preis …) – ohne Bild */
+export async function readPage(text: string, facts: PageFacts): Promise<Info> {
+  const { data: res, error } = await supabase.functions.invoke('ki', {
+    body: { text: text.slice(0, 20000), prompt: readPagePrompt(facts), schema: READ_INFO_SCHEMA },
+  });
+  if (error) throw error;
+  return checkInfo(res?.data);
 }
