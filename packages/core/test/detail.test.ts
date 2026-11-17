@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { agoLabel, ownShare, wearTiles, statFontSize, discountPct, shareRows, splitLabel, shortUrl } from '../src/detail';
+import { agoLabel, ownShare, wearTiles, statFontSize, discountPct, shareRows, splitLabel, shortUrl, shopDomain, shopView, shopFromLink } from '../src/detail';
 
 const TODAY = '2026-11-15';
 
@@ -51,4 +51,21 @@ test('Rabatt, Anteile, Kurzform, Adresse', () => {
   assert.equal(splitLabel(rows), 'je Hälfte');
   assert.deepEqual(shareRows(59, 1, [{ personId: 'max', amount: null }]), []);
   assert.equal(shortUrl('https://www.cos.com/de/hemd/'), 'cos.com/de/hemd');
+});
+
+test('shopView: Shop als Domain aus dem Link, sonst Text', () => {
+  assert.equal(shopDomain('https://www.zalando.de/hemd-123.html?x=1'), 'zalando.de');
+  assert.equal(shopDomain('Zalando'), null);
+  assert.deepEqual(shopView('Zalando', 'https://www.zalando.de/hemd'), { label: 'zalando.de', url: 'https://zalando.de' });
+  assert.deepEqual(shopView('Zalando.de', ''), { label: 'zalando.de', url: 'https://zalando.de' });
+  assert.deepEqual(shopView('COS', null), { label: 'COS', url: null });
+  assert.equal(shopView('', ''), null);
+});
+
+test('shopFromLink: Shop folgt dem Link, eigener Name bleibt', () => {
+  assert.equal(shopFromLink('', '', 'https://www.zalando.de/x'), 'zalando.de');
+  assert.equal(shopFromLink('Zalando', '', 'https://www.zalando.de/x'), 'zalando.de');
+  assert.equal(shopFromLink('zalando.de', 'zalando.de/a', 'https://cos.com/b'), 'cos.com');
+  assert.equal(shopFromLink('Flohmarkt', '', 'https://cos.com/b'), 'Flohmarkt');
+  assert.equal(shopFromLink('COS', '', 'kein link'), 'COS');
 });

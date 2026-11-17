@@ -16,6 +16,7 @@ import { OutfitCard } from '@/components/OutfitCard';
 import { EditCard } from '@/components/edit/fields';
 import { Capsule, DateField, FieldLabel, Hint, Monogram, SheetHead, TextField, Wrap } from './parts';
 import { Icon } from '@/components/Icon';
+import { ShopValue } from './sections';
 
 /** Reihenfolge der Kategorien wie in Bearbeiten (Spec 7a) */
 export const WISH_ORDER: WishTag[] = ['nextcop', 'grail', 'watchlist', 'someday', 'gift'];
@@ -98,7 +99,7 @@ export function WishKaufView({ row, link, onEdit }: { row: WishRow; link: string
           {facts.map(([k, v]) => (
             <View key={k} style={s.fact}>
               <Text style={{ fontSize: 12, lineHeight: 16, color: t.inkMuted }}>{k}</Text>
-              <Text style={{ fontSize: 15, lineHeight: 20, color: t.ink }}>{v}</Text>
+              {k === 'Shop' ? <ShopValue shop={v} link={link} /> : <Text style={{ fontSize: 15, lineHeight: 20, color: t.ink }}>{v}</Text>}
             </View>
           ))}
         </View>

@@ -7,10 +7,12 @@ import {
   CATEGORY_NAMES, CLOSURES, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, subcategoriesOf, typesOf, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
-  applyInfo,
+  applyInfo, shopFromLink,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
+import { useSession } from '@/lib/session';
+import { createList } from '@/lib/wishlists';
 import { useBottomInset } from '@/lib/bottomInset';
 import { personKey, type Person, type Wishlist } from '@/lib/wardrobe';
 import type { Picture } from '@/lib/cutout';
@@ -69,6 +71,29 @@ export function ItemEditor(p: Props) {
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
   const set = <K extends keyof EditForm>(k: K, v: EditForm[K]) => onForm(setField(f, k, v));
   const ai = (k: string) => f.aiPending.includes(k) || f.aiPending.some((x) => x.startsWith(`${k}.`));
+  // Neue Wunschliste direkt im Formular anlegen
+  const { wardrobe, reload } = useSession();
+  const [listName, setListName] = useState<string | null>(null);
+  const [listBusy, setListBusy] = useState(false);
+  const [listErr, setListErr] = useState<string | null>(null);
+  const addList = async () => {
+    const name = (listName ?? '').trim();
+    if (!name) return setListErr('Bitte einen Namen eingeben.');
+    if (!wardrobe) return;
+    setListBusy(true); setListErr(null);
+    try {
+      const id = await createList(wardrobe.id, name, p.meId);
+      await reload();
+      onForm(setField(f, 'wishlistId', id));
+      setListName(null);
+    } catch (e) { setListErr(`Anlegen fehlgeschlagen: ${(e as Error).message}`); }
+    finally { setListBusy(false); }
+  };
+  // Produktlink → Shop als Domain („zalando.de“, 17.11.2026, Max)
+  const setLink = (v: string) => {
+    const next = setField(f, 'link', v), shop = shopFromLink(f.shop, f.link, v);
+    onForm(shop === f.shop ? next : setField(next, 'shop', shop));
+  };
   const capsules = (list: readonly string[]) => list.map((x) => <ValueCapsule key={x} label={x} />);
 
   // ---------- Steckbrief ----------
@@ -302,12 +327,12 @@ export function ItemEditor(p: Props) {
             )}
             <Pair>
               <DateField label="Kaufdatum" value={f.purchaseDate} onChange={(v) => set('purchaseDate', v)} optional />
-              <TextField label="Shop" value={f.shop} onChange={(v) => set('shop', v)} placeholder="z. B. COS" extra={ai('shop') ? <KiBadge /> : null} />
+              <TextField label="Shop" value={f.shop} onChange={(v) => set('shop', v)} placeholder="z. B. zalando.de" extra={ai('shop') ? <KiBadge /> : null} />
             </Pair>
           </>
         )}
         {f.gift && <TextField label="Shop" value={f.shop} onChange={(v) => set('shop', v)} />}
-        <TextField label="Produktlink" value={f.link} onChange={(v) => set('link', v)} placeholder="https://…" keyboardType="url" inputMode="url" />
+        <TextField label="Produktlink" value={f.link} onChange={setLink} placeholder="https://…" keyboardType="url" inputMode="url" />
         <TextField label="Artikelnummer" value={f.articleNo} onChange={(v) => set('articleNo', v)} extra={ai('articleNo') ? <KiBadge /> : null} />
       </EditCard>
 
@@ -332,14 +357,27 @@ export function ItemEditor(p: Props) {
         <TextField label="Preis" value={f.listPrice} onChange={(v) => set('listPrice', v)} placeholder="0,00 €" keyboardType="decimal-pad" inputMode="decimal" extra={ai('listPrice') ? <KiBadge /> : null} />
         <TextField label="Shop" value={f.shop} onChange={(v) => set('shop', v)} />
       </Pair>
-      <TextField label="Produktlink" value={f.link} onChange={(v) => set('link', v)} placeholder="https://…" keyboardType="url" inputMode="url" />
+      <TextField label="Produktlink" value={f.link} onChange={setLink} placeholder="https://…" keyboardType="url" inputMode="url" />
       <TextField label="Artikelnummer" value={f.articleNo} onChange={(v) => set('articleNo', v)} />
       {/* Pflicht: Wunschteile gibt es nur in einer Liste (17.11.2026) */}
       <View style={{ gap: 8 }}>
         <FieldLabel>Liste</FieldLabel>
-        {p.wishlists.length > 0
-          ? <Wrap>{p.wishlists.map((l) => <Capsule key={l.id} label={l.name} selected={f.wishlistId === l.id} onPress={() => set('wishlistId', l.id)} />)}</Wrap>
-          : <Hint>Lege zuerst in der Wunschliste eine Liste an.</Hint>}
+        <Wrap>
+          {p.wishlists.map((l) => <Capsule key={l.id} label={l.name} selected={f.wishlistId === l.id} onPress={() => set('wishlistId', l.id)} />)}
+          {listName == null && <Capsule label="Neue Liste" dashed onPress={() => { setListName(''); setListErr(null); }} icon={(c) => <Icon name="plus" size="chip" color={c} />} />}
+        </Wrap>
+        {/* Neue Liste direkt hier anlegen (17.11.2026, Max): gehört mir, wird gleich gewählt */}
+        {listName != null && (
+          <View style={{ gap: 8 }}>
+            <TextField label="Name der neuen Liste" value={listName} onChange={setListName} placeholder="z. B. Winter" autoFocus />
+            <Wrap>
+              <Capsule label={listBusy ? 'Lege an …' : 'Anlegen'} selected onPress={listBusy ? undefined : addList} />
+              <Capsule label="Abbrechen" onPress={listBusy ? undefined : () => setListName(null)} />
+            </Wrap>
+          </View>
+        )}
+        {!!listErr && <Hint>{listErr}</Hint>}
+        {p.wishlists.length === 0 && listName == null && <Hint>Noch keine Liste – lege hier eine an.</Hint>}
       </View>
       <View style={{ gap: 8 }}>
         <FieldLabel>Kategorie{f.wishTag ? ` · ${WISH_LABEL[f.wishTag]}` : ''}</FieldLabel>
