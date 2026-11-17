@@ -111,7 +111,7 @@ Verkauft     <circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.6a4.5 4.5 0
   4. Höchstens 3 Farben, Rang als Zahl im Farbkreis (dunkel auf hellen, weiß auf dunklen Farben). Bei der vierten: Hinweis in `accent` „Höchstens 3 Farben – erst eine abwählen.“
   5. Zeile zu: nur die Farbkreise in runden Kreisen, ohne Namen, ohne Zahl.
 - **Material:** mehrfach, Rang im Chip, 1 = Hauptmaterial.
-- **Größe:** System (Buchstaben / Zahlen 44–60), dann Größe (+ One Size); bei Hemden zusätzlich Kragenweite. Systemwechsel setzt die Größe zurück. **Hose (15.11.2026):** System W/L (Standard) oder Buchstaben. W/L = zwei Auswahlreihen Bundweite W26–W40 und Länge L28–L36 (je 1er-Schritte), kein Freitext; Shorts und Pyjama-Hose nur Bundweite. In der Zeile eine Kapsel „W32/L32“. Kategoriewechsel mit Buchstabengröße (z. B. Hemd „M“ → Hose): „M“ bleibt unter „Buchstaben“; W/L ist nur vorgewählt, wenn noch keine Größe gesetzt ist. **Weitere Listen (bestätigt 15.11.2026):** Schuh EU 35–48 in halben Schritten; Kappe „Verstellbar“ oder Fitted 6 7/8 – 8 (Achtelschritte); Ring 48–66; Trägerart (Tasche) Henkel, Schultergurt, Umhängegurt, Rucksackgurte, Kette, ohne. Größen je Kategorie und welche Kategorie überhaupt eine Größe hat: Abschnitt 8a.
+- **Größe:** System (Buchstaben / Zahlen 44–60), dann Größe (+ One Size); bei Hemden zusätzlich Kragenweite. Systemwechsel setzt die Größe zurück. **Hose (15.11.2026):** System W/L (Standard) oder Buchstaben. W/L = zwei Auswahlreihen Bundweite W26–W40 und Länge L28–L36 (je 1er-Schritte), kein Freitext; Shorts und Pyjama-Hose nur Bundweite. In der Zeile eine Kapsel „W32/L32“. Kategoriewechsel mit Buchstabengröße (z. B. Hemd „M“ → Hose): „M“ bleibt unter „Buchstaben“; W/L ist nur vorgewählt, wenn noch keine Größe gesetzt ist. **Weitere Listen (bestätigt 15.11.2026):** Schuh EU 35–48 in halben Schritten (erweitert 17.11.2026, siehe 8a); Kappe „Verstellbar“ oder Fitted 6 7/8 – 8 (Achtelschritte); Ring 48–66; Trägerart (Tasche) Henkel, Schultergurt, Umhängegurt, Rucksackgurte, Kette, ohne. Größen je Kategorie und welche Kategorie überhaupt eine Größe hat: Abschnitt 8a.
 - **Passform, Lagen, Wetter:** antippbare Skalen (Strich antippen, 44 px Tippfläche). Lagen mehrfach, darunter ein Schalter „Auch allein tragbar“.
 - **Pflege:** je Gruppe (Waschen, Bleichen, Trocknen, Bügeln, Professionell) Chips mit Symbol und kurzer Beschriftung („nicht“, „niedrig“ – die Gruppe sagt den Rest; Screenreader-Text vollständig, z. B. „Bügeln: 2 Punkte“), je Gruppe ein Wert, alles optional. Die KI füllt Pflege aus einem Etikett- oder Shop-Bild aus; ohne Bild schätzt sie nach den Regeln in Abschnitt 4 (grau mit Stern). Antippen und Bestätigen macht eine Schätzung zum festen Wert.
 - **Wendbar** (Symbol-Schalter direkt unter den Farben): an → „Farben Seite A“ und „Farben Seite B“, Foto je Seite.
@@ -181,7 +181,7 @@ Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten **und*
 | Kategorie, Saison, Farben, Material, Stil | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Muster | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ | – | ✓ |
 | Wendbar | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ | – | ✓ |
-| Größe | ✓ | ✓ | ✓ (W/L) | ✓ | ✓ | ✓ (EU) | – | ✓ (Kappe: verstellbar/Fitted) | nur Ring | ✓ |
+| Größe | ✓ | ✓ | ✓ (W/L) | ✓ | ✓ | ✓ (EU) | – | ✓ (Kappe, Hut, Buchstaben) | Ring, Armband, Halskette, Uhr | ✓ außer Brille, Geldbörse, Handyhülle, Haarschmuck, Anzug-Accessoire, Schal |
 | Passform | Weite, Länge | Länge | Weite, Länge, Bund | Länge, Bund | – | – | – | – | – | – |
 | Lagen + „auch allein tragbar“ | ✓ | – | – | – | ✓ | – | – | – | – | – |
 | Wetter | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | – | ✓ |
@@ -195,6 +195,29 @@ Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten **und*
 - \* **Pflege bei Accessoire** nur für Unterwäsche, Socke, Strumpfhose, Bademode, Schal, Anzug-Accessoire, Handschuh, Traditionelle Kleidung, Stulpe.
 - **Wetter bei Accessoire** nur Schal, Handschuh, Socke, Strumpfhose, Stulpe, Bademode.
 - **Wechsel der Kategorie** im Bearbeiten blendet die Zeilen sofort passend ein und aus.
+
+**Größen je Art (erweitert 17.11.2026, Max; Logik `sizeChoices` in `packages/core/src/fields.ts`, DB-Prüfung Migration 0013)**
+
+| Art | Wo | Systeme und Werte | Ansicht |
+|---|---|---|---|
+| Kleidung | Oberteil, Kleid, Rock, Oberbekleidung, Accessoire › Bademode, Traditionelle Kleidung, Stulpe, Sonstiges | Buchstaben XXS–5XL + One Size, darunter Reihe „Doppelgrößen“ XS/S, S/M, M/L, L/XL, XL/XXL · Zahlen 44–60; Hemd + Kragenweite | „M“, „S/M“ |
+| Hose | Hose, Shorts | W/L (Standard; W24–W44, L26–L38; Shorts/Pyjama-Hose nur Bundweite) · Buchstaben (+ Doppelgrößen) · Zahlen 44–60 nur Stoffhose (Anzughose, Chino …) | „W32/L34“ |
+| Schuh | Schuh | EU 35–50 ganze und halbe; Umschalter „Drittelgrößen“ zeigt 35, 35 ⅓, 35 ⅔ … (adidas) | „42 ⅔“ |
+| Kappe | Kopfbedeckung › Kappe | Verstellbar · Fitted 6 7/8–8 · Flexfit S/M, L/XL, XL/XXL | „7 3/8“, „L/XL“ |
+| Hut | Kopfbedeckung › Hut | Kopfumfang 53–62 cm · Buchstaben (+ Doppelgrößen) | „Kopfumfang 58 cm“ |
+| Buchstaben | Kopfbedeckung › Mütze, Hijab, Sonstiges | nur Buchstaben (+ Doppelgrößen, One Size) | „M“ |
+| Handschuh | Accessoire › Handschuh (alle Typen inkl. Torwarthandschuh) | Zahlen 5–12 in halben Schritten („7,5“) · Buchstaben (+ Doppelgrößen) | „7,5“ |
+| Gürtel | Accessoire › Gürtel | Länge 70–130 cm in 5er-Schritten · Buchstaben (+ Doppelgrößen) | „Länge 95 cm“ |
+| Socke | Accessoire › Socke, Strumpfhose | Bereich 35–38, 37–39, 39–42, 40–42, 43–45, 43–46, 46–48, 47–50 · Buchstaben (+ Doppelgrößen) | „39–42“ |
+| Unterwäsche | Accessoire › Unterwäsche | Buchstaben (+ Doppelgrößen) · Zahlen 4–9 (Schiesser, 5 = M) | „5“ |
+| Ring | Schmuck › Ring | 48–66 | „56“ |
+| Armband | Schmuck › Armband | Länge 14–24 cm in halben Schritten | „Länge 19,5 cm“ |
+| Halskette | Schmuck › Halskette | Länge 35, 38, 40, 42, 45, 50, 55, 60, 70, 80, 90 cm | „Länge 45 cm“ |
+| Uhr | Schmuck › Uhr | Gehäuse-Ø 26–50 mm | „Gehäuse-Ø 40 mm“ |
+
+- Überschriften der Werte in Bearbeiten tragen die Einheit („Länge in cm“, „Kopfumfang in cm“, „Gehäuse-Ø in mm“), die Kapseln zeigen nur die Zahl; gespeichert wird mit Einheit („95 cm“).
+- `items.size_system`: letters, numbers, wl, eu, cap, flexfit, ring, glove, belt, sock, hat, bracelet, necklace, watch. Doppelgrößen laufen unter letters. Altdaten: gespeichertes System, wenn es zur Art passt, sonst am Wert erkennen, sonst leer (nichts raten).
+- KI „Infos auslesen“ (`matchSize`): „S-M“/„SM“ → „S/M“, „42 2/3“/„42.67“ → „42 ⅔“, „39-42“ → „39–42“, „95cm“ → „95 cm“, „40mm“ → „40 mm“, Handschuh „8.5“ → „8,5“; passt nichts, bleibt die Größe leer.
 
 ## 9. Offen – Max fragen, nicht selbst entscheiden
 

@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { categoryLabel } from '@valet/core';
 import { PhotoPicker } from '@/components/PhotoPicker';
+import { MirrorButton } from '@/components/edit/MirrorButton';
 import { ItemPicture } from '@/components/ItemPicture';
 import { useToast } from '@/components/ui';
 import { useSession } from '@/lib/session';
@@ -143,6 +144,10 @@ export default function BilderZuordnen() {
               <View style={[s.stage, { backgroundColor: '#000', boxShadow: '0 2px 8px rgba(42,26,29,0.18)' }]}>
                 {current.pic ? <Image source={{ uri: current.pic.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} accessibilityLabel="Freigestelltes Bild" />
                   : <Text style={[s.small, { color: '#ff9a8f' }]}>Foto ließ sich nicht öffnen: {current.error}</Text>}
+                {current.pic && (
+                  <MirrorButton key={current.id} picture={current.pic} onError={(m) => toast.show(m)}
+                    onChange={(pic) => { urls.current.push(pic.preview); update(current.id, { pic }); }} />
+                )}
               </View>
               <Text style={[s.small, { color: t.inkMuted }]}>
                 {current.pic ? (current.pic.source === 'shadow' ? 'Schatten entfernt' : current.pic.source === 'clean' ? 'Schon freigestellt' : current.pic.kind === 'cutout' ? 'Freigestellt' : 'Original') : 'Fehler'} · noch {photos.length} Fotos{pending ? `, ${pending} in Arbeit${step ? ` (${step.replace(/ …$/, '')})` : ''}` : ''}

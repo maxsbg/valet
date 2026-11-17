@@ -3,7 +3,7 @@
 
 import { MATERIALS, CARE, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { setField, type EditForm } from '../edit';
-import { fieldsFor, matchSize, pantsWaistOnly } from '../fields';
+import { fieldsFor, matchSize } from '../fields';
 import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, checkAnalysis, applyAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
 
 export type InfoKind = 'label' | 'shop' | 'order';
@@ -25,7 +25,7 @@ const PROPS: Record<string, JsonSchema> = {
   preis: num('Aktueller bzw. bezahlter Preis je Stück in Euro (Zahl, z. B. 59.95)'),
   listenpreis: num('Durchgestrichener Preis oder UVP in Euro, sonst null'),
   kaufdatum: text('Bestell- bzw. Kaufdatum als JJJJ-MM-TT, sonst null'),
-  groesse: text('Größe wie angegeben, z. B. M, 42, 42 1/2, W32/L34 – nur die Größe, ohne Zusätze'),
+  groesse: text('Größe wie angegeben, nur die Größe ohne Zusätze, z. B. M, S/M (Doppelgröße), 4XL, 42, 42 1/2, 42 2/3 (Drittelgröße), W32/L34, 7 3/8 (Fitted), 8,5 (Handschuh), 39–42 (Socken), 95 cm (Gürtellänge), 58 cm (Kopfumfang Hut), 45 cm (Kettenlänge), 40 mm (Uhrgehäuse)'),
   artikelnummer: text('Artikel- oder Modellnummer, sonst null'),
   materialAnteile: {
     type: 'array', description: 'Materialzusammensetzung laut Text oder Etikett, Hauptmaterial zuerst; nächstliegender Listenwert (z. B. Cotton → Baumwolle)',
@@ -107,7 +107,7 @@ export function applyInfo(form: EditForm, info: Info): EditForm {
   if (info.articleNo) put('articleNo', info.articleNo, !f.articleNo.trim());
   if (info.purchaseDate && !f.isWish) put('purchaseDate', info.purchaseDate, !f.purchaseDate);
   // Größe nur als Wert aus der Liste der Größen-Art (wie alle Listenfelder, kein freier Text)
-  const hit = matchSize(fieldsFor(f.category, f.subcategory).size, info.size, pantsWaistOnly(f.category, f.subcategory));
+  const hit = matchSize(fieldsFor(f.category, f.subcategory).size, info.size, f.category, f.subcategory);
   if (hit && (!f.size || open.has('size'))) {
     f = setField(setField(f, 'sizeSystem', hit.system), 'size', hit.size);
     marked.push('size');

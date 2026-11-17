@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
-  shortDate, shortUrl, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
+  shortDate, shortUrl, sizeText, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme, DISPLAY } from '@/lib/theme';
@@ -90,7 +90,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
     [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([f.pattern]) : []],
     ...(rev && fx.pattern ? [['Muster Seite B', caps([f.patternB])] as [string, React.ReactNode[]]] : []),
     ['Material', caps(f.materials.map((m) => m.name))],
-    ['Größe', fx.size ? caps([f.size, fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
+    ['Größe', fx.size ? caps([sizeText(f.sizeSystem, f.size), fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
   ];
   const tragen: [string, React.ReactNode[]][] = [
     ['Passform', fit.length ? [...fit, <Text key="w" style={{ fontSize: 13, color: t.inkMuted }}>{fitWord}</Text>] : []],

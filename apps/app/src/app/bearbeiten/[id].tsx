@@ -10,7 +10,7 @@ import type { Picture } from '@/lib/cutout';
 import { useSession } from '@/lib/session';
 import { useTheme } from '@/lib/theme';
 import { useBottomInset } from '@/lib/bottomInset';
-import { loadItem, loadPictures, updateItem, deleteItem, saveImage, saveSet, type ItemRow } from '@/lib/item';
+import { loadItem, loadPictures, loadStoredPicture, updateItem, deleteItem, saveImage, saveSet, type ItemRow } from '@/lib/item';
 import type { SetDraft } from '@/components/edit/SetPicker';
 import { nameToHex } from '@/lib/wardrobe';
 import { colorHex } from '@valet/core';
@@ -91,7 +91,8 @@ export default function Bearbeiten() {
       <ItemEditor title="Bearbeiten" form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null} wishlists={wardrobe?.wishlists ?? []}
         current={current} pics={pics} onPic={(side, p) => setPics((x) => ({ ...x, [side]: p }))} hex={tile?.hex ?? null}
         saving={saving} onCancel={close} onSave={save} onDelete={() => setConfirmDelete(true)} initialTab={reiter === 'kauf' ? 'kauf' : 'steck'}
-        set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: id, setId: orig.set_id }} />
+        set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: id, setId: orig.set_id }}
+        loadStored={(side) => loadStoredPicture(id, side)} onError={(m) => toast.show(m)} />
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title={f.isWish ? 'Wunsch löschen?' : 'Teil löschen?'}
         footer={<><SheetButton label="Abbrechen" onPress={() => setConfirmDelete(false)} /><SheetButton primary label="Löschen" onPress={remove} /></>}>
         <Text style={{ fontSize: 16, color: t.ink }}>„{orig.name}“ wird mit allen Tragetagen und aus allen Outfits entfernt. Das lässt sich nicht rückgängig machen.</Text>

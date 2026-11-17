@@ -25,6 +25,10 @@ export type Picture = {
   colors: { h: string; s: number }[];
   /** Wie freigestellt: Modell, schon sauber (nur zugeschnitten) oder Schatten entfernt (ohne Modell) */
   source?: 'model' | 'clean' | 'shadow';
+  /** Gespiegelt: das ungespiegelte Bild (erneutes Spiegeln holt es unverändert zurück, ohne neue Kompression) */
+  mirrorOf?: Picture;
+  /** Schon gespeichertes Bild (nur zum Spiegeln geladen, nicht neu hochladen) */
+  stored?: boolean;
 };
 
 /** Größte Kante des gespeicherten Hauptbildes – hält den kostenlosen Speicher (1 GB) lange frei */
@@ -119,6 +123,44 @@ export async function legacyPicture(file: Blob, kind: 'cutout' | 'original' | nu
   const main = await toWebp(c, MAIN_EDGE, 0.9);
   const thumb = await toWebp(c, THUMB_EDGE, 0.85);
   return { kind: k, main, thumb, preview: '', colors: colors ?? (k === 'cutout' ? mainColors(c) : []) };
+}
+
+/**
+ * Bild links/rechts spiegeln (für alle Stellen mit Bild-Vorschau): Haupt- und Vorschaubild werden als Canvas mit
+ * scale(-1, 1) neu erzeugt – gleiche Größe, gleiches Format, Transparenz bleibt; Farben bleiben unverändert.
+ * Gespeichert wird also das tatsächlich gespiegelte Bild (kein CSS-Transform). Erneut spiegeln = Original zurück.
+ */
+export async function mirrorPicture(p: Picture): Promise<Picture> {
+  if (p.mirrorOf) return p.mirrorOf;
+  const quality = p.kind === 'original' ? 0.88 : 0.9;
+  const [main, thumb] = await Promise.all([mirrorBlob(p.main, quality), mirrorBlob(p.thumb, 0.85)]);
+  return { ...p, main, thumb, preview: URL.createObjectURL(main), mirrorOf: p, stored: false };
+}
+
+async function mirrorBlob(b: Blob, q: number): Promise<Blob> {
+  const src = await fileToCanvas(b, Infinity);
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  const x = c.getContext('2d')!;
+  x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(src, 0, 0);
+  if (b.type === 'image/png') {
+    const png = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/png'));
+    if (!png) throw new Error('Bild konnte nicht gespiegelt werden.');
+    return png;
+  }
+  if (b.type === 'image/jpeg') {
+    const jpg = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/jpeg', q));
+    if (!jpg) throw new Error('Bild konnte nicht gespiegelt werden.');
+    return jpg;
+  }
+  return toWebp(c, Infinity, q);
+}
+
+/** Vorhandenes Bild (aus dem Speicher geladen) als Picture, damit es sich spiegeln und neu speichern lässt */
+export async function storedPicture(mainUrl: string, thumbUrl: string, kind: Picture['kind'], colors: Picture['colors']): Promise<Picture> {
+  const get = async (u: string) => { const r = await fetch(u); if (!r.ok) throw new Error('Bild konnte nicht geladen werden.'); return r.blob(); };
+  const [main, thumb] = await Promise.all([get(mainUrl), get(thumbUrl)]);
+  return { kind, main, thumb, preview: URL.createObjectURL(main), colors, stored: true };
 }
 
 /** true, wenn der Bildrand überwiegend durchsichtig ist (freigestelltes Teil) */

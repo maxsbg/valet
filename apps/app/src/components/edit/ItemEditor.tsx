@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CATEGORY_NAMES, CLOSURES, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, subcategoriesOf, typesOf, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
-  pickSizeSystem, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
+  pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, shopFromLink, tileKind,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -51,6 +51,10 @@ type Props = {
   onDelete?: () => void;
   /** Neues Teil: „Foto ändern“ führt zurück zum Fotoschritt */
   onChangePhoto?: () => void;
+  /** Bearbeiten: gespeichertes Bild einer Seite laden (Spiegeln ohne neues Foto) */
+  loadStored?: (side: Side) => Promise<Picture | null>;
+  /** Fehlermeldung anzeigen (z. B. Spiegeln fehlgeschlagen) */
+  onError?: (message: string) => void;
   /** Start-Reiter (z. B. „Preis fehlt“ antippen → Kauf) */
   initialTab?: 'steck' | 'kauf';
   /** Set (nur Schrank-Teile): Zustand, Teile des Schranks, bisheriges Set */
@@ -131,7 +135,7 @@ export function ItemEditor(p: Props) {
   };
   const fx = fieldsFor(f.category, f.subcategory);
   const reversible = fx.reversible && f.reversible;
-  const sizeValues = [f.size, fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null].filter((x): x is string => !!x);
+  const sizeValues = [sizeText(f.sizeSystem, f.size), fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null].filter((x): x is string => !!x);
 
   const steckbrief = (
     <>
@@ -192,7 +196,7 @@ export function ItemEditor(p: Props) {
         !!fx.size && ((last) => (
           <EditRow label="Größe" open={!!open.size} onToggle={() => toggle('size')} ai={ai('size')} last={last} values={capsules(sizeValues)}>
             <SizePicker kind={fx.size!} category={f.category} sub={f.subcategory} system={f.sizeSystem} size={f.size} collarSize={f.collarSize}
-              onSystem={(sys) => onForm(pickSizeSystem(f, sys))} onSize={(v) => set('size', v)} onCollar={(v) => set('collarSize', v)} />
+              onSystem={(sys) => onForm(pickSizeSystem(f, sys))} onSize={(sys, v) => onForm(pickSize(f, sys, v))} onCollar={(v) => set('collarSize', v)} />
           </EditRow>
         )),
       ])}
@@ -401,7 +405,8 @@ export function ItemEditor(p: Props) {
       <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ width: col, paddingTop: 12, gap: 14 }}>
           <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={f.reversible} kind={tileKind(f.category, f.subcategory, f.type, f.fit.length)}
-            hex={p.hex} colors={f.colors} colorsB={f.colorsB} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto} />
+            hex={p.hex} colors={f.colors} colorsB={f.colorsB} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto}
+            loadStored={p.loadStored} onError={p.onError} />
           {f.aiPending.length > 0 && (
             <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
               <KiBadge />

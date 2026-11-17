@@ -3,7 +3,7 @@
 
 import { isValidPath, type FitScale } from './categories';
 import { MAX_COLORS, ONE_SIZE, type Care, type MaterialPart } from './attributes';
-import { capSize, fieldsFor, sizeSystemOn, type SizeSystemAny } from './fields';
+import { capSize, fieldsFor, kindHasLetters, sizeSystemOn, type SizeSystemAny } from './fields';
 import { equalSplit, formatPrice, parseAmount, splitGap } from './money';
 import { isWishTag, type WishTag } from './tile';
 
@@ -90,9 +90,9 @@ export function setCategory(f: EditForm, p: { category: string | null; subcatego
   const before = fieldsFor(f.category, f.subcategory).size, after = fieldsFor(p.category, p.subcategory).size;
   let next = setField(setField(setField(f, 'category', p.category), 'subcategory', p.subcategory), 'type', p.type);
   if (before === after) return next;
-  // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose): bleibt stehen (Max, 15.11.2026).
+  // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose, Handschuh, Mütze …): bleibt stehen (Max, 15.11.2026).
   // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.
-  const keepLetters = f.sizeSystem === 'letters' && !!f.size && (after === 'clothing' || after === 'pants');
+  const keepLetters = f.sizeSystem === 'letters' && !!f.size && kindHasLetters(after);
   return keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null };
 }
 
@@ -109,6 +109,11 @@ export function toggleMaterial(list: readonly MaterialPart[], name: string): Mat
   return list.some((m) => m.name === name) ? list.filter((m) => m.name !== name) : [...list, { name }];
 }
 export const materialRank = (list: readonly MaterialPart[], name: string) => list.findIndex((m) => m.name === name) + 1;
+
+/** Größe antippen: Wert samt System setzen; erneut tippen hebt auf (System bleibt) */
+export function pickSize(f: EditForm, system: SizeSystemAny, size: string | null): EditForm {
+  return setField(setField(f, 'sizeSystem', system), 'size', size);
+}
 
 /** Größe: Systemwechsel setzt die Größe zurück (One Size bleibt) */
 export function pickSizeSystem(f: EditForm, s: SizeSystemAny): EditForm {

@@ -2,15 +2,24 @@
 // Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten und Ansicht nicht gezeigt.
 // Gespeicherte Werte bleiben in der Datenbank. Eine Karte ohne sichtbare Zeile entfällt.
 
-import { COLLARS, SIZES, ONE_SIZE, sizeSystemOf, type SizeSystem } from './attributes';
+import { COLLARS, LETTER_DOUBLES, SIZES, ONE_SIZE, sizeSystemOf, type SizeSystem } from './attributes';
 
 /** Art der Größenangabe */
 export type SizeKind =
-  | 'clothing' // Buchstaben / Zahlen 44–60 (+ One Size), Hemd zusätzlich Kragenweite
-  | 'pants'    // W/L (Standard) oder Buchstaben; Shorts und Pyjama-Hose nur Bundweite
-  | 'shoe'     // EU
-  | 'cap'      // Kappe: verstellbar oder Fitted (mit Größe)
-  | 'ring';    // Ringgröße
+  | 'clothing'  // Buchstaben (+ Doppelgrößen) / Zahlen 44–60 (+ One Size), Hemd zusätzlich Kragenweite
+  | 'pants'     // W/L (Standard) oder Buchstaben, Stoffhose zusätzlich Zahlen; Shorts und Pyjama-Hose nur Bundweite
+  | 'shoe'      // EU, ganze/halbe oder Drittelgrößen
+  | 'cap'       // Kappe: verstellbar, Fitted (mit Größe) oder Flexfit
+  | 'ring'      // Ringgröße
+  | 'glove'     // Handschuh: Zahlen 5–12 oder Buchstaben
+  | 'belt'      // Gürtel: Länge in cm oder Buchstaben
+  | 'sock'      // Socke, Strumpfhose: Bereich (39–42) oder Buchstaben
+  | 'hat'       // Hut: Kopfumfang in cm oder Buchstaben
+  | 'bracelet'  // Armband: Länge in cm
+  | 'necklace'  // Halskette: Länge in cm
+  | 'watch'     // Uhr: Gehäusedurchmesser in mm
+  | 'underwear' // Unterwäsche: Buchstaben oder Zahlen 4–9
+  | 'letters';  // Mütze, Hijab, sonstige Kopfbedeckung: nur Buchstaben
 
 export type Fields = {
   pattern: boolean;
@@ -35,6 +44,10 @@ const ACC_CARE = new Set(['Unterwäsche', 'Socke', 'Strumpfhose', 'Bademode', 'S
 const ACC_WEATHER = new Set(['Schal', 'Handschuh', 'Socke', 'Strumpfhose', 'Stulpe', 'Bademode']);
 const TOP_CLOSURE = new Set(['Hemd', 'Bluse', 'Polohemd', 'Body']);
 const ACC_CLOSURE = new Set(['Gürtel', 'Handschuh']);
+/** Accessoires ohne Größenfeld (Werte bleiben gespeichert) */
+const ACC_NO_SIZE = new Set(['Brille', 'Geldbörse', 'Handyhülle', 'Haarschmuck', 'Anzug-Accessoire', 'Schal']);
+const ACC_SIZE: Readonly<Record<string, SizeKind>> = { Handschuh: 'glove', Gürtel: 'belt', Socke: 'sock', Strumpfhose: 'sock', Unterwäsche: 'underwear' };
+const JEWELRY_SIZE: Readonly<Record<string, SizeKind>> = { Ring: 'ring', Armband: 'bracelet', Halskette: 'necklace', Uhr: 'watch' };
 
 /** Ohne Kategorie: alles zeigen (nichts verstecken, solange nichts gewählt ist) */
 const ALL: Fields = {
@@ -64,11 +77,11 @@ export function fieldsFor(category: string | null | undefined, sub?: string | nu
     case 'Tasche':
       return { pattern: true, reversible: true, size: null, layers: false, weather: false, neckline: null, closure: true, strap: true, care: false };
     case 'Kopfbedeckung':
-      return { pattern: true, reversible: true, size: sub === 'Kappe' ? 'cap' : 'clothing', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
+      return { pattern: true, reversible: true, size: sub === 'Kappe' ? 'cap' : sub === 'Hut' ? 'hat' : 'letters', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
     case 'Schmuck':
-      return { pattern: false, reversible: false, size: sub === 'Ring' ? 'ring' : null, layers: false, weather: false, neckline: null, closure: false, strap: false, care: false };
+      return { pattern: false, reversible: false, size: (sub && JEWELRY_SIZE[sub]) || null, layers: false, weather: false, neckline: null, closure: false, strap: false, care: false };
     case 'Accessoire':
-      return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: !!sub && ACC_WEATHER.has(sub), neckline: null,
+      return { pattern: true, reversible: true, size: !sub ? 'clothing' : ACC_NO_SIZE.has(sub) ? null : ACC_SIZE[sub] ?? 'clothing', layers: false, weather: !!sub && ACC_WEATHER.has(sub), neckline: null,
         closure: !!sub && ACC_CLOSURE.has(sub), strap: false, care: !!sub && ACC_CARE.has(sub) };
     default:
       return ALL;
@@ -78,20 +91,55 @@ export function fieldsFor(category: string | null | undefined, sub?: string | nu
 // ---------- Größen je Art ----------
 
 const range = (a: number, b: number, step = 1) => Array.from({ length: Math.round((b - a) / step) + 1 }, (_, i) => a + i * step);
+/** Deutsche Schreibweise: 7.5 → „7,5“ */
+const dec = (n: number) => String(n).replace('.', ',');
 
-export const PANTS_WAIST = range(26, 40).map((n) => `W${n}`);
-export const PANTS_LENGTH = range(28, 36).map((n) => `L${n}`);
-/** EU-Schuhgrößen 35–48 in halben Schritten (bestätigt 15.11.2026) */
-export const SHOE_SIZES = range(35, 48, 0.5).map((n) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)},5`));
+export const PANTS_WAIST = range(24, 44).map((n) => `W${n}`);
+export const PANTS_LENGTH = range(26, 38).map((n) => `L${n}`);
+/** EU-Schuhgrößen 35–50, ganze und halbe */
+export const SHOE_SIZES = range(35, 50, 0.5).map((n) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)},5`));
+/** EU-Schuhgrößen 35–50 mit Drittelgrößen (adidas: „42 ⅔“) */
+export const SHOE_THIRDS = range(35, 50).flatMap((n) => (n === 50 ? ['50'] : [String(n), `${n} ⅓`, `${n} ⅔`]));
+/** Schuhgröße als Zahl (zum Sortieren): „42,5“ → 42.5, „42 ⅔“ → 42.67 */
+export function shoeValue(v: string): number {
+  const m = /^(\d+)(?:,5| (⅓|⅔))?$/.exec(v);
+  if (!m) return NaN;
+  return Number(m[1]) + (v.includes(',5') ? 0.5 : m[2] === '⅓' ? 1 / 3 : m[2] === '⅔' ? 2 / 3 : 0);
+}
+/** Alle EU-Größen numerisch sortiert */
+export const SHOE_ALL = [...new Set([...SHOE_SIZES, ...SHOE_THIRDS])].sort((a, b) => shoeValue(a) - shoeValue(b));
+export const isShoeThird = (v: string | null | undefined) => !!v && /[⅓⅔]/.test(v);
+
 export const CAP_ADJUSTABLE = 'Verstellbar';
 /** Fitted-Größen (US, Kopfumfang) */
 export const CAP_FITTED = ['6 7/8', '7', '7 1/8', '7 1/4', '7 3/8', '7 1/2', '7 5/8', '7 3/4', '7 7/8', '8'] as const;
+/** Flexfit-Größen (System „flexfit“) */
+export const CAP_FLEXFIT = ['S/M', 'L/XL', 'XL/XXL'] as const;
 /** Ringgrößen (Innenumfang in mm, bestätigt 15.11.2026) */
 export const RING_SIZES = range(48, 66).map(String);
+/** Handschuh 5–12 in halben Schritten („7,5“) */
+export const GLOVE_SIZES = range(5, 12, 0.5).map(dec);
+/** Gürtel 70–130 cm in 5er-Schritten */
+export const BELT_SIZES = range(70, 130, 5).map((n) => `${n} cm`);
+/** Socke/Strumpfhose: Schuhgrößen-Bereiche (beide üblichen Einteilungen, nach Anfang sortiert) */
+export const SOCK_SIZES = ['35–38', '37–39', '39–42', '40–42', '43–45', '43–46', '46–48', '47–50'] as const;
+/** Hut: Kopfumfang 53–62 cm */
+export const HAT_SIZES = range(53, 62).map((n) => `${n} cm`);
+/** Armband 14–24 cm in halben Schritten */
+export const BRACELET_SIZES = range(14, 24, 0.5).map((n) => `${dec(n)} cm`);
+/** Halskette: Standardlängen */
+export const NECKLACE_SIZES = [35, 38, 40, 42, 45, 50, 55, 60, 70, 80, 90].map((n) => `${n} cm`);
+/** Uhr: Gehäusedurchmesser 26–50 mm */
+export const WATCH_SIZES = range(26, 50).map((n) => `${n} mm`);
+/** Unterwäsche, Zahlen (Schiesser-Stil, 5 = M) */
+export const UNDERWEAR_NUMBERS = range(4, 9).map(String);
 
 /** Hose ohne Länge: Shorts und Pyjama-Hose (Spec 7) */
 export const pantsWaistOnly = (category: string | null | undefined, sub?: string | null) =>
   category === 'Shorts' || (category === 'Hose' && sub === 'Pyjama-Hose');
+/** Hose mit Konfektionsgrößen (Zahlen 44–60): Anzug- und Stoffhosen */
+export const pantsNumbers = (category: string | null | undefined, sub?: string | null) =>
+  category === 'Hose' && sub === 'Stoffhose';
 
 /** „W32/L32“ → { w: 'W32', l: 'L32' } */
 export function parseWL(size: string | null | undefined): { w: string | null; l: string | null } {
@@ -109,61 +157,169 @@ export function capSize(size: string | null | undefined): string | null {
   return hit ?? null;
 }
 
-/** Alle Größen-Systeme (items.size_system) */
-export type SizeSystemAny = SizeSystem | 'wl' | 'eu' | 'cap' | 'ring';
+/** Alle Größen-Systeme (items.size_system, Prüfung in Migration 0013) */
+export type SizeSystemAny = SizeSystem | 'eu' | 'cap' | 'flexfit' | 'ring' | 'glove' | 'belt' | 'sock' | 'hat' | 'bracelet' | 'necklace' | 'watch';
 
-/** Größen-System beim Laden passend zur Art bestimmen (alte Daten: Schuhe „numbers“ → EU, Jeans „W30/L34“ → W/L) */
+/**
+ * Eine Auswahl innerhalb einer Größen-Art: System, Name des Systems (Umschalter),
+ * Überschrift der Werte (mit Einheit) und die Werte. W/L, EU und Kappe zeichnet SizePicker eigens.
+ */
+export type SizeChoice = {
+  system: SizeSystemAny; name: string; field: string; values: readonly string[];
+  /** Doppelgrößen als zweite Reihe (nur Buchstaben) */
+  doubles?: boolean;
+  /** Einheit, die in den Werten steht (Kapseln zeigen nur die Zahl) */
+  unit?: 'cm' | 'mm';
+};
+
+const LETTERS: SizeChoice = { system: 'letters', name: 'Buchstaben', field: 'Größe', values: SIZES.letters, doubles: true };
+const NUMBERS: SizeChoice = { system: 'numbers', name: 'Zahlen', field: 'Größe', values: SIZES.numbers };
+
+/** Auswahlen je Größen-Art; die erste ist der Standard (außer Kleidung/Unterwäsche: ohne Vorwahl) */
+export function sizeChoices(kind: SizeKind | null, category?: string | null, sub?: string | null): SizeChoice[] {
+  switch (kind) {
+    case null: return [];
+    case 'clothing': return [LETTERS, NUMBERS];
+    case 'pants': return [{ system: 'wl', name: 'W/L', field: 'Bundweite', values: PANTS_WAIST }, LETTERS, ...(pantsNumbers(category, sub) ? [NUMBERS] : [])];
+    case 'shoe': return [{ system: 'eu', name: 'EU', field: 'EU-Größe', values: SHOE_ALL }];
+    case 'cap': return [{ system: 'cap', name: 'Kappe', field: 'Fitted-Größe', values: [CAP_ADJUSTABLE, ...CAP_FITTED] }, { system: 'flexfit', name: 'Flexfit', field: 'Flexfit-Größe', values: CAP_FLEXFIT }];
+    case 'ring': return [{ system: 'ring', name: 'Ring', field: 'Ringgröße', values: RING_SIZES }];
+    case 'glove': return [{ system: 'glove', name: 'Zahlen', field: 'Größe', values: GLOVE_SIZES }, LETTERS];
+    case 'belt': return [{ system: 'belt', name: 'Länge', field: 'Länge in cm', values: BELT_SIZES, unit: 'cm' }, LETTERS];
+    case 'sock': return [{ system: 'sock', name: 'Bereich', field: 'Bereich (EU-Schuhgröße)', values: SOCK_SIZES }, LETTERS];
+    case 'hat': return [{ system: 'hat', name: 'Kopfumfang', field: 'Kopfumfang in cm', values: HAT_SIZES, unit: 'cm' }, LETTERS];
+    case 'bracelet': return [{ system: 'bracelet', name: 'Länge', field: 'Länge in cm', values: BRACELET_SIZES, unit: 'cm' }];
+    case 'necklace': return [{ system: 'necklace', name: 'Länge', field: 'Länge in cm', values: NECKLACE_SIZES, unit: 'cm' }];
+    case 'watch': return [{ system: 'watch', name: 'Gehäuse-Ø', field: 'Gehäuse-Ø in mm', values: WATCH_SIZES, unit: 'mm' }];
+    case 'underwear': return [LETTERS, { system: 'numbers', name: 'Zahlen', field: 'Größe', values: UNDERWEAR_NUMBERS }];
+    case 'letters': return [LETTERS];
+  }
+}
+/** Gibt es bei dieser Art Buchstabengrößen? (Kategoriewechsel behält dann „M“) */
+export const kindHasLetters = (kind: SizeKind | null) => sizeChoices(kind).some((c) => c.system === 'letters');
+const inChoice = (c: SizeChoice, v: string) => c.values.includes(v) || (!!c.doubles && (LETTER_DOUBLES as readonly string[]).includes(v));
+
+/** Anzeige in der Ansicht und in der eingeklappten Zeile: „Länge 95 cm“, „Kopfumfang 58 cm“, „Gehäuse-Ø 40 mm“ */
+export function sizeText(system: SizeSystemAny | null | undefined, size: string | null | undefined): string | null {
+  if (!size) return null;
+  const prefix: Partial<Record<SizeSystemAny, string>> = { belt: 'Länge', bracelet: 'Länge', necklace: 'Länge', hat: 'Kopfumfang', watch: 'Gehäuse-Ø' };
+  const p = system ? prefix[system] : undefined;
+  return p && /\d\s*(cm|mm)$/.test(size) ? `${p} ${size}` : size;
+}
+
+/** Größen-System beim Laden passend zur Art bestimmen (alte Daten: Schuhe „numbers“ → EU, Jeans „W30/L34“ → W/L); unbekannt → null */
 export function sizeSystemOn(kind: SizeKind | null, stored: string | null | undefined, size: string | null | undefined): SizeSystemAny | null {
   switch (kind) {
     case null: return null;
     case 'shoe': return 'eu';
-    case 'cap': return 'cap';
     case 'ring': return 'ring';
+    case 'bracelet': case 'necklace': case 'watch': return kind;
+    case 'letters': return 'letters';
+    case 'cap':
+      return stored === 'flexfit' || (!!size && (CAP_FLEXFIT as readonly string[]).includes(size) && stored !== 'cap') ? 'flexfit' : 'cap';
     case 'pants':
-      if (stored === 'letters' || (size && SIZES.letters.includes(size))) return 'letters';
+      if (stored === 'letters' || sizeSystemOf(size) === 'letters') return 'letters';
+      if (stored === 'numbers') return 'numbers';
       return 'wl'; // Standard bei Hosen
-    default:
+    case 'clothing':
       if (stored === 'letters' || stored === 'numbers') return stored;
       return sizeSystemOf(size);
+    default: {
+      // Handschuh, Gürtel, Socke, Hut, Unterwäsche: gespeichertes System, wenn es zur Art passt; sonst am Wert erkennen
+      const choices = sizeChoices(kind);
+      if (choices.some((c) => c.system === stored)) return stored as SizeSystemAny;
+      if (size) return choices.find((c) => inChoice(c, size))?.system ?? null;
+      return kind === 'underwear' ? null : choices[0]!.system; // neue Teile: Standard vorwählen
+    }
   }
 }
 
-// ---------- Größe aus Text (KI „Infos auslesen“) ----------
+// ---------- Größe aus Text (KI „Infos auslesen“, Link-Import) ----------
 
-const LETTER_ALIAS: Readonly<Record<string, string>> = { '2XS': 'XXS', '2XL': 'XXL', XXXL: '3XL', OS: ONE_SIZE, 'ONE SIZE': ONE_SIZE, ONESIZE: ONE_SIZE, EINHEITSGRÖSSE: ONE_SIZE, EINHEITSGRÖßE: ONE_SIZE };
+const LETTER_ALIAS: Readonly<Record<string, string>> = {
+  '2XS': 'XXS', '2XL': 'XXL', XXXL: '3XL', XXXXL: '4XL', XXXXXL: '5XL', OS: ONE_SIZE, 'ONE SIZE': ONE_SIZE, ONESIZE: ONE_SIZE,
+  EINHEITSGRÖSSE: ONE_SIZE, EINHEITSGRÖßE: ONE_SIZE,
+};
+const PART = '(XXS|XXL|XS|XL|S|M|L)';
+/** „S/M“, „S-M“, „SM“, „s–m“ → „S/M“ (nur Doppelgrößen aus der Liste) */
+function letterOf(s: string): string | null {
+  const one = LETTER_ALIAS[s] ?? s;
+  if (SIZES.letters.includes(one)) return one;
+  const m = new RegExp(`^${PART}\\s*[/\\-– ]?\\s*${PART}$`).exec(s);
+  const d = m ? `${m[1]}/${m[2]}` : null;
+  return d && (LETTER_DOUBLES as readonly string[]).includes(d) ? d : null;
+}
+/** Zahl mit Bruchteil und optionaler Einheit: „42 2/3“, „42⅔“, „42.67“, „8,5“, „95cm“, „40 mm“ */
+function numOf(s: string): { n: number; unit: 'CM' | 'MM' | null } | null {
+  const m = /^(\d{1,3})(?:\s*(?:[.,](\d{1,2})|(\d)\/(\d)|([½⅓⅔])))?\s*(CM|MM)?$/.exec(s);
+  if (!m) return null;
+  let n = Number(m[1]);
+  if (m[2]) n += Number(`0.${m[2]}`);
+  else if (m[3]) n += Number(m[3]) / Number(m[4]);
+  else if (m[5]) n += m[5] === '½' ? 0.5 : m[5] === '⅓' ? 1 / 3 : 2 / 3;
+  return { n, unit: (m[6] as 'CM' | 'MM' | undefined) ?? null };
+}
+const near = (a: number, b: number) => Math.abs(a - b) < 0.02;
+/** Wert in der Liste? Sonst null */
+const hit = (system: SizeSystemAny, list: readonly string[], v: string | null) => (v && list.includes(v) ? { system, size: v } : null);
 
 /**
- * Freie Größenangabe (z. B. „EU 42 1/2“, „32/34“, „xl“) → Wert aus den festen Listen der Größen-Art.
+ * Freie Größenangabe (z. B. „EU 42 1/2“, „32/34“, „xl“, „S-M“, „95cm“) → Wert aus den festen Listen der Größen-Art.
  * Passt nichts, kommt null zurück – die KI schreibt nie eigene Werte in die Größe.
  */
-export function matchSize(kind: SizeKind | null, raw: string | null | undefined, waistOnly = false): { system: SizeSystemAny; size: string } | null {
+export function matchSize(kind: SizeKind | null, raw: string | null | undefined, category?: string | null, sub?: string | null): { system: SizeSystemAny; size: string } | null {
   const s = (raw ?? '').trim().toUpperCase().replace(/^(EU|DE|GR\.?|GRÖSSE|GRÖßE|SIZE)\s*/, '').trim();
   if (!kind || !s) return null;
-  const letter = LETTER_ALIAS[s] ?? s;
-  const isLetter = SIZES.letters.includes(letter);
+  const letter = letterOf(s);
+  const num = numOf(s);
+  const letters = letter && kindHasLetters(kind) ? { system: 'letters' as const, size: letter } : null;
+  const whole = num && Number.isInteger(num.n) ? num.n : null;
   switch (kind) {
     case 'shoe': {
-      const m = /^(\d{2})(?:\s*(?:[.,]5|1\/2|½))?$/.exec(s);
-      if (!m) return null;
-      const v = /[.,]5|1\/2|½/.test(s) ? `${m[1]},5` : m[1]!;
-      return SHOE_SIZES.includes(v) ? { system: 'eu', size: v } : null;
+      if (!num || num.unit) return null;
+      const base = Math.floor(num.n + 0.01), f = num.n - base;
+      const v = near(f, 0) ? String(base) : near(f, 0.5) ? `${base},5` : near(f, 1 / 3) || near(f, 0.33) ? `${base} ⅓` : near(f, 2 / 3) || near(f, 0.67) ? `${base} ⅔` : null;
+      return hit('eu', SHOE_ALL, v);
     }
     case 'cap': {
+      if (letter && (CAP_FLEXFIT as readonly string[]).includes(letter)) return { system: 'flexfit', size: letter };
       const v = capSize(letter === ONE_SIZE ? ONE_SIZE : s);
       return v ? { system: 'cap', size: v } : null;
     }
     case 'ring':
-      return RING_SIZES.includes(s) ? { system: 'ring', size: s } : null;
+      return hit('ring', RING_SIZES, num && !num.unit && whole != null ? String(whole) : null);
+    case 'glove':
+      return letters ?? hit('glove', GLOVE_SIZES, num && !num.unit ? dec(num.n) : null);
+    case 'belt':
+      return letters ?? hit('belt', BELT_SIZES, num && num.unit !== 'MM' && whole != null ? `${whole} cm` : null);
+    case 'hat':
+      return letters ?? hit('hat', HAT_SIZES, num && num.unit !== 'MM' && whole != null ? `${whole} cm` : null);
+    case 'bracelet':
+      return hit('bracelet', BRACELET_SIZES, num && num.unit !== 'MM' ? `${dec(num.n)} cm` : null);
+    case 'necklace':
+      return hit('necklace', NECKLACE_SIZES, num && num.unit !== 'MM' && whole != null ? `${whole} cm` : null);
+    case 'watch':
+      return hit('watch', WATCH_SIZES, num && num.unit !== 'CM' && whole != null ? `${whole} mm` : null);
+    case 'sock': {
+      if (letters) return letters;
+      const m = /^(\d{2})\s*[-–/]\s*(\d{2})$/.exec(s);
+      return hit('sock', SOCK_SIZES, m ? `${m[1]}–${m[2]}` : null);
+    }
+    case 'underwear':
+      return letters ?? hit('numbers', UNDERWEAR_NUMBERS, num && !num.unit && whole != null ? String(whole) : null);
+    case 'letters':
+      return letters;
     case 'pants': {
-      if (isLetter) return { system: 'letters', size: letter };
+      if (letters) return letters;
+      if (pantsNumbers(category, sub) && SIZES.numbers.includes(s)) return { system: 'numbers', size: s };
       const m = /^W?\s*(\d{2})(?:\s*[/X ]\s*L?\s*(\d{2}))?$/.exec(s);
       if (!m) return null;
-      const w = `W${m[1]}`, l = m[2] && !waistOnly ? `L${m[2]}` : null;
+      const w = `W${m[1]}`, l = m[2] && !pantsWaistOnly(category, sub) ? `L${m[2]}` : null;
       if (!PANTS_WAIST.includes(w) || (l && !PANTS_LENGTH.includes(l))) return null;
       return { system: 'wl', size: composeWL(w, l)! };
     }
-    default:
-      if (isLetter) return { system: 'letters', size: letter };
+    case 'clothing':
+      if (letters) return letters;
       return SIZES.numbers.includes(s) ? { system: 'numbers', size: s } : null;
   }
 }
