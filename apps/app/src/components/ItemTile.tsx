@@ -56,6 +56,8 @@ export type TileItem = {
   category: string;
   /** Grobe Form (layoutKind) für Höhe und Platzhalter */
   kind?: string;
+  /** Form für die Kachelhöhe (sonst kind) */
+  size?: string;
   /** Hauptfarbe (Farbanalyse) – Platzhalterfarbe, Schein nur ohne Steckbrief-Farben */
   hex: string | null;
   /** Steckbrief-Farben in Rang-Reihenfolge – bestimmen den Innenschein (core/glow.ts) */
@@ -102,7 +104,7 @@ type Props = {
 };
 
 export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend }: Props) {
-  const h = height ?? tileHeight(item.kind ?? item.category, width);
+  const h = height ?? tileHeight(item.size ?? item.kind ?? item.category, width);
   const glow = glowFor(item.colors, item.hex);
   const tr = topRightFor(item.reversible, item.qty, !!item.setId);
   // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)

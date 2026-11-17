@@ -38,7 +38,7 @@ export function Mosaic({ items, width, selected, onPress }: Props) {
     for (const it of items) {
       const i = h.indexOf(Math.min(...h));
       c[i]!.push(it);
-      h[i]! += tileHeight(it.kind ?? it.category, colW) + tile.gap;
+      h[i]! += tileHeight(it.size ?? it.kind ?? it.category, colW) + tile.gap;
     }
     return c;
   }, [items, colW]);

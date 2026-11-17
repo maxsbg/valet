@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { personText } from '@valet/ui';
-import { isWishTag, layoutKind, migrateSeasons, normalizeCategory, type LayoutKind, type WishTag, type ItemStatus } from '@valet/core';
+import { isWishTag, layoutKind, tileKind, migrateSeasons, normalizeCategory, type LayoutKind, type WishTag, type ItemStatus } from '@valet/core';
 import { loadOutfits, todayIds, todayWho, type Hold, type Outfit, type Wear } from './outfits';
 import type { PersonLook } from '@/components/ItemTile';
 
@@ -15,6 +15,8 @@ export type Tile = {
   type: string | null;
   /** Grobe Form für Mosaik-Höhe, Platzhalter und Outfit-Board */
   kind: LayoutKind;
+  /** Form nur für die Kachelhöhe im Mosaik (`tileKind`: Typ und Länge zählen) */
+  size: LayoutKind;
   /** Lagen 0 Unterlage … 3 Außen (Set-Reihenfolge) */
   layers: number[];
   /** Farben (Rang = Reihenfolge) */
@@ -85,7 +87,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,subcategory,item_type,colors,layers,color,owner_id,owner_ids,status,status_until,qty,reversible,main_side,set_id,is_wish,is_gift,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,subcategory,item_type,fit_length,colors,layers,color,owner_id,owner_ids,status,status_until,qty,reversible,main_side,set_id,is_wish,is_gift,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
     supabase.from('wishlists').select('id,name,owner_id,item_order,created_at').eq('wardrobe_id', w.id).order('created_at'),
@@ -112,6 +114,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     subcategory: path.subcategory,
     type: path.type,
     kind: layoutKind(path.category, path.subcategory),
+    size: tileKind(path.category, path.subcategory, path.type, i.fit_length),
     layers: i.layers ?? [],
     colors: i.colors ?? [],
     color: i.color,
