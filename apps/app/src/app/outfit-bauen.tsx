@@ -104,8 +104,8 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
   const side = chosen.filter((i) => SIDE_CATEGORIES.has(i.category)).sort((a, b) => catIndex(a.category) - catIndex(b.category));
   const piece = (i: Tile) => (
     <View key={i.id} style={[s.ctile, { opacity: i.isWish ? 0.5 : 1 }]}>
-      {i.thumb || i.image
-        ? <Image source={{ uri: i.thumb ?? i.image! }} resizeMode="contain" style={StyleSheet.absoluteFill} accessibilityLabel={i.name || 'Teil'} />
+      {i.image || i.thumb
+        ? <Image source={{ uri: i.image ?? i.thumb! }} resizeMode="contain" style={StyleSheet.absoluteFill} accessibilityLabel={i.name || 'Teil'} />
         : <ItemPicture uri={null} inset={0} category={i.category} color={i.hex ?? '#c4bfb4'} />}
       <Pressable accessibilityRole="button" onPress={() => toggle(i)} hitSlop={11} accessibilityLabel={`${i.name || 'Teil'} entfernen`} style={s.x}><Icon name="close" size="mini" color="#fff" /></Pressable>
     </View>
