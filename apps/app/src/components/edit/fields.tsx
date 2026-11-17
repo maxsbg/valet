@@ -98,9 +98,9 @@ export function PlainRow({ label, children, last, ink, inset, below }: {
 export function ValueCapsule({ label, icon }: { label: string; icon?: (color: string) => React.ReactNode }) {
   const t = useTheme();
   return (
-    <View style={[s.vcap, { backgroundColor: t.ink }]} accessibilityLabel={label}>
-      {icon?.(t.bg)}
-      <Text style={[s.vcapText, { color: t.bg }]} numberOfLines={1}>{label}</Text>
+    <View style={[s.vcap, { backgroundColor: t.fill }]} accessibilityLabel={label}>
+      {icon?.(t.onFill)}
+      <Text style={[s.vcapText, { color: t.onFill }]} numberOfLines={1}>{label}</Text>
     </View>
   );
 }
@@ -110,7 +110,7 @@ export function ValueCircle({ a11y, children, estimated }: { a11y: string; child
   const t = useTheme();
   return (
     <View accessibilityRole="image" accessibilityLabel={estimated ? `${a11y} (geschätzt)` : a11y}
-      style={[s.vcircle, estimated ? { borderWidth: 1, borderColor: t.hairline, backgroundColor: 'transparent' } : { backgroundColor: t.ink }]}>
+      style={[s.vcircle, estimated ? { borderWidth: 1, borderColor: t.hairline, backgroundColor: 'transparent' } : { backgroundColor: t.fill }]}>
       {children}
       {estimated && <Text style={[s.star, { color: t.inkMuted }]}>✱</Text>}
     </View>
@@ -121,11 +121,11 @@ export function ValueCircle({ a11y, children, estimated }: { a11y: string; child
 export function ValueScale({ caption, steps, on, icon, a11y }: { caption?: string; steps: number; on: (i: number) => boolean; icon?: (c: string) => React.ReactNode; a11y: string }) {
   const t = useTheme();
   return (
-    <View style={[s.vcap, { backgroundColor: t.ink, gap: 6 }]} accessibilityRole="image" accessibilityLabel={a11y}>
-      {icon?.(t.bg)}
-      {caption ? <Text style={[s.vcapText, { color: t.bg, fontSize: 14 }]}>{caption}</Text> : null}
+    <View style={[s.vcap, { backgroundColor: t.fill, gap: 6 }]} accessibilityRole="image" accessibilityLabel={a11y}>
+      {icon?.(t.onFill)}
+      {caption ? <Text style={[s.vcapText, { color: t.onFill, fontSize: 14 }]}>{caption}</Text> : null}
       <View style={{ flexDirection: 'row', gap: 2 }}>
-        {Array.from({ length: steps }, (_, i) => <View key={i} style={{ width: 7, height: 6, borderRadius: 3, backgroundColor: on(i) ? t.bg : 'rgba(127,127,127,0.45)' }} />)}
+        {Array.from({ length: steps }, (_, i) => <View key={i} style={{ width: 7, height: 6, borderRadius: 3, backgroundColor: on(i) ? t.onFill : 'rgba(127,127,127,0.45)' }} />)}
       </View>
     </View>
   );
@@ -164,8 +164,8 @@ export function SymbolSwitch({ on, onToggle, label, children }: { on: boolean; o
   const t = useTheme();
   return (
     <Pressable accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={label} onPress={onToggle}
-      style={({ pressed }) => [s.symSwitch, on ? { backgroundColor: t.ink, borderColor: t.ink } : { borderColor: t.hairline }, { opacity: pressed ? 0.7 : 1 }]}>
-      {children(on ? t.bg : t.ink)}
+      style={({ pressed }) => [s.symSwitch, on ? { backgroundColor: t.fill, borderColor: t.fill } : { borderColor: t.hairline }, { opacity: pressed ? 0.7 : 1 }]}>
+      {children(on ? t.onFill : t.ink)}
     </Pressable>
   );
 }

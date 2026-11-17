@@ -93,15 +93,15 @@ export function RoundButton({ children, label, onPress, size = 40 }: { children:
 export function Chip({ label, count, selected, onPress, onLongPress, person, icon, tall, dashed, collapse, onLabelWidth }: { label: string; count?: number; selected?: boolean; onPress?: () => void; onLongPress?: () => void; person?: Pick<Person, 'name' | 'color'>; icon?: React.ReactNode; tall?: boolean; dashed?: boolean; collapse?: boolean; onLabelWidth?: (w: number) => void }) {
   const t = useTheme();
   const fold = !!collapse && !!icon;
-  const color = selected ? t.bg : dashed ? t.inkMuted : t.ink;
+  const color = selected ? t.onFill : dashed ? t.inkMuted : t.ink;
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} onLongPress={onLongPress} delayLongPress={400}
       accessibilityLabel={fold ? (count != null ? `${label}, ${count}` : label) : undefined}
-      style={[s.chip, tall && s.chipTall, fold && s.chipFold, person && { paddingLeft: monoInset(tall ? 44 : 36) - 1 }, { backgroundColor: selected ? t.ink : t.surface, borderColor: selected ? t.ink : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
+      style={[s.chip, tall && s.chipTall, fold && s.chipFold, person && { paddingLeft: monoInset(tall ? 44 : 36) - 1 }, { backgroundColor: selected ? t.fill : t.surface, borderColor: selected ? t.fill : t.hairline }, dashed && { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.inkMuted }]}>
       {icon}
       {person && <Monogram person={person} />}
       {fold ? <FoldLabel label={label} open={!!selected} color={color} onWidth={onLabelWidth} /> : <Text style={[s.chipText, { color }]}>{label}</Text>}
-      {count != null && <Text style={[s.chipCount, { color: selected ? t.bg : t.inkMuted }, fold && s.chipCountFold]}>{count}</Text>}
+      {count != null && <Text style={[s.chipCount, { color: selected ? t.onFill : t.inkMuted }, fold && s.chipCountFold]}>{count}</Text>}
     </Pressable>
   );
 }

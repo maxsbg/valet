@@ -185,8 +185,8 @@ export function ClosetBar({ width: W, placeholder = 'Suchen …', query, onQuery
       </Animated.View>
       <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[s.abs, { top: ROW_PAD, right: PAD }, filterStyle]}>
         <Pressable onPress={() => { input.current?.blur(); onFilter(); }} accessibilityRole="button" accessibilityLabel="Filter"
-          style={[s.round, filterActive ? { backgroundColor: t.ink, borderColor: t.ink } : { backgroundColor: t.surface, borderColor: t.hairline }]}>
-          <Icon name="filter" size="button" color={filterActive ? t.bg : t.ink} />
+          style={[s.round, filterActive ? { backgroundColor: t.fill, borderColor: t.fill } : { backgroundColor: t.surface, borderColor: t.hairline }]}>
+          <Icon name="filter" size="button" color={filterActive ? t.onFill : t.ink} />
         </Pressable>
       </Animated.View>
     </Animated.View>

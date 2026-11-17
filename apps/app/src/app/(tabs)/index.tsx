@@ -65,7 +65,7 @@ export default function Schrank() {
     ...CATEGORIES.filter((c) => counts.get(c)).map((c) => ({
       key: c, label: c, count: counts.get(c), selected: cat === c, onPress: () => setCat(cat === c ? null : c),
       // Symbol wie bei den Anlass-Chips im Outfits-Tab: ClosetBar faltet Chips mit Symbol (zu: Symbol + Anzahl)
-      icon: CATEGORY_ICON[c] ? <Icon name={CATEGORY_ICON[c]!} size="chip" color={cat === c ? t.bg : t.ink} /> : undefined,
+      icon: CATEGORY_ICON[c] ? <Icon name={CATEGORY_ICON[c]!} size="chip" color={cat === c ? t.onFill : t.ink} /> : undefined,
     })),
   ];
   // Milchglas erst, wenn die Leiste oben klebt (Kopfzeile weggescrollt)

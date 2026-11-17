@@ -102,7 +102,7 @@ export default function Wunschliste() {
       const on = oneTag === w.id;
       return {
         key: w.id, label: w.label, count: tagCounts.get(w.id) ?? 0, selected: on,
-        icon: <Icon name={w.id} size="chip" color={on ? t.bg : t.ink} />,
+        icon: <Icon name={w.id} size="chip" color={on ? t.onFill : t.ink} />,
         onPress: () => setFilters({ ...filters, tags: on ? [] : [w.id] }),
       };
     }),
@@ -285,7 +285,7 @@ export default function Wunschliste() {
           <View style={s.wrap}>
             {WISH_TAGS.map((w) => {
               const on = draft.tags.includes(w.id);
-              return <Chip key={w.id} label={w.label} selected={on} onPress={() => toggleTag(w.id)} icon={<Icon name={w.id} size="chip" color={on ? t.bg : t.ink} />} />;
+              return <Chip key={w.id} label={w.label} selected={on} onPress={() => toggleTag(w.id)} icon={<Icon name={w.id} size="chip" color={on ? t.onFill : t.ink} />} />;
             })}
           </View>
         </>}
