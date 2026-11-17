@@ -8,8 +8,8 @@ export const GLOW_NEUTRAL_RANK: readonly string[] = ['Silber', 'Taupe', 'Beige',
 
 /** Farbige Farben nach Wahrnehmung als Schein auf der weißen Kachel (oben = stärker). Gilt, wenn Rang 1 neutral ist. */
 export const GLOW_COLOR_RANK: readonly string[] = [
-  'Bunt', 'Magenta', 'Rot', 'Violett', 'Burgunderrot', 'Lila', 'Blau', 'Orange', 'Terrakotta', 'Koralle', 'Senfgelb', 'Pink',
-  'Grün', 'Marineblau', 'Gelb', 'Hellgrün', 'Bronze', 'Dunkelgrün', 'Gold', 'Olivgrün', 'Cyan', 'Türkis', 'Petrol', 'Braun',
+  'Bunt', 'Magenta', 'Rot', 'Violett', 'Burgunderrot', 'Maroon', 'Lila', 'Blau', 'Orange', 'Terrakotta', 'Koralle', 'Senfgelb', 'Pink',
+  'Grün', 'Marineblau', 'Gelb', 'Hellgrün', 'Bronze', 'Dunkelgrün', 'Gold', 'Olivgrün', 'Cyan', 'Türkis', 'Petrol', 'Karamell', 'Braun',
   'Camel', 'Flieder', 'Khaki', 'Hellgelb', 'Altrosa', 'Himmelblau', 'Lavendel', 'Rosa', 'Mint',
 ];
 
