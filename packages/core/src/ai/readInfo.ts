@@ -125,3 +125,23 @@ export function applyInfo(form: EditForm, info: Info): EditForm {
   if (careNew) put('care', care, true);
   return { ...f, aiPending: [...new Set([...f.aiPending, ...marked])] };
 }
+
+// ---------- Produktseite (per Link) ----------
+
+/** Angaben, die die Edge Function `produkt` schon strukturiert gefunden hat (JSON-LD, Meta-Tags) */
+export type PageFacts = {
+  name?: string | null; brand?: string | null; price?: number | null; currency?: string | null; sku?: string | null;
+  color?: string | null; material?: string | null; description?: string | null; shop?: string | null;
+};
+
+/** Prompt für den Text einer Produktseite; der Seitentext hängt die Edge Function `ki` dahinter. */
+export function readPagePrompt(facts: PageFacts): string {
+  const known = Object.entries(facts).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}: ${String(v).slice(0, 600)}`).join('\n');
+  return `Unten steht der Text einer Produktseite eines Online-Shops zu einem Kleidungsstück (ohne Bilder).
+${known ? `Strukturierte Angaben der Seite:\n${known}\n` : ''}
+Lies nur ab, was dort steht – nichts schätzen. Fehlt eine Angabe: null bzw. leere Liste.
+Achte besonders auf Beschreibung, Materialzusammensetzung (mit Prozent) und Pflegehinweise.
+Nutze für Listenfelder nur die vorgegebenen Werte. Name = exakter Produktname aus dem Shop, ohne Farbe.
+Preis = aktueller Preis in Euro; listenpreis nur, wenn ein Streichpreis/UVP angegeben ist. kaufdatum = null.
+Farbe nur, wenn die Seite sie nennt. Ignoriere Navigation, Empfehlungen und andere Produkte.`;
+}

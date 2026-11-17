@@ -1,14 +1,15 @@
 import { useBottomInset } from '@/lib/bottomInset';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Page, STICKY } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { applyAnalysis, editChange, emptyEditForm, type EditForm } from '@valet/core';
-import { analyzePicture } from '@/lib/ki';
+import { applyAnalysis, applyInfo, editChange, emptyEditForm, setField, type EditForm, type Info } from '@valet/core';
+import { analyzePicture, readPage } from '@/lib/ki';
+import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
 import { canCutout, cutout, modelCached, original, precutNote, type Picture } from '@/lib/cutout';
@@ -16,7 +17,7 @@ import { createItem, saveSet } from '@/lib/item';
 import type { SetDraft } from '@/components/edit/SetPicker';
 import { Icon } from '@/components/Icon';
 
-type Step = 'start' | 'work' | 'review' | 'form';
+type Step = 'start' | 'web' | 'work' | 'review' | 'form';
 const MAROON = '#722638';
 
 /** Teil hinzufügen: Foto → Freistellen → „Passt / Original behalten / Nochmal“ → Formular → Speichern */
@@ -28,7 +29,8 @@ export default function Neu() {
   const { wardrobe, session, reload } = useSession();
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
   // Aus der Wunschliste: ?wunsch=1 (&liste=<id>) → Wunschteil, Liste vorbelegt
-  const params = useLocalSearchParams<{ wunsch?: string; liste?: string }>();
+  // ?url=… (Teilen-Menü / Kurzbefehl) → Produktseite direkt laden
+  const params = useLocalSearchParams<{ wunsch?: string; liste?: string; url?: string }>();
   const wish = params.wunsch === '1' ? { wishlistId: params.liste ?? null } : undefined;
 
   const [step, setStep] = useState<Step>('start');
@@ -42,10 +44,15 @@ export default function Neu() {
   const [picB, setPicB] = useState<Picture | null>(null);
   const [setDraft, setSetDraft] = useState<SetDraft>({ on: false, members: [], name: '' });
   const [saving, setSaving] = useState(false);
+  // Per Link: geladene Produktseite; die KI liest ihren Text schon, während du ein Bild wählst
+  const [linkText, setLinkText] = useState('');
+  const [web, setWeb] = useState<{ url: string; page?: ProductPage; error?: string; loadingImg?: string } | null>(null);
+  const pageInfo = useRef<Promise<Info> | null>(null);
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
 
   useEffect(() => { modelCached().then(setCached); }, []);
+  useEffect(() => { if (params.url) openLink(params.url); }, [params.url]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { run.current++; urls.current.forEach((u) => URL.revokeObjectURL(u)); }, []);
   const keep = (u: string) => { urls.current.push(u); return u; };
 
@@ -68,6 +75,38 @@ export default function Neu() {
     setStep('review');
   }
 
+  async function openLink(raw: string) {
+    const url = findUrl(raw);
+    if (!url) return toast.show('Kein Link gefunden');
+    const n = ++run.current;
+    pageInfo.current = null;
+    setWeb({ url }); setStep('web');
+    try {
+      const page = await loadProduct(url);
+      if (n !== run.current) return;
+      if (page.text.length > 200) {
+        pageInfo.current = readPage(page.text, page.facts);
+        pageInfo.current.catch(() => {}); // Fehler erst beim Formular melden
+      }
+      setWeb({ url, page, error: page.blocked ? 'Der Shop lässt die Seite nicht von außen laden.' : !page.images.length ? 'Auf der Seite wurden keine Bilder gefunden.' : undefined });
+    } catch (e) {
+      if (n === run.current) setWeb({ url, error: productError(e) });
+    }
+  }
+
+  async function pickWebImage(src: string) {
+    if (!web) return;
+    setWeb({ ...web, loadingImg: src });
+    try {
+      const file = await fetchImage(src, web.url);
+      setWeb((w) => (w ? { ...w, loadingImg: undefined } : w));
+      await pick(file);
+    } catch (e) {
+      setWeb((w) => (w ? { ...w, loadingImg: undefined } : w));
+      toast.show((e as Error).message);
+    }
+  }
+
   async function keepOriginal(file = photo?.file) {
     if (!file) return;
     const n = ++run.current;
@@ -82,12 +121,24 @@ export default function Neu() {
   /** Weiter zum Formular; Farben und Steckbrief schlägt die KI vor (nur Werte aus den festen Listen) */
   function toForm(p: Picture | null) {
     setPicture(p);
-    setF(f ?? emptyEditForm({ ownerId: me?.id ?? null, wish }));
+    const base = f ?? emptyEditForm({ ownerId: me?.id ?? null, wish });
+    setF(web && !base.link ? setField(base, 'link', web.url) : base);
     setStep('form');
-    // KI füllt im Hintergrund nur leere Felder (markiert); was du schon gewählt hast, bleibt
-    if (p) analyzePicture(p.main)
-      .then((a) => setF((cur) => (cur ? applyAnalysis(cur, a) : cur)))
-      .catch((e) => toast.show(String(e?.message ?? e).includes('429') ? 'KI gerade ausgelastet – bitte selbst ausfüllen' : 'KI-Erkennung nicht verfügbar'));
+    // KI füllt im Hintergrund nur leere Felder (markiert); was du schon gewählt hast, bleibt.
+    // Per Link: erst Bild-Erkennung, dann der Seitentext darüber (Name, Material, Pflege, Preis stehen dort genauer).
+    const tasks: [Promise<unknown>, Promise<Info> | null] = [p ? analyzePicture(p.main) : Promise.resolve(null), pageInfo.current];
+    if (!p && !tasks[1]) return;
+    Promise.allSettled(tasks).then(([a, i]) => {
+      setF((cur) => {
+        if (!cur) return cur;
+        let x = cur;
+        if (a.status === 'fulfilled' && a.value) x = applyAnalysis(x, a.value as Parameters<typeof applyAnalysis>[1]);
+        if (i?.status === 'fulfilled' && i.value) x = applyInfo(x, i.value);
+        return x;
+      });
+      const err = [a, i].find((r) => r?.status === 'rejected') as PromiseRejectedResult | undefined;
+      if (err) toast.show(String(err.reason?.message ?? err.reason).includes('429') ? 'KI gerade ausgelastet – bitte selbst ausfüllen' : 'KI-Erkennung nicht vollständig verfügbar');
+    });
   }
 
   async function save() {
@@ -146,10 +197,55 @@ export default function Neu() {
               {canCutout && !cached && (
                 <Text style={[s.small, { color: t.inkMuted }]}>Beim ersten Mal lädt das Freistellen einmalig 44 MB – am besten im WLAN. Danach geht es ohne Download.</Text>
               )}
+              <View style={[s.web, { backgroundColor: t.surface, borderColor: t.hairline }]}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink }}>Per Link aus einem Shop</Text>
+                <View style={{ flexDirection: 'row', gap: space.xs }}>
+                  <TextInput value={linkText} onChangeText={setLinkText} placeholder="Link einfügen" placeholderTextColor={t.inkMuted}
+                    accessibilityLabel="Link zur Produktseite" inputMode="url" keyboardType="url" autoCapitalize="none" autoCorrect={false}
+                    onSubmitEditing={() => openLink(linkText)} returnKeyType="go"
+                    style={[s.input, { backgroundColor: t.surfaceSunken, borderColor: t.hairline, color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
+                  <Pressable onPress={() => openLink(linkText)} accessibilityRole="button" disabled={!linkText.trim()}
+                    style={({ pressed }) => [s.go, { backgroundColor: accent, opacity: !linkText.trim() ? 0.4 : pressed ? 0.8 : 1 }]}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: t.dark ? t.bg : '#fff' }}>Laden</Text>
+                  </Pressable>
+                </View>
+                <Text style={[s.small, { color: t.inkMuted, textAlign: 'left' }]}>Du wählst danach eines der Produktbilder. Beschreibung, Material und Pflege liest die KI von der Seite.</Text>
+              </View>
               <Pressable onPress={() => toForm(null)} style={s.link} accessibilityRole="button">
                 <Text style={{ fontSize: 16, color: accent, fontWeight: '600' }}>Ohne Foto weiter</Text>
               </Pressable>
             </>
+          )}
+
+          {step === 'web' && web && (
+            <View style={{ gap: space.md, marginTop: space.md }}>
+              <View style={{ gap: 4 }}>
+                <Text style={[s.question, { color: t.ink }]}>{web.page ? 'Welches Bild?' : 'Seite wird geladen …'}</Text>
+                <Text numberOfLines={1} style={[s.small, { color: t.inkMuted }]}>{web.page?.facts.name ?? web.page?.title ?? web.url}</Text>
+              </View>
+              {!web.page && !web.error && <ActivityIndicator color={accent} size="large" style={{ marginVertical: space.xl }} />}
+              {!!web.error && (
+                <View style={[s.note, { backgroundColor: t.surface, margin: 0 }]}>
+                  <Text style={{ fontSize: 15, color: t.ink, textAlign: 'center' }}>{web.error}</Text>
+                  <Text style={[s.small, { color: t.inkMuted }]}>Speichere das Produktbild aufs iPhone und wähle es als Foto aus – der Link wird trotzdem übernommen.</Text>
+                </View>
+              )}
+              {!!web.page?.images.length && (
+                <View style={s.grid}>
+                  {web.page.images.map((src) => (
+                    <Pressable key={src} onPress={() => pickWebImage(src)} disabled={!!web.loadingImg} accessibilityRole="button" accessibilityLabel="Dieses Bild nehmen"
+                      style={({ pressed }) => [s.cell, { opacity: web.loadingImg && web.loadingImg !== src ? 0.4 : pressed ? 0.8 : 1 }]}>
+                      <Image source={{ uri: src }} resizeMode="contain" style={StyleSheet.absoluteFill} />
+                      {web.loadingImg === src && <View style={[StyleSheet.absoluteFill, s.cellBusy]}><ActivityIndicator color={accent} /></View>}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              <View style={{ gap: space.xs }}>
+                <PhotoPicker onPick={pick} label="Stattdessen eigenes Foto"><Btn label="Eigenes Foto wählen" /></PhotoPicker>
+                <Btn label="Anderer Link" onPress={() => { run.current++; setWeb(null); pageInfo.current = null; setStep('start'); }} />
+              </View>
+            </View>
           )}
 
           {step === 'work' && (
@@ -189,6 +285,7 @@ export default function Neu() {
                 {picture && <Btn primary label="Passt" onPress={() => toForm(picture)} />}
                 {!!precutNote(picture) && photo && <Btn label="Mit Modell freistellen" onPress={() => pick(photo.file, true)} />}
                 <Btn label="Original behalten" onPress={() => keepOriginal()} />
+                {!!web?.page?.images.length && <Btn label="Anderes Bild von der Seite" onPress={() => { run.current++; setStep('web'); }} />}
                 <PhotoPicker onPick={pick} label="Nochmal mit neuem Foto">
                   <Btn label={picture ? 'Nochmal (neues Foto)' : 'Anderes Foto'} />
                 </PhotoPicker>
@@ -229,6 +326,12 @@ const s = StyleSheet.create({
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3 },
   question: { fontFamily: DISPLAY, fontSize: 22, textAlign: 'center' },
+  web: { gap: space.sm, padding: space.md, borderRadius: radius.lg, borderWidth: 1, marginTop: space.md },
+  input: { flex: 1, height: 48, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: space.md, fontSize: 16 },
+  go: { height: 48, paddingHorizontal: space.md, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cell: { width: '31.5%', aspectRatio: 0.8, borderRadius: tile.radius, backgroundColor: '#fff', overflow: 'hidden' },
+  cellBusy: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.6)' },
   btn: { height: 52, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   formHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.xs },
   mini: { width: 84, height: 84, borderRadius: 18, backgroundColor: '#fff', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
