@@ -64,8 +64,9 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
     const sc = s === 'a' ? fade.interpolate({ inputRange: [0, 1], outputRange: [1, 0.94] }) : fade.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] });
     return (
       <Animated.View key={s} pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: reversible ? op : 1, transform: [{ scale: reversible ? sc : 1 }] }]}>
-        {pics[s] ? <Image source={{ uri: pics[s]!.preview }} resizeMode="contain" style={s_.img} accessibilityLabel={s === 'a' ? 'Bild Seite A' : 'Bild Seite B'} />
-          : <ItemPicture uri={uri} inset={20} category={kind} color={hex ?? itemTile.glow.fallback} />}
+        {/* Foto in der Form der Schrank-Kachel (Kappen bleiben klein wie im Schrank) */}
+        <ItemPicture uri={uri} inset={20} category={kind} color={hex ?? itemTile.glow.fallback} shape={{ kind, width, height: h }}
+          label={pics[s] ? (s === 'a' ? 'Bild Seite A' : 'Bild Seite B') : undefined} />
       </Animated.View>
     );
   };

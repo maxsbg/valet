@@ -7,7 +7,7 @@ import {
   CATEGORY_NAMES, CLOSURES, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, subcategoriesOf, typesOf, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
-  applyInfo, shopFromLink,
+  applyInfo, shopFromLink, tileKind,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -400,7 +400,7 @@ export function ItemEditor(p: Props) {
       </View>
       <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ width: col, paddingTop: 12, gap: 14 }}>
-          <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={f.reversible} kind={layoutKind(f.category, f.subcategory)}
+          <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={f.reversible} kind={tileKind(f.category, f.subcategory, f.type, f.fit.length)}
             hex={p.hex} colors={f.colors} colorsB={f.colorsB} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto} />
           {f.aiPending.length > 0 && (
             <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
