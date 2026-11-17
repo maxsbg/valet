@@ -78,6 +78,18 @@ export function Price({ label, scale = 1 }: { label: string; scale?: number }) {
   );
 }
 
+const TIMES = '×'; // Beizeichen wie in „2ד (Num), kein Symbol
+
+/** Bildgröße „1200 × 1600“ (Per Link hinzufügen) – Ziffern wie die Anzahl, × als kleines Beizeichen */
+export function Dims({ w, h, color }: { w: string; h: string; color?: string }) {
+  const c = color ? { color } : null;
+  return (
+    <Text style={[s.num, c, trim]} numberOfLines={1}>
+      {w}<Text style={[s.sym, c, raise, css({ marginLeft: 1.5, marginRight: 1.5 })]}>{TIMES}</Text>{h}
+    </Text>
+  );
+}
+
 /** Bedenkzeit: Ring mit verbleibenden Tagen (Wunschliste, oben rechts) – liegt in einer runden Glass-Plakette */
 export function WaitRing({ left, progress, warn }: { left: number; progress: number; warn: boolean }) {
   const w = b.wait;

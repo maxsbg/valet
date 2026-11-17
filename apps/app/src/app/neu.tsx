@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { applyAnalysis, applyInfo, editChange, emptyEditForm, setField, shopFromLink, type EditForm, type Info } from '@valet/core';
+import { applyAnalysis, applyInfo, editChange, emptyEditForm, largestImages, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize } from '@valet/core';
 import { analyzePicture, readPage } from '@/lib/ki';
 import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
@@ -16,6 +16,8 @@ import { canCutout, cutout, modelCached, original, precutNote, type Picture } fr
 import { createItem, saveSet } from '@/lib/item';
 import type { SetDraft } from '@/components/edit/SetPicker';
 import { Icon } from '@/components/Icon';
+import { Dims, Glass } from '@/components/tile/TileBadge';
+import { itemTile } from '@valet/ui';
 
 type Step = 'start' | 'web' | 'work' | 'review' | 'form';
 const MAROON = '#722638';
@@ -47,11 +49,26 @@ export default function Neu() {
   // Per Link: geladene Produktseite; die KI liest ihren Text schon, während du ein Bild wählst
   const [linkText, setLinkText] = useState('');
   const [web, setWeb] = useState<{ url: string; page?: ProductPage; error?: string; loadingImg?: string } | null>(null);
+  // Bildgröße der Produktbilder (Breite × Höhe in Pixeln), damit man das beste nehmen kann
+  const [sizes, setSizes] = useState<Record<string, PixelSize | null>>({});
   const pageInfo = useRef<Promise<Info> | null>(null);
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
 
   useEffect(() => { modelCached().then(setCached); }, []);
+  // Größe jedes Produktbilds nachmessen (aus dem Browser-Cache, das Bild ist schon in der Auswahl geladen)
+  useEffect(() => {
+    const list = web?.page?.images ?? [];
+    let live = true;
+    list.forEach((src) => {
+      if (src in sizes) return;
+      Image.getSize(src,
+        (w, h) => live && setSizes((m) => ({ ...m, [src]: { w, h } })),
+        () => live && setSizes((m) => ({ ...m, [src]: null })));
+    });
+    return () => { live = false; };
+  }, [web?.page]); // eslint-disable-line react-hooks/exhaustive-deps
+  const best = largestImages(sizes);
   useEffect(() => { if (params.url) openLink(params.url); }, [params.url]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { run.current++; urls.current.forEach((u) => URL.revokeObjectURL(u)); }, []);
   const keep = (u: string) => { urls.current.push(u); return u; };
@@ -236,10 +253,14 @@ export default function Neu() {
                     <Pressable key={src} onPress={() => pickWebImage(src)} disabled={!!web.loadingImg} accessibilityRole="button" accessibilityLabel="Dieses Bild nehmen"
                       style={({ pressed }) => [s.cell, { opacity: web.loadingImg && web.loadingImg !== src ? 0.4 : pressed ? 0.8 : 1 }]}>
                       <Image source={{ uri: src }} resizeMode="contain" style={StyleSheet.absoluteFill} />
+                      <SizeBadge size={sizes[src]} best={best.has(src)} fill={t.fill} onFill={t.onFill} />
                       {web.loadingImg === src && <View style={[StyleSheet.absoluteFill, s.cellBusy]}><ActivityIndicator color={accent} /></View>}
                     </Pressable>
                   ))}
                 </View>
+              )}
+              {best.size > 0 && (
+                <Text style={[s.small, { color: t.inkMuted }]}>Bildgröße in Pixeln (Breite × Höhe) · farbig = größtes Bild</Text>
               )}
               <View style={{ gap: space.xs }}>
                 <PhotoPicker onPick={pick} label="Stattdessen eigenes Foto"><Btn label="Eigenes Foto wählen" /></PhotoPicker>
@@ -311,6 +332,19 @@ function Btn({ label, onPress, primary, style }: { label: string; onPress?: () =
   );
 }
 
+/** Bildgröße unten rechts auf dem Produktbild: Milchglas-Kapsel wie die Preis-Plakette der Wunsch-Kachel; größtes Bild gefüllt */
+function SizeBadge({ size, best, fill, onFill }: { size: PixelSize | null | undefined; best: boolean; fill: string; onFill: string }) {
+  const l = sizeLabel(size);
+  if (!l) return null;
+  return (
+    <View pointerEvents="none" style={s.sizeBadge}>
+      <Glass shape="pill" label={`${l.w} × ${l.h} Pixel${best ? ', größtes Bild' : ''}`} style={best ? { backgroundColor: fill } : undefined}>
+        <Dims w={l.w} h={l.h} color={best ? onFill : undefined} />
+      </Glass>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md, paddingBottom: space.sm, borderBottomWidth: 1 },
   barSide: { minWidth: 90 },
@@ -330,7 +364,9 @@ const s = StyleSheet.create({
   input: { flex: 1, height: 48, borderRadius: radius.pill, borderWidth: 1, paddingHorizontal: space.md, fontSize: 16 },
   go: { height: 48, paddingHorizontal: space.md, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  cell: { width: '31.5%', aspectRatio: 0.8, borderRadius: tile.radius, backgroundColor: '#fff', overflow: 'hidden' },
+  cell: { width: '31.5%', aspectRatio: 0.8, borderRadius: itemTile.radius, // wie die Schrank-Kachel → Plakette konzentrisch
+  backgroundColor: '#fff', overflow: 'hidden' },
+  sizeBadge: { position: 'absolute', right: itemTile.badge.inset, bottom: itemTile.badge.inset },
   cellBusy: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.6)' },
   btn: { height: 52, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   formHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.xs },

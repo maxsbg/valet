@@ -166,3 +166,27 @@ export const WISH_TAGS = [
 export type WishTag = (typeof WISH_TAGS)[number]['id'];
 export const wishTagLabel = (id: string | null | undefined) => WISH_TAGS.find((w) => w.id === id)?.label ?? null;
 export const isWishTag = (v: unknown): v is WishTag => WISH_TAGS.some((w) => w.id === v);
+
+// ---------- Per Link hinzufügen: Bildgröße der Produktbilder (18.11.2026) ----------
+
+export type PixelSize = { w: number; h: number };
+
+/** „1200“ / „1600“ – ohne Tausenderpunkt, damit er nicht mit dem × verwechselt wird */
+export function sizeLabel(size: PixelSize | null | undefined): { w: string; h: string } | null {
+  if (!size || !(size.w > 0) || !(size.h > 0)) return null;
+  return { w: String(Math.round(size.w)), h: String(Math.round(size.h)) };
+}
+
+/**
+ * Größte(s) Bild(er) nach Pixelzahl. Nur wenn mindestens zwei Größen bekannt sind
+ * und nicht alle gleich groß – sonst gibt es nichts zu unterscheiden.
+ */
+export function largestImages(sizes: Record<string, PixelSize | null | undefined>): Set<string> {
+  const known = Object.entries(sizes).filter((e): e is [string, PixelSize] => !!sizeLabel(e[1]));
+  if (known.length < 2) return new Set();
+  const area = (s: PixelSize) => s.w * s.h;
+  const max = Math.max(...known.map(([, s]) => area(s)));
+  const min = Math.min(...known.map(([, s]) => area(s)));
+  if (max === min) return new Set();
+  return new Set(known.filter(([, s]) => area(s) === max).map(([k]) => k));
+}
