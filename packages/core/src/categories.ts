@@ -128,6 +128,33 @@ export function layoutKind(category: string | null | undefined, subcategory?: st
   }
 }
 
+/**
+ * Kachelhöhe im Mosaik (Max, 17.11.2026) – eigene Regel, das Outfit-Board nutzt weiter `layoutKind`.
+ * Liefert eine Form, deren Seitenverhältnis die Kachel bekommt. Neben der Unterkategorie zählen Typ
+ * und bei Kleid/Rock die Länge aus der Passform (0 Mini, 1 über Knie, 2 Knie, 3 Midi, 4 Maxi).
+ */
+const TILE_BY_TYPE: Readonly<Record<string, LayoutKind>> = {
+  // kurz geschnittene Mäntel wie Jacken (Carcoat bleibt Mantel: meist oberschenkellang)
+  Peacoat: 'jacke',
+  // lange Teile
+  Morgenmantel: 'mantel', Nachthemd: 'kleid', Kniestiefel: 'tasche', 'Overknee-Stiefel': 'tasche', Gummistiefel: 'tasche',
+  // Accessoires, die eigentlich Kleidung sind
+  Unterhemd: 'oberteil', Badeanzug: 'oberteil', Boxershorts: 'shorts', Badeshorts: 'shorts', Badehose: 'shorts',
+  Schlafshorts: 'shorts',
+};
+const TILE_BY_SUB: Readonly<Record<string, LayoutKind>> = {
+  Weste: 'oberteil', Bolero: 'oberteil', Playsuit: 'jacke', Tunika: 'jacke', 'Meerjungfrau-Rock': 'hose',
+  'Pyjama-Hose': 'hose', 'Traditionelle Kleidung': 'kleid',
+};
+
+export function tileKind(category: string | null | undefined, subcategory?: string | null, type?: string | null, fitLength?: number | null): LayoutKind {
+  if (type && TILE_BY_TYPE[type]) return TILE_BY_TYPE[type]!;
+  if (category === 'Kleid' && fitLength != null) return fitLength <= 1 ? 'jacke' : 'kleid';
+  if (category === 'Rock' && fitLength != null) return fitLength >= 4 ? 'hose' : 'rock';
+  if (subcategory && TILE_BY_SUB[subcategory]) return TILE_BY_SUB[subcategory]!;
+  return layoutKind(category, subcategory);
+}
+
 /** Kategorien, die im Outfit „nebenbei“ laufen (keine Hauptlage). */
 export const SIDE_CATEGORIES: ReadonlySet<string> = new Set(['Tasche', 'Kopfbedeckung', 'Schmuck', 'Accessoire']);
 

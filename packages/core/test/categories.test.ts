@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CATEGORY_TREE, CATEGORY_NAMES, subcategoriesOf, typesOf, isValidPath, categoryLast, pickCategory, fitScalesOf, layoutKind, setOrder,
+  CATEGORY_TREE, CATEGORY_NAMES, subcategoriesOf, typesOf, isValidPath, categoryLast, pickCategory, fitScalesOf, layoutKind, tileKind, setOrder,
 } from '../src/categories';
 
 test('Kategorien: elf Oberkategorien nach Lagen sortiert', () => {
@@ -81,6 +81,28 @@ test('Form für Mosaik und Board', () => {
   assert.equal(layoutKind('Kopfbedeckung', 'Kappe'), 'kopf');
   assert.equal(layoutKind('Schmuck', 'Uhr'), 'accessoire');
   assert.equal(layoutKind(null), 'accessoire');
+});
+
+test('Kachelhöhe: Typ und Länge zählen', () => {
+  assert.equal(tileKind('Oberbekleidung', 'Mantel', 'Peacoat'), 'jacke');
+  assert.equal(tileKind('Oberbekleidung', 'Mantel', 'Carcoat'), 'mantel');
+  assert.equal(tileKind('Oberbekleidung', 'Mantel', null), 'mantel');
+  assert.equal(tileKind('Oberbekleidung', 'Weste', 'Steppweste'), 'oberteil');
+  assert.equal(tileKind('Oberbekleidung', 'Sonstiges', 'Morgenmantel'), 'mantel');
+  assert.equal(tileKind('Hose', 'Pyjama-Hose', null), 'hose');
+  assert.equal(tileKind('Hose', 'Pyjama-Hose', 'Schlafshorts'), 'shorts');
+  assert.equal(tileKind('Kleid', 'Etuikleid', null, 0), 'jacke');
+  assert.equal(tileKind('Kleid', 'Etuikleid', null, 3), 'kleid');
+  assert.equal(tileKind('Kleid', 'Playsuit', null), 'jacke');
+  assert.equal(tileKind('Kleid', 'Tunika', null, 4), 'kleid');
+  assert.equal(tileKind('Rock', 'Meerjungfrau-Rock', null), 'hose');
+  assert.equal(tileKind('Rock', 'Bleistiftrock', null, 4), 'hose');
+  assert.equal(tileKind('Rock', 'Meerjungfrau-Rock', null, 1), 'rock');
+  assert.equal(tileKind('Schuh', 'Stiefel', 'Kniestiefel'), 'tasche');
+  assert.equal(tileKind('Schuh', 'Stiefel', 'Chelsea Boot'), 'schuhe');
+  assert.equal(tileKind('Accessoire', 'Traditionelle Kleidung', null), 'kleid');
+  assert.equal(tileKind('Accessoire', 'Bademode', 'Badehose'), 'shorts');
+  assert.equal(tileKind('Accessoire', 'Gürtel', null), 'accessoire');
 });
 
 test('Set-Reihenfolge: von oben nach unten am Körper, außen vor innen', () => {

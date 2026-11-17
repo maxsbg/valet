@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { editChange, layoutKind, toEditForm, type EditForm, type EditRow } from '@valet/core';
+import { editChange, layoutKind, tileKind, toEditForm, type EditForm, type EditRow } from '@valet/core';
 import { useToast } from '@/components/ui';
 import { Sheet, SheetButton } from '@/components/Sheet';
 import { ItemEditor } from '@/components/edit/ItemEditor';
@@ -68,7 +68,7 @@ export default function Bearbeiten() {
       const firstHex = f.colors[0] ? colorHex(f.colors[0]) : null;
       patch(id, {
         name: f.name.trim(), brand: f.brand.trim(), category: f.category ?? '', subcategory: f.subcategory, type: f.type,
-        kind: layoutKind(f.category, f.subcategory), colors: f.colors, layers: f.layers, color: c.color,
+        kind: layoutKind(f.category, f.subcategory), size: tileKind(f.category, f.subcategory, f.type, f.fit.length), colors: f.colors, layers: f.layers, color: c.color,
         ...(f.isWish ? { wishlistId: f.wishlistId, wishTag: f.wishTag, shop: f.shop.trim() || null, listPrice: c.list_price as number | null, price: c.list_price as number | null }
           : { ownerId: c.owner_id as string | null, owners: f.owners, qty: f.qty, pricePaid: c.price_paid as number | null, listPrice: c.list_price as number | null,
             price: (c.price_paid ?? c.list_price) as number | null, purchaseDate: f.purchaseDate }),
