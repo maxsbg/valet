@@ -22,11 +22,10 @@ import {
 } from '@/lib/wishlists';
 
 // Wunschliste (entschieden 14.11.2026, Entwurf docs/design/wunschliste/wunschlisten-karten.html):
-// Übersicht = Karten (erste „Neue Liste“, dann „Alle Wünsche“, dann die Listen), Chips = Personen.
+// Übersicht = Karten (erste „Neue Liste“, dann die Listen), Chips = Personen. Kein „Alle Wünsche“ mehr (17.11.2026, Max):
+// jedes Wunschteil gehört zu genau einer Liste; Liste löschen löscht ihre Teile mit.
 // Liste geöffnet = Kopf wie Teil-Detail (Zurück, Titel, „…“-Menü), Leiste wie im Schrank mit Kategorie-Chips
 // (Symbol · Name · Anzahl), Kacheln im selben Mosaik wie im Schrank. Grail, Watchlist … sind keine Listen.
-
-const ALL = 'alle';
 
 // Web: Seite wird beim Öffnen eines Teils abgebaut → geöffnete Liste, Filter und Scroll-Stand der Übersicht merken
 const kept: { open: string | null; filters: WishFilters; overviewY: number } = { open: null, filters: NO_WISH_FILTERS, overviewY: 0 };
@@ -73,17 +72,17 @@ export default function Wunschliste() {
   };
 
   const lists = wardrobe?.wishlists ?? [];
-  const list = open && open !== ALL ? lists.find((l) => l.id === open) ?? null : null;
-  // geöffnete Liste existiert nicht mehr (gelöscht) → zurück zur Übersicht
-  useEffect(() => { if (open && open !== ALL && wardrobe && !list) openList(null); }, [wardrobe]); // eslint-disable-line react-hooks/exhaustive-deps
+  const list = open ? lists.find((l) => l.id === open) ?? null : null;
+  // geöffnete Liste existiert nicht mehr (gelöscht, oder früher „Alle Wünsche“) → zurück zur Übersicht
+  useEffect(() => { if (open && wardrobe && !list) openList(null); }, [wardrobe]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Person-Filter gilt überall, Kategorien nur in der geöffneten Liste (Chips)
   const wishes = useMemo(() => applyWishFilters((wardrobe?.items ?? []).filter((i) => i.isWish), { ...filters, tags: [] }), [wardrobe, filters]);
-  const sorted = (items: Tile[], listId: string | null) => sortWishes(items, sort, seed, ownOrder(lists, listId));
+  const sorted = (items: Tile[], listId: string) => sortWishes(items, sort, seed, ownOrder(lists, listId));
 
   // ---------- geöffnete Liste ----------
   const inList = useMemo(
-    () => wishes.filter((i) => (open === ALL || i.wishlistId === open) && matchesWish(i, query)),
+    () => wishes.filter((i) => i.wishlistId === open && matchesWish(i, query)),
     [wishes, open, query],
   );
   const tagCounts = useMemo(() => {
@@ -92,7 +91,7 @@ export default function Wunschliste() {
     return m;
   }, [inList]);
   const shown = useMemo(
-    () => sorted(inList.filter((i) => !filters.tags.length || (!!i.wishTag && filters.tags.includes(i.wishTag))), list?.id ?? null),
+    () => sorted(inList.filter((i) => !filters.tags.length || (!!i.wishTag && filters.tags.includes(i.wishTag))), list?.id ?? ''),
     [inList, filters.tags, sort, seed, lists, list], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const oneTag = filters.tags.length === 1 ? filters.tags[0] : null;
@@ -123,7 +122,6 @@ export default function Wunschliste() {
     const hits = all.filter((i) => matchesWish(i, query));
     return { list: l, items: sorted(q && !l.name.toLowerCase().includes(q) ? hits : all, l.id), hit: !q || l.name.toLowerCase().includes(q) || hits.length > 0 };
   }).filter((c) => c.hit), [lists, wishes, filters.person, query, sort, seed]); // eslint-disable-line react-hooks/exhaustive-deps
-  const allItems = useMemo(() => sorted(wishes.filter((i) => matchesWish(i, query)), null), [wishes, query, sort, seed, lists]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const personOf = (id: string | null | undefined) => wardrobe?.persons.find((p) => p.id === id);
 
@@ -168,6 +166,12 @@ export default function Wunschliste() {
     setOrder(sortWishes(items, 'own', seed, target.itemOrder).map((i) => i.id));
     setSheet('order');
   };
+  // Wunschteile gibt es nur in einer Liste → ohne Liste erst eine anlegen
+  const addWish = () => {
+    if (list) return router.push(`/neu?wunsch=1&liste=${list.id}`);
+    if (!lists.length) { toast.show('Lege zuerst eine Liste an.'); return newList(); }
+    router.push(lists.length === 1 ? `/neu?wunsch=1&liste=${lists[0]!.id}` : '/neu?wunsch=1');
+  };
   const menu = (l: Wishlist) => { setTarget(l); setSheet('menu'); };
   const move = (n: number, d: -1 | 1) => setOrder((o) => {
     const m = n + d;
@@ -177,16 +181,13 @@ export default function Wunschliste() {
     return a;
   });
   const toggleTag = (v: WishTag) => setDraft((d) => ({ ...d, tags: d.tags.includes(v) ? d.tags.filter((x) => x !== v) : [...d.tags, v] }));
+  const nTarget = target ? (wardrobe?.items ?? []).filter((i) => i.isWish && i.wishlistId === target.id).length : 0;
   const byId = new Map((wardrobe?.items ?? []).map((i) => [i.id, i]));
   const input = [s.input, { backgroundColor: t.surface, borderColor: t.hairline, color: t.ink }, web ? ({ outlineStyle: 'none' } as object) : null];
 
   // Karten paarweise in Zeilen (gleiche Höhe je Zeile, damit „Neue Liste“ so hoch ist wie ihre Nachbarin)
   const tiles: React.ReactNode[] = [
     <NewListCard key="new" width={cardW} onPress={newList} />,
-    ...(!q || allItems.length ? [
-      <WishlistCard key={ALL} width={cardW} title="Alle Wünsche" sub={`${teile(allItems.length)} · ${euros(sum(allItems))}`} items={allItems}
-        onPress={() => openList(ALL)} />,
-    ] : []),
     ...cards.map(({ list: l, items }) => (
       <WishlistCard key={l.id} width={cardW} title={l.name} owner={personOf(l.ownerId)} sub={`${teile(items.length)} · ${euros(sum(items))}`} items={items}
         onPress={() => openList(l.id)} onLongPress={() => menu(l)} />
@@ -215,7 +216,7 @@ export default function Wunschliste() {
                 <RoundButton label="Zurück" onPress={() => openList(null)}><Icon name="back" size="button" color={t.ink} /></RoundButton>
                 {list && <RoundButton label="Liste bearbeiten" onPress={() => menu(list)}><Icon name="more" size="button" color={t.ink} /></RoundButton>}
               </View>
-              <Text style={[s.title, { color: t.ink }]} numberOfLines={2}>{list?.name ?? 'Alle Wünsche'}</Text>
+              <Text style={[s.title, { color: t.ink }]} numberOfLines={2}>{list?.name ?? ''}</Text>
               <View style={s.subLine}>
                 {owner0 && <Monogram person={owner0} size="text" />}
                 <Text style={{ fontSize: 14, color: t.inkMuted }}>{detailSub}</Text>
@@ -246,15 +247,13 @@ export default function Wunschliste() {
             <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
           ) : query || filters.tags.length || filters.person ? (
             <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff oder Filter." />
-          ) : list ? (
-            <Empty title="Liste ist leer" text="Füge Teile über das Plus hinzu oder ordne sie beim Bearbeiten dieser Liste zu." />
           ) : (
-            <Empty title="Noch keine Wünsche" text="Teile, die du dir überlegst, landen hier." />
+            <Empty title="Liste ist leer" text="Füge Teile über das Plus hinzu oder ordne sie beim Bearbeiten dieser Liste zu." />
           )}
         </View>
         <PageEnd />
       </Page>
-      <Fab bottom={scr.fabBottom} label="Wunsch hinzufügen" onPress={() => router.push(list ? `/neu?wunsch=1&liste=${list.id}` : '/neu?wunsch=1')} />
+      <Fab bottom={scr.fabBottom} label="Wunsch hinzufügen" onPress={addWish} />
       {toast.node}
 
       {/* Sortieren */}
@@ -327,10 +326,10 @@ export default function Wunschliste() {
       <Sheet open={sheet === 'delete'} onClose={() => setSheet(null)} title="Liste löschen?"
         footer={<>
           <SheetButton label="Abbrechen" onPress={() => setSheet(null)} />
-          <SheetButton primary label={busy ? 'Löscht …' : 'Löschen'} onPress={remove} />
+          <SheetButton primary label={busy ? 'Löscht …' : nTarget ? `Liste und ${teile(nTarget)} löschen` : 'Löschen'} onPress={remove} />
         </>}>
         <Text style={{ fontSize: 16, color: t.inkMuted, lineHeight: 22 }}>
-          „{target?.name}“ wird gelöscht. Die Teile darin bleiben auf der Wunschliste und stehen weiter unter „Alle Wünsche“.
+          „{target?.name}“ wird gelöscht – und mit ihr {nTarget === 1 ? 'das Teil' : `alle ${nTarget} Teile`} darin, samt Bildern. Das lässt sich nicht rückgängig machen.
         </Text>
       </Sheet>
 

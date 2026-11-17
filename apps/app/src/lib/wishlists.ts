@@ -1,5 +1,6 @@
 import { WISH_TAGS, type WishTag } from '@valet/core';
 import { supabase } from './supabase';
+import { deleteItem } from './item';
 import { rand } from './sort';
 import type { Tile, Wishlist } from './wardrobe';
 
@@ -19,8 +20,11 @@ export async function renameList(id: string, name: string) {
   if (r.error) throw r.error;
 }
 
-/** Liste löschen – die Teile bleiben auf der Wunschliste (wishlist_id wird per „on delete set null“ leer) */
+/** Liste löschen – samt allen Wunschteilen darin (17.11.2026, Max: Wunschteile gibt es nur in einer Liste) */
 export async function deleteList(id: string) {
+  const items = await supabase.from('items').select('id').eq('wishlist_id', id).eq('is_wish', true);
+  if (items.error) throw items.error;
+  for (const x of items.data ?? []) await deleteItem(x.id as string); // mit Bildern
   const r = await supabase.from('wishlists').delete().eq('id', id);
   if (r.error) throw r.error;
 }
@@ -44,10 +48,9 @@ export type WishSortId = (typeof WISH_SORTS)[number]['id'];
 
 const added = (a: Tile, b: Tile) => b.createdAt.localeCompare(a.createdAt);
 
-/** Eigene Reihenfolge: in einer Liste deren item_order; bei „Alle“ die Listen nacheinander, Teile ohne Liste am Ende. Unbekannte Teile → zuletzt hinzugefügt zuerst. */
-export function ownOrder(lists: Wishlist[], listId: string | null): string[] {
-  if (listId) return lists.find((l) => l.id === listId)?.itemOrder ?? [];
-  return lists.flatMap((l) => l.itemOrder);
+/** Eigene Reihenfolge: item_order der Liste. Unbekannte Teile → zuletzt hinzugefügt zuerst. */
+export function ownOrder(lists: Wishlist[], listId: string): string[] {
+  return lists.find((l) => l.id === listId)?.itemOrder ?? [];
 }
 
 export function sortWishes(items: Tile[], sort: WishSortId, seed: number, order: string[]): Tile[] {

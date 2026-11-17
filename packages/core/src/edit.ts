@@ -214,6 +214,8 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
   };
 
   if (f.isWish) {
+    // Wunschteile gehören immer zu einer Liste (17.11.2026, Max) – ohne Liste kein Wunschteil
+    if (!f.wishlistId) return { error: 'Bitte eine Liste wählen.' };
     // Wunschteil (Spec 7a): Preis = list_price; Bezahlt, Zahler, Geschenk, Kaufdatum, Anzahl, Gehört entfallen
     return { change: {
       ...base, is_wish: true, list_price: price, wishlist_id: f.wishlistId, wish_tag: f.wishTag, buy_on: f.buyOn,
