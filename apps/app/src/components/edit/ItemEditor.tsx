@@ -334,12 +334,13 @@ export function ItemEditor(p: Props) {
       </Pair>
       <TextField label="Produktlink" value={f.link} onChange={(v) => set('link', v)} placeholder="https://…" keyboardType="url" inputMode="url" />
       <TextField label="Artikelnummer" value={f.articleNo} onChange={(v) => set('articleNo', v)} />
-      {p.wishlists.length > 0 && (
-        <View style={{ gap: 8 }}>
-          <FieldLabel>Liste</FieldLabel>
-          <Wrap>{p.wishlists.map((l) => <Capsule key={l.id} label={l.name} selected={f.wishlistId === l.id} onPress={() => set('wishlistId', pickOne(f.wishlistId, l.id))} />)}</Wrap>
-        </View>
-      )}
+      {/* Pflicht: Wunschteile gibt es nur in einer Liste (17.11.2026) */}
+      <View style={{ gap: 8 }}>
+        <FieldLabel>Liste</FieldLabel>
+        {p.wishlists.length > 0
+          ? <Wrap>{p.wishlists.map((l) => <Capsule key={l.id} label={l.name} selected={f.wishlistId === l.id} onPress={() => set('wishlistId', l.id)} />)}</Wrap>
+          : <Hint>Lege zuerst in der Wunschliste eine Liste an.</Hint>}
+      </View>
       <View style={{ gap: 8 }}>
         <FieldLabel>Kategorie{f.wishTag ? ` · ${WISH_LABEL[f.wishTag]}` : ''}</FieldLabel>
         <Wrap>{WISH_ORDER.map((w) => (

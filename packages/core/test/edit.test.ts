@@ -124,6 +124,11 @@ test('Speichern: Wunschteil – Preis = Listenpreis, beim Anlegen „Preis beim 
   assert.equal('owner_ids' in r.change, false);
 });
 
+test('Speichern: Wunschteil ohne Liste geht nicht', () => {
+  const f = { ...emptyEditForm({ wish: { wishlistId: null } }), name: 'Mantel' };
+  assert.deepEqual(editChange(f, { isNew: true }), { error: 'Bitte eine Liste wählen.' });
+});
+
 test('Speichern: ohne Kategorie leerer Text (Spalte ist not null)', () => {
   const r = editChange(base());
   assert.ok('change' in r);
