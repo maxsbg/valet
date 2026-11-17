@@ -89,3 +89,29 @@ export function splitLabel(rows: { pct: number }[]): string {
 
 /** Adresse kurz für die Anzeige: ohne https:// und www. */
 export const shortUrl = (url: string) => url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+
+/** Domain eines Links ohne „www.“, z. B. „https://www.zalando.de/hemd“ → „zalando.de“; kein Link → null */
+export function shopDomain(link: string | null | undefined): string | null {
+  const m = (link ?? '').trim().match(/^(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?:[:/?#]|$)/i);
+  return m?.[1] ? m[1].toLowerCase() : null;
+}
+
+/** Shop in der Ansicht (17.11.2026, Max): als Domain („zalando.de“) und antippbar.
+ *  Domain aus dem Produktlink, sonst der Shop selbst, wenn er schon eine Domain ist; sonst nur Text. */
+export function shopView(shop: string | null | undefined, link: string | null | undefined): { label: string; url: string | null } | null {
+  const own = shopDomain(shop);
+  const host = shopDomain(link) ?? (own && !/\s/.test((shop ?? '').trim()) ? own : null);
+  if (host) return { label: host, url: `https://${host}` };
+  const name = (shop ?? '').trim();
+  return name ? { label: name, url: null } : null;
+}
+
+
+/** Produktlink geändert → Shop als Domain eintragen, wenn er leer ist, zur alten Domain gehörte oder nur der Name dazu ist („Zalando“ → „zalando.de“) */
+export function shopFromLink(shop: string, oldLink: string, newLink: string): string {
+  const d = shopDomain(newLink);
+  if (!d) return shop;
+  const name = shop.trim().toLowerCase();
+  if (!name || name === shopDomain(oldLink) || name === d || d.startsWith(`${name.replace(/\s+/g, '')}.`)) return d;
+  return shop;
+}

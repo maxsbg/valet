@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows,
+  CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
   shortDate, shortUrl, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -153,6 +153,21 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
 
 // ---------- Kauf (Spec 5) ----------
 
+/** Shop als Domain („zalando.de“), antippen öffnet den Shop (17.11.2026, Max) */
+export function ShopValue({ shop, link }: { shop: string; link: string | null | undefined }) {
+  const t = useTheme();
+  const v = shopView(shop, link);
+  if (!v) return null;
+  if (!v.url) return <Text style={{ fontSize: 15, lineHeight: 20, color: t.ink }}>{v.label}</Text>;
+  const url = v.url;
+  return (
+    <Pressable accessibilityRole="link" accessibilityLabel={`${v.label} öffnen`} onPress={() => Linking.openURL(url)} hitSlop={6}
+      style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
+      <Text style={{ fontSize: 15, lineHeight: 20, color: t.accent }}>{v.label}</Text>
+    </Pressable>
+  );
+}
+
 export function KaufView({ f, row, persons, meId, onEdit }: {
   f: EditForm; row: { price_paid: number | null; list_price: number | null; gift_value: number | null; payers: { person_id?: string | null; amount?: number | null }[] | null };
   persons: Person[]; meId: string | null; onEdit: () => void;
@@ -231,7 +246,7 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
           {facts.map(([k, v]) => (
             <View key={k} style={{ width: '48%', gap: 1 }}>
               <Text style={{ fontSize: 12, lineHeight: 16, color: t.inkMuted }}>{k}</Text>
-              <Text style={{ fontSize: 15, lineHeight: 20, color: t.ink }}>{v}</Text>
+              {k === 'Shop' ? <ShopValue shop={v} link={f.link} /> : <Text style={{ fontSize: 15, lineHeight: 20, color: t.ink }}>{v}</Text>}
             </View>
           ))}
         </View>

@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { applyAnalysis, applyInfo, editChange, emptyEditForm, setField, type EditForm, type Info } from '@valet/core';
+import { applyAnalysis, applyInfo, editChange, emptyEditForm, setField, shopFromLink, type EditForm, type Info } from '@valet/core';
 import { analyzePicture, readPage } from '@/lib/ki';
 import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
@@ -122,7 +122,7 @@ export default function Neu() {
   function toForm(p: Picture | null) {
     setPicture(p);
     const base = f ?? emptyEditForm({ ownerId: me?.id ?? null, wish });
-    setF(web && !base.link ? setField(base, 'link', web.url) : base);
+    setF(web && !base.link ? { ...setField(base, 'link', web.url), shop: shopFromLink(base.shop, '', web.url) } : base);
     setStep('form');
     // KI füllt im Hintergrund nur leere Felder (markiert); was du schon gewählt hast, bleibt.
     // Per Link: erst Bild-Erkennung, dann der Seitentext darüber (Name, Material, Pflege, Preis stehen dort genauer).
