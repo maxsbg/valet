@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buyDayLabel, buyDayHint, buyDayQuick, priceTrend, wishFacts, wishOwners, buyDefaults, buyError, deDate } from '../src/wish';
+import { buyDayLabel, buyDayHint, buyDayQuick, priceTrend, wishFacts, wishOwners, buyDefaults, buyError, deDate, priceUpdate } from '../src/wish';
+import { formatPriceExact } from '../src/money';
 
 test('Datum und Kauftag', () => {
   assert.equal(deDate('2026-09-02T10:00:00+00'), '02.09.2026');
@@ -48,4 +49,19 @@ test('„Gekauft“ prüfen', () => {
   assert.match(buyError({ ...ok, date: '2026-11-16' }, '2026-11-15')!, /Zukunft/);
   assert.match(buyError({ ...ok, date: null }, '2026-11-15')!, /Kaufdatum/);
   assert.match(buyError({ ...ok, owners: [] }, '2026-11-15')!, /gehört/);
+});
+
+test('Preis-Check: nur echte Änderungen in Euro, Preis beim Merken nachtragen', () => {
+  assert.equal(priceUpdate(149.95, 149.95, 149.95), null);
+  assert.equal(priceUpdate(149.95, 149.95, null), null);
+  assert.equal(priceUpdate(149.95, 149.95, 120, 'USD'), null);
+  assert.deepEqual(priceUpdate(149.95, 149.95, 119.996, 'EUR'), { list_price: 120 });
+  assert.deepEqual(priceUpdate(149.95, null, 120), { list_price: 120, wish_price: 149.95 });
+  assert.deepEqual(priceUpdate(null, null, 89.9), { list_price: 89.9 });
+});
+
+test('Genauer Preis immer mit Cent', () => {
+  assert.equal(formatPriceExact(149.95), '149,95 €');
+  assert.equal(formatPriceExact(1299), '1.299,00 €');
+  assert.equal(formatPriceExact(null), '–');
 });

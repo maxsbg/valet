@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  buyDayHint, buyDayLabel, buyDayQuick, buyError, formatPrice, parseAmount, priceTrend, shortUrl, wishFacts,
+  buyDayHint, buyDayLabel, buyDayQuick, buyError, formatPriceExact, parseAmount, priceTrend, shortUrl, wishFacts,
   type WishRow, type WishTag,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -87,7 +87,7 @@ export function WishKaufView({ row, link, onEdit }: { row: WishRow; link: string
     <EditCard title="Preis">
       {price != null ? (
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-          <Text style={{ fontFamily: DISPLAY, fontSize: detail.font.price, lineHeight: 36, color: t.ink }}>{formatPrice(price)}</Text>
+          <Text style={{ fontFamily: DISPLAY, fontSize: detail.font.price, lineHeight: 36, color: t.ink }}>{formatPriceExact(price)}</Text>
           {trend && <Text style={{ fontSize: 13, fontWeight: '600', color: trend.down ? t.actionText : t.inkMuted }}>{trend.down ? '−' : '+'}{trend.pct} % seit dem Merken</Text>}
         </View>
       ) : (

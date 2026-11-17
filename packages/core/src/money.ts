@@ -29,6 +29,12 @@ export const formatEur = (n: number | null | undefined): string =>
  * Preis-Anzeige der Detailseiten (Spec 1): unter 100 € mit Cent (8,43 €, 59,00 €),
  * ab 100 € ganze Euro mit Tausenderpunkt (143 €, 4.643 €).
  */
+/** Genauer Preis immer mit Cent (Wunschteil, Kauf-Reiter – Max, 17.11.2026); Kacheln bleiben gerundet */
+export function formatPriceExact(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '–';
+  return `${n < 0 ? '−' : ''}${Math.abs(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
 export function formatPrice(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return '–';
   const a = Math.abs(n);
