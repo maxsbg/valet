@@ -132,7 +132,7 @@ export function WishDetail({ id }: { id: string }) {
           </View>
 
           <DetailImage width={Math.min(col, 420)} me={me} person={person}
-            item={{ id, name: it.name, kind: tile.kind, hex: tile.hex, colors: tile.colors, status: null, reversible: !!it.reversible, qty: 1,
+            item={{ id, name: it.name, kind: tile.kind, size: tile.size, hex: tile.hex, colors: tile.colors, status: null, reversible: !!it.reversible, qty: 1,
               owners, image: mainPic, imageBack: tile.imageBack, wish: { tag, price: it.list_price } }} />
 
           <View style={{ gap: 2, marginTop: 4 }}>

@@ -18,7 +18,9 @@ const B = itemTile.badge;
 const K = I.badge / B.size; // 2
 
 export type DetailImageItem = {
-  id: string; name: string; kind: string; hex: string | null; colors: readonly string[]; status: ItemStatus | null;
+  id: string; name: string; kind: string;
+  /** Form der Schrank-Kachel (`Tile.size`) – Foto im Rahmen so hoch wie dort */
+  size?: string; hex: string | null; colors: readonly string[]; status: ItemStatus | null;
   reversible: boolean; qty: number; owners: string[];
   /** Set-Kennung – Set-Plakette oben rechts links neben Wendbar */
   setId?: string | null;
@@ -53,11 +55,11 @@ export function DetailImage({ item, width, me, person, today }: {
         <TileGlow glow={glow} radius={I.radius} blur={GLOW.blur} spread={GLOW.spread} />
         <Animated.View style={[StyleSheet.absoluteFill, flip.style]}>
           <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
-            <ItemPicture uri={item.image} category={item.kind} color={item.hex ?? itemTile.glow.fallback} inset={inset} />
+            <ItemPicture uri={item.image} category={item.kind} color={item.hex ?? itemTile.glow.fallback} inset={inset} shape={{ kind: item.size ?? item.kind, width, height: h }} />
           </View>
           {flip.loaded && (
             <View style={[StyleSheet.absoluteFill, !flip.back && s.hidden]}>
-              <ItemPicture uri={flip.loaded} category={item.kind} color={item.hex ?? itemTile.glow.fallback} inset={inset} />
+              <ItemPicture uri={flip.loaded} category={item.kind} color={item.hex ?? itemTile.glow.fallback} inset={inset} shape={{ kind: item.size ?? item.kind, width, height: h }} />
             </View>
           )}
         </Animated.View>

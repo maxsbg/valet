@@ -34,7 +34,7 @@ export function WishlistCard({ title, sub, owner, items, width, onPress, onLongP
           return (
             <View key={it.id} style={[s.cell, { width: cell, height: cell, backgroundColor: itemTile.bg, boxShadow: glowBoxShadow(glow, itemTile.glow.blur, itemTile.glow.spread) }]}>
               <TileGlow glow={glow} radius={itemTile.radius} blur={itemTile.glow.blur} spread={itemTile.glow.spread} />
-              <ItemPicture uri={it.thumb} category={it.kind} color={it.hex ?? itemTile.glow.fallback} inset="10%" />
+              <ItemPicture uri={it.thumb} category={it.kind} color={it.hex ?? itemTile.glow.fallback} inset={Math.round(cell * 0.1)} shape={{ kind: it.size, width: cell, height: cell }} />
             </View>
           );
         })}
