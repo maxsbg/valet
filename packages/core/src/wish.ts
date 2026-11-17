@@ -1,7 +1,7 @@
 // Wunschteil-Detail (VALET_DETAILSEITE_SPEC.md, Abschnitte 2, 3 und 5): Kauf-Angaben, Kauftag, „Gekauft“-Blatt
 // Plattformunabhängig, Datumswerte als ISO-Text (JJJJ-MM-TT).
 
-import { formatPrice } from './money';
+import { formatPriceExact } from './money';
 
 const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'] as const;
 const parts = (iso: string) => iso.split('-').map(Number) as [number, number, number];
@@ -47,6 +47,19 @@ export function priceTrend(atSave: number | null | undefined, now: number | null
   return pct >= 1 ? { pct, down: now < atSave } : null;
 }
 
+/**
+ * Preis-Check beim Öffnen (Max, 17.11.2026): neuer Preis von der Produktseite (ohne KI, Edge Function `produkt`).
+ * Gibt die Änderung für `items` zurück oder null, wenn nichts zu tun ist. Nur Euro; fehlt der Preis beim Merken,
+ * wird der bisherige Preis dazu, damit „seit dem Merken“ stimmt.
+ */
+export function priceUpdate(stored: number | null | undefined, wishPrice: number | null | undefined, found: number | null | undefined, currency?: string | null): { list_price: number; wish_price?: number } | null {
+  if (found == null || !Number.isFinite(found) || found <= 0) return null;
+  if (currency && currency.toUpperCase() !== 'EUR') return null;
+  const next = Math.round(found * 100) / 100;
+  if (stored != null && Math.abs(stored - next) < 0.005) return null;
+  return wishPrice == null && stored != null ? { list_price: next, wish_price: stored } : { list_price: next };
+}
+
 export type WishRow = {
   list_price: number | null; wish_price: number | null; shop: string | null; article_no: string | null;
   created_at: string | null; buy_on: string | null;
@@ -59,7 +72,7 @@ export function wishFacts(r: WishRow): [string, string][] {
     ['Artikelnummer', r.article_no ?? ''],
     ['Gemerkt am', r.created_at ? deDate(r.created_at) : ''],
     ['Kauftag geplant', r.buy_on ? buyDayLabel(r.buy_on) : ''],
-    ['Preis beim Merken', r.wish_price != null ? formatPrice(r.wish_price) : ''],
+    ['Preis beim Merken', r.wish_price != null ? formatPriceExact(r.wish_price) : ''],
   ] as [string, string][]).filter(([, v]) => !!v);
 }
 

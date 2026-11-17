@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { checkWishPrices } from './priceCheck';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { loadWardrobe, type Tile, type Wardrobe } from './wardrobe';
@@ -44,6 +45,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const patch = useCallback((id: string, change: Partial<Tile>) =>
     setWardrobe((w) => (w ? { ...w, items: w.items.map((i) => (i.id === id ? { ...i, ...change } : i)) } : w)), []);
+
+  // Preise der Wunschteile mit Link einmal je App-Start im Hintergrund prüfen (ohne KI)
+  const checked = useRef<string | null>(null);
+  useEffect(() => {
+    if (!wardrobe || checked.current === wardrobe.id) return;
+    checked.current = wardrobe.id;
+    checkWishPrices(wardrobe.id, patch).catch(() => {});
+  }, [wardrobe?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const setToday = useCallback((itemId: string, personId: string | null, worn: boolean) => setWardrobe((w) => {
     if (!w) return w;
     const today = w.today.filter((x) => x !== itemId);
