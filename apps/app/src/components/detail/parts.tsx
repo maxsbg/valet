@@ -42,11 +42,11 @@ export function Capsule({ label, selected, onPress, icon, leading, a11y, dashed 
   label: string; selected?: boolean; onPress?: () => void; icon?: (color: string) => React.ReactNode; leading?: React.ReactNode; a11y?: string; dashed?: boolean;
 }) {
   const t = useTheme();
-  const fg = selected ? t.bg : t.ink;
+  const fg = selected ? t.onFill : t.ink;
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected: !!selected }} accessibilityLabel={a11y ?? label} onPress={onPress} disabled={!onPress}
       style={({ pressed }) => [s.capsule, leading ? { paddingLeft: monoInset(D.capsule.height) - 1 } : null,
-        selected ? { backgroundColor: t.ink, borderColor: t.ink } : { borderColor: t.hairline, backgroundColor: 'transparent' },
+        selected ? { backgroundColor: t.fill, borderColor: t.fill } : { borderColor: t.hairline, backgroundColor: 'transparent' },
         dashed && { borderStyle: 'dashed', borderColor: t.inkMuted }, { opacity: pressed ? 0.7 : 1 }]}>
       {leading}
       {icon?.(fg)}
@@ -60,7 +60,7 @@ export function IconCircle({ children, selected, onPress, a11y, muted }: { child
   const t = useTheme();
   return (
     <Pressable accessibilityRole={onPress ? 'button' : 'image'} accessibilityLabel={a11y} accessibilityState={{ selected: !!selected }} onPress={onPress} disabled={!onPress}
-      style={({ pressed }) => [s.circle, selected ? { backgroundColor: t.ink, borderColor: t.ink } : { borderColor: t.hairline }, muted && { borderStyle: 'dashed' }, { opacity: pressed ? 0.7 : 1 }]}>
+      style={({ pressed }) => [s.circle, selected ? { backgroundColor: t.fill, borderColor: t.fill } : { borderColor: t.hairline }, muted && { borderStyle: 'dashed' }, { opacity: pressed ? 0.7 : 1 }]}>
       {children}
     </Pressable>
   );

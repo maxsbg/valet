@@ -128,7 +128,7 @@ export function ItemEditor(p: Props) {
         ),
         (last) => (
           <EditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')} last={last}
-            values={SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.bg} /></ValueCircle>)}>
+            values={SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.onFill} /></ValueCircle>)}>
             <Wrap>{SEASONS.map((x) => <Capsule key={x} label={x} selected={f.seasons.includes(x)} onPress={() => set('seasons', toggleIn(f.seasons, x))}
               icon={(c) => <Icon name={SEASON_ICON[x]!} size="chip" color={c} />} />)}</Wrap>
           </EditRow>
@@ -219,7 +219,7 @@ export function ItemEditor(p: Props) {
               const g = CARE.find((x) => x.key === c.group)!;
               const o = g.options.find((x) => x.id === c.v);
               return <ValueCircle key={c.group} a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={c.src === 'geschaetzt'}>
-                <Icon name={c.v as SymbolName} size="button" color={c.src === 'geschaetzt' ? t.inkMuted : t.bg} />
+                <Icon name={c.v as SymbolName} size="button" color={c.src === 'geschaetzt' ? t.inkMuted : t.onFill} />
               </ValueCircle>;
             })}>
             <CarePicker care={f.care} onChange={(c) => set('care', c)} />
@@ -344,7 +344,7 @@ export function ItemEditor(p: Props) {
         <FieldLabel>Kategorie{f.wishTag ? ` · ${WISH_LABEL[f.wishTag]}` : ''}</FieldLabel>
         <Wrap>{WISH_ORDER.map((w) => (
           <IconCircle key={w} a11y={WISH_LABEL[w]} selected={f.wishTag === w} onPress={() => set('wishTag', pickOne(f.wishTag, w))}>
-            <Icon name={w as SymbolName} size="row" color={f.wishTag === w ? t.bg : t.ink} />
+            <Icon name={w as SymbolName} size="row" color={f.wishTag === w ? t.onFill : t.ink} />
           </IconCircle>
         ))}</Wrap>
       </View>

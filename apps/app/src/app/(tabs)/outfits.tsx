@@ -116,7 +116,7 @@ export default function Outfits() {
               return (
                 <View key={x.label} onLayout={chipRow.layout(x.label)}>
                   <Chip tall collapse label={x.label} count={x.n} selected={on} onLabelWidth={chipRow.labelWidth(x.label)}
-                    icon={<Icon name={x.icon} size="chip" color={on ? t.bg : t.ink} />} onPress={() => pickOcc(on ? null : x.label)} />
+                    icon={<Icon name={x.icon} size="chip" color={on ? t.onFill : t.ink} />} onPress={() => pickOcc(on ? null : x.label)} />
                 </View>
               );
             })}

@@ -148,7 +148,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
           <View style={s.wrap}>
             {occList.map((x) => {
               const on = occ.includes(x);
-              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.bg : t.ink} />}
+              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.onFill : t.ink} />}
                 onPress={() => setOcc(on ? occ.filter((y) => y !== x) : [...occ, x])} />;
             })}
           </View>

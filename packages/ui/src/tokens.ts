@@ -30,6 +30,8 @@ export const colors = {
     actionText: '#B8430F',      // Orange als Schrift auf hellem Grund (4.8:1)
     highlight: brand.yellow,    // Hervorhebung (sparsam); „Heute“ ist seit 14.11.2026 accent
     blush: brand.pink,          // Person/Markierung
+    fill: brand.pink,           // gefüllte Kapseln/Kreise (Teil-Detail, Bearbeiten), seit 17.11.2026
+    onFill: '#2A1A1D',          // Schrift/Symbol auf Pink (≈ 8:1) – Weiß wäre zu schwach
     glass: '#F5F0E8B8',         // warm getöntes Glas
     glassBorder: '#FFFFFF8C',
     scrim: '#2A1A1D66',
@@ -48,6 +50,8 @@ export const colors = {
     actionText: '#F09A73',      // 8.5:1
     highlight: brand.yellow,
     blush: brand.pink,
+    fill: brand.oxblood,        // gefüllte Kapseln/Kreise im Dunklen: Burgunder
+    onFill: brand.ivory,        // ≈ 9:1 auf Oxblood
     glass: '#221A18B8',
     glassBorder: '#F5F0E81F',
     scrim: '#00000080',

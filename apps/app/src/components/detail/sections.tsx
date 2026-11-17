@@ -84,7 +84,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
   const estimated = care.some((c) => c.src === 'geschaetzt');
   const aussehen: [string, React.ReactNode[]][] = [
     ['Kategorie', caps([categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })])],
-    ['Saison', SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.bg} /></ValueCircle>)],
+    ['Saison', SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.onFill} /></ValueCircle>)],
     [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
     ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
     [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([f.pattern]) : []],
@@ -126,7 +126,7 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
                   const est = c.src === 'geschaetzt';
                   const circle = (
                     <ValueCircle a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={est}>
-                      <Icon name={c.v as SymbolName} size="button" color={est ? t.inkMuted : t.bg} />
+                      <Icon name={c.v as SymbolName} size="button" color={est ? t.inkMuted : t.onFill} />
                     </ValueCircle>
                   );
                   return est

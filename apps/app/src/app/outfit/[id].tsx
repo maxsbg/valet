@@ -138,7 +138,7 @@ export default function OutfitDetail() {
           <View style={s.wrap}>
             {occList.map((x) => {
               const on = o.occasions.includes(x);
-              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.bg : t.ink} />} onPress={() => toggleOcc(x)} />;
+              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.onFill : t.ink} />} onPress={() => toggleOcc(x)} />;
             })}
           </View>
 
@@ -178,8 +178,8 @@ export default function OutfitDetail() {
           {dayChoices.map((d) => (
             <Pressable key={d} onPress={() => setDate(d)}
               onLayout={d === today ? (e) => dayScroll.current?.scrollTo({ x: e.nativeEvent.layout.x, animated: false }) : undefined} accessibilityRole="radio" accessibilityState={{ selected: d === date }}
-              style={[s.dayChip, { backgroundColor: d === date ? t.ink : t.surface, borderColor: d === date ? t.ink : t.hairline }]}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: d === date ? t.bg : t.ink }}>{fmtShort(d)}</Text>
+              style={[s.dayChip, { backgroundColor: d === date ? t.fill : t.surface, borderColor: d === date ? t.fill : t.hairline }]}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: d === date ? t.onFill : t.ink }}>{fmtShort(d)}</Text>
             </Pressable>
           ))}
         </ScrollView>
