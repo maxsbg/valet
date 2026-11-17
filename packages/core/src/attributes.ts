@@ -9,13 +9,13 @@ const c = (name: string, hex: string, nuances: [string, string][] = []): ColorDe
 export const COLORS: readonly ColorDef[] = [
   c('Gelb', '#e8c547', [['Hellgelb', '#f3e38f'], ['Senfgelb', '#c99a1e']]),
   c('Orange', '#e8822e', [['Koralle', '#ef7f62'], ['Terrakotta', '#b8573a']]),
-  c('Rot', '#c0392b', [['Burgunderrot', '#7e1f2e']]),
+  c('Rot', '#c0392b', [['Burgunderrot', '#7e1f2e'], ['Maroon', '#6e2b26']]),
   c('Pink', '#e07aa0', [['Rosa', '#f2b6c6'], ['Altrosa', '#c99098'], ['Magenta', '#c2187a']]),
   c('Grün', '#4f8a4a', [['Mint', '#a8dcc0'], ['Hellgrün', '#8cc56b'], ['Olivgrün', '#6b7a3c'], ['Khaki', '#9a9461'], ['Dunkelgrün', '#2f5a37']]),
   c('Blau', '#3567b0', [['Himmelblau', '#8ec3e8'], ['Marineblau', '#1f2f55'], ['Petrol', '#1f6b72'], ['Cyan', '#39c2d7']]),
   c('Türkis', '#2ba5a5'),
   c('Lila', '#7d55b0', [['Lavendel', '#c3b5e6'], ['Flieder', '#b892c8'], ['Violett', '#5b2d8e']]),
-  c('Weiß', '#ffffff'), c('Elfenbein', '#efe6d2'), c('Beige', '#d9c7a7'), c('Taupe', '#8f8172'), c('Camel', '#b98a55'), c('Braun', '#6b4a33'),
+  c('Weiß', '#ffffff'), c('Elfenbein', '#efe6d2'), c('Beige', '#d9c7a7'), c('Taupe', '#8f8172'), c('Camel', '#b98a55'), c('Braun', '#6b4a33', [['Karamell', '#94501f']]),
   c('Hellgrau', '#c4c4c4'), c('Dunkelgrau', '#555555'), c('Schwarz', '#1c1c1c'),
   c('Gold', '#cfa94a'), c('Silber', '#b9bec4'), c('Bronze', '#a86b3c'), c('Bunt', ''),
 ];
@@ -78,7 +78,7 @@ export function tapNuance(p: ColorPick, nuance: string): ColorPick {
 /** Alte Farbnamen (freier Text, „Schwarz/Weiß“) → neue Palette. Unbekannt → null. */
 export const LEGACY_COLORS: Readonly<Record<string, string>> = {
   schwarz: 'Schwarz', weiß: 'Weiß', weiss: 'Weiß', braun: 'Braun', beige: 'Beige', blau: 'Blau', hellgrau: 'Hellgrau', silber: 'Silber',
-  anthrazit: 'Dunkelgrau', dunkelgrau: 'Dunkelgrau', gelb: 'Gelb', denim: 'Blau', creme: 'Elfenbein', burgunder: 'Burgunderrot', rot: 'Rot',
+  anthrazit: 'Dunkelgrau', dunkelgrau: 'Dunkelgrau', gelb: 'Gelb', denim: 'Blau', creme: 'Elfenbein', burgunder: 'Burgunderrot', maroon: 'Maroon', maron: 'Maroon', karamell: 'Karamell', caramel: 'Karamell', rot: 'Rot',
   rosa: 'Rosa', gold: 'Gold', camel: 'Camel', orange: 'Orange', navy: 'Marineblau', oliv: 'Olivgrün', hellblau: 'Himmelblau', grün: 'Grün',
   pink: 'Pink', lila: 'Lila', türkis: 'Türkis', khaki: 'Khaki', taupe: 'Taupe', bronze: 'Bronze', elfenbein: 'Elfenbein',
 };
