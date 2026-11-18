@@ -17,6 +17,7 @@ import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 import { todayLocal, type Tile } from '@/lib/wardrobe';
 import { addDays, allOccasions, clashes, fmtLong, fmtShort, outfitValue, planOutfit, setOccasions, unplanOutfit } from '@/lib/outfits';
 import { Icon } from '@/components/Icon';
+import { Toolbar, TOOLBAR_SPACE } from '@/components/detail/Toolbar';
 
 export default function OutfitDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -63,7 +64,8 @@ export default function OutfitDetail() {
   const plans = [...o.plans].sort((a, b) => b.date.localeCompare(a.date));
   const future = plans.filter((p) => p.date >= today).reverse();
   const past = plans.filter((p) => p.date < today);
-  const plannedToday = o.plans.some((p) => p.date === today && (!me || !p.personId || p.personId === me.id));
+  const todayPlan = o.plans.find((p) => p.date === today && (!me || !p.personId || p.personId === me.id));
+  const plannedToday = !!todayPlan;
   const occList = allOccasions();
   const dayChoices = Array.from({ length: 45 }, (_, n) => addDays(today, n - 14));
 
@@ -78,6 +80,7 @@ export default function OutfitDetail() {
     finally { setBusy(false); }
   }
   function wearToday() {
+    if (todayPlan) { unplan(todayPlan.id); return; }
     // Bei zwei Personen ohne „Das bin ich“ erst fragen, wer es trägt
     if (!me && persons.length > 1) { setDate(today); setWho(persons[0]!.id); setPlanning(true); return; }
     plan(today, me?.id ?? null);
@@ -110,7 +113,7 @@ export default function OutfitDetail() {
 
   return (
     <View style={[s.page, { backgroundColor: t.bg }]}>
-      <Page contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + space.xxl, alignItems: 'center' }}>
+      <Page contentContainerStyle={{ paddingTop: insets.top, paddingBottom: bottom + TOOLBAR_SPACE, alignItems: 'center' }}>
         <View style={s.col}>
           <TopBar onBack={back} onEdit={() => router.push(`/outfit-bauen?id=${o.id}`)} onShare={canExport && o.pieces.length ? () => setExporting(true) : undefined} />
           <View style={[s.boardWrap, { borderColor: t.hairline }]}>
@@ -121,18 +124,6 @@ export default function OutfitDetail() {
             {[`${pieces.length} Teile`, formatEur(outfitValue(o, byId)), owner?.name].filter(Boolean).join(' · ')}
           </Text>
 
-          <View style={s.actions}>
-            <Pressable onPress={wearToday} disabled={busy || plannedToday} accessibilityRole="button"
-              style={({ pressed }) => [s.btn, { backgroundColor: plannedToday ? t.surface : t.action, borderColor: plannedToday ? t.hairline : t.action, opacity: pressed ? 0.85 : 1 }]}>
-              {plannedToday && <Icon name="check" size="chip" color={t.ink} />}
-              <Text style={{ fontSize: 17, fontWeight: '600', color: plannedToday ? t.ink : t.onAction }}>{plannedToday ? 'Heute getragen' : 'Heute tragen'}</Text>
-            </Pressable>
-            <Pressable onPress={() => { setDate(addDays(today, 1)); setWho(me?.id ?? persons[0]?.id ?? null); setPlanning(true); }} accessibilityRole="button"
-              style={({ pressed }) => [s.btn, { backgroundColor: t.surface, borderColor: t.hairline, opacity: pressed ? 0.85 : 1 }]}>
-              <Icon name="calendar" size="chip" color={t.ink} />
-              <Text style={{ fontSize: 17, fontWeight: '600', color: t.ink }}>Für Tag planen</Text>
-            </Pressable>
-          </View>
 
           <Text style={[s.section, { color: t.ink }]}>Anlass</Text>
           <View style={s.wrap}>
@@ -168,6 +159,12 @@ export default function OutfitDetail() {
         </View>
       </Page>
 
+      <Toolbar
+        left={[]}
+        right={[{ label: 'Für Tag planen', icon: (c) => <Icon name="calendar" size="button" color={c} />, onPress: () => { setDate(addDays(today, 1)); setWho(me?.id ?? persons[0]?.id ?? null); setPlanning(true); } }]}
+        main={{ label: plannedToday ? 'Heute getragen – entfernen' : 'Heute tragen', active: plannedToday, disabled: busy, onPress: wearToday,
+          icon: (c) => <Icon name={plannedToday ? 'check' : 'wornToday'} size="bar" color={c} /> }}
+      />
       <Sheet open={planning} onClose={() => setPlanning(false)} title="Für Tag planen"
         footer={<>
           <SheetButton label="Abbrechen" onPress={() => setPlanning(false)} />
@@ -223,8 +220,6 @@ const s = StyleSheet.create({
   col: { width: '100%', maxWidth: 520, paddingHorizontal: space.md },
   top: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: space.xs },
   boardWrap: { borderWidth: 1, borderRadius: 16, overflow: 'hidden', marginTop: space.xs },
-  actions: { flexDirection: 'row', gap: space.xs, marginTop: space.md },
-  btn: { flex: 1, height: 52, borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
   section: { fontFamily: DISPLAY, fontSize: 20, marginTop: space.lg, marginBottom: space.xs },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
   list: { borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
