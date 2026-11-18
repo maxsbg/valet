@@ -37,7 +37,7 @@ export function Toolbar({ left, right, main }: { left: ToolButton[]; right: Tool
   );
   return (
     <View pointerEvents="box-none" style={[s.bar, FIXED, { bottom }]}>
-      {group(left, 'left')}
+      {left.length > 0 && group(left, 'left')}
       <View style={s.right}>
         {group(right, 'right')}
         <Pressable accessibilityRole="button" accessibilityLabel={main.label} accessibilityState={{ selected: !!main.active, disabled: !!main.disabled }}
