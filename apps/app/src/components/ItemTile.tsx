@@ -98,10 +98,14 @@ type Props = {
   onLongPress?: () => void;
   /** Nur Prüfseite: Fotos mit weißem Hintergrund wie in der Referenz-HTML einblenden. In der App nicht nötig (freigestellt). */
   photoBlend?: 'multiply';
+  /** Quadratischer Rahmen mit der WishlistCard-Bildanpassung (10 % Inset + shapePad). */
+  squarePhoto?: boolean;
 };
 
-export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend }: Props) {
+export function ItemTile({ item, width, height, me, person, today, selected, onPress, onLongPress, photoBlend, squarePhoto }: Props) {
   const h = height ?? tileHeight(item.size ?? item.kind ?? item.category, width);
+  const photoInset = squarePhoto ? Math.round(width * 0.1) : T.photoInset;
+  const photoShape = squarePhoto ? { kind: item.size ?? item.kind ?? item.category, width, height: h } : undefined;
   const glow = glowFor(item.colors, item.hex);
   const tr = topRightFor(item.reversible, item.qty, !!item.setId);
   // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)
@@ -135,7 +139,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
       <TileGlow glow={glow} radius={T.radius} blur={T.glow.blur} spread={T.glow.spread} />
       <Animated.View style={[StyleSheet.absoluteFill, photoBlend && web ? ({ mixBlendMode: photoBlend } as ViewStyle) : null, flip.style]}>
         <View style={[StyleSheet.absoluteFill, flip.back && s.hidden]}>
-          <ItemPicture uri={item.thumb} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
+          <ItemPicture uri={item.thumb} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={photoInset} shape={photoShape} />
         </View>
         {/* Rückseite erst nach dem ersten Tippen laden, dann beide behalten (kein Aufblitzen beim Zurückdrehen) */}
         {flip.loaded && (
