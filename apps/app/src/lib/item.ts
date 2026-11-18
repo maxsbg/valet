@@ -11,6 +11,7 @@ export type ItemRow = {
   seasons: string[] | null; qty: number | null; price_paid: number | null; list_price: number | null; purchase_date: string | null;
   shop: string | null; link: string | null; notes: string | null; status: ItemStatus | null;
   status_at: string | null; lent_to: string | null; sold_price: number | null;
+  was_wish: boolean | null; created_at: string;
   /** Status-Zusatzangaben (Spec 6) */
   status_where: string | null; status_until: string | null; lent_person_id: string | null; sold_date: string | null; reversible: boolean | null; set_id: string | null;
   set_name: string | null; is_wish: boolean | null; wishlist_id: string | null; wish_tag: string | null;
@@ -176,7 +177,7 @@ export async function markBought(item: Pick<ItemRow, 'id' | 'wishlist_id'>, data
   if (wish.error) throw wish.error;
   const originalListPrice = (wish.data.wish_price as number | null) ?? (wish.data.list_price as number | null);
   const r = await supabase.from('items').update({
-    is_wish: false, wishlist_id: null, wish_tag: null, buy_on: null,
+    is_wish: false, was_wish: true, wishlist_id: null, wish_tag: null, buy_on: null,
     price_paid: data.price, list_price: originalListPrice, purchase_date: data.date,
     owner_ids: data.owners, owner_id: data.owners.length === 1 ? data.owners[0]! : null,
   }).eq('id', item.id);
