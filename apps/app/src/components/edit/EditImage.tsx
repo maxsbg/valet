@@ -1,7 +1,7 @@
 // Bild-Kachel der Bearbeiten-Seite (Spec 7): Radius 28, „Foto ändern“ und „Infos auslesen“;
 // wendbar: Wende-Plakette oben rechts, „Seite A/B“, Punkte darunter, „Foto Seite A/B ändern“ für die gezeigte Seite.
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { glowFor } from '@valet/core';
 import { detail, itemTile } from '@valet/ui';
 import { useTheme, DISPLAY } from '@/lib/theme';
@@ -11,17 +11,13 @@ import { ItemPicture } from '@/components/ItemPicture';
 import { TileIcon } from '@/components/tile/TileIcons';
 import { TileGlow, glowBoxShadow } from '@/components/tile/TileGlow';
 import { Icon } from '@/components/Icon';
+import { MirrorButton, badgeGlass } from './MirrorButton';
 
 const I = detail.image;
 /** Schein wie auf der Bild-Kachel im Teil-Detail */
 const GLOW = { blur: 52, spread: 8 };
-const web = Platform.OS === 'web';
 type Side = 'a' | 'b';
 
-const badgeGlass = [
-  { backgroundColor: 'rgba(255,255,255,0.62)', boxShadow: 'inset 0 0.5px 0 #fff, inset 0 0 0 0.5px rgba(255,255,255,0.7), 0 0 0 0.5px rgba(42,26,29,0.10), 0 2px 6px rgba(42,26,29,0.12)' },
-  web ? ({ backdropFilter: 'blur(10px) saturate(1.8)', WebkitBackdropFilter: 'blur(10px) saturate(1.8)' } as object) : {},
-];
 
 type Props = {
   width: number;
@@ -41,9 +37,12 @@ type Props = {
   onInfo: () => void;
   /** Neues Teil: „Foto ändern“ führt zurück zum Fotoschritt */
   onChangePhoto?: () => void;
+  /** Bearbeiten: gespeichertes Bild einer Seite laden (zum Spiegeln ohne neues Foto) */
+  loadStored?: (side: Side) => Promise<Picture | null>;
+  onError?: (message: string) => void;
 };
 
-export function EditImage({ width, current, pics, onPick, reversible, kind, hex, colors, colorsB, onInfo, onChangePhoto }: Props) {
+export function EditImage({ width, current, pics, onPick, reversible, kind, hex, colors, colorsB, onInfo, onChangePhoto, loadStored, onError }: Props) {
   const t = useTheme();
   const [side, setSide] = useState<Side>('a');
   useEffect(() => { if (!reversible) setSide('a'); }, [reversible]);
@@ -56,7 +55,9 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
   const sideName = side === 'a' ? 'Seite A' : 'Seite B';
   const h = Math.round(I.height * 300 / 380);
 
-  if (flow.step !== 'idle') return <FlowPanel flow={flow} width={width} />;
+  if (flow.step !== 'idle') return <FlowPanel flow={flow} width={width} onError={onError} />;
+  // Spiegeln: neues Foto direkt, sonst das gespeicherte erst laden; zurückgespiegelt auf das gespeicherte = keine Änderung
+  const canMirror = canCutout && (!!pics[side] || (!!current[side] && !!loadStored));
 
   const layer = (s: Side) => {
     const uri = pics[s]?.preview ?? current[s];
@@ -79,6 +80,10 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
         {layer('a')}
         {reversible && layer('b')}
         <View pointerEvents="none" style={s_.edge} />
+        {canMirror && (
+          <MirrorButton picture={pics[side]} load={loadStored ? () => loadStored(side) : undefined} onError={onError}
+            onChange={(p) => onPick(side, p.stored ? null : p)} />
+        )}
         {reversible && (
           <>
             <Pressable accessibilityRole="button" accessibilityLabel={`Wenden, zeigt ${sideName}`} onPress={() => setSide(side === 'a' ? 'b' : 'a')}
@@ -114,7 +119,7 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
       )}
       {pics[side] && (
         <Pressable accessibilityRole="button" onPress={() => onPick(side, null)} hitSlop={8} style={{ marginTop: 8 }}>
-          <Text style={{ fontSize: 13, color: t.inkMuted }}>Neues Foto verwerfen</Text>
+          <Text style={{ fontSize: 13, color: t.inkMuted }}>{pics[side]!.mirrorOf?.stored ? 'Spiegeln verwerfen' : 'Neues Foto verwerfen'}</Text>
         </Pressable>
       )}
     </View>
@@ -163,10 +168,12 @@ export function usePictureFlow(onAccept: (p: Picture) => void) {
   }
   const accept = (p: Picture) => { onAccept(p); setStep('idle'); };
   const cancel = () => { run.current++; setStep('idle'); };
-  return { step, photo, picture, progress, failure, pick, keepOriginal, accept, cancel };
+  /** Vorschau gespiegelt (oder zurück) */
+  const mirrored = (p: Picture) => { keep(p.preview); setPicture(p); };
+  return { step, photo, picture, progress, failure, pick, keepOriginal, accept, cancel, mirrored };
 }
 
-function FlowPanel({ flow, width }: { flow: Flow; width: number }) {
+function FlowPanel({ flow, width, onError }: { flow: Flow; width: number; onError?: (message: string) => void }) {
   const t = useTheme();
   const { step, photo, picture, progress, failure } = flow;
   return (
@@ -175,6 +182,7 @@ function FlowPanel({ flow, width }: { flow: Flow; width: number }) {
         {step === 'work' && photo && <Image source={{ uri: photo.url }} resizeMode="contain" style={[StyleSheet.absoluteFill, { opacity: 0.45 }]} accessibilityLabel="Foto wird freigestellt" />}
         {step === 'work' && <ActivityIndicator color={t.accent} size="large" />}
         {step === 'review' && picture && <Image source={{ uri: picture.preview }} resizeMode="contain" style={s_.img} accessibilityLabel="Freigestelltes Bild" />}
+        {step === 'review' && picture && <MirrorButton picture={picture} onChange={flow.mirrored} onError={onError} />}
         {step === 'review' && !picture && (
           <View style={{ padding: 16, gap: 6 }}>
             <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink, textAlign: 'center' }}>Freistellen hat nicht geklappt</Text>

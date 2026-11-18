@@ -16,6 +16,7 @@ import { canCutout, cutout, modelCached, original, precutNote, type Picture } fr
 import { createItem, saveSet } from '@/lib/item';
 import type { SetDraft } from '@/components/edit/SetPicker';
 import { Icon } from '@/components/Icon';
+import { MirrorButton } from '@/components/edit/MirrorButton';
 import { Dims, Glass } from '@/components/tile/TileBadge';
 import { itemTile } from '@valet/ui';
 
@@ -182,7 +183,7 @@ export default function Neu() {
       <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
         wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
         onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
-        saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }}
+        saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }} onError={(m) => toast.show(m)}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: null, setId: null }} />
       {toast.node}
     </View>
@@ -290,6 +291,7 @@ export default function Neu() {
               {picture ? (
                 <View style={[s.stage, { backgroundColor: '#000', boxShadow: '0 2px 8px rgba(42,26,29,0.18)' }]}>
                   <Image source={{ uri: picture.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} accessibilityLabel="Freigestelltes Bild" />
+                  <MirrorButton picture={picture} onChange={(p) => { keep(p.preview); setPicture(p); }} onError={(m) => toast.show(m)} />
                 </View>
               ) : (
                 <View style={[s.stage, { backgroundColor: t.surface }]}>

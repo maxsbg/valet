@@ -134,16 +134,18 @@ export const SIZE_SYSTEMS = { letters: 'Buchstaben', numbers: 'Zahlen', wl: 'W/L
 export type SizeSystem = keyof typeof SIZE_SYSTEMS;
 export const ONE_SIZE = 'One Size';
 export const SIZES: Readonly<Record<'letters' | 'numbers', readonly string[]>> = {
-  letters: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', ONE_SIZE],
+  letters: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL', ONE_SIZE],
   numbers: ['44', '46', '48', '50', '52', '54', '56', '58', '60', ONE_SIZE],
 };
+/** Doppelgrößen (zweite Reihe unter den Buchstaben, gespeichert mit System „letters“) */
+export const LETTER_DOUBLES = ['XS/S', 'S/M', 'M/L', 'L/XL', 'XL/XXL'] as const;
 export const COLLAR_SIZES = ['37', '38', '39', '40', '41', '42', '43', '44', '45', '46'] as const;
 /** Kragenweite nur für Unterkategorie Hemd (Spec 8) */
 export const hasCollarSize = (subcategory: string | null | undefined) => subcategory === 'Hemd';
 /** Größen-System aus einer alten Größenangabe erkennen (nur eindeutige Fälle) */
 export function sizeSystemOf(size: string | null | undefined): SizeSystem | null {
   const s = (size ?? '').trim();
-  if (SIZES.letters.includes(s) && s !== ONE_SIZE) return 'letters';
+  if ((SIZES.letters.includes(s) && s !== ONE_SIZE) || (LETTER_DOUBLES as readonly string[]).includes(s)) return 'letters';
   if (SIZES.numbers.includes(s) && s !== ONE_SIZE) return 'numbers';
   return null;
 }

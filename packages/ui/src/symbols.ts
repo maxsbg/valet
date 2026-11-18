@@ -80,6 +80,8 @@ export const SYMBOLS = {
     els: ['M5 7.5h1.8l1.7-2.5h7l1.7 2.5H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5a2 2 0 0 1 2-2z', 'c:12,12.5,3.2'] },
   photos: { group: 'bedienung', meaning: 'Aus den Fotos wählen', uses: ['Quelle „Fotos“'],
     els: ['M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z', 'c:9,10,1.6', 'M21 16l-5-5-8 8'], src: 'Lucide' },
+  mirror: { group: 'bedienung', meaning: 'Bild spiegeln (links/rechts)', uses: ['Runder Knopf „Spiegeln“ neben der Bild-Vorschau (Neues Teil, Bilder zuordnen, Foto ändern, Bearbeiten)'],
+    els: ['M12 3v18', 'M9.5 7v10H3z', 'M14.5 7v10H21z'] },
   label: { group: 'bedienung', meaning: 'Etikett', uses: ['Infos aus dem Etikett', 'Etikett im Steckbrief'],
     els: ['M11.6 3.6A2 2 0 0 0 10.2 3H5a2 2 0 0 0-2 2v5.2a2 2 0 0 0 .6 1.4l8.2 8.2a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8z', 'c:7.5,7.5,1.4'], src: 'Lucide' },
   phone: { group: 'bedienung', meaning: 'Shop-Screenshot', uses: ['Infos aus einem Shop-Screenshot'],

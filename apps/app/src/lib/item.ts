@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { imageUrl, todayLocal } from './wardrobe';
-import type { Picture } from './cutout';
+import { storedPicture, type Picture } from './cutout';
 import { migrateSeasons, normalizeCategory, type ItemStatus, type StatusInfo } from '@valet/core';
 
 export type ItemRow = {
@@ -103,6 +103,17 @@ export async function loadPictures(itemId: string): Promise<Record<'a' | 'b', st
     out[side] = imageUrl(x.storage_path as string);
   }
   return out;
+}
+
+/** Gespeichertes Bild einer Seite (Hauptbild + Vorschaubild) laden – zum Spiegeln in Bearbeiten; null = kein Bild */
+export async function loadStoredPicture(itemId: string, side: 'a' | 'b'): Promise<Picture | null> {
+  const r = await supabase.from('item_images').select('side,kind,storage_path,colors').eq('item_id', itemId).in('kind', ['thumb', 'cutout', 'original']);
+  if (r.error) throw r.error;
+  const rows = (r.data ?? []).filter((x) => ((x.side ?? 'a').trim().toLowerCase() === 'b' ? 'b' : 'a') === side);
+  const main = rows.find((x) => x.kind === 'cutout') ?? rows.find((x) => x.kind === 'original');
+  const thumb = rows.find((x) => x.kind === 'thumb');
+  if (!main || !thumb) return null;
+  return storedPicture(imageUrl(main.storage_path as string), imageUrl(thumb.storage_path as string), main.kind as Picture['kind'], (main.colors ?? []) as Picture['colors']);
 }
 
 export type NewItem = ItemChange & { name: string; category: string };
