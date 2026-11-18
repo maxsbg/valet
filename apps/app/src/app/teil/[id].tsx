@@ -196,20 +196,12 @@ function ClosetDetail({ id }: { id: string }) {
           <View style={{ gap: 2, marginTop: 4 }}>
             {!!it.brand && <Text style={[s.brand, { color: t.inkMuted }]}>{it.brand}</Text>}
             <Text style={[s.name, { color: t.ink }]}>{it.name}</Text>
-            {it.was_wish && it.created_at && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <Icon name="heart" size="mini" color={t.inkMuted} />
-                <Text style={{ fontSize: 13, color: t.inkMuted }}>
-                  Gemerkt seit {it.created_at.slice(0, 10).split('-').reverse().join('.')}
-                </Text>
-              </View>
-            )}
           </View>
           <Segmented items={[{ key: 'overview', label: 'Übersicht' }, { key: 'profile', label: 'Steckbrief' }, { key: 'purchase', label: 'Kauf' }]} value={tab} onChange={setTab} />
 
           {tab === 'overview' ? overview
             : tab === 'profile' ? <SteckbriefView f={f} onCare={setCare} onEdit={() => edit()} />
-            : <KaufView f={f} row={row as never} persons={wardrobe?.persons ?? []} meId={me} onEdit={() => edit('kauf')} />}
+            : <KaufView f={f} row={row as never} wasWish={it.was_wish} createdAt={it.created_at} persons={wardrobe?.persons ?? []} meId={me} onEdit={() => edit('kauf')} />}
         </View>
       </Page>
 
