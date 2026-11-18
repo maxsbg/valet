@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
-import { Header, Chip, Empty, PageEnd, useToast, useChipReveal } from '@/components/ui';
+import { Header, Chip, Empty, Fab, PageEnd, useToast, useChipReveal } from '@/components/ui';
 import { WeekCalendar } from '@/components/WeekCalendar';
 import { useTilePeople } from '@/components/Mosaic';
 import { OutfitCard } from '@/components/OutfitCard';
@@ -138,6 +138,8 @@ export default function Outfits() {
         </View>
         <PageEnd />
       </Page>
+
+      <Fab bottom={scr.fabBottom} label="Neues Outfit erstellen" icon="outfitNew" onPress={() => router.push('/outfit-bauen')} />
 
       {/* Tag: geplante Outfits, Outfit wählen */}
       <Sheet open={!!day} onClose={() => setDay(null)} title={day ? (picking ? `Outfit für ${fmtLong(day)}` : fmtLong(day)) : ''}
