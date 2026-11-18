@@ -168,9 +168,9 @@ export function ShopValue({ shop, link }: { shop: string; link: string | null | 
   );
 }
 
-export function KaufView({ f, row, persons, meId, onEdit }: {
+export function KaufView({ f, row, wasWish, createdAt, persons, meId, onEdit }: {
   f: EditForm; row: { price_paid: number | null; list_price: number | null; gift_value: number | null; payers: { person_id?: string | null; amount?: number | null }[] | null };
-  persons: Person[]; meId: string | null; onEdit: () => void;
+  wasWish: boolean; createdAt: string; persons: Person[]; meId: string | null; onEdit: () => void;
 }) {
   const t = useTheme();
   const price = row.price_paid;
@@ -181,6 +181,7 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
   const solo = !f.gift && price != null && shares.length === 0 && f.payers.length === 1 ? person(f.payers[0]) : undefined;
   const facts: [string, string][] = [
     [f.gift ? 'Bekommen am' : 'Gekauft', f.purchaseDate ? shortDate(f.purchaseDate, '0000') : ''],
+    ...(!f.gift && wasWish && createdAt ? [['Gemerkt seit', shortDate(createdAt.slice(0, 10), '0000')] as [string, string]] : []),
     ['Shop', f.shop], ['Artikelnummer', f.articleNo],
   ].filter(([, v]) => !!v) as [string, string][];
   return (
@@ -244,7 +245,7 @@ export function KaufView({ f, row, persons, meId, onEdit }: {
       {facts.length > 0 && (
         <View style={s.facts}>
           {facts.map(([k, v]) => (
-            <View key={k} style={{ width: '48%', gap: 1 }}>
+            <View key={k} style={{ width: k === 'Gekauft' || k === 'Bekommen am' || k === 'Gemerkt seit' ? '100%' : '48%', gap: 1 }}>
               <Text style={{ fontSize: 12, lineHeight: 16, color: t.inkMuted }}>{k}</Text>
               {k === 'Shop' ? <ShopValue shop={v} link={f.link} /> : <Text style={{ fontSize: 15, lineHeight: 20, color: t.ink }}>{v}</Text>}
             </View>
