@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { personKey, type Person } from '@/lib/wardrobe';
 import { Monogram } from './Monogram';
 import { MONO_SIZE, monoInset } from '@valet/ui';
-import { Icon } from '@/components/Icon';
+import { Icon, type SymbolName } from '@/components/Icon';
 
 type Theme = ReturnType<typeof useTheme>;
 
@@ -226,12 +226,12 @@ export function SearchField({ value, onChange, onClose }: { value: string; onCha
 }
 
 /** Plus-Knopf unten rechts: klein, Milchglas, Plus in der Akzentfarbe */
-export function Fab({ onPress, bottom, label = 'Teil hinzufügen' }: { onPress?: () => void; bottom: number; label?: string }) {
+export function Fab({ onPress, bottom, label = 'Teil hinzufügen', icon = 'plus' }: { onPress?: () => void; bottom: number; label?: string; icon?: SymbolName }) {
   const t = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
       style={({ pressed }) => [s.fab, ...glass(t), FIXED, { bottom, transform: [{ scale: pressed ? 0.94 : 1 }] }]}>
-      <Icon name="plus" size="button" color={t.dark ? t.accent : '#722638'} />
+      <Icon name={icon} size="button" color={t.dark ? t.accent : '#722638'} />
     </Pressable>
   );
 }
