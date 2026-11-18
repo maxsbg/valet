@@ -244,7 +244,7 @@ export default function Wunschliste() {
               {q && rows.length === 1 && <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff." />}
             </View>
           ) : shown.length ? (
-            <Mosaic items={shown} width={scr.content} onPress={(i) => router.push(`/teil/${i.id}`)} />
+            <Mosaic items={shown} width={scr.content} uniform onPress={(i) => router.push(`/teil/${i.id}`)} />
           ) : query || filters.tags.length || filters.person ? (
             <Empty title="Nichts gefunden" text="Probier einen anderen Suchbegriff oder Filter." />
           ) : (

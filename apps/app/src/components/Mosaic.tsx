@@ -11,6 +11,8 @@ type Props = {
   width: number;
   selected?: (t: Tile) => boolean;
   onPress?: (t: Tile) => void;
+  /** Wunschlisten-Ansicht: alle Kacheln quadratisch, Bildform bleibt proportional wie in WishlistCard. */
+  uniform?: boolean;
 };
 
 /** Angemeldete Person und Darstellung aller Personen für die Kacheln */
@@ -29,7 +31,7 @@ export function useTilePeople() {
 }
 
 /** Mosaik mit 3 Spalten: jede Kachel kommt in die gerade kürzeste Spalte (Reihenfolge bleibt von links oben nach rechts unten). */
-export function Mosaic({ items, width, selected, onPress }: Props) {
+export function Mosaic({ items, width, selected, onPress, uniform = false }: Props) {
   const { me, person, todayBy } = useTilePeople();
   const colW = (width - 2 * tile.gap) / 3;
   const cols = useMemo(() => {
@@ -38,7 +40,7 @@ export function Mosaic({ items, width, selected, onPress }: Props) {
     for (const it of items) {
       const i = h.indexOf(Math.min(...h));
       c[i]!.push(it);
-      h[i]! += tileHeight(it.size ?? it.kind ?? it.category, colW) + tile.gap;
+      h[i]! += (uniform ? colW : tileHeight(it.size ?? it.kind ?? it.category, colW)) + tile.gap;
     }
     return c;
   }, [items, colW]);
@@ -47,7 +49,7 @@ export function Mosaic({ items, width, selected, onPress }: Props) {
       {cols.map((col, ci) => (
         <View key={ci} style={{ width: colW, gap: tile.gap }}>
           {col.map((it) => (
-            <ItemTile key={it.id} item={it} width={colW} me={me} person={person} today={!it.isWish && it.id in todayBy ? { person: todayBy[it.id] ?? null } : null}
+            <ItemTile key={it.id} item={it} width={colW} height={uniform ? colW : undefined} squarePhoto={uniform} me={me} person={person} today={!it.isWish && it.id in todayBy ? { person: todayBy[it.id] ?? null } : null}
               selected={selected?.(it)} onPress={() => onPress?.(it)} />
           ))}
         </View>
