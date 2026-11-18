@@ -144,7 +144,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
         {/* Rückseite erst nach dem ersten Tippen laden, dann beide behalten (kein Aufblitzen beim Zurückdrehen) */}
         {flip.loaded && (
           <View style={[StyleSheet.absoluteFill, !flip.back && s.hidden]}>
-            <ItemPicture uri={flip.loaded} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={T.photoInset} />
+            <ItemPicture uri={flip.loaded} category={item.kind ?? item.category} color={item.hex ?? T.glow.fallback} inset={photoInset} shape={photoShape} />
           </View>
         )}
       </Animated.View>
