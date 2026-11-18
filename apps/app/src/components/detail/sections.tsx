@@ -170,7 +170,7 @@ export function ShopValue({ shop, link }: { shop: string; link: string | null | 
 
 export function KaufView({ f, row, wasWish, createdAt, persons, meId, onEdit }: {
   f: EditForm; row: { price_paid: number | null; list_price: number | null; gift_value: number | null; payers: { person_id?: string | null; amount?: number | null }[] | null };
-  wasWish: boolean; createdAt: string; persons: Person[]; meId: string | null; onEdit: () => void;
+  wasWish: boolean | null; createdAt: string; persons: Person[]; meId: string | null; onEdit: () => void;
 }) {
   const t = useTheme();
   const price = row.price_paid;
