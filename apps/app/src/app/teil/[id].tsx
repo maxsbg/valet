@@ -198,7 +198,7 @@ function ClosetDetail({ id }: { id: string }) {
             <Text style={[s.name, { color: t.ink }]}>{it.name}</Text>
             {it.was_wish && it.created_at && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <Icon name="heart" size="small" color={t.inkMuted} />
+                <Icon name="heart" size="mini" color={t.inkMuted} />
                 <Text style={{ fontSize: 13, color: t.inkMuted }}>
                   Gemerkt seit {it.created_at.slice(0, 10).split('-').reverse().join('.')}
                 </Text>
