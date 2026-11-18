@@ -15,7 +15,7 @@ import { useSession } from '@/lib/session';
 import { useBottomInset } from '@/lib/bottomInset';
 import { useTheme, DISPLAY, space, radius } from '@/lib/theme';
 import { todayLocal, type Tile } from '@/lib/wardrobe';
-import { addDays, allOccasions, clashes, fmtLong, fmtShort, outfitValue, planOutfit, setOccasions, unplanOutfit } from '@/lib/outfits';
+import { addDays, clashes, fmtLong, fmtShort, outfitValue, planOutfit, unplanOutfit } from '@/lib/outfits';
 import { Icon } from '@/components/Icon';
 import { Toolbar, TOOLBAR_SPACE } from '@/components/detail/Toolbar';
 
@@ -66,7 +66,6 @@ export default function OutfitDetail() {
   const past = plans.filter((p) => p.date < today);
   const todayPlan = o.plans.find((p) => p.date === today && (!me || !p.personId || p.personId === me.id));
   const plannedToday = !!todayPlan;
-  const occList = allOccasions();
   const dayChoices = Array.from({ length: 45 }, (_, n) => addDays(today, n - 14));
 
   async function plan(d: string, personId: string | null) {
@@ -90,11 +89,6 @@ export default function OutfitDetail() {
     try { await unplanOutfit(planId); await reloadOutfits(); }
     catch (e) { toast.show('Entfernen fehlgeschlagen: ' + (e as Error).message); }
     finally { setBusy(false); }
-  }
-  async function toggleOcc(x: string) {
-    const next = o!.occasions.includes(x) ? o!.occasions.filter((y) => y !== x) : [...o!.occasions, x];
-    try { await setOccasions(o!.id, next); await reloadOutfits(); }
-    catch (e) { toast.show('Speichern fehlgeschlagen: ' + (e as Error).message); }
   }
 
   const planRow = (p: (typeof plans)[number], n: number) => {
@@ -125,13 +119,16 @@ export default function OutfitDetail() {
           </Text>
 
 
-          <Text style={[s.section, { color: t.ink }]}>Anlass</Text>
-          <View style={s.wrap}>
-            {occList.map((x) => {
-              const on = o.occasions.includes(x);
-              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.onFill : t.ink} />} onPress={() => toggleOcc(x)} />;
-            })}
-          </View>
+          {o.occasions.length > 0 && (
+            <>
+              <Text style={[s.section, { color: t.ink }]}>Anlass</Text>
+              <View style={s.wrap}>
+                {o.occasions.map((x) => (
+                  <Chip key={x} label={x} selected icon={<Icon name={occasionOf(x)!.icon} size="chip" color={t.onFill} />} />
+                ))}
+              </View>
+            </>
+          )}
 
           {(future.length > 0 || past.length > 0) && (
             <>
@@ -152,7 +149,8 @@ export default function OutfitDetail() {
             {pieces.map((m) => (
               <Pressable accessibilityRole="button" key={m.id} onPress={() => router.push(`/teil/${m.id}`)} accessibilityLabel={m.name}
                 style={[s.mini, { boxShadow: `inset 0 0 14px 2px ${(m.hex ?? '#d8d2c8')}73, 0 1px 4px rgba(42,26,29,0.10)` }]}>
-                <ItemPicture uri={m.thumb} inset={6} category={m.category} color={m.hex ?? '#8e8e93'} />
+                <ItemPicture uri={m.thumb} inset={Math.round(76 * 0.1)} category={m.kind ?? m.category} color={m.hex ?? '#8e8e93'}
+                  shape={{ kind: m.size ?? m.kind ?? m.category, width: 76, height: 76 }} />
               </Pressable>
             ))}
           </ScrollView>
