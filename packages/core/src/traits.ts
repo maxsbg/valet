@@ -49,22 +49,26 @@ export const NEUTRAL_CHROMA = 0.035;
  * Korrekturen nach Augenmaß (nur temperature), von Max am 19.11.2026 anhand von farb-merkmale.html bestätigt.
  * olive: h ≈ 121° knapp über der Grenze, wirkt warm. pink/rose/magenta: Blaustich, nach Farbtypenlehre kühl (Altrosa bleibt warm).
  * Bewusst KEIN Override für burgundy: bleibt rechnerisch warm.
+ * moss (Moosgrün) → warm, mauve → kühl (Max, 19.11.2026).
  */
 export const COLOR_TRAIT_OVERRIDES: Readonly<Record<string, { temperature: Temperature }>> = {
   olive: { temperature: 'warm' },
   pink: { temperature: 'cool' },
   rose: { temperature: 'cool' },
   magenta: { temperature: 'cool' },
+  moss: { temperature: 'warm' },
+  mauve: { temperature: 'cool' },
 };
 
 /**
  * Mode-Neutrale (entschieden 19.11.2026): Farben, die sich in der Kleidung wie Neutrale kombinieren lassen,
- * auch wenn sie rechnerisch farbig sind (Beige, Camel, Khaki, Braun, Olivgrün, Marineblau). Die Temperatur
+ * auch wenn sie rechnerisch farbig sind (Beige, Camel, Khaki, Braun, Olivgrün, Marineblau; seit 19.11.2026 auch Anthrazit, Sand, Schokobraun, Moosgrün). Die Temperatur
  * bleibt trotzdem unverändert berechnet. Im späteren Matching sollen wearNeutral-Farben KEINE Temperatur-Konflikte
  * auslösen (z. B. Camel zu Marineblau ist kein warm/kühl-Bruch).
  */
 export const WEAR_NEUTRALS: readonly string[] = [
   'beige', 'camel', 'khaki', 'brown', 'olive', 'navy', 'ivory', 'taupe', 'white', 'light_grey', 'dark_grey', 'black', 'silver',
+  'charcoal', 'sand', 'chocolate', 'moss',
 ];
 const WEAR_NEUTRAL_SET = new Set(WEAR_NEUTRALS);
 /** true, wenn die Farbe (Key oder Label) eine Mode-Neutrale ist; Bunt und Unbekanntes → false */

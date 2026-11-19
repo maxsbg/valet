@@ -92,6 +92,7 @@ test('toKey: Key, Label, Altwert und Unbekanntes in allen Listen', () => {
   assert.equal(toKey(PATTERNS, 'unifarben'), null);
   assert.equal(toKey(CLOSURES, undefined), null);
   assert.deepEqual(toColorKeys(['Marineblau', 'navy', 'schwarz', 'Glitzer']), ['navy', 'black']);
+  assert.deepEqual(toColorKeys(['anthrazit', 'Sand', 'Schokobraun', 'mauve']), ['charcoal', 'sand', 'chocolate', 'mauve']); // 19.11.2026
   assert.deepEqual(toStyleKeys(['Casual', 'Lässig', 'street', 'Quatsch']), ['casual', 'street']);
   assert.deepEqual(toMaterialParts([{ name: 'Baumwolle', pct: 98 }, { name: 'elastane', pct: 2 }, { name: 'Glitzer' }]), [{ name: 'cotton', pct: 98 }, { name: 'elastane', pct: 2 }]);
   assert.deepEqual(migrateSeasons(['Winter', 'spring', 'Unsinn']), ['spring', 'winter']);

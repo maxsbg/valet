@@ -1360,6 +1360,14 @@
    "label": "Dunkelgrün"
   },
   {
+   "key": "moss",
+   "label": "Moosgrün"
+  },
+  {
+   "key": "sage",
+   "label": "Salbeigrün"
+  },
+  {
    "key": "blue",
    "label": "Blau"
   },
@@ -1400,6 +1408,10 @@
    "label": "Violett"
   },
   {
+   "key": "mauve",
+   "label": "Mauve"
+  },
+  {
    "key": "white",
    "label": "Weiß"
   },
@@ -1410,6 +1422,10 @@
   {
    "key": "beige",
    "label": "Beige"
+  },
+  {
+   "key": "sand",
+   "label": "Sand"
   },
   {
    "key": "taupe",
@@ -1428,12 +1444,20 @@
    "label": "Karamell"
   },
   {
+   "key": "chocolate",
+   "label": "Schokobraun"
+  },
+  {
    "key": "light_grey",
    "label": "Hellgrau"
   },
   {
    "key": "dark_grey",
    "label": "Dunkelgrau"
+  },
+  {
+   "key": "charcoal",
+   "label": "Anthrazit"
   },
   {
    "key": "black",
