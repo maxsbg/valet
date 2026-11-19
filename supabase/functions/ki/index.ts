@@ -223,6 +223,7 @@ Deno.serve(async (req: Request) => {
     let rejected = 0; // Anbieter lehnt dieses Bild/diese Anfrage ab (400/422 …, leere oder kaputte Antwort)
     let config = 0; // Einstellungsfehler (Schlüssel ungültig 401/403, Modell unbekannt 404) – nicht dem Teil anlasten
     let attempted = 0;
+    let mainConfig = false; // das Hauptmodell selbst meldet Schlüssel-/Modellfehler
     const started = Date.now();
     for (const m of models) {
       if (Date.now() - started > TOTAL_MS - CALL_MS) break;
@@ -235,13 +236,16 @@ Deno.serve(async (req: Request) => {
         console.warn(`${m}: model call error`, lastError);
         // Gratisgrenzen gelten je Modell → nächstes Modell probieren; „rate_limited“ erst, wenn alle begrenzt sind
         if (lastError.includes("(429)")) limited++;
-        else if (/\((401|403|404)\)/.test(lastError)) config++;
+        else if (/\((401|403|404)\)/.test(lastError)) { config++; if (attempted === 1) mainConfig = true; }
         else if (/\((4\d\d)\)/.test(lastError) || err instanceof SyntaxError || lastError.startsWith("No text response")) rejected++;
       }
     }
     // gezählt wird gegen die tatsächlich versuchten Modelle (die Zeitgrenze kann die Schleife früher beenden)
-    if (limited > 0 && limited === attempted) return jsonResponse({ error: "rate_limited" }, 429);
-    if (config > 0) {
+    // Kontingent hat Vorrang: liefert nur ein Ersatzmodell 401/403/404, bleibt es „rate_limited“
+    if (limited > 0 && limited + config === attempted) return jsonResponse({ error: "rate_limited" }, 429);
+    // config_error nur, wenn kein Modell überlastet war (sonst ist „nicht erreichbar“ die ehrlichere Meldung)
+    // config_error nur, wenn das Hauptmodell selbst so antwortet (404 eines Ersatzmodells steht nur im Log)
+    if (mainConfig && config + rejected === attempted) {
       console.error("ki: provider configuration error (key/model)", lastError);
       return jsonResponse({ error: "config_error" }, 503);
     }

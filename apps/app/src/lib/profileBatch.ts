@@ -146,16 +146,19 @@ export async function startBatch(wardrobeId: string) {
         // frisch lesen: wurde das Teil während des Laufs bearbeitet oder neu analysiert, gilt dessen Stand
         const now = await loadRow(r.id);
         if (!now) continue; // inzwischen gelöscht
-        if (batchPending(now.analysis)) await save(r.id, profilePatch(now, a));
+        if (!batchPending(now.analysis)) continue; // inzwischen anders analysiert – nicht als „ergänzt“ zählen
+        await save(r.id, profilePatch(now, a));
         set({ done: state.done + 1 });
       } catch (e) {
-        set({ phase: 'error', message: 'Speichern fehlgeschlagen: ' + ((e as Error)?.message ?? String(e)) });
+        console.warn('Profile ergänzen: Speichern', e);
+        set({ phase: 'paused', message: 'Speichern fehlgeschlagen – bitte Verbindung prüfen und „Weiter“ tippen.' });
         return;
       }
     }
     set({ phase: 'done', message: batchSummary(state.done, state.failed, state.skipped) });
   } catch (e) {
-    set({ phase: 'error', message: 'Fehler: ' + (e as Error).message });
+    console.warn('Profile ergänzen', e);
+    set({ phase: 'paused', message: 'Teile konnten nicht geladen werden – bitte Verbindung prüfen und „Weiter“ tippen.' });
   }
 }
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { checkAnalysis } from '../src/ai/analyzeItem';
 import { checkInfo } from '../src/ai/readInfo';
 import { mergeSources, applyAnalysis, applyInfo, infoContext, confirmedContext, analysisSource, infoSource, DESCRIPTION_MAX, type SourceInfo } from '../src/ai/merge';
-import { confirmAi, confirmAllAi, editChange, emptyEditForm, setField } from '../src/edit';
+import { confirmAi, confirmAllAi, editChange, emptyEditForm, setField, setName } from '../src/edit';
 
 const NOW = '2026-11-19T11:00:00.000Z';
 const blank = () => ({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] as string[] });
@@ -304,4 +304,36 @@ test('„Alle übernehmen“: Vorschläge gelten danach als bestätigt', () => {
   assert.deepEqual(f.aiPending, []);
   const again = applyAnalysis(f, checkAnalysis({ category: 'top/shirt', name: 'Hemd', colors: ['blue'] }), NOW);
   assert.equal(again.name, 'Oxford-Hemd'); assert.deepEqual(again.colors, ['white']);
+});
+
+// ---------- Prüfung 20.11.2026, Runde 4 ----------
+
+test('Kategorie je Ebene: Shop-Unterkategorie bleibt nach Verfeinern durch das Bild und „Neu analysieren“', () => {
+  const s1 = applyInfo(blank(), checkInfo({ category: 'top/shirt' }), 'page');
+  const s2 = applyAnalysis(s1, checkAnalysis({ category: 'top/shirt/long_sleeve_shirt', colors: ['white'] }), NOW);
+  assert.deepEqual([s2.subcategory, s2.type], ['shirt', 'long_sleeve_shirt']);
+  const src = s2.analysisBase.src as Record<string, string>;
+  assert.equal(src['category.sub'], 'page'); assert.equal(src['category.type'], 'image');
+  const s3 = applyAnalysis(s2, checkAnalysis({ category: 'top/sweater', colors: ['white'] }), NOW);
+  assert.equal(s3.subcategory, 'shirt');
+  // der Typ (nur vom Bild) darf sich durch ein neues Bild ändern
+  const s4 = applyAnalysis(s2, checkAnalysis({ category: 'top/shirt/short_sleeve_shirt', colors: ['white'] }), NOW);
+  assert.equal(s4.type, 'short_sleeve_shirt');
+});
+
+test('Kategorie: echter Wechsel setzt die Herkunft aller Ebenen neu', () => {
+  const a = mergeSources(blank(), { image: checkAnalysis({ category: 'top/shirt', colors: ['white'] }), infos: [{ from: 'page', info: checkInfo({ category: 'top' }) }] }, NOW);
+  const b = applyInfo(a, checkInfo({ kind: 'shop', category: 'outerwear/biker_jacket' }));
+  assert.equal(b.category, 'outerwear');
+  const c = applyAnalysis(b, checkAnalysis({ category: 'outerwear/trucker_jacket', colors: ['black'] }), NOW);
+  assert.equal(c.subcategory, 'biker_jacket');
+});
+
+test('Bearbeiten: Name ersetzt keine offene Shop-Stufe, vermerkt Herkunft „name“', () => {
+  const shop = applyInfo({ ...blank(), category: 'pants', subcategory: 'jeans' }, checkInfo({ kind: 'shop', category: 'pants/jeans', width: 4 }));
+  const f = setName(shop, 'High Waist Slim Jeans');
+  assert.equal(f.fit.width, 4);
+  assert.equal(f.fit.rise, 2);
+  const src = f.analysisBase.src as Record<string, string>;
+  assert.equal(src['fit.width'], 'screenshot'); assert.equal(src['fit.rise'], 'name');
 });

@@ -147,7 +147,7 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
         {!profiled && <Hint>Noch kein KI-Profil für dieses Teil.</Hint>}
         {!!note && <Hint>{note}</Hint>}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Capsule label={busy ? 'Analysiere …' : 'Neu analysieren'} selected onPress={busy || img === undefined ? undefined : run}
+          <Capsule label={busy ? 'Analysiere …' : img === undefined ? 'Lade Bild …' : 'Neu analysieren'} selected={img !== undefined} onPress={busy || img === undefined ? undefined : run}
             icon={(c) => <Icon name="sparkle" size="chip" color={c} />} />
           {busy && <ActivityIndicator color={t.accent} />}
         </View>

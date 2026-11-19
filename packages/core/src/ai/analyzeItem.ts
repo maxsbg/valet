@@ -2,9 +2,9 @@
 // Die Edge Function `ki` ist nur ein Durchreicher zu Gemini (OpenAI-kompatible Schnittstelle; Bild + Prompt + Schema);
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
-import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../categories';
+import { CATEGORY_TREE, isValidPath, type CategoryPath } from '../categories';
 import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
-import { fieldsFor, STRAPS } from '../fields';
+import { STRAPS } from '../fields';
 import { keysOf, toKey, type KeyList } from '../keys';
 import { mergeAnalysis } from '../edit';
 import { normalizeCategory } from '../import/categorize';
@@ -132,20 +132,18 @@ export function parsePath(v: unknown): CategoryPath {
 }
 
 /**
- * Rohantwort der KI → saubere Werte. Ungültiges wird verworfen statt abgelehnt,
- * Felder, die es für die erkannte Kategorie nicht gibt, bleiben leer (fieldsFor / fitScalesOf).
+ * Rohantwort der KI → saubere Werte. Ungültiges wird verworfen statt abgelehnt. Ob ein Feld zur Kategorie passt,
+ * entscheidet erst das Zusammenführen mit dem endgültigen Pfad (mergeSources: Stufen je Kategorie, dropHidden).
  */
 export function checkAnalysis(raw: unknown, model: string | null = null): Analysis {
   const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
   const path = parsePath(r.category);
-  const f = fieldsFor(path.category, path.subcategory);
-  // ohne erkannte Kategorie (Etikett, Screenshot) bleiben die Stufen roh; gefiltert wird beim Zusammenführen
-  const scales = new Set<string>(path.category ? fitScalesOf(path.category).map((s) => s.key) : ['width', 'length', 'rise']);
-  // ohne erkannte Kategorie alle Kragen und Ausschnitte zulassen (gefiltert wird mit dem endgültigen Pfad)
-  const neck = path.category ? f.neckline?.options ?? [] : NECK_LIST;
+  // Steckbrief-Fakten nur nach Werten prüfen, nicht nach dem erkannten Pfad: gefiltert wird mit dem endgültigen Pfad
+  // beim Zusammenführen (Stufen in applyFacts, übrige Felder in dropHidden) – sonst ginge z. B. die Bundhöhe verloren,
+  // wenn die KI einer feststehenden Kategorie widerspricht.
   let colors = pickList(r.colors, COLOR_LIST, MAX_COLORS);
   if (colors.includes(MULTICOLOR)) colors = [MULTICOLOR];
-  const pattern = f.pattern ? pickStr(r.pattern, PATTERNS) : null;
+  const pattern = pickStr(r.pattern, PATTERNS);
   const materials = pickList(r.materials, MATERIALS, 3);
   return {
     path,
@@ -156,17 +154,13 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
     materials: materials.map((name) => ({ name })),
     styles: pickList(r.styles, STYLES, 3),
     seasons: keysOf(SEASONS).filter((s) => pickList(r.seasons, SEASONS).includes(s)),
-    collar: pickStr(r.collar, neck),
-    closure: f.closure ? pickStr(r.closure, CLOSURES) : null,
-    strap: f.strap ? pickStr(r.strap, STRAPS) : null,
-    fit: {
-      width: scales.has('width') ? pickLevel(r.width, 4) : null,
-      length: scales.has('length') ? pickLevel(r.length, 4) : null,
-      rise: scales.has('rise') ? pickLevel(r.rise, 2) : null,
-    },
-    layers: f.layers && Array.isArray(r.layers) ? [...new Set(r.layers.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
-    warmth: f.weather ? pickLevel(r.warmth, 3) : null,
-    rain: f.weather ? pickLevel(r.rain, 2) : null,
+    collar: pickStr(r.collar, NECK_LIST),
+    closure: pickStr(r.closure, CLOSURES),
+    strap: pickStr(r.strap, STRAPS),
+    fit: { width: pickLevel(r.width, 4), length: pickLevel(r.length, 4), rise: pickLevel(r.rise, 2) },
+    layers: Array.isArray(r.layers) ? [...new Set(r.layers.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
+    warmth: pickLevel(r.warmth, 3),
+    rain: pickLevel(r.rain, 2),
     // nur Werte prüfen; nach Kategorie bereinigt wird erst mit dem endgültigen Pfad (mergeSources, profilePatch)
     profile: checkProfile(r.profile),
     confidence: checkConfidence(r.confidence),

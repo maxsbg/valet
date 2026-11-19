@@ -10,6 +10,7 @@ import { capSize, fieldsFor, kindHasLetters, sizeSystemOn, STRAPS, type SizeSyst
 import { equalSplit, formatPrice, parseAmount, splitGap } from './money';
 import { isWishTag, type WishTag } from './tile';
 import { checkConfidence, emptyConfidence, readProfile, type AiMeta, type Confidence, type Profile } from './ai/profile';
+import { ORIGIN_RANK, originOf, originsOf } from './ai/origin';
 
 /** Spalten der Tabelle items, die das Formular liest (Teilmenge, alles optional) */
 export type EditRow = Partial<{
@@ -148,9 +149,16 @@ export const fitOpen = (f: Pick<EditForm, 'fit' | 'aiPending'>): boolean =>
  */
 export function suggestFitFromName(f: EditForm, open: boolean = fitOpen(f)): EditForm {
   if (!open) return f;
-  const part = nameFitFor(f.category, fitFromName(f.name).fit);
+  // Rang je Stufe (Spec 6.7): Begriffe im Namen ersetzen nur Stufen, die Shop oder Etikett nicht selbst nennen
+  const origins = originsOf(f);
+  const part = Object.fromEntries(Object.entries(nameFitFor(f.category, fitFromName(f.name).fit))
+    .filter(([k]) => f.fit[k as keyof EditForm['fit']] == null || !f.aiPending.includes('fit') || ORIGIN_RANK[originOf(origins, `fit.${k}`)] <= ORIGIN_RANK.name));
   if (Object.keys(part).length === 0) return f;
-  return { ...f, fit: { ...f.fit, ...part }, aiPending: f.aiPending.includes('fit') ? f.aiPending : [...f.aiPending, 'fit'] };
+  const src = { ...(isObj(f.analysisBase.src) ? f.analysisBase.src : {}), ...Object.fromEntries(Object.keys(part).map((k) => [`fit.${k}`, 'name'])) };
+  return {
+    ...f, fit: { ...f.fit, ...part }, aiPending: f.aiPending.includes('fit') ? f.aiPending : [...f.aiPending, 'fit'],
+    analysisBase: { ...f.analysisBase, src },
+  };
 }
 
 /** Name ändern (Bearbeiten): enthält er einen Passform-Begriff, wird die Passform nur vorgeschlagen, nie still überschrieben */

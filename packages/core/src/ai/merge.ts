@@ -12,8 +12,8 @@ import { PROFILE_FIELDS, aiMeta, clearInactive, emptyConfidence, emptyProfile, t
 import type { Analysis } from './analyzeItem';
 import type { Info } from './readInfo';
 
-/** Woher eine Info stammt: Text der Produktseite (Link), Bild eines Shops/einer Bestellung, Etikett */
-export type InfoSource = 'page' | 'screenshot' | 'label';
+import { ORIGIN_RANK, originOf, originsOf, type InfoSource, type Origin } from './origin';
+export { ORIGIN_RANK, originsOf, type InfoSource, type Origin } from './origin';
 export type SourceInfo = { from: InfoSource; info: Info };
 /**
  * `image` = Bildanalyse, `infos` = ausgelesene Infos. `used` = Quellen, die als Kontext in die Bildanalyse eingingen
@@ -29,10 +29,6 @@ export type Sources = {
   late?: readonly SourceInfo[];
 };
 
-/** Herkunft eines noch unbestätigten Werts: Bild, Begriffe im Namen oder eine Info */
-export type Origin = 'image' | 'name' | InfoSource;
-/** Höher schlägt niedriger: Bild < Begriffe im Namen < Shopseite/Screenshot < Etikett (Spec 6.7) */
-export const ORIGIN_RANK: Readonly<Record<Origin, number>> = { image: 0, name: 1, page: 2, screenshot: 2, label: 3 };
 const RANK = ORIGIN_RANK;
 
 /** Quelle einer ausgelesenen Info: per Link = Seite, sonst nach der Art, die die KI erkannt hat */
@@ -47,17 +43,6 @@ export function analysisSource(infos: readonly Pick<SourceInfo, 'from'>[] = []):
 
 // ---------- Herkunft je Feld (items.analysis.src) ----------
 
-const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
-const isOrigin = (v: unknown): v is Origin => typeof v === 'string' && v in ORIGIN_RANK;
-
-/**
- * Herkunft der unbestätigten Werte, gespeichert in items.analysis.src (Feld → Origin; Passform je Stufe als
- * „fit.width“ usw.). Fehlt ein Eintrag, gilt der Wert als Bildschätzung (Altteile).
- */
-export function originsOf(f: Pick<EditForm, 'analysisBase'>): Record<string, Origin> {
-  const src = isObj(f.analysisBase) ? f.analysisBase.src : null;
-  return isObj(src) ? Object.fromEntries(Object.entries(src).filter(([, v]) => isOrigin(v))) as Record<string, Origin> : {};
-}
 function withOrigins(f: EditForm, set: Record<string, Origin>): EditForm {
   if (!Object.keys(set).length) return f;
   // nur Einträge zu Feldern behalten, die noch offen sind (bestätigte brauchen keine Herkunft mehr)
@@ -67,13 +52,8 @@ function withOrigins(f: EditForm, set: Record<string, Origin>): EditForm {
   return { ...f, analysisBase: { ...f.analysisBase, src } };
 }
 
-/** a ist Anfang von b (gleiche Kategorie, Unterkategorie/Typ von a fehlen oder stimmen) */
-const prefixOf = (a: CategoryPath, b: CategoryPath) =>
-  !!a.category && a.category === b.category && (!a.subcategory || a.subcategory === b.subcategory) && (!a.type || a.type === b.type);
 const samePath = (a: CategoryPath, b: CategoryPath) => a.category === b.category && a.subcategory === b.subcategory && a.type === b.type;
 
-/** Herkunft des offenen Werts eines Felds (ohne Eintrag: Bild) */
-const originOf = (origins: Record<string, Origin>, k: string): Origin => origins[k] ?? 'image';
 
 /** Felder, die ein Etikett tragen kann (Marke, Material mit %, Größe, Pflege, Artikelnummer) – nie Farbe, Stil, Saison … */
 const LABEL_FACTS: ReadonlySet<string> = new Set(['brand', 'materials']);
@@ -103,28 +83,35 @@ function applyFacts(form: EditForm, a: Analysis, from: Origin): EditForm {
     marked.push(k); origin[k] = from;
   };
   if (a.path.category && allowed('category')) {
-    const cur = { category: f.category, subcategory: f.subcategory, type: f.type };
-    const curOrigin = originOf(origins, 'category');
-    const higher: Origin = RANK[from] > RANK[curOrigin] ? from : curOrigin;
+    const cur: CategoryPath = { category: f.category, subcategory: f.subcategory, type: f.type };
     const sizeKept = !!f.size && !open.has('size') ? { size: f.size, sizeSystem: f.sizeSystem } : null;
-    const setPath = (p: CategoryPath, o: Origin) => {
-      f = setCategory(f, p);
-      if (sizeKept) f = { ...f, ...sizeKept };
-      marked.push('category'); origin.category = o;
-    };
-    // Herkunft der Unterkategorie/des Typs getrennt (category.sub): eine gröbere ranghöhere Angabe bestätigt nur die Kategorie
-    const subOrigin = origins['category.sub'] ?? curOrigin;
-    if (f.category && open.has('category') && prefixOf(cur, a.path)) {
-      // gleiche Richtung, nur genauer (Shop „Oberteil“, Bild „Oberteil › Hemd › Langarmhemd“): verfeinern
-      if (!samePath(cur, a.path)) { setPath(a.path, higher); origin['category.sub'] = from; } else { marked.push('category'); origin.category = higher; origin['category.sub'] = RANK[from] > RANK[subOrigin] ? from : subOrigin; }
-    } else if (f.category && open.has('category') && prefixOf(a.path, cur)) {
-      // gröbere Angabe derselben Richtung: genaueren Pfad behalten, nur die Kategorie bekommt den höheren Rang
-      marked.push('category'); origin.category = higher; origin['category.sub'] = subOrigin;
-    } else if (f.category && open.has('category') && a.path.category === f.category && RANK[from] >= RANK[subOrigin]) {
-      // gleiche Kategorie, andere Unterkategorie: nach dem Rang der Unterkategorie (Kategorie behält ihre Herkunft)
-      setPath(a.path, curOrigin); origin['category.sub'] = from;
+    // Herkunft je Ebene: category, category.sub (Unterkategorie), category.type (Typ); fehlt eine, gilt die der Ebene darüber
+    const catO = originOf(origins, 'category');
+    const subO = origins['category.sub'] ?? catO;
+    const typeO = origins['category.type'] ?? subO;
+    const hi = (x: Origin, y: Origin): Origin => (RANK[y] > RANK[x] ? y : x);
+    if (f.category && open.has('category') && a.path.category === f.category) {
+      // gleiche Oberkategorie: Ebene für Ebene zusammenführen (verfeinern, gröbere Angaben bestätigen nur, was sie nennen)
+      const next: CategoryPath = { ...cur };
+      const o: Record<string, Origin> = { category: hi(catO, from), 'category.sub': subO, 'category.type': typeO };
+      if (a.path.subcategory) {
+        if (!cur.subcategory || (cur.subcategory !== a.path.subcategory && RANK[from] >= RANK[subO])) {
+          next.subcategory = a.path.subcategory; next.type = a.path.type;
+          o['category.sub'] = from; o['category.type'] = from;
+        } else if (cur.subcategory === a.path.subcategory) {
+          o['category.sub'] = hi(subO, from);
+          if (a.path.type && (!cur.type || (cur.type !== a.path.type && RANK[from] >= RANK[typeO]))) { next.type = a.path.type; o['category.type'] = from; }
+          else if (a.path.type && cur.type === a.path.type) o['category.type'] = hi(typeO, from);
+        }
+      }
+      if (!samePath(cur, next)) { f = setCategory(f, next); if (sizeKept) f = { ...f, ...sizeKept }; }
+      marked.push('category'); Object.assign(origin, o);
     } else if (may('category', !f.category)) {
-      setPath(a.path, from);
+      // leer oder echter Wechsel der Oberkategorie: der ganze Pfad stammt jetzt aus dieser Quelle
+      f = setCategory(f, a.path);
+      if (sizeKept) f = { ...f, ...sizeKept };
+      marked.push('category');
+      Object.assign(origin, { category: from, 'category.sub': from, 'category.type': from });
     }
   }
   put('name', a.name ?? '', !f.name.trim(), !!a.name);
@@ -347,6 +334,8 @@ type Facts = {
   fit?: Partial<Record<FitScale['key'], number | null>>; description?: string | null;
   /** Passform-Begriffe aus Name/Beschreibung mitschicken (nicht, wenn eine bestätigte Passform ihnen widerspräche) */
   nameTerms?: boolean;
+  /** Kategorie für die Skalen-Wörter der Passform (sonst die aus `path`) */
+  fitCategory?: string | null;
 };
 
 function factLines(x: Facts): string[] {
@@ -358,7 +347,7 @@ function factLines(x: Facts): string[] {
   if (x.pattern) lines.push(`Muster: ${patternLabel(x.pattern)} (${x.pattern})`);
   if (x.materials?.length) lines.push(`Material: ${materialText(x.materials)}`);
   const terms = x.nameTerms === false ? [] : fitTermsIn(`${x.name ?? ''} ${x.description ?? ''}`);
-  const fit = [...terms, ...fitText(x.path?.category ?? null, x.fit ?? {})];
+  const fit = [...terms, ...fitText(x.fitCategory !== undefined ? x.fitCategory : x.path?.category ?? null, x.fit ?? {})];
   if (fit.length) lines.push(`Passform: ${[...new Set(fit)].join(', ')}`);
   const d = x.description?.replace(/\s+/g, ' ').trim();
   if (d) lines.push(`Beschreibung: ${cut(d, DESCRIPTION_MAX)}`);
@@ -401,6 +390,8 @@ export function confirmedContext(f: EditForm): string {
     pattern: ok('pattern') ? f.pattern : null,
     materials: ok('materials') ? f.materials : [],
     fit: ok('fit') ? f.fit : {},
+    // Skalen immer nach der aktuellen Kategorie (Kleid: „Mini“ statt „kurz“), auch wenn sie selbst noch offen ist
+    fitCategory: f.category,
     // bestätigte Passform hat Vorrang vor Begriffen im Namen (sonst „slim, Weite normal“)
     nameTerms: fitOpen(f),
   });
