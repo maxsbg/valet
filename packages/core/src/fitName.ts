@@ -49,3 +49,11 @@ export function nameFitFor(category: string | null | undefined, part: FitPart): 
   }
   return out;
 }
+
+/** Gefundene Passform-Begriffe in einem Text (Name, Beschreibung), in der Schreibweise der Liste: „slim“, „wide leg“, „tapered“ */
+export function fitTermsIn(text: string | null | undefined): string[] {
+  const n = norm(text ?? '');
+  if (!n.trim()) return [];
+  const terms = [...Object.keys(FIT_TERMS), ...Object.keys(EXTRA), ...Object.keys(LEG_TERMS)];
+  return terms.filter((term) => [term, ...Object.entries(ALIASES).filter(([, t]) => t === term).map(([a]) => a)].some((w) => has(n, w)));
+}

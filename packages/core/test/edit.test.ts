@@ -223,7 +223,7 @@ test('Formular: applyAnalysis ersetzt das Profil komplett, ohne profile.*-Markie
   assert.equal(f.profile.toe, null);
   assert.equal(f.profile.sheen, 2);
   assert.equal(f.confidence.category, 10);
-  assert.deepEqual(f.aiMeta, { v: 2, prompt: PROFILE_PROMPT_VERSION, model: 'gemini-3.5-flash-lite', at: NOW });
+  assert.deepEqual(f.aiMeta, { v: 2, prompt: PROFILE_PROMPT_VERSION, model: 'gemini-3.5-flash-lite', at: NOW, source: 'image' });
   assert.ok(!f.aiPending.some((k) => k === 'profile' || k.startsWith('profile.') || k === 'confidence'));
   assert.ok(f.aiPending.includes('category') && !f.aiPending.includes('name'));
 });
@@ -236,7 +236,7 @@ test('Speichern: mergeAnalysis behält Altdaten, ersetzt profile/confidence, met
   assert.deepEqual(kept.profile, p);
   assert.deepEqual(kept.confidence, emptyConfidence());
   assert.deepEqual(kept.meta, stored.meta); // keine neue Analyse → meta unverändert
-  const meta = { v: 2 as const, prompt: '2.0', model: 'neu', at: NOW };
+  const meta = { v: 2 as const, prompt: '2.0', model: 'neu', at: NOW, source: 'image' as const };
   assert.deepEqual(mergeAnalysis(stored, p, emptyConfidence(), meta).meta, meta);
   assert.deepEqual(mergeAnalysis(null, p, emptyConfidence(), null), { profile: p, confidence: emptyConfidence() });
 
@@ -273,7 +273,7 @@ test('Stapellauf: profilePatch läuft ohne Name, ersetzt das Profil, behält Alt
   assert.equal(an.profile.denim_wash, 'dark'); // gespeichertes Material Denim
   assert.equal(an.profile.pattern_scale, null); // gespeichertes Muster Unifarben
   assert.equal(an.profile.toe, null); // Hose, kein Schuh
-  assert.deepEqual(an.meta, { v: 2, prompt: PROFILE_PROMPT_VERSION, model: 'gemini-3.5-flash-lite', at: NOW });
+  assert.deepEqual(an.meta, { v: 2, prompt: PROFILE_PROMPT_VERSION, model: 'gemini-3.5-flash-lite', at: NOW, source: 'image' });
   assert.equal(an.confidence.color, 9);
   // ohne Kategorie und ohne Altdaten
   const bare = profilePatch({ category: null, subcategory: null, pattern: null, materials: null, analysis: null, ai_pending: null }, a, NOW);

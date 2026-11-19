@@ -1,7 +1,7 @@
 // Blätter der Detailseite: Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4), KI-Analyse (Analyse v2, Spec 14)
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import { CARE, analysisNote, analysisSections, careLabel, colorCheck, hasProfile, reanalysisChange, type CareGroup, type CareValue, type EditForm } from '@valet/core';
+import { CARE, analysisNote, analysisSections, careLabel, colorCheck, confirmedContext, hasProfile, reanalysisChange, type CareGroup, type CareValue, type EditForm } from '@valet/core';
 import { analysisImage, updateItem } from '@/lib/item';
 import { analyzeStored, kiError } from '@/lib/ki';
 import { Icon } from '@/components/Icon';
@@ -114,7 +114,7 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
     if (!img) { setError('Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
     setBusy(true); setError(null);
     try {
-      const a = await analyzeStored(img.path);
+      const a = await analyzeStored(img.path, confirmedContext(f));
       const row = { category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending, name: f.name };
       await updateItem(itemId, reanalysisChange(f, row, a));
       onSaved('Neu analysiert.');

@@ -6,9 +6,9 @@ import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../c
 import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
 import { fieldsFor, STRAPS } from '../fields';
 import { keysOf, toKey, type KeyList } from '../keys';
-import { setField, setCategory, mergeAnalysis, fitOpen, suggestFitFromName, type EditForm } from '../edit';
-import { fitFromName } from '../fitName';
-import { PROFILE_FIELDS, PROFILE_SCHEMA, CONFIDENCE_SCHEMA, aiMeta, checkProfile, checkConfidence, clearInactive, readProfile, type Profile, type Confidence, type Ctx } from './profile';
+import { mergeAnalysis } from '../edit';
+import { legFromName } from './merge';
+import { PROFILE_SCHEMA, CONFIDENCE_SCHEMA, aiMeta, checkProfile, checkConfidence, clearInactive, readProfile, type Profile, type Confidence } from './profile';
 
 /**
  * JSON-Schema für „Structured Outputs“ (OpenAI-kompatibel, strict):
@@ -173,56 +173,8 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
 
 // ---------- Ins Formular übernehmen ----------
 
-/**
- * Steckbrief: Vorschläge nur in leere oder noch unbestätigte Felder schreiben; jedes übernommene Feld kommt in `aiPending`
- * (wird beim Ändern oder Bestätigen wieder entfernt, siehe setField / confirmAi).
- * Profil (Spec 6.4): profile, confidence und aiMeta werden immer komplett ersetzt, ohne Markierung in aiPending.
- */
-export function applyAnalysis(form: EditForm, a: Analysis, now: string = new Date().toISOString()): EditForm {
-  let f = form;
-  const marked: string[] = [];
-  // Noch nicht bestätigte Vorschläge (z. B. Farbe aus dem Foto) gelten als leer und dürfen ersetzt werden
-  const open = new Set(form.aiPending);
-  const put = <K extends keyof EditForm>(k: K, v: EditForm[K], empty: boolean, has: boolean) => {
-    if (!(empty || open.has(k)) || !has) return;
-    f = setField(f, k, v);
-    marked.push(k);
-  };
-  if ((!f.category || open.has('category')) && a.path.category) {
-    f = setCategory(f, a.path);
-    marked.push('category');
-  }
-  put('name', a.name ?? '', !f.name.trim(), !!a.name);
-  put('brand', a.brand ?? '', !f.brand.trim(), !!a.brand);
-  put('colors', a.colors, f.colors.length === 0, a.colors.length > 0);
-  put('pattern', a.pattern, f.pattern == null, a.pattern != null);
-  put('materials', a.materials, f.materials.length === 0, a.materials.length > 0);
-  put('styles', a.styles, f.styles.length === 0, a.styles.length > 0);
-  put('seasons', a.seasons, f.seasons.length === 0, a.seasons.length > 0);
-  put('collar', a.collar, f.collar == null, a.collar != null);
-  put('closure', a.closure, f.closure == null, a.closure != null);
-  put('strap', a.strap, f.strap == null, a.strap != null);
-  const fitEmpty = f.fit.width == null && f.fit.length == null && f.fit.rise == null;
-  const fitWasOpen = fitOpen(form);
-  put('fit', a.fit, fitEmpty, a.fit.width != null || a.fit.length != null || a.fit.rise != null);
-  // Shop-Begriffe im Namen haben Vorrang vor der Schätzung aus dem Foto (nur bei offener Passform)
-  f = suggestFitFromName(f, fitWasOpen);
-  put('layers', a.layers, f.layers.length === 0, a.layers.length > 0);
-  put('warmth', a.warmth, f.warmth == null, a.warmth != null);
-  put('rain', a.rain, f.rain == null, a.rain != null);
-  return {
-    ...f, aiPending: [...new Set([...f.aiPending, ...marked])],
-    profile: legFromName(a.profile, f.name, { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) }),
-    confidence: a.confidence, aiMeta: aiMeta(a.model, now),
-  };
-}
-
-const LEG_FIELD = PROFILE_FIELDS.find((x) => x.key === 'leg');
-/** Beinverlauf aus dem Namen („Straight Leg“, „Tapered“) ersetzt die KI-Schätzung, nur bei Hose/Shorts */
-export function legFromName(p: Profile, name: string | null | undefined, ctx: Ctx): Profile {
-  const leg = fitFromName(name).leg;
-  return leg && LEG_FIELD?.applies(ctx) ? { ...p, leg } : p;
-}
+// applyAnalysis und legFromName liegen in merge.ts (Rangfolge der Quellen, mergeSources)
+export { applyAnalysis, legFromName } from './merge';
 
 // ---------- Stapellauf: nur das Profil eines gespeicherten Teils (Spec 8) ----------
 

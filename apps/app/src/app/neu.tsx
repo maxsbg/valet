@@ -7,8 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { applyAnalysis, applyInfo, editChange, emptyEditForm, largestImages, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize } from '@valet/core';
-import { analyzePicture, readPage } from '@/lib/ki';
+import { editChange, emptyEditForm, infoContext, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
+import { analyzePicture, readInfo, readPage } from '@/lib/ki';
 import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
@@ -20,10 +20,16 @@ import { MirrorButton } from '@/components/edit/MirrorButton';
 import { Dims, Glass } from '@/components/tile/TileBadge';
 import { itemTile } from '@valet/ui';
 
-type Step = 'start' | 'web' | 'work' | 'review' | 'form';
+type Step = 'start' | 'web' | 'work' | 'review' | 'more' | 'form';
+/** Ausgelesene Infos (Seite, Screenshot, Etikett) + Beschreibungstext der Seite – Kontext für die Bildanalyse */
+type Extra = { infos: SourceInfo[]; description: string | null };
 const MAROON = '#722638';
 
-/** Teil hinzufügen: Foto → Freistellen → „Passt / Original behalten / Nochmal“ → Formular → Speichern */
+/**
+ * Teil hinzufügen: Foto → Freistellen → „Passt / Original behalten / Nochmal“ → „Hast du noch weitere Infos?“
+ * (Link · Screenshot oder Etikett · Weiter ohne; entfällt beim Start über einen Link) → Formular → Speichern.
+ * Erst werden die Infos ausgelesen, dann läuft EINE Bildanalyse mit ihnen als Kontext (Spec 6.7).
+ */
 export default function Neu() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
@@ -53,6 +59,9 @@ export default function Neu() {
   // Bildgröße der Produktbilder (Breite × Höhe in Pixeln), damit man das beste nehmen kann
   const [sizes, setSizes] = useState<Record<string, PixelSize | null>>({});
   const pageInfo = useRef<Promise<Info> | null>(null);
+  const pageDesc = useRef<string | null>(null);
+  // Schritt „Hast du noch weitere Infos?“
+  const [moreLink, setMoreLink] = useState('');
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
 
@@ -97,13 +106,14 @@ export default function Neu() {
     const url = findUrl(raw);
     if (!url) return toast.show('Kein Link gefunden');
     const n = ++run.current;
-    pageInfo.current = null;
+    pageInfo.current = null; pageDesc.current = null;
     setWeb({ url }); setStep('web');
     try {
       const page = await loadProduct(url);
       if (n !== run.current) return;
       if (page.text.length > 200) {
         pageInfo.current = readPage(page.text, page.facts);
+        pageDesc.current = page.facts.description ?? null;
         pageInfo.current.catch(() => {}); // Fehler erst beim Formular melden
       }
       setWeb({ url, page, error: page.blocked ? 'Der Shop lässt die Seite nicht von außen laden.' : !page.images.length ? 'Auf der Seite wurden keine Bilder gefunden.' : undefined });
@@ -132,31 +142,68 @@ export default function Neu() {
     try {
       const p = await original(file);
       if (n !== run.current) return;
-      keep(p.preview); toForm(p);
+      keep(p.preview); afterPicture(p);
     } catch (e) { setFailure((e as Error).message); setStep('review'); }
   }
 
-  /** Weiter zum Formular; Farben und Steckbrief schlägt die KI vor (nur Werte aus den festen Listen) */
-  function toForm(p: Picture | null) {
+  /** Bild steht: beim Start über einen Link gleich zum Formular, sonst erst nach weiteren Infos fragen */
+  function afterPicture(p: Picture) {
+    setPicture(p);
+    if (web) return toForm(p);
+    setStep('more');
+  }
+
+  /** „Link einfügen“: Seite laden und ihren Text auslesen (im Hintergrund, das Formular ist schon offen) */
+  function moreFromLink() {
+    const url = findUrl(moreLink);
+    if (!url) return toast.show('Kein Link gefunden');
+    toForm(picture, {
+      link: url,
+      read: loadProduct(url).then(async (page): Promise<Extra> => {
+        if (page.text.length <= 200) throw new Error('Auf der Seite steht zu wenig Text.');
+        return { infos: [{ from: 'page', info: await readPage(page.text, page.facts) }], description: page.facts.description ?? null };
+      }),
+    });
+  }
+
+  /** „Screenshot oder Etikett“: Bild auslesen; ob Etikett oder Shop, erkennt die KI selbst */
+  function moreFromShot(file: File) {
+    toForm(picture, { read: readInfo(file, null).then((info): Extra => ({ infos: [{ from: infoSource(info), info }], description: null })) });
+  }
+
+  /**
+   * Weiter zum Formular; Steckbrief schlägt die KI vor (nur Werte aus den festen Listen, nur leere oder offene Felder).
+   * Reihenfolge: erst die Infos (Seite/Screenshot/Etikett) auslesen und zeigen, dann EINE Bildanalyse mit ihnen
+   * als Kontext. Zusammengeführt wird nach der Rangfolge in mergeSources; das Profil kommt nur aus dem Bild.
+   */
+  function toForm(p: Picture | null, more?: { read: Promise<Extra>; link?: string }) {
     setPicture(p);
     const base = f ?? emptyEditForm({ ownerId: me?.id ?? null, wish });
-    setF(web && !base.link ? { ...setField(base, 'link', web.url), shop: shopFromLink(base.shop, '', web.url) } : base);
+    const link = more?.link ?? web?.url;
+    setF(link && !base.link ? { ...setField(base, 'link', link), shop: shopFromLink(base.shop, '', link) } : base);
     setStep('form');
-    // KI füllt im Hintergrund nur leere Felder (markiert); was du schon gewählt hast, bleibt.
-    // Per Link: erst Bild-Erkennung, dann der Seitentext darüber (Name, Material, Pflege, Preis stehen dort genauer).
-    const tasks: [Promise<unknown>, Promise<Info> | null] = [p ? analyzePicture(p.main) : Promise.resolve(null), pageInfo.current];
-    if (!p && !tasks[1]) return;
-    Promise.allSettled(tasks).then(([a, i]) => {
-      setF((cur) => {
-        if (!cur) return cur;
-        let x = cur;
-        if (a.status === 'fulfilled' && a.value) x = applyAnalysis(x, a.value as Parameters<typeof applyAnalysis>[1]);
-        if (i?.status === 'fulfilled' && i.value) x = applyInfo(x, i.value);
-        return x;
-      });
-      const err = [a, i].find((r) => r?.status === 'rejected') as PromiseRejectedResult | undefined;
-      if (err) toast.show(String(err.reason?.message ?? err.reason).includes('429') ? 'KI gerade ausgelastet – bitte selbst ausfüllen' : 'KI-Erkennung nicht vollständig verfügbar');
-    });
+    const page = pageInfo.current;
+    const read: Promise<Extra> | null = more?.read
+      ?? (page ? page.then((info) => ({ infos: [{ from: 'page' as const, info }], description: pageDesc.current })) : null);
+    if (!p && !read) return;
+    const n = run.current;
+    (async () => {
+      let extra: Extra = { infos: [], description: null };
+      const errors: unknown[] = [];
+      if (read) { try { extra = await read; } catch (e) { errors.push(e); } }
+      if (n !== run.current) return;
+      if (extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
+      if (p) {
+        try {
+          const a = await analyzePicture(p.main, infoContext(extra.infos, extra.description));
+          if (n !== run.current) return;
+          setF((cur) => cur && mergeSources(cur, { image: a, infos: extra.infos }));
+        } catch (e) { errors.push(e); }
+      }
+      if (n !== run.current || !errors.length) return;
+      const busy = errors.some((e) => String((e as Error)?.message ?? e).includes('429'));
+      toast.show(busy ? 'KI gerade ausgelastet – bitte selbst ausfüllen' : 'KI-Erkennung nicht vollständig verfügbar');
+    })();
   }
 
   async function save() {
@@ -305,13 +352,44 @@ export default function Neu() {
               {picture && <Text style={[s.question, { color: t.ink }]}>Passt das so?</Text>}
               {!!precutNote(picture) && <Text style={[s.small, { color: t.inkMuted, marginTop: -space.xs }]}>{precutNote(picture)}</Text>}
               <View style={{ gap: space.xs }}>
-                {picture && <Btn primary label="Passt" onPress={() => toForm(picture)} />}
+                {picture && <Btn primary label="Passt" onPress={() => afterPicture(picture)} />}
                 {!!precutNote(picture) && photo && <Btn label="Mit Modell freistellen" onPress={() => pick(photo.file, true)} />}
                 <Btn label="Original behalten" onPress={() => keepOriginal()} />
                 {!!web?.page?.images.length && <Btn label="Anderes Bild von der Seite" onPress={() => { run.current++; setStep('web'); }} />}
                 <PhotoPicker onPick={pick} label="Nochmal mit neuem Foto">
                   <Btn label={picture ? 'Nochmal (neues Foto)' : 'Anderes Foto'} />
                 </PhotoPicker>
+              </View>
+            </View>
+          )}
+
+          {step === 'more' && (
+            <View style={{ gap: space.md, marginTop: space.md }}>
+              {picture && (
+                <View style={[s.mini, { alignSelf: 'center' }]}>
+                  <Image source={{ uri: picture.preview }} resizeMode="contain" style={StyleSheet.absoluteFill} accessibilityLabel="Gewähltes Bild" />
+                </View>
+              )}
+              <View style={{ gap: 4 }}>
+                <Text style={[s.question, { color: t.ink }]}>Hast du noch weitere Infos?</Text>
+                <Text style={[s.small, { color: t.inkMuted }]}>Mit der Shopseite, einem Screenshot oder dem Etikett erkennt die KI Material, Farbe und Passform genauer.</Text>
+              </View>
+              <View style={[s.web, { backgroundColor: t.surface, borderColor: t.hairline, marginTop: 0 }]}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: t.ink }}>Link einfügen</Text>
+                <View style={{ flexDirection: 'row', gap: space.xs }}>
+                  <TextInput value={moreLink} onChangeText={setMoreLink} placeholder="Link zur Produktseite" placeholderTextColor={t.inkMuted}
+                    accessibilityLabel="Link zur Produktseite" inputMode="url" keyboardType="url" autoCapitalize="none" autoCorrect={false}
+                    onSubmitEditing={moreFromLink} returnKeyType="go"
+                    style={[s.input, { backgroundColor: t.surfaceSunken, borderColor: t.hairline, color: t.ink }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]} />
+                  <Pressable onPress={moreFromLink} accessibilityRole="button" disabled={!moreLink.trim()}
+                    style={({ pressed }) => [s.go, { backgroundColor: accent, opacity: !moreLink.trim() ? 0.4 : pressed ? 0.8 : 1 }]}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: t.dark ? t.bg : '#fff' }}>Laden</Text>
+                  </Pressable>
+                </View>
+              </View>
+              <View style={{ gap: space.xs }}>
+                <PhotoPicker onPick={moreFromShot} label="Screenshot oder Etikett"><Btn label="Screenshot oder Etikett" /></PhotoPicker>
+                <Btn label="Weiter ohne" onPress={() => toForm(picture)} />
               </View>
             </View>
           )}
