@@ -49,9 +49,11 @@ test('colorTrait: Grenzfälle aus Spec 5.1', () => {
 });
 
 test('Overrides: nur temperature; Olivgrün wäre sonst kühl, Pink/Rosa/Magenta sonst warm; Altrosa bleibt warm', () => {
-  assert.deepEqual(Object.keys(COLOR_TRAIT_OVERRIDES).sort(), ['magenta', 'olive', 'pink', 'rose']);
+  assert.deepEqual(Object.keys(COLOR_TRAIT_OVERRIDES).sort(), ['magenta', 'mauve', 'moss', 'olive', 'pink', 'rose']);
   const olive = colorTrait('olive')!;
   assert.ok(olive.h >= 115 && olive.h < 330 && olive.override); // ohne Override „cool“
+  assert.equal(colorTrait('moss')!.temperature, 'warm');
+  assert.equal(colorTrait('mauve')!.temperature, 'cool');
   for (const k of ['pink', 'rose', 'magenta']) { const t = colorTrait(k)!; assert.ok((t.h < 115 || t.h >= 330) && t.override, k); }
   assert.equal(colorTrait('dusty_rose')!.temperature, 'warm');
   assert.equal(colorTrait('dusty_rose')!.override, false);
@@ -61,9 +63,9 @@ test('Overrides: nur temperature; Olivgrün wäre sonst kühl, Pink/Rosa/Magenta
   assert.equal(colorTrait('burgundy')!.override, false);
 });
 
-test('Mode-Neutrale: genau die 13 Farben, Temperatur bleibt berechnet', () => {
+test('Mode-Neutrale: genau die 17 Farben, Temperatur bleibt berechnet', () => {
   assert.deepEqual([...WEAR_NEUTRALS].sort(),
-    ['beige', 'black', 'brown', 'camel', 'dark_grey', 'ivory', 'khaki', 'light_grey', 'navy', 'olive', 'silver', 'taupe', 'white']);
+    ['beige', 'black', 'brown', 'camel', 'charcoal', 'chocolate', 'dark_grey', 'ivory', 'khaki', 'light_grey', 'moss', 'navy', 'olive', 'sand', 'silver', 'taupe', 'white']);
   for (const k of paletteKeys()) {
     if (k === 'multicolor') continue;
     assert.equal(colorTrait(k)!.wearNeutral, WEAR_NEUTRALS.includes(k), k);

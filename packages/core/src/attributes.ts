@@ -19,12 +19,12 @@ export const COLORS: readonly ColorDef[] = [
   c('orange', '#e8822e', [['coral', '#ef7f62'], ['terracotta', '#b8573a']]),
   c('red', '#c0392b', [['burgundy', '#7e1f2e'], ['maroon', '#6e2b26']]),
   c('pink', '#e07aa0', [['rose', '#f2b6c6'], ['dusty_rose', '#c99098'], ['magenta', '#c2187a']]),
-  c('green', '#4f8a4a', [['mint', '#a8dcc0'], ['light_green', '#8cc56b'], ['olive', '#6b7a3c'], ['khaki', '#9a9461'], ['dark_green', '#2f5a37']]),
+  c('green', '#4f8a4a', [['mint', '#a8dcc0'], ['light_green', '#8cc56b'], ['olive', '#6b7a3c'], ['khaki', '#9a9461'], ['dark_green', '#2f5a37'], ['moss', '#5c6420'], ['sage', '#9aab8a']]),
   c('blue', '#3567b0', [['sky_blue', '#8ec3e8'], ['navy', '#1f2f55'], ['petrol', '#1f6b72'], ['cyan', '#39c2d7']]),
   c('turquoise', '#2ba5a5'),
-  c('purple', '#7d55b0', [['lavender', '#c3b5e6'], ['lilac', '#b892c8'], ['violet', '#5b2d8e']]),
-  c('white', '#ffffff'), c('ivory', '#efe6d2'), c('beige', '#d9c7a7'), c('taupe', '#8f8172'), c('camel', '#b98a55'), c('brown', '#6b4a33', [['caramel', '#94501f']]),
-  c('light_grey', '#c4c4c4'), c('dark_grey', '#555555'), c('black', '#1c1c1c'),
+  c('purple', '#7d55b0', [['lavender', '#c3b5e6'], ['lilac', '#b892c8'], ['violet', '#5b2d8e'], ['mauve', '#90627c']]),
+  c('white', '#ffffff'), c('ivory', '#efe6d2'), c('beige', '#d9c7a7'), c('sand', '#c9b38c'), c('taupe', '#8f8172'), c('camel', '#b98a55'), c('brown', '#6b4a33', [['caramel', '#94501f'], ['chocolate', '#4a2c21']]),
+  c('light_grey', '#c4c4c4'), c('dark_grey', '#555555'), c('charcoal', '#36393d'), c('black', '#1c1c1c'),
   c('gold', '#cfa94a'), c('silver', '#b9bec4'), c('bronze', '#a86b3c'), c('multicolor', ''),
 ];
 export const MULTICOLOR = 'multicolor';
@@ -86,7 +86,7 @@ export function tapNuance(p: ColorPick, nuance: string): ColorPick {
 /** Alte Farbnamen (freier Text, „Schwarz/Weiß“) → neue Palette (Label). Unbekannt → null. */
 export const LEGACY_COLORS: Readonly<Record<string, string>> = {
   schwarz: 'Schwarz', weiß: 'Weiß', weiss: 'Weiß', braun: 'Braun', beige: 'Beige', blau: 'Blau', hellgrau: 'Hellgrau', silber: 'Silber',
-  anthrazit: 'Dunkelgrau', dunkelgrau: 'Dunkelgrau', gelb: 'Gelb', denim: 'Blau', creme: 'Elfenbein', burgunder: 'Burgunderrot', maroon: 'Maroon', maron: 'Maroon', karamell: 'Karamell', caramel: 'Karamell', rot: 'Rot',
+  anthrazit: 'Anthrazit', sand: 'Sand', dunkelgrau: 'Dunkelgrau', gelb: 'Gelb', denim: 'Blau', creme: 'Elfenbein', burgunder: 'Burgunderrot', maroon: 'Maroon', maron: 'Maroon', karamell: 'Karamell', caramel: 'Karamell', rot: 'Rot',
   rosa: 'Rosa', gold: 'Gold', camel: 'Camel', orange: 'Orange', navy: 'Marineblau', oliv: 'Olivgrün', hellblau: 'Himmelblau', grün: 'Grün',
   pink: 'Pink', lila: 'Lila', türkis: 'Türkis', khaki: 'Khaki', taupe: 'Taupe', bronze: 'Bronze', elfenbein: 'Elfenbein',
 };

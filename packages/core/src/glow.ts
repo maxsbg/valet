@@ -4,13 +4,13 @@ import { itemTile } from '@valet/ui';
 import { colorHex, nearestColor, MULTICOLOR, MULTICOLOR_STOPS } from './attributes';
 
 /** Neutralfarben (Keys) – nie Akzent. Reihenfolge = Rangliste, wenn ein Teil NUR Neutralfarben hat (oben gewinnt). */
-export const GLOW_NEUTRAL_RANK: readonly string[] = ['silver', 'taupe', 'beige', 'dark_grey', 'light_grey', 'ivory', 'black', 'white'];
+export const GLOW_NEUTRAL_RANK: readonly string[] = ['silver', 'taupe', 'beige', 'sand', 'dark_grey', 'light_grey', 'ivory', 'charcoal', 'black', 'white'];
 
 /** Farbige Farben nach Wahrnehmung als Schein auf der weißen Kachel (oben = stärker). Gilt, wenn Rang 1 neutral ist. */
 export const GLOW_COLOR_RANK: readonly string[] = [
   'multicolor', 'magenta', 'red', 'violet', 'burgundy', 'maroon', 'purple', 'blue', 'orange', 'terracotta', 'coral', 'mustard', 'pink',
-  'green', 'navy', 'yellow', 'light_green', 'bronze', 'dark_green', 'gold', 'olive', 'cyan', 'turquoise', 'petrol', 'caramel', 'brown',
-  'camel', 'lilac', 'khaki', 'light_yellow', 'dusty_rose', 'sky_blue', 'lavender', 'rose', 'mint',
+  'green', 'navy', 'yellow', 'light_green', 'bronze', 'dark_green', 'gold', 'moss', 'olive', 'cyan', 'turquoise', 'petrol', 'caramel', 'brown',
+  'chocolate', 'camel', 'lilac', 'mauve', 'khaki', 'light_yellow', 'dusty_rose', 'sky_blue', 'lavender', 'rose', 'mint', 'sage',
 ];
 
 const NEUTRAL = new Set(GLOW_NEUTRAL_RANK);

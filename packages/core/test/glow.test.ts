@@ -33,6 +33,9 @@ test('Regel 3: nur Neutralfarben → Neutral-Rangliste (Silber vor Schwarz vor W
   assert.equal(glowColorName(['black', 'silver']), 'silver');
   assert.equal(glowColorName(['black', 'beige']), 'beige');
   assert.equal(glowColorName(['black', 'white']), 'black');
+  assert.equal(glowColorName(['charcoal', 'black']), 'charcoal');
+  assert.equal(glowColorName(['sand', 'beige']), 'beige');
+  assert.equal(glowColorName(['sand', 'sage']), 'sage');               // Akzent schlägt Neutral
   assert.equal(glowColorName(['white']), 'white');
 });
 

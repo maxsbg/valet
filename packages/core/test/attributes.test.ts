@@ -9,7 +9,7 @@ import { keysOf } from '../src/keys';
 const empty: ColorPick = { colors: [], open: null, full: false };
 
 test('Farben: Hauptfarben mit Nuancen, Hex nachschlagbar', () => {
-  assert.equal(COLORS.length, 21);
+  assert.equal(COLORS.length, 23);
   assert.equal(colorHex('olive'), '#6b7a3c');
   assert.equal(colorFamily('olive'), 'green');
   assert.equal(colorFamily('black'), 'black');
