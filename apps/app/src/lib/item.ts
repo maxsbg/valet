@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { imageUrl, todayLocal } from './wardrobe';
 import { storedPicture, type Picture } from './cutout';
-import { migrateSeasons, normalizeCategory, type ItemStatus, type StatusInfo } from '@valet/core';
+import { migrateSeasons, normalizeCategory, normalizeOccasions, type ItemStatus, type StatusInfo } from '@valet/core';
 
 export type ItemRow = {
   id: string; wardrobe_id: string; owner_id: string | null; owner_ids: string[] | null; highlight_color: string | null; name: string; brand: string | null; category: string;
@@ -32,7 +32,7 @@ export async function loadItem(id: string): Promise<ItemDetail> {
   const outfits = ((ois.data ?? []) as unknown as { outfits: O | null }[])
     .map((r) => r.outfits)
     .filter((o): o is O => !!o)
-    .map((o) => ({ id: o.id, name: o.name, occasions: o.occasions, planDates: o.outfit_plans.map((p) => p.plan_date) }));
+    .map((o) => ({ id: o.id, name: o.name, occasions: normalizeOccasions(o.occasions), planDates: o.outfit_plans.map((p) => p.plan_date) }));
   const row = it.data as ItemRow;
   const path = normalizeCategory(row);
   const item: ItemRow = { ...row, category: path.category ?? '', subcategory: path.subcategory, item_type: path.type, seasons: migrateSeasons(row.seasons) };

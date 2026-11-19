@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { CATEGORIES, lentDue } from '@valet/core';
+import { CATEGORIES, categoryName, colorLabel, lentDue, subcategoryName, typeName } from '@valet/core';
 import { Header, Chip, Fab, Empty, PageEnd, glass } from '@/components/ui';
 import { ClosetBar } from '@/components/ClosetBar';
 import { Page } from '@/components/Page';
@@ -56,14 +56,16 @@ export default function Schrank() {
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return inCloset.filter((i) => (!cat || i.category === cat) &&
-      (!q || [i.name, i.brand, i.color, i.category, i.subcategory, i.type, ...i.colors].some((f) => f?.toLowerCase().includes(q))));
+      // Suche über die deutschen Labels (gespeichert sind Keys)
+      (!q || [i.name, i.brand, i.color, categoryName(i.category), subcategoryName(i.category, i.subcategory), typeName(i.category, i.subcategory, i.type), ...i.colors.map(colorLabel)]
+        .some((f) => f?.toLowerCase().includes(q))));
   }, [inCloset, cat, query]);
 
   const barW = scr.content + 2 * space.md;
   const chips = [
     { key: 'alle', label: 'Alle', count: inCloset.length, selected: !cat, onPress: () => setCat(null) },
     ...CATEGORIES.filter((c) => counts.get(c)).map((c) => ({
-      key: c, label: c, count: counts.get(c), selected: cat === c, onPress: () => setCat(cat === c ? null : c),
+      key: c, label: categoryName(c), count: counts.get(c), selected: cat === c, onPress: () => setCat(cat === c ? null : c),
       // Symbol wie bei den Anlass-Chips im Outfits-Tab: ClosetBar faltet Chips mit Symbol (zu: Symbol + Anzahl)
       icon: CATEGORY_ICON[c] ? <Icon name={CATEGORY_ICON[c]!} size="chip" color={cat === c ? t.onFill : t.ink} /> : undefined,
     })),
@@ -143,7 +145,7 @@ export default function Schrank() {
           ))}
         </View>
         <SectionLabel>Saison</SectionLabel>
-        <View style={s.wrap}>{SEASON_FILTERS.map((f) => <Chip key={f} label={f} selected={draft.seasons.includes(f)} onPress={() => toggleSeason(f)} />)}</View>
+        <View style={s.wrap}>{SEASON_FILTERS.map((f) => <Chip key={f.key} label={f.label} selected={draft.seasons.includes(f.key)} onPress={() => toggleSeason(f.key)} />)}</View>
         <SectionLabel>Status</SectionLabel>
         <View style={s.wrap}>
           <Chip label="Aussortiert (zum Verkauf)" selected={!!draft.out} onPress={() => setDraft((d) => ({ ...d, out: !d.out }))} />

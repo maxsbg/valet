@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  CATEGORY_NAMES, CLOSURES, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
-  layoutKind, pickCategory, subcategoriesOf, typesOf, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
+  CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
+  layoutKind, pickCategory, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, shopFromLink, tileKind,
 } from '@valet/core';
@@ -102,10 +102,10 @@ export function ItemEditor(p: Props) {
 
   // ---------- Steckbrief ----------
   const scales = fitScalesOf(f.category);
-  const subs = subcategoriesOf(f.category);
-  const types = typesOf(f.category, f.subcategory);
-  const pickCat = (level: 'category' | 'subcategory' | 'type', name: string) => {
-    const next = pickCategory({ category: f.category, subcategory: f.subcategory, type: f.type }, level, name);
+  const subs = subListOf(f.category);
+  const types = typeListOf(f.category, f.subcategory);
+  const pickCat = (level: 'category' | 'subcategory' | 'type', key: string) => {
+    const next = pickCategory({ category: f.category, subcategory: f.subcategory, type: f.type }, level, key);
     onForm(setCategory(f, next));
   };
   const colorRow = (side: Side, last = false) => {
@@ -114,7 +114,7 @@ export function ItemEditor(p: Props) {
     const pick: ColorPick = { colors: list, ...colorUi[side] };
     return (
       <EditRow key={key} label={fieldsFor(f.category, f.subcategory).reversible && f.reversible ? (side === 'a' ? 'Farben Seite A' : 'Farben Seite B') : 'Farben'} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last}
-        values={list.map((c) => <ValueCircle key={c} a11y={c}><ColorDot name={c} onFill /></ValueCircle>)}>
+        values={list.map((c) => <ValueCircle key={c} a11y={colorLabel(c)}><ColorDot name={c} onFill /></ValueCircle>)}>
         <ColorPicker pick={pick} onChange={(n) => { setColorUi((u) => ({ ...u, [side]: { open: n.open, full: n.full } })); set(key, n.colors); }} />
       </EditRow>
     );
@@ -125,11 +125,11 @@ export function ItemEditor(p: Props) {
     const shown = rows.filter((r): r is (last: boolean) => React.ReactNode => !!r);
     return shown.length ? <EditCard title={title} rows>{shown.map((r, i) => <View key={i}>{r(i === shown.length - 1)}</View>)}{extra}</EditCard> : null;
   };
-  const textRow = (key: 'pattern' | 'patternB' | 'collar' | 'closure' | 'strap', label: string, opts: readonly string[]): Row => (last) => {
+  const textRow = (key: 'pattern' | 'patternB' | 'collar' | 'closure' | 'strap', label: string, opts: KeyList): Row => (last) => {
     const v = f[key];
     return (
-      <EditRow label={label} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last} values={v ? [<ValueCapsule key={v} label={v} />] : []}>
-        <Wrap>{opts.map((o) => <Capsule key={o} label={o} selected={v === o} onPress={() => set(key, pickOne(v, o))} />)}</Wrap>
+      <EditRow label={label} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last} values={v ? [<ValueCapsule key={v} label={keyLabel(opts, v)} />] : []}>
+        <Wrap>{opts.map((o) => <Capsule key={o.key} label={o.label} selected={v === o.key} onPress={() => set(key, pickOne(v, o.key))} />)}</Wrap>
       </EditRow>
     );
   };
@@ -144,22 +144,22 @@ export function ItemEditor(p: Props) {
           <EditRow label="Kategorie" open={!!open.cat} onToggle={() => toggle('cat')} ai={ai('category')} last={last}
             values={f.category ? [<ValueCapsule key="c" label={categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })} />] : []}>
             <FieldLabel>Kategorie</FieldLabel>
-            <Wrap>{CATEGORY_NAMES.map((c) => <Capsule key={c} label={c} selected={f.category === c} onPress={() => pickCat('category', c)} />)}</Wrap>
+            <Wrap>{CATEGORY_LIST.map((c) => <Capsule key={c.key} label={c.label} selected={f.category === c.key} onPress={() => pickCat('category', c.key)} />)}</Wrap>
             {f.category && <>
               <FieldLabel>Unterkategorie</FieldLabel>
-              <Wrap>{subs.map((c) => <Capsule key={c} label={c} selected={f.subcategory === c} onPress={() => pickCat('subcategory', c)} />)}</Wrap>
+              <Wrap>{subs.map((c) => <Capsule key={c.key} label={c.label} selected={f.subcategory === c.key} onPress={() => pickCat('subcategory', c.key)} />)}</Wrap>
             </>}
             {types.length > 0 && <>
               <FieldLabel>Typ</FieldLabel>
-              <Wrap>{types.map((c) => <Capsule key={c} label={c} selected={f.type === c} onPress={() => pickCat('type', c)} />)}</Wrap>
+              <Wrap>{types.map((c) => <Capsule key={c.key} label={c.label} selected={f.type === c.key} onPress={() => pickCat('type', c.key)} />)}</Wrap>
             </>}
           </EditRow>
         ),
         (last) => (
           <EditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')} last={last}
-            values={SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.onFill} /></ValueCircle>)}>
-            <Wrap>{SEASONS.map((x) => <Capsule key={x} label={x} selected={f.seasons.includes(x)} onPress={() => set('seasons', toggleIn(f.seasons, x))}
-              icon={(c) => <Icon name={SEASON_ICON[x]!} size="chip" color={c} />} />)}</Wrap>
+            values={SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)}>
+            <Wrap>{SEASONS.map((x) => <Capsule key={x.key} label={x.label} selected={f.seasons.includes(x.key)} onPress={() => set('seasons', toggleIn(f.seasons, x.key))}
+              icon={(c) => <Icon name={SEASON_ICON[x.key]!} size="chip" color={c} />} />)}</Wrap>
           </EditRow>
         ),
         (last) => colorRow('a', last),
@@ -184,11 +184,11 @@ export function ItemEditor(p: Props) {
         fx.pattern && reversible && textRow('patternB', 'Muster Seite B', PATTERNS),
         (last) => (
           <EditRow label="Material" open={!!open.material} onToggle={() => toggle('material')} ai={ai('materials')} last={last}
-            values={capsules(f.materials.map((m) => m.name))}>
+            values={capsules(f.materials.map((m) => materialLabel(m.name)))}>
             <Wrap>{MATERIALS.map((m) => {
-              const r = materialRank(f.materials, m);
-              return <Capsule key={m} label={m} selected={r > 0} a11y={r ? `${m}, Rang ${r}` : m} leading={r ? <RankBadge n={r} /> : undefined}
-                onPress={() => set('materials', toggleMaterial(f.materials, m))} />;
+              const r = materialRank(f.materials, m.key);
+              return <Capsule key={m.key} label={m.label} selected={r > 0} a11y={r ? `${m.label}, Rang ${r}` : m.label} leading={r ? <RankBadge n={r} /> : undefined}
+                onPress={() => set('materials', toggleMaterial(f.materials, m.key))} />;
             })}</Wrap>
             <Hint>Die Zahl ist die Reihenfolge nach Anteil, 1 = Hauptmaterial.</Hint>
           </EditRow>
@@ -232,8 +232,8 @@ export function ItemEditor(p: Props) {
 
       {card('Details', [
         (last) => (
-          <EditRow label="Stil" open={!!open.style} onToggle={() => toggle('style')} ai={ai('styles')} last={last} values={capsules(f.styles)}>
-            <Wrap>{STYLES.map((x) => <Capsule key={x} label={x} selected={f.styles.includes(x)} onPress={() => set('styles', toggleIn(f.styles, x))} />)}</Wrap>
+          <EditRow label="Stil" open={!!open.style} onToggle={() => toggle('style')} ai={ai('styles')} last={last} values={capsules(f.styles.map(styleLabel))}>
+            <Wrap>{STYLES.map((x) => <Capsule key={x.key} label={x.label} selected={f.styles.includes(x.key)} onPress={() => set('styles', toggleIn(f.styles, x.key))} />)}</Wrap>
           </EditRow>
         ),
         !!fx.neckline && textRow('collar', fx.neckline!.label, fx.neckline!.options),

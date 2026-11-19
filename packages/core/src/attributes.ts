@@ -1,37 +1,45 @@
 // Feste Listen für Steckbrief und Bearbeiten (Spec Abschnitte 4, 7, 8; Werte aus der Leinwand „Valet – Teil-Detailseite“)
 
+import { KEY_LISTS, label, pickKeys, toKey, toKeys, type KeyList } from './keys';
+
 // ---------- Farben ----------
 
-export type ColorDef = { name: string; hex: string; nuances: readonly { name: string; hex: string }[] };
-const c = (name: string, hex: string, nuances: [string, string][] = []): ColorDef => ({ name, hex, nuances: nuances.map(([n, h]) => ({ name: n, hex: h })) });
+// Gespeichert werden Keys (items.colors, seit 19.11.2026); Labels aus docs/keys/key-zuordnung.json.
+export type ColorDef = { key: string; label: string; hex: string; nuances: readonly { key: string; label: string; hex: string }[] };
+/** Alle Farben (Haupt- und Nuancen) in der Reihenfolge der Palette, mit deutschem Label */
+export const COLOR_LIST: KeyList = KEY_LISTS.colors;
+export const colorLabel = (key: string | null | undefined): string => label(COLOR_LIST, key);
+const c = (key: string, hex: string, nuances: [string, string][] = []): ColorDef => ({
+  key, label: colorLabel(key), hex, nuances: nuances.map(([k, h]) => ({ key: k, label: colorLabel(k), hex: h })),
+});
 
 /** Eigenständige Farben (Hauptfarben, Türkis, Neutral, Sonder) mit ihren Nuancen. „Bunt“ hat keinen festen Wert (Verlauf). */
 export const COLORS: readonly ColorDef[] = [
-  c('Gelb', '#e8c547', [['Hellgelb', '#f3e38f'], ['Senfgelb', '#c99a1e']]),
-  c('Orange', '#e8822e', [['Koralle', '#ef7f62'], ['Terrakotta', '#b8573a']]),
-  c('Rot', '#c0392b', [['Burgunderrot', '#7e1f2e'], ['Maroon', '#6e2b26']]),
-  c('Pink', '#e07aa0', [['Rosa', '#f2b6c6'], ['Altrosa', '#c99098'], ['Magenta', '#c2187a']]),
-  c('Grün', '#4f8a4a', [['Mint', '#a8dcc0'], ['Hellgrün', '#8cc56b'], ['Olivgrün', '#6b7a3c'], ['Khaki', '#9a9461'], ['Dunkelgrün', '#2f5a37']]),
-  c('Blau', '#3567b0', [['Himmelblau', '#8ec3e8'], ['Marineblau', '#1f2f55'], ['Petrol', '#1f6b72'], ['Cyan', '#39c2d7']]),
-  c('Türkis', '#2ba5a5'),
-  c('Lila', '#7d55b0', [['Lavendel', '#c3b5e6'], ['Flieder', '#b892c8'], ['Violett', '#5b2d8e']]),
-  c('Weiß', '#ffffff'), c('Elfenbein', '#efe6d2'), c('Beige', '#d9c7a7'), c('Taupe', '#8f8172'), c('Camel', '#b98a55'), c('Braun', '#6b4a33', [['Karamell', '#94501f']]),
-  c('Hellgrau', '#c4c4c4'), c('Dunkelgrau', '#555555'), c('Schwarz', '#1c1c1c'),
-  c('Gold', '#cfa94a'), c('Silber', '#b9bec4'), c('Bronze', '#a86b3c'), c('Bunt', ''),
+  c('yellow', '#e8c547', [['light_yellow', '#f3e38f'], ['mustard', '#c99a1e']]),
+  c('orange', '#e8822e', [['coral', '#ef7f62'], ['terracotta', '#b8573a']]),
+  c('red', '#c0392b', [['burgundy', '#7e1f2e'], ['maroon', '#6e2b26']]),
+  c('pink', '#e07aa0', [['rose', '#f2b6c6'], ['dusty_rose', '#c99098'], ['magenta', '#c2187a']]),
+  c('green', '#4f8a4a', [['mint', '#a8dcc0'], ['light_green', '#8cc56b'], ['olive', '#6b7a3c'], ['khaki', '#9a9461'], ['dark_green', '#2f5a37']]),
+  c('blue', '#3567b0', [['sky_blue', '#8ec3e8'], ['navy', '#1f2f55'], ['petrol', '#1f6b72'], ['cyan', '#39c2d7']]),
+  c('turquoise', '#2ba5a5'),
+  c('purple', '#7d55b0', [['lavender', '#c3b5e6'], ['lilac', '#b892c8'], ['violet', '#5b2d8e']]),
+  c('white', '#ffffff'), c('ivory', '#efe6d2'), c('beige', '#d9c7a7'), c('taupe', '#8f8172'), c('camel', '#b98a55'), c('brown', '#6b4a33', [['caramel', '#94501f']]),
+  c('light_grey', '#c4c4c4'), c('dark_grey', '#555555'), c('black', '#1c1c1c'),
+  c('gold', '#cfa94a'), c('silver', '#b9bec4'), c('bronze', '#a86b3c'), c('multicolor', ''),
 ];
-export const MULTICOLOR = 'Bunt';
+export const MULTICOLOR = 'multicolor';
 export const MULTICOLOR_STOPS = ['#e8c547', '#e8822e', '#c0392b', '#7d55b0', '#3567b0', '#4f8a4a'] as const;
 export const MAX_COLORS = 3;
 
 const HEX: Record<string, string> = {};
 const FAMILY: Record<string, string> = {};
-for (const m of COLORS) { HEX[m.name] = m.hex; FAMILY[m.name] = m.name; for (const n of m.nuances) { HEX[n.name] = n.hex; FAMILY[n.name] = m.name; } }
+for (const m of COLORS) { HEX[m.key] = m.hex; FAMILY[m.key] = m.key; for (const n of m.nuances) { HEX[n.key] = n.hex; FAMILY[n.key] = m.key; } }
 
-export const colorHex = (name: string): string | null => HEX[name] || null;
-export const isColor = (name: unknown): name is string => typeof name === 'string' && name in HEX;
+export const colorHex = (key: string): string | null => HEX[key] || null;
+export const isColor = (key: unknown): key is string => typeof key === 'string' && key in HEX;
 /** Hauptfarbe zu einer Nuance (oder sich selbst) */
-export const colorFamily = (name: string): string | null => FAMILY[name] ?? null;
-export const nuancesOf = (main: string) => COLORS.find((x) => x.name === main)?.nuances ?? [];
+export const colorFamily = (key: string): string | null => FAMILY[key] ?? null;
+export const nuancesOf = (main: string) => COLORS.find((x) => x.key === main)?.nuances ?? [];
 
 /** Ziffernfarbe im Farbkreis: dunkel auf hellen, weiß auf dunklen Farben */
 export function rankInk(hex: string | null): '#2a1a1d' | '#ffffff' {
@@ -75,57 +83,75 @@ export function tapNuance(p: ColorPick, nuance: string): ColorPick {
   return { colors, open: main, full: false };
 }
 
-/** Alte Farbnamen (freier Text, „Schwarz/Weiß“) → neue Palette. Unbekannt → null. */
+/** Alte Farbnamen (freier Text, „Schwarz/Weiß“) → neue Palette (Label). Unbekannt → null. */
 export const LEGACY_COLORS: Readonly<Record<string, string>> = {
   schwarz: 'Schwarz', weiß: 'Weiß', weiss: 'Weiß', braun: 'Braun', beige: 'Beige', blau: 'Blau', hellgrau: 'Hellgrau', silber: 'Silber',
   anthrazit: 'Dunkelgrau', dunkelgrau: 'Dunkelgrau', gelb: 'Gelb', denim: 'Blau', creme: 'Elfenbein', burgunder: 'Burgunderrot', maroon: 'Maroon', maron: 'Maroon', karamell: 'Karamell', caramel: 'Karamell', rot: 'Rot',
   rosa: 'Rosa', gold: 'Gold', camel: 'Camel', orange: 'Orange', navy: 'Marineblau', oliv: 'Olivgrün', hellblau: 'Himmelblau', grün: 'Grün',
   pink: 'Pink', lila: 'Lila', türkis: 'Türkis', khaki: 'Khaki', taupe: 'Taupe', bronze: 'Bronze', elfenbein: 'Elfenbein',
 };
+/** Farbe lesen: Key, Label oder alter Farbname → Key */
+export const toColorKey = (v: unknown): string | null =>
+  toKey(COLOR_LIST, v) ?? (typeof v === 'string' ? toKey(COLOR_LIST, v.trim().toLowerCase(), LEGACY_COLORS) : null);
+/** Farbliste lesen (Rang bleibt, Unbekanntes fällt weg) */
+export const toColorKeys = (values: unknown): string[] => {
+  const out: string[] = [];
+  for (const v of Array.isArray(values) ? values : []) { const k = toColorKey(v); if (k && !out.includes(k)) out.push(k); }
+  return out;
+};
 
 // ---------- Weitere Listen ----------
 
-export const SEASONS = ['Frühling', 'Sommer', 'Herbst', 'Winter'] as const;
-export type Season = (typeof SEASONS)[number];
-/** Alte Saison „Übergang“ → Frühling + Herbst (entschieden 15.11.2026) */
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
+export const SEASONS = KEY_LISTS.seasons as readonly { key: Season; label: string }[];
+export const SEASON_KEYS: readonly Season[] = SEASONS.map((s) => s.key);
+export const seasonLabel = (key: string | null | undefined): string => label(SEASONS, key);
+/** Saisons lesen: Keys oder Labels; alte Saison „Übergang“ → Frühling + Herbst (entschieden 15.11.2026) */
 export function migrateSeasons(old: readonly string[] | null | undefined): Season[] {
-  const out = new Set<Season>();
+  const out = new Set<string>();
   for (const s of old ?? []) {
-    if (s === 'Übergang') { out.add('Frühling'); out.add('Herbst'); }
-    else if ((SEASONS as readonly string[]).includes(s)) out.add(s as Season);
+    if (s === 'Übergang') { out.add('spring'); out.add('autumn'); }
+    else { const k = toKey(SEASONS, s); if (k) out.add(k); }
   }
-  return SEASONS.filter((s) => out.has(s));
+  return SEASON_KEYS.filter((s) => out.has(s));
 }
 
-export const MATERIALS = [
-  // Pflanzenfasern
-  'Baumwolle', 'Leinen',
-  // Tierfasern
-  'Wolle', 'Merinowolle', 'Kaschmir', 'Alpaka', 'Mohair', 'Angora', 'Seide',
-  // Zellulosefasern
-  'Viskose', 'Lyocell', 'Cupro',
-  // Kunstfasern
-  'Polyester', 'Nylon', 'Elasthan', 'Acryl',
-  // Stoffarten
-  'Denim', 'Canvas', 'Cord', 'Flanell', 'Tweed', 'Bouclé', 'Samt', 'Fleece', 'Chiffon', 'Mesh', 'Spitze',
-  // Leder, Fell, Füllung
-  'Leder', 'Wildleder', 'Kunstleder', 'Lammfell', 'Pelz', 'Daunen',
-  // Sonstiges
-  'Metall', 'Kunststoff/Gummi', 'Andere Materialien',
-] as const;
+/**
+ * Material (Reihenfolge der Liste: Pflanzenfasern, Tierfasern, Zellulosefasern, Kunstfasern, Stoffarten,
+ * Leder/Fell/Füllung, Sonstiges). Gespeichert: items.materials = [{ name: Key, pct }].
+ */
+export const MATERIALS: KeyList = KEY_LISTS.materials;
+export const materialLabel = (key: string | null | undefined): string => label(MATERIALS, key);
 export type MaterialPart = { name: string; pct?: number | null };
+/** Material-Liste lesen: Name als Key oder Label; Unbekanntes und Doppelte fallen weg, Prozent bleiben */
+export function toMaterialParts(list: unknown): MaterialPart[] {
+  const out: MaterialPart[] = [];
+  for (const m of Array.isArray(list) ? list : []) {
+    const name = toKey(MATERIALS, (m as MaterialPart | null)?.name);
+    if (!name || out.some((x) => x.name === name)) continue;
+    const pct = (m as MaterialPart).pct;
+    out.push(pct == null ? { name } : { name, pct });
+  }
+  return out;
+}
 
-export const PATTERNS = ['Unifarben', 'Gestreift', 'Grafisch', 'Gepunktet', 'Animalmuster', 'Blumenmuster', 'Tropisch', 'Paisley', 'Argyle', 'Camouflage',
-  'Colorblocking', 'Allover-Print', 'Schachbrettmuster', 'Kariert', 'Vichy-Karo', 'Hahnentritt', 'Fischgrätmuster', 'Chevron-Muster', 'Tweed', 'Abstrakt',
-  'Tie-Dye', 'Geometrisch', 'Spitze', 'Zopfmuster', 'Rippstrick', 'Andere Muster'] as const;
+export const PATTERNS: KeyList = KEY_LISTS.patterns;
+export const patternLabel = (key: string | null | undefined): string => label(PATTERNS, key);
 
-export const STYLES = ['Bequem', 'Lässig', 'Business Casual', 'Formell', 'Modern', 'Klassisch', 'Minimalistisch', 'Boho', 'Luxus', 'Sportlich', 'Athleisure',
-  'Trendig', 'Kidcore', 'Künstlerisch', 'Festlich', 'Feminin', 'Street', 'Sonstiges'] as const;
+export const STYLES: KeyList = KEY_LISTS.styles;
+export const styleLabel = (key: string | null | undefined): string => label(STYLES, key);
 /** Alte Stile → neue Liste („Schick“ wird je Teil entschieden, Vorgabe Klassisch) */
 export const LEGACY_STYLES: Readonly<Record<string, string>> = { Casual: 'Lässig', Streetwear: 'Street', Business: 'Business Casual', Sport: 'Sportlich', Schick: 'Klassisch' };
+/** Stile lesen: Key, Label oder alter Stil → Key */
+export const toStyleKeys = (values: unknown): string[] => toKeys(STYLES, values, LEGACY_STYLES);
 
-export const COLLARS = ['Klassischer Kragen', 'Button-down', 'Stehkragen', 'Reverskragen', 'ohne Kragen'] as const;
-export const CLOSURES = ['Knöpfe', 'Reißverschluss', 'Druckknöpfe', 'Schnürung', 'Klett', 'Schnalle', 'ohne'] as const;
+/** Kragen und Ausschnitte (eine Liste, Teillisten je Kategorie in fields.ts) */
+export const COLLAR_LIST: KeyList = KEY_LISTS.collars;
+export const collarLabel = (key: string | null | undefined): string => label(COLLAR_LIST, key);
+/** Kragen bei Hemd und Bluse */
+export const COLLARS: KeyList = pickKeys(COLLAR_LIST, ['classic_collar', 'button_down', 'stand_collar', 'lapel_collar', 'no_collar']);
+export const CLOSURES: KeyList = KEY_LISTS.closures;
+export const closureLabel = (key: string | null | undefined): string => label(CLOSURES, key);
 
 // ---------- Größe ----------
 
@@ -141,7 +167,7 @@ export const SIZES: Readonly<Record<'letters' | 'numbers', readonly string[]>> =
 export const LETTER_DOUBLES = ['XS/S', 'S/M', 'M/L', 'L/XL', 'XL/XXL'] as const;
 export const COLLAR_SIZES = ['37', '38', '39', '40', '41', '42', '43', '44', '45', '46'] as const;
 /** Kragenweite nur für Unterkategorie Hemd (Spec 8) */
-export const hasCollarSize = (subcategory: string | null | undefined) => subcategory === 'Hemd';
+export const hasCollarSize = (subcategory: string | null | undefined) => subcategory === 'shirt';
 /** Größen-System aus einer alten Größenangabe erkennen (nur eindeutige Fälle) */
 export function sizeSystemOf(size: string | null | undefined): SizeSystem | null {
   const s = (size ?? '').trim();
@@ -186,18 +212,18 @@ export const confirmCare = (care: Care, g: CareGroup): Care => (care[g] ? { ...c
 export const careFromLabel = (found: Partial<Record<CareGroup, string>>): Care =>
   Object.fromEntries(Object.entries(found).filter(([, v]) => !!v).map(([k, v]) => [k, { v: v!, src: 'etikett' as const }]));
 
-/** Nächstliegende Farbe der Palette (Haupt- oder Nuance, ohne „Bunt“) zu einem Hex-Wert – Vorschlag aus dem Foto */
+/** Nächstliegende Farbe der Palette (Key, Haupt- oder Nuance, ohne „Bunt“) zu einem Hex-Wert – Vorschlag aus dem Foto */
 export function nearestColor(hex: string | null | undefined): string | null {
   if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return null;
   const rgb = (h: string) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
   const [r, g, b] = rgb(hex);
   let best: string | null = null, dist = Infinity;
-  for (const [name, h] of Object.entries(HEX)) {
+  for (const [key, h] of Object.entries(HEX)) {
     if (!h) continue;
     const [r2, g2, b2] = rgb(h);
     // gewichtete Distanz (Rot/Blau weniger empfindlich als Grün)
     const d = 2 * (r! - r2!) ** 2 + 4 * (g! - g2!) ** 2 + 3 * (b! - b2!) ** 2;
-    if (d < dist) { dist = d; best = name; }
+    if (d < dist) { dist = d; best = key; }
   }
   return best;
 }

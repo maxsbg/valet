@@ -2,8 +2,10 @@
 // Plattformunabhängig: Laden aus der Datenbank-Zeile, Ändern, Prüfen, zurück in eine Datenbank-Änderung.
 
 import { isValidPath, type FitScale } from './categories';
-import { MAX_COLORS, ONE_SIZE, type Care, type MaterialPart } from './attributes';
-import { capSize, fieldsFor, kindHasLetters, sizeSystemOn, type SizeSystemAny } from './fields';
+import { COLLAR_LIST, CLOSURES, MAX_COLORS, ONE_SIZE, PATTERNS, colorLabel, materialLabel, migrateSeasons, styleLabel, toColorKeys, toMaterialParts, toStyleKeys, type Care, type MaterialPart } from './attributes';
+import { toKey } from './keys';
+import { normalizeCategory } from './import/categorize';
+import { capSize, fieldsFor, kindHasLetters, sizeSystemOn, STRAPS, type SizeSystemAny } from './fields';
 import { equalSplit, formatPrice, parseAmount, splitGap } from './money';
 import { isWishTag, type WishTag } from './tile';
 
@@ -52,20 +54,23 @@ export function emptyEditForm(opts: { ownerId?: string | null; wish?: { wishlist
   return toEditForm({ owner_ids: opts.ownerId ? [opts.ownerId] : [], is_wish: !!opts.wish, wishlist_id: opts.wish?.wishlistId ?? null });
 }
 
+/** Datenbank-Zeile → Formular. Liest tolerant: Keys, deutsche Labels und Altwerte werden zu Keys (toKey). */
 export function toEditForm(r: EditRow): EditForm {
-  const sizeKind = fieldsFor(r.category, r.subcategory).size;
+  const path = normalizeCategory({ category: r.category || null, subcategory: r.subcategory, item_type: r.item_type, name: r.name, brand: r.brand });
+  const sizeKind = fieldsFor(path.category, path.subcategory).size;
   const payers = (r.payers ?? []).filter((p) => !!p?.person_id);
   const custom = payers.length > 1 && payers.some((p) => typeof p.amount === 'number');
   const owners = r.owner_ids?.length ? r.owner_ids : r.owner_id ? [r.owner_id] : [];
   return {
     name: r.name ?? '', brand: r.brand ?? '',
-    category: r.category || null, subcategory: r.subcategory ?? null, type: r.item_type ?? null,
-    seasons: r.seasons ?? [], colors: r.colors ?? [], colorsB: r.colors_b ?? [], pattern: r.pattern ?? null, patternB: r.pattern_b ?? null,
-    materials: r.materials ?? [], sizeSystem: sizeSystemOn(sizeKind, r.size_system, r.size), size: sizeKind === 'cap' ? capSize(r.size) ?? (r.size || null) : r.size || null,
+    category: path.category, subcategory: path.subcategory, type: path.type,
+    seasons: migrateSeasons(r.seasons), colors: toColorKeys(r.colors), colorsB: toColorKeys(r.colors_b),
+    pattern: toKey(PATTERNS, r.pattern), patternB: toKey(PATTERNS, r.pattern_b),
+    materials: toMaterialParts(r.materials), sizeSystem: sizeSystemOn(sizeKind, r.size_system, r.size), size: sizeKind === 'cap' ? capSize(r.size) ?? (r.size || null) : r.size || null,
     collarSize: r.collar_size ?? null,
     fit: { width: r.fit_width ?? null, length: r.fit_length ?? null, rise: r.fit_rise ?? null },
     layers: r.layers ?? [], standalone: !!r.standalone, warmth: r.warmth ?? null, rain: r.rain ?? null,
-    styles: r.styles ?? [], collar: r.collar ?? null, closure: r.closure ?? null, strap: r.strap ?? null, care: r.care ?? {},
+    styles: toStyleKeys(r.styles), collar: toKey(COLLAR_LIST, r.collar), closure: toKey(CLOSURES, r.closure), strap: toKey(STRAPS, r.strap), care: r.care ?? {},
     reversible: !!r.reversible, notes: r.notes ?? '',
     price: eur(r.price_paid), listPrice: eur(r.list_price), gift: !!r.is_gift, giftFrom: r.gift_from ?? '', giftValue: eur(r.gift_value),
     purchaseDate: r.purchase_date ?? null, shop: r.shop ?? '', link: r.link ?? '', articleNo: r.article_no ?? '',
@@ -214,8 +219,8 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
     reversible: f.reversible, notes: f.notes.trim(),
     shop: f.shop.trim(), link: f.link.trim(), article_no: f.articleNo.trim(),
     ai_pending: f.aiPending,
-    // Spiegel der alten Felder
-    color: f.colors.join('/'), material: f.materials[0]?.name ?? '', style: f.styles[0] ?? '',
+    // Spiegel der alten Felder (deutsches Label wie bisher)
+    color: f.colors.map(colorLabel).join('/'), material: f.materials[0] ? materialLabel(f.materials[0].name) : '', style: f.styles[0] ? styleLabel(f.styles[0]) : '',
   };
 
   if (f.isWish) {

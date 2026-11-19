@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Page } from '@/components/Page';
-import { categoryLabel, closetStats, formatEur, spendStats, wearStats, IDLE_DAYS, type StatItem, type WearLog, type WearPeriod, type Outfit as CoreOutfit } from '@valet/core';
+import { categoryLabel, closetStats, formatEur, seasonLabel, spendStats, wearStats, IDLE_DAYS, type StatItem, type WearLog, type WearPeriod, type Outfit as CoreOutfit } from '@valet/core';
 import { OutfitBoard } from '@/components/OutfitBoard';
 import { Header, Chip, Empty, PageEnd } from '@/components/ui';
 import { ItemPicture } from '@/components/ItemPicture';
@@ -192,7 +192,7 @@ export default function Statistik() {
           )}
 
           <Panel t={t} title="Lange nicht getragen">
-            <Text style={[s.psub, { color: t.inkMuted }]}>Nur Teile für den {r.season} (und ganzjährige), ab {IDLE_DAYS} Tagen</Text>
+            <Text style={[s.psub, { color: t.inkMuted }]}>Nur Teile für den {seasonLabel(r.season)} (und ganzjährige), ab {IDLE_DAYS} Tagen</Text>
             {r.idle.length ? (
               <PGrid t={t} width={W} list={g(r.idle, (x: { w: string[]; days: number }) => (x.w.length ? `${x.days} Tage` : 'noch nie'), (x: { w: string[]; days: number }) => (x.w.length ? 'her' : `seit ${x.days} Tagen`))} />
             ) : <Text style={{ fontSize: 14, color: t.inkMuted }}>Nichts – alles für die Saison war in den letzten {IDLE_DAYS} Tagen dran.</Text>}

@@ -6,7 +6,7 @@ import { COLORS, MULTICOLOR } from '../src/attributes';
 // Regeln: docs/design/kachel/VALET_SCHEIN_REGELN.md (16.11.2026)
 
 test('Ranglisten decken genau alle Palettenfarben ab (inkl. Bunt), ohne Doppelungen', () => {
-  const all = COLORS.flatMap((c) => [c.name, ...c.nuances.map((n) => n.name)]);
+  const all = COLORS.flatMap((c) => [c.key, ...c.nuances.map((n) => n.key)]);
   const ranked = [...GLOW_COLOR_RANK, ...GLOW_NEUTRAL_RANK];
   assert.equal(new Set(ranked).size, ranked.length);
   assert.deepEqual([...ranked].sort(), [...all].sort());
@@ -14,45 +14,45 @@ test('Ranglisten decken genau alle Palettenfarben ab (inkl. Bunt), ohne Doppelun
 });
 
 test('Regel 1: Rang 1 farbig → Rang 1, auch wenn eine stärkere Farbe folgt', () => {
-  assert.equal(glowColorName(['Gelb', 'Blau']), 'Gelb'); // Flanellhemd
-  assert.equal(glowColorName(['Rosa', 'Elfenbein']), 'Rosa');
+  assert.equal(glowColorName(['yellow', 'blue']), 'yellow'); // Flanellhemd
+  assert.equal(glowColorName(['rose', 'ivory']), 'rose');
 });
 
 test('Regel 2: Rang 1 neutral → farbige Farbe gewinnt immer, bei mehreren nach Rangliste', () => {
-  assert.equal(glowColorName(['Weiß', 'Rot']), 'Rot');
-  assert.equal(glowColorName(['Schwarz', 'Gelb']), 'Gelb');
-  assert.equal(glowColorName(['Dunkelgrau', 'Rosa']), 'Rosa');             // Rosa schlägt Schwarz/Grau immer
-  assert.equal(glowColorName(['Elfenbein', 'Marineblau']), 'Marineblau');
-  assert.equal(glowColorName(['Schwarz', 'Elfenbein', 'Rot']), 'Rot');
-  assert.equal(glowColorName(['Beige', 'Braun']), 'Braun');
-  assert.equal(glowColorName(['Weiß', 'Himmelblau', 'Rot']), 'Rot');      // Rot steht vor Himmelblau
+  assert.equal(glowColorName(['white', 'red']), 'red');
+  assert.equal(glowColorName(['black', 'yellow']), 'yellow');
+  assert.equal(glowColorName(['dark_grey', 'rose']), 'rose');             // Rosa schlägt Schwarz/Grau immer
+  assert.equal(glowColorName(['ivory', 'navy']), 'navy');
+  assert.equal(glowColorName(['black', 'ivory', 'red']), 'red');
+  assert.equal(glowColorName(['beige', 'brown']), 'brown');
+  assert.equal(glowColorName(['white', 'sky_blue', 'red']), 'red');      // Rot steht vor Himmelblau
 });
 
 test('Regel 3: nur Neutralfarben → Neutral-Rangliste (Silber vor Schwarz vor Weiß)', () => {
-  assert.equal(glowColorName(['Weiß', 'Silber', 'Schwarz']), 'Silber');
-  assert.equal(glowColorName(['Schwarz', 'Silber']), 'Silber');
-  assert.equal(glowColorName(['Schwarz', 'Beige']), 'Beige');
-  assert.equal(glowColorName(['Schwarz', 'Weiß']), 'Schwarz');
-  assert.equal(glowColorName(['Weiß']), 'Weiß');
+  assert.equal(glowColorName(['white', 'silver', 'black']), 'silver');
+  assert.equal(glowColorName(['black', 'silver']), 'silver');
+  assert.equal(glowColorName(['black', 'beige']), 'beige');
+  assert.equal(glowColorName(['black', 'white']), 'black');
+  assert.equal(glowColorName(['white']), 'white');
 });
 
 test('ohne Steckbrief-Farben: nächste Palettenfarbe zur Foto-Farbe, sonst keine', () => {
-  assert.equal(glowColorName([], '#c0392b'), 'Rot');
-  assert.equal(glowColorName(['Quatsch'], '#1c1c1c'), 'Schwarz');
+  assert.equal(glowColorName([], '#c0392b'), 'red');
+  assert.equal(glowColorName(['Quatsch'], '#1c1c1c'), 'black');
   assert.equal(glowColorName(null, null), null);
 });
 
 test('Stärke immer 60 %; Weiß und „keine Farbe“ → heller Ersatzton', () => {
-  assert.equal(glowFor(['Rot']).css, 'rgba(192,57,43,0.6)');
-  assert.equal(glowFor(['Schwarz']).css, 'rgba(28,28,28,0.6)');
-  assert.equal(glowFor(['Weiß']).css, 'rgba(216,210,200,0.6)');
+  assert.equal(glowFor(['red']).css, 'rgba(192,57,43,0.6)');
+  assert.equal(glowFor(['black']).css, 'rgba(28,28,28,0.6)');
+  assert.equal(glowFor(['white']).css, 'rgba(216,210,200,0.6)');
   assert.equal(glowFor([]).css, 'rgba(216,210,200,0.6)');
 });
 
 test('Bunt → Farbkreis am Rand (kein box-shadow), Ersatz-CSS hell', () => {
-  const g = glowFor(['Bunt', 'Schwarz']);
+  const g = glowFor(['multicolor', 'black']);
   assert.equal(g.kind, 'bunt');
   assert.equal(glowShadow(g, 22, 3), 'none');
-  assert.equal(glowFor(['Weiß', 'Bunt']).kind, 'bunt'); // Bunt steht ganz oben
-  assert.equal(glowShadow(glowFor(['Rot']), 22, 3), 'inset 0 0 22px 3px rgba(192,57,43,0.6)');
+  assert.equal(glowFor(['white', 'multicolor']).kind, 'bunt'); // Bunt steht ganz oben
+  assert.equal(glowShadow(glowFor(['red']), 22, 3), 'inset 0 0 22px 3px rgba(192,57,43,0.6)');
 });

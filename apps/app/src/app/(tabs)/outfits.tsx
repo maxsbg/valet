@@ -42,8 +42,8 @@ export default function Outfits() {
   const byId = useMemo(() => new Map((wardrobe?.items ?? []).map((i) => [i.id, i] as [string, Tile])), [wardrobe]);
 
   // Anlass-Chips: nur Anlässe mit Outfits (bzw. der gewählte), in der festen Reihenfolge
-  const used = OCCASIONS.map((x) => ({ ...x, n: outfits.filter((o) => o.occasions.includes(x.label)).length }))
-    .filter((x) => x.n > 0 || occ === x.label);
+  const used = OCCASIONS.map((x) => ({ ...x, n: outfits.filter((o) => o.occasions.includes(x.key)).length }))
+    .filter((x) => x.n > 0 || occ === x.key);
   // Bügel auf der Karte: Outfit heute getragen bzw. für heute geplant, in der Farbe der Person
   const { person: lookOf } = useTilePeople();
   const todayLook = (o: Outfit) => {
@@ -112,11 +112,11 @@ export default function Outfits() {
               <Chip tall label="Alle" count={outfits.length} selected={!occ} onPress={() => pickOcc(null)} />
             </View>
             {used.map((x) => {
-              const on = occ === x.label;
+              const on = occ === x.key;
               return (
-                <View key={x.label} onLayout={chipRow.layout(x.label)}>
-                  <Chip tall collapse label={x.label} count={x.n} selected={on} onLabelWidth={chipRow.labelWidth(x.label)}
-                    icon={<Icon name={x.icon} size="chip" color={on ? t.onFill : t.ink} />} onPress={() => pickOcc(on ? null : x.label)} />
+                <View key={x.key} onLayout={chipRow.layout(x.key)}>
+                  <Chip tall collapse label={x.label} count={x.n} selected={on} onLabelWidth={chipRow.labelWidth(x.key)}
+                    icon={<Icon name={x.icon} size="chip" color={on ? t.onFill : t.ink} />} onPress={() => pickOcc(on ? null : x.key)} />
                 </View>
               );
             })}

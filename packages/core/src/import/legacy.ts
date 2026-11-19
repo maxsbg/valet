@@ -3,6 +3,9 @@
 // Zuordnung siehe supabase/import-zuordnung.md
 
 import { isItemStatus } from '../catalog';
+import { migrateSeasons } from '../attributes';
+import { normalizeOccasions } from '../occasions';
+import { normalizeCategory } from './categorize';
 
 /** Ein Dokument, wie es die Artifact-Datenbank liefert ({id, data}). */
 export interface LegacyDoc<T = Record<string, unknown>> {
@@ -129,11 +132,14 @@ export function convertLegacy(src: LegacyExport, wardrobeId: string, newId: () =
       if (!wl) r.warnings.push(`${ctx}: Wunschliste ${str(x.listId)} fehlt – Zuordnung entfernt`);
     }
 
+    // Kategorie, Saisons und Anlässe als Keys (seit 19.11.2026); die alte Kategorie bleibt in analysis.legacyCategory
+    const path = normalizeCategory({ category: str(x.category) || 'sonstiges', name: str(x.name), brand: str(x.brand) });
+    if (x.category) analysis.legacyCategory = str(x.category);
     r.items.push({
       id, wardrobe_id: wardrobeId, owner_id: mapPerson(x.ownerId, ctx),
-      name: str(x.name), brand: str(x.brand), category: str(x.category) || 'sonstiges',
+      name: str(x.name), brand: str(x.brand), category: path.category ?? '', subcategory: path.subcategory, item_type: path.type,
       color: str(x.color), alt_color: str(x.altColor), size: str(x.size), material: str(x.material), style: str(x.style),
-      seasons: arr<string>(x.seasons), layer: x.layer ? str(x.layer) : null, qty: Math.max(1, Math.round(Number(x.qty) || 1)),
+      seasons: migrateSeasons(arr<string>(x.seasons)), layer: x.layer ? str(x.layer) : null, qty: Math.max(1, Math.round(Number(x.qty) || 1)),
       price_paid: numOrNull(x.pricePaid), list_price: numOrNull(x.listPrice),
       orig_currency: x.origCurrency ? str(x.origCurrency) : null, orig_paid: numOrNull(x.origPaid), orig_list: numOrNull(x.origList),
       fx_rate: numOrNull(x.fxRate), fx_estimated: !!x.fxEstimated,
@@ -186,7 +192,7 @@ export function convertLegacy(src: LegacyExport, wardrobeId: string, newId: () =
     if (x.capTried) meta.capTried = arr<string>(x.capTried).map((c) => itemId.get(c) ?? c);
     r.outfits.push({
       id, wardrobe_id: wardrobeId, owner_id: mapPerson(x.ownerId, ctx), name: str(x.name), notes: str(x.notes),
-      occasions: arr<string>(x.occasions), occasions_auto: !!x.occAuto, from_suggestion: !!x.fromSuggestion,
+      occasions: normalizeOccasions(arr<string>(x.occasions)), occasions_auto: !!x.occAuto, from_suggestion: !!x.fromSuggestion,
       wada: numOrNull(x.wada), meta, legacy_id: d.id,
       created_at: tsOrNull(x.createdAt) ?? undefined, updated_at: tsOrNull(x.updatedAt) ?? undefined,
     });
@@ -239,7 +245,7 @@ export function convertLegacy(src: LegacyExport, wardrobeId: string, newId: () =
     r.dailySuggestions.push({
       id: newId(), wardrobe_id: wardrobeId, for_date: m[1], person_id: m[2] === 'all' ? null : mapPerson(m[2], `Tagesvorschlag ${d.id}`),
       item_ids: items, direction: d.data.dir ? str(d.data.dir) : null, reason: d.data.reason ? str(d.data.reason) : null,
-      occasions: arr<string>(d.data.occasions), wada: numOrNull(d.data.wada), meta,
+      occasions: normalizeOccasions(arr<string>(d.data.occasions)), wada: numOrNull(d.data.wada), meta,
       created_at: tsOrNull(d.data.createdAt) ?? undefined,
     });
   }

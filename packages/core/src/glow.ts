@@ -3,14 +3,14 @@
 import { itemTile } from '@valet/ui';
 import { colorHex, nearestColor, MULTICOLOR, MULTICOLOR_STOPS } from './attributes';
 
-/** Neutralfarben – nie Akzent. Reihenfolge = Rangliste, wenn ein Teil NUR Neutralfarben hat (oben gewinnt). */
-export const GLOW_NEUTRAL_RANK: readonly string[] = ['Silber', 'Taupe', 'Beige', 'Dunkelgrau', 'Hellgrau', 'Elfenbein', 'Schwarz', 'Weiß'];
+/** Neutralfarben (Keys) – nie Akzent. Reihenfolge = Rangliste, wenn ein Teil NUR Neutralfarben hat (oben gewinnt). */
+export const GLOW_NEUTRAL_RANK: readonly string[] = ['silver', 'taupe', 'beige', 'dark_grey', 'light_grey', 'ivory', 'black', 'white'];
 
 /** Farbige Farben nach Wahrnehmung als Schein auf der weißen Kachel (oben = stärker). Gilt, wenn Rang 1 neutral ist. */
 export const GLOW_COLOR_RANK: readonly string[] = [
-  'Bunt', 'Magenta', 'Rot', 'Violett', 'Burgunderrot', 'Maroon', 'Lila', 'Blau', 'Orange', 'Terrakotta', 'Koralle', 'Senfgelb', 'Pink',
-  'Grün', 'Marineblau', 'Gelb', 'Hellgrün', 'Bronze', 'Dunkelgrün', 'Gold', 'Olivgrün', 'Cyan', 'Türkis', 'Petrol', 'Karamell', 'Braun',
-  'Camel', 'Flieder', 'Khaki', 'Hellgelb', 'Altrosa', 'Himmelblau', 'Lavendel', 'Rosa', 'Mint',
+  'multicolor', 'magenta', 'red', 'violet', 'burgundy', 'maroon', 'purple', 'blue', 'orange', 'terracotta', 'coral', 'mustard', 'pink',
+  'green', 'navy', 'yellow', 'light_green', 'bronze', 'dark_green', 'gold', 'olive', 'cyan', 'turquoise', 'petrol', 'caramel', 'brown',
+  'camel', 'lilac', 'khaki', 'light_yellow', 'dusty_rose', 'sky_blue', 'lavender', 'rose', 'mint',
 ];
 
 const NEUTRAL = new Set(GLOW_NEUTRAL_RANK);

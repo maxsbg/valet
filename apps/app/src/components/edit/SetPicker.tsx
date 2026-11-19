@@ -3,7 +3,7 @@
 // mit einer Kachel „+“ am Ende. „+“ öffnet ein Blatt mit Suche und Auswahl (gewählt = accent-Rahmen + Haken).
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { setOrder } from '@valet/core';
+import { setOrder, subcategoryName, typeName } from '@valet/core';
 import { useTheme } from '@/lib/theme';
 import type { Tile } from '@/lib/wardrobe';
 import { ItemPicture } from '@/components/ItemPicture';
@@ -75,7 +75,7 @@ function SetPickSheet({ open, selected, current, items, onDone, onClose }: {
   const query = q.trim().toLowerCase();
   const list = items
     .filter((m) => m.id !== current.id && !m.isWish && m.status !== 'sold' &&
-      (!query || [m.name, m.brand, m.color, m.subcategory, m.type].some((f) => f?.toLowerCase().includes(query))))
+      (!query || [m.name, m.brand, m.color, subcategoryName(m.category, m.subcategory), typeName(m.category, m.subcategory, m.type)].some((f) => f?.toLowerCase().includes(query))))
     .sort((a, b) => Number(selected.includes(b.id)) - Number(selected.includes(a.id)) || a.name.localeCompare(b.name, 'de'));
   const col = Math.floor((Math.min(W, 560) - 32 - 16) / 3);
   return (

@@ -6,7 +6,7 @@ import {
   emptyProfile, profileLabel, type Ctx, type Profile,
 } from '../src/ai/profile';
 
-const ctx = (category: string | null, extra: Partial<Ctx> = {}): Ctx => ({ category, sub: null, pattern: 'Unifarben', materials: [], ...extra });
+const ctx = (category: string | null, extra: Partial<Ctx> = {}): Ctx => ({ category, sub: null, pattern: 'solid', materials: [], ...extra });
 
 test('Schema: jedes Feld im Profil, Pflicht, mit null; Bereich als _min/_max', () => {
   const props = PROFILE_SCHEMA.properties!;
@@ -21,7 +21,7 @@ test('Schema: jedes Feld im Profil, Pflicht, mit null; Bereich als _min/_max', (
   assert.equal(Object.keys(props).length, PROFILE_FIELDS.length + 1); // formality → 2 Props
   assert.equal(PROFILE_SCHEMA.additionalProperties, false);
   assert.equal(CONFIDENCE_SCHEMA.required!.length, 6);
-  assert.ok(ANALYZE_ITEM_SCHEMA.required!.includes('profil') && ANALYZE_ITEM_SCHEMA.required!.includes('konfidenz'));
+  assert.ok(ANALYZE_ITEM_SCHEMA.required!.includes('profile') && ANALYZE_ITEM_SCHEMA.required!.includes('confidence'));
 });
 
 test('Schema bleibt unter der Grenze der Edge Function (60 000 Zeichen)', () => {
@@ -66,29 +66,29 @@ test('checkConfidence: nur ganze Zahlen 0–10', () => {
 
 test('Bedingungen: unpassende Felder werden geleert', () => {
   const full = checkProfile({ leg: 'tapered', toe: 'round', pattern_scale: 'large', pattern_contrast: 4, denim_wash: 'dark', surface: 'smooth', metal_tone: 'gold', shoulder: 'natural' });
-  const shoe = clearInactive(full, ctx('Schuh'));
+  const shoe = clearInactive(full, ctx('shoe'));
   assert.equal(shoe.leg, null); assert.equal(shoe.toe, 'round'); assert.equal(shoe.shoulder, null); assert.equal(shoe.metal_tone, 'gold');
-  const plain = clearInactive(full, ctx('Hose'));
+  const plain = clearInactive(full, ctx('pants'));
   assert.equal(plain.pattern_scale, null); assert.equal(plain.pattern_contrast, null); assert.equal(plain.denim_wash, null); assert.equal(plain.leg, 'tapered');
-  assert.equal(clearInactive(full, ctx('Hose', { materials: ['Denim'] })).denim_wash, 'dark');
-  assert.equal(clearInactive(full, ctx('Hose', { pattern: 'Kariert' })).pattern_scale, 'large');
-  assert.equal(clearInactive(full, ctx('Schmuck')).surface, null);
-  assert.equal(clearInactive(full, ctx('Accessoire', { sub: 'Gürtel' })).metal_tone, 'gold');
-  assert.equal(clearInactive(full, ctx('Accessoire', { sub: 'Schal' })).metal_tone, null);
+  assert.equal(clearInactive(full, ctx('pants', { materials: ['denim'] })).denim_wash, 'dark');
+  assert.equal(clearInactive(full, ctx('pants', { pattern: 'plaid' })).pattern_scale, 'large');
+  assert.equal(clearInactive(full, ctx('jewelry')).surface, null);
+  assert.equal(clearInactive(full, ctx('accessory', { sub: 'belt' })).metal_tone, 'gold');
+  assert.equal(clearInactive(full, ctx('accessory', { sub: 'scarf' })).metal_tone, null);
 });
 
 test('activeProfile: Kategoriewechsel blendet aus, Werte bleiben gespeichert', () => {
   const p: Profile = { ...emptyProfile(), leg: 'tapered' };
-  assert.equal('leg' in activeProfile(p, ctx('Schuh')), false);
-  assert.equal(activeProfile(p, ctx('Hose')).leg, 'tapered');
+  assert.equal('leg' in activeProfile(p, ctx('shoe')), false);
+  assert.equal(activeProfile(p, ctx('pants')).leg, 'tapered');
   assert.equal(p.leg, 'tapered');
 });
 
 test('checkAnalysis: Profil nach erkannter Kategorie bereinigt, Modell übernommen', () => {
   const a = checkAnalysis({
-    kategorie: 'Hose › Jeans', muster: 'Unifarben', material: ['Denim'],
-    profil: { leg: 'tapered', toe: 'round', denim_wash: 'dark', pattern_scale: 'fine', formality_min: 1, formality_max: 3, surface: 'smooth' },
-    konfidenz: { category: 9 },
+    category: 'pants/jeans', pattern: 'solid', materials: ['denim'],
+    profile: { leg: 'tapered', toe: 'round', denim_wash: 'dark', pattern_scale: 'fine', formality_min: 1, formality_max: 3, surface: 'smooth' },
+    confidence: { category: 9 },
   }, 'gemini-3.5-flash-lite');
   assert.equal(a.profile.leg, 'tapered'); assert.equal(a.profile.toe, null);
   assert.equal(a.profile.denim_wash, 'dark'); assert.equal(a.profile.pattern_scale, null);

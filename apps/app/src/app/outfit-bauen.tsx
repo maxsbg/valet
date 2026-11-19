@@ -1,10 +1,10 @@
-import { occasionOf } from '@valet/core';
+import { occasionLabel, occasionOf } from '@valet/core';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page, STICKY } from '@/components/Page';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CATEGORIES, SIDE_CATEGORIES, formatEur } from '@valet/core';
+import { CATEGORIES, SIDE_CATEGORIES, categoryName, formatEur } from '@valet/core';
 import { Chip, SearchField, RoundButton, Empty, useToast } from '@/components/ui';
 import { ItemPicture } from '@/components/ItemPicture';
 import { Mosaic } from '@/components/Mosaic';
@@ -44,7 +44,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
 
   const [barH, setBarH] = useState(0);
   const [ids, setIds] = useState<string[]>(() => old ? old.pieces.map((x) => x.id) : p.item ? [p.item] : []);
-  const [occ, setOcc] = useState<string[]>(() => old?.occasions ?? []);
+  const [occ, setOcc] = useState<string[]>(() => old?.occasions ?? []); // Keys
   const [src, setSrc] = useState<string>(() => {
     if (persons.length < 2) return 'all';
     const owners = new Set(ids.map((id) => byId.get(id)?.ownerId).filter(Boolean));
@@ -148,7 +148,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
           <View style={s.wrap}>
             {occList.map((x) => {
               const on = occ.includes(x);
-              return <Chip key={x} label={x} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.onFill : t.ink} />}
+              return <Chip key={x} label={occasionLabel(x)} selected={on} icon={<Icon name={occasionOf(x)!.icon} size="chip" color={on ? t.onFill : t.ink} />}
                 onPress={() => setOcc(on ? occ.filter((y) => y !== x) : [...occ, x])} />;
             })}
           </View>
@@ -168,7 +168,7 @@ function Editor(p: { id?: string; date?: string; who?: string; item?: string }) 
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: space.xs }}>
                 <Chip label="Alle" count={pool.length} selected={!cat} onPress={() => setCat(null)} />
                 {CATEGORIES.filter((c) => counts.get(c)).map((c) => (
-                  <Chip key={c} label={c} count={counts.get(c)} selected={cat === c} onPress={() => setCat(cat === c ? null : c)} />
+                  <Chip key={c} label={categoryName(c)} count={counts.get(c)} selected={cat === c} onPress={() => setCat(cat === c ? null : c)} />
                 ))}
               </ScrollView>
             </>

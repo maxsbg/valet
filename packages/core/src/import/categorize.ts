@@ -1,15 +1,17 @@
 // Altdaten → neue Kategorie-Liste (Spec 8, „Umstellung vorhandener Teile“).
 // Nur eindeutige Fälle bekommen eine Unterkategorie bzw. einen Typ; der Rest wird als `sure: false` gemeldet
 // und Max zum Nachsehen gezeigt (nicht raten). Wird auch beim frischen Import aus dem alten Valet benutzt.
+// Die Regeln sind mit den deutschen Labels geschrieben (Import-Regeln); heraus kommen immer Keys (seit 19.11.2026).
 
-import { CATEGORY_NAMES, isValidPath, subcategoriesOf, type CategoryPath } from '../categories';
-import { LEGACY_COLORS, MATERIALS } from '../attributes';
+import { CATEGORY_LIST, isValidPath, pathToKeys, subListOf, type CategoryPath } from '../categories';
+import { MATERIALS, toColorKey } from '../attributes';
+import { toKey } from '../keys';
 
 export type LegacyInput = { category: string | null; name: string; desc?: string | null; brand?: string | null };
 export type LegacyResult = CategoryPath & {
   /** true = eindeutig; false = nur Kategorie sicher (oder gar nichts) → Liste für Max */
   sure: boolean;
-  /** Material, das im alten Namen steckte (Flanell, Fleece, Daunen …) */
+  /** Material (Key), das im alten Namen steckte (Flanell, Fleece, Daunen …) */
   material?: string;
   /** Länge (Rock/Kleid), falls im alten Namen (Mini/Midi/Maxi) */
   fitLength?: number;
@@ -138,20 +140,22 @@ const EXTRA_MATERIAL: [RegExp, string][] = [[/flannel|flanell/, 'Flanell'], [/fl
 export function categorizeLegacy(i: LegacyInput): LegacyResult {
   const old = (i.category ?? '').toLowerCase();
   const t = `${i.brand ?? ''} ${i.name} ${i.desc ?? ''}`.toLowerCase();
-  // Schon neu?
-  if (CATEGORY_NAMES.includes(i.category ?? '')) return { category: i.category, subcategory: null, type: null, sure: true };
+  // Schon neu (Key oder Label)?
+  // (alte ID „shorts“ ist zugleich der neue Key – dann lieber die Regeln, sie finden auch die Unterkategorie)
+  const known = toKey(CATEGORY_LIST, i.category);
+  if (known && !((i.category ?? '') in OLD)) return { category: known, subcategory: null, type: null, sure: true };
   // Röcke und Kleider aus dem Namen (im alten Valet gab es keine eigene Kategorie)
   const skirt = /(mini|midi|maxi)rock|(mini|midi|maxi)[- ]skirt/.exec(t);
-  if (skirt) return { category: 'Rock', subcategory: null, type: null, sure: true, fitLength: { mini: 0, midi: 3, maxi: 4 }[skirt[1] ?? skirt[2] ?? 'midi'] };
+  if (skirt) return { category: 'skirt', subcategory: null, type: null, sure: true, fitLength: { mini: 0, midi: 3, maxi: 4 }[skirt[1] ?? skirt[2] ?? 'midi'] };
   const [safe, rules] = OLD[old] ?? [null, []];
   const hit = rules.find((x) => x.re.test(t));
-  const material = hit?.material ?? EXTRA_MATERIAL.find(([re]) => re.test(t))?.[1];
+  const material = toKey(MATERIALS, hit?.material ?? EXTRA_MATERIAL.find(([re]) => re.test(t))?.[1]) ?? undefined;
   if (hit) {
     const [category, subcategory = null, type = null] = hit.path;
-    const p = { category, subcategory, type };
-    if (isValidPath(p)) return { ...p, sure: true, ...(material ? { material } : {}) };
+    const p = pathToKeys({ category, subcategory, type });
+    if (isValidPath(p) && (!subcategory || p.subcategory) && (!type || p.type)) return { ...p, sure: true, ...(material ? { material } : {}) };
   }
-  return { category: safe, subcategory: null, type: null, sure: false, ...(material ? { material } : {}) };
+  return { category: toKey(CATEGORY_LIST, safe), subcategory: null, type: null, sure: false, ...(material ? { material } : {}) };
 }
 
 // ---------- Material ----------
@@ -161,10 +165,13 @@ const MATERIAL_SYNONYMS: Record<string, string> = {
   acetat: 'Kunststoff/Gummi', canvas: 'Baumwolle', funktionsstoff: 'Polyester', polyestermix: 'Polyester', 'beschichtetes polyester': 'Polyester',
   twill: '', mix: '', mischgewebe: '', strick: '', vermutet: '', jersey: 'Baumwolle', cotton: 'Baumwolle', wool: 'Wolle', leather: 'Leder',
 };
-const known = new Map(MATERIALS.map((m) => [m.toLowerCase(), m] as const));
+const known = new Map(MATERIALS.map((m) => [m.label.toLowerCase(), m.label] as const));
 
-/** Alter Materialtext („Wolle und Leder“, „Polyester / Kunstleder (Mix)“) → Liste in Reihenfolge, ohne Doppelte */
+/** Alter Materialtext („Wolle und Leder“, „Polyester / Kunstleder (Mix)“) → Keys in Reihenfolge, ohne Doppelte */
 export function parseLegacyMaterial(s: string | null | undefined): string[] {
+  return parseMaterialLabels(s).map((m) => toKey(MATERIALS, m)!).filter(Boolean);
+}
+function parseMaterialLabels(s: string | null | undefined): string[] {
   const out: string[] = [];
   const add = (m: string | undefined) => { if (m && !out.includes(m)) out.push(m); };
   const whole = (s ?? '').trim().toLowerCase();
@@ -189,7 +196,7 @@ const luma = (hex: string) => {
 };
 
 /**
- * Alter Farbtext („Schwarz/Weiß“) → neue Palette, höchstens 3, ohne Doppelte.
+ * Alter Farbtext („Schwarz/Weiß“) → Farb-Keys der Palette, höchstens 3, ohne Doppelte.
  * „Grau“ gibt es nicht mehr: nach der Helligkeit des Fotos (Hauptfarbe der Farbanalyse) Hellgrau oder Dunkelgrau;
  * ohne Foto-Farbe bleibt es offen (unclear).
  */
@@ -198,8 +205,8 @@ export function parseLegacyColors(s: string | null | undefined, photoHex?: strin
   for (const raw of (s ?? '').split(/[\/,]/)) {
     const w = raw.trim().toLowerCase();
     if (!w) continue;
-    let c: string | undefined = LEGACY_COLORS[w];
-    if (w === 'grau') c = photoHex && /^#[0-9a-f]{6}$/i.test(photoHex) ? (luma(photoHex) >= 0.5 ? 'Hellgrau' : 'Dunkelgrau') : undefined;
+    let c: string | undefined = toColorKey(w) ?? undefined;
+    if (w === 'grau') c = photoHex && /^#[0-9a-f]{6}$/i.test(photoHex) ? (luma(photoHex) >= 0.5 ? 'light_grey' : 'dark_grey') : undefined;
     if (!c) { unclear.push(raw.trim()); continue; }
     if (!colors.includes(c) && colors.length < 3) colors.push(c);
   }
@@ -207,16 +214,17 @@ export function parseLegacyColors(s: string | null | undefined, photoHex?: strin
 }
 
 /**
- * Kategorie-Pfad beim Laden: neue Daten unverändert, alte (Kategorie-IDs wie „oberteil“) über die Regeln.
- * So läuft die App schon vor der einmaligen Umstellung (Migration 0007) mit beiden Formaten.
+ * Kategorie-Pfad beim Laden → Keys (toKey für den Kategorie-Baum): Keys bleiben, deutsche Labels werden umgerechnet,
+ * alte Kategorie-IDs wie „oberteil“ gehen über die Regeln. So läuft die App mit alten und umgestellten Daten
+ * (vor und nach Migration 0007 bzw. 0014).
  */
 export function normalizeCategory(i: { category: string | null; subcategory?: string | null; item_type?: string | null; name?: string | null; brand?: string | null }): CategoryPath {
   // Hose › Shorts › Typ → Shorts › Typ (eigene Kategorie seit 15.11.2026, Migration 0009)
-  if (i.category === 'Hose' && i.subcategory === 'Shorts') {
-    const sub = i.item_type && subcategoriesOf('Shorts').includes(i.item_type) ? i.item_type : null;
-    return { category: 'Shorts', subcategory: sub, type: null };
+  if ((i.category === 'Hose' || i.category === 'pants') && i.subcategory === 'Shorts') {
+    return { category: 'shorts', subcategory: toKey(subListOf('shorts'), i.item_type), type: null };
   }
-  if (!i.category || CATEGORY_NAMES.includes(i.category)) return { category: i.category ?? null, subcategory: i.subcategory ?? null, type: i.item_type ?? null };
+  if (!i.category) return { category: null, subcategory: null, type: null };
+  if (toKey(CATEGORY_LIST, i.category)) return pathToKeys({ category: i.category, subcategory: i.subcategory, type: i.item_type });
   const r = categorizeLegacy({ category: i.category, name: i.name ?? '', brand: i.brand });
   return { category: r.category, subcategory: r.subcategory, type: r.type };
 }

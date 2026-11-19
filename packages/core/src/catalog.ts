@@ -1,8 +1,9 @@
 // Status (Kategorien: categories.ts, weitere Listen: attributes.ts)
-export { CATEGORY_NAMES as CATEGORIES, SIDE_CATEGORIES } from './categories';
+import { categoryName } from './categories';
+export { CATEGORY_KEYS as CATEGORIES, SIDE_CATEGORIES } from './categories';
 
-/** Anzeigename einer Kategorie (gespeichert wird der Name selbst) */
-export const categoryLabel = (name: string | null | undefined): string => name || 'Ohne Kategorie';
+/** Anzeigename einer Kategorie (gespeichert wird der Key) */
+export const categoryLabel = (key: string | null | undefined): string => (key ? categoryName(key) : '') || 'Ohne Kategorie';
 
 export const STATUSES = {
   wash: { label: 'Wäsche', color: '#3b7bbf' },

@@ -112,3 +112,9 @@ test('Status und Fremdwährung', () => {
   assert.equal(item('iShirt').orig_currency, 'GBP');
   assert.equal(item('iShirt').fx_rate, 1.16);
 });
+
+test('Import erzeugt Keys: Kategorie-Pfad, Saisons, Anlässe (alte Kategorie bleibt in analysis)', () => {
+  assert.deepEqual([item('iHose').category, item('iHose').subcategory, item('iHose').item_type], ['pants', 'jeans', null]);
+  assert.equal((item('iHose').analysis as Record<string, unknown>).legacyCategory, 'hose');
+  assert.deepEqual(r.outfits[0]!.occasions, ['campus']);
+});
