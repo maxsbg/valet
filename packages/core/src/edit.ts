@@ -111,6 +111,16 @@ export function mergeAnalysis(base: Record<string, unknown> | null | undefined, 
   return { ...(isObj(base) ? base : {}), profile, confidence, ...(meta ? { meta } : {}) };
 }
 
+/** analysis.src (Herkunft offener KI-Werte) beim Speichern auf die noch offenen Felder kürzen; leer → weg */
+function withPendingSrc(f: Pick<EditForm, 'analysisBase' | 'aiPending'>): Record<string, unknown> {
+  const base = f.analysisBase;
+  if (!isObj(base) || !('src' in base)) return base;
+  const { src, ...rest } = base;
+  const pending = new Set(f.aiPending);
+  const kept = isObj(src) ? Object.fromEntries(Object.entries(src).filter(([k]) => pending.has(k.split('.')[0]!))) : {};
+  return Object.keys(kept).length ? { ...rest, src: kept } : rest;
+}
+
 // ---------- Ändern ----------
 
 /** Feld ändern; eine KI-Markierung dieses Felds verschwindet (Spec 7) */
@@ -266,7 +276,7 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
     reversible: f.reversible, notes: f.notes.trim(),
     shop: f.shop.trim(), link: f.link.trim(), article_no: f.articleNo.trim(),
     ai_pending: f.aiPending,
-    analysis: mergeAnalysis(f.analysisBase, f.profile, f.confidence, f.aiMeta),
+    analysis: mergeAnalysis(withPendingSrc(f), f.profile, f.confidence, f.aiMeta),
     // Spiegel der alten Felder (deutsches Label wie bisher)
     color: f.colors.map(colorLabel).join('/'), material: f.materials[0] ? materialLabel(f.materials[0].name) : '', style: f.styles[0] ? styleLabel(f.styles[0]) : '',
   };

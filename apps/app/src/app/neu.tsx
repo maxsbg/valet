@@ -7,8 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { editChange, emptyEditForm, infoContext, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
-import { analyzePicture, readInfo, readPage } from '@/lib/ki';
+import { editChange, emptyEditForm, infoContext, kiMessage, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
+import { analyzePicture, kiError, readInfo, readPage } from '@/lib/ki';
 import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
@@ -198,12 +198,13 @@ export default function Neu() {
           const a = await analyzePicture(p.main, infoContext(extra.infos, extra.description));
           if (n !== run.current) return;
           // Infos sind schon übernommen (mit Herkunft); nur noch das Bild – so dreht es keine Eingaben des Nutzers zurück
-          setF((cur) => cur && mergeSources(cur, { image: a, used: extra.infos.map((x) => x.from) }));
+          // Passform-Stufen und Größe der Infos noch einmal (late): im ersten Schritt fehlte evtl. die Kategorie
+          setF((cur) => cur && mergeSources(cur, { image: a, late: extra.infos }));
         } catch (e) { errors.push(e); }
       }
       if (n !== run.current || !errors.length) return;
-      const busy = errors.some((e) => String((e as Error)?.message ?? e).includes('429'));
-      toast.show(busy ? 'KI gerade ausgelastet – bitte selbst ausfüllen' : 'KI-Erkennung nicht vollständig verfügbar');
+      const { code, status } = await kiError(errors[0]);
+      toast.show(`${kiMessage(code, status)} Felder bitte selbst prüfen.`);
     })();
   }
 

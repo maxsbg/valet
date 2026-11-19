@@ -8,8 +8,8 @@ import { PhotoPicker } from '@/components/PhotoPicker';
 import { Hint, SheetHead } from '@/components/detail/parts';
 import { Icon } from '@/components/Icon';
 import type { SymbolName } from '@valet/ui';
-import type { Info, InfoKind } from '@valet/core';
-import { readInfo } from '@/lib/ki';
+import { infoUsable, kiMessage, type Info, type InfoKind } from '@valet/core';
+import { kiError, readInfo } from '@/lib/ki';
 
 const KINDS: { key: InfoKind; title: string; text: string; icon: SymbolName }[] = [
   { key: 'label', title: 'Etikett', text: 'Pflegesymbole, Material in Prozent, Größe, Artikelnummer', icon: 'label' },
@@ -20,13 +20,18 @@ const KINDS: { key: InfoKind; title: string; text: string; icon: SymbolName }[] 
 export function InfoSheet({ open, onClose, onResult }: { open: boolean; onClose: () => void; onResult: (info: Info) => void }) {
   const t = useTheme();
   const [kind, setKind] = useState<InfoKind | null>(null);
-  const [state, setState] = useState<'idle' | 'busy' | 'error' | 'busyLimit'>('idle');
+  const [state, setState] = useState<'idle' | 'busy' | 'error'>('idle');
+  const [message, setMessage] = useState('');
   const close = () => { setKind(null); setState('idle'); onClose(); };
   const pick = (f: File) => {
     setState('busy');
     readInfo(f, kind)
-      .then((info) => { onResult(info); close(); })
-      .catch((e) => setState(String(e?.message ?? e).includes('429') ? 'busyLimit' : 'error'));
+      // ausdrücklich gewählte Art gilt für die Rangfolge (z. B. Etikett: nur Material, Größe, Pflege …)
+      .then((info) => {
+        if (!infoUsable(info)) { setMessage('Auf dem Bild war nichts Lesbares zu finden.'); setState('error'); return; }
+        onResult(kind ? { ...info, kind } : info); close();
+      })
+      .catch(async (e) => { const { code, status } = await kiError(e); setMessage(kiMessage(code, status)); setState('error'); });
   };
   return (
     <Sheet open={open} onClose={close} title="Infos auslesen" head={<SheetHead title="Infos auslesen" onCancel={close} onDone={close} />}>
@@ -57,8 +62,7 @@ export function InfoSheet({ open, onClose, onResult }: { open: boolean; onClose:
           </PhotoPicker>
         </View>
         {state === 'busy' ? <Hint accent>Liest aus … das dauert ein paar Sekunden.</Hint>
-          : state === 'error' ? <Hint accent>Auslesen hat nicht geklappt. Bitte noch einmal versuchen oder selbst ausfüllen.</Hint>
-          : state === 'busyLimit' ? <Hint accent>KI gerade ausgelastet – bitte später noch einmal versuchen.</Hint>
+          : state === 'error' ? <Hint accent>Auslesen hat nicht geklappt. {message}</Hint>
           : <Hint>Die Art des Bildes erkennt die KI auch selbst. Die Auswahl hilft nur, wenn sie danebenliegt.</Hint>}
       </View>
     </Sheet>

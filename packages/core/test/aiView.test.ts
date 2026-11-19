@@ -4,7 +4,7 @@ import { emptyEditForm, toEditForm, type EditForm } from '../src/edit';
 import { analysisUsable, checkAnalysis } from '../src/ai/analyzeItem';
 import { emptyProfile } from '../src/ai/profile';
 import {
-  analysisNote, analysisSections, batchErrorKind, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, fitWords, hasProfile, reanalysisChange, storedMeta,
+  analysisNote, analysisSections, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, fitWords, hasProfile, reanalysisChange, storedMeta,
 } from '../src/ai/view';
 
 const META = { v: 2, prompt: '2.0', model: 'gemini-3.5-flash-lite', at: '2026-11-19T11:00:00Z' };
@@ -92,6 +92,7 @@ test('Prüfung 20.11.2026: Passform-Wörter eindeutig, Datum in Ortszeit, Fehler
   assert.equal(batchErrorKind('AI request failed', 502), 'pause');
   assert.equal(batchErrorKind('', 404), 'fail');
   assert.equal(batchErrorKind('empty_answer', null), 'fail');
+  assert.equal(batchErrorKind('model_rejected', 422), 'fail');
 });
 
 test('Leere KI-Antwort taugt nicht als Analyse', () => {
@@ -107,4 +108,13 @@ test('Blatt: Altmuster an einem Schuh zeigt keine Musterzeilen', () => {
   const rows = analysisSections(shoe).flatMap((s) => s.rows.map((r) => r.label));
   assert.ok(!rows.includes('Musterkontrast') && !rows.includes('Mustergröße'));
   assert.ok(rows.includes('Glanz'));
+});
+
+test('Fehlertexte der KI auf Deutsch, abgelaufene Anmeldung pausiert den Stapellauf', () => {
+  assert.equal(batchErrorKind('', 401), 'pause');
+  assert.equal(batchErrorKind('', 403), 'pause');
+  for (const [c, s] of [['rate_limited', 429], ['empty_answer', null], ['', 404], ['', 413], ['AI request failed', 502], ['', null], ['', 401]] as const) {
+    const m = kiMessage(c, s);
+    assert.ok(m && !/AI request|bucket|rate_limited|empty_answer/.test(m), m);
+  }
 });

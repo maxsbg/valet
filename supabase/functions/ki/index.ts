@@ -220,6 +220,7 @@ Deno.serve(async (req: Request) => {
     const models = useForced ? [forced] : [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
     let limited = 0;
+    let rejected = 0; // Anbieter lehnt dieses Bild/diese Anfrage ab (4xx außer 429, leere oder kaputte Antwort)
     const started = Date.now();
     for (const m of models) {
       if (Date.now() - started > TOTAL_MS - CALL_MS) break;
@@ -231,9 +232,12 @@ Deno.serve(async (req: Request) => {
         console.warn(`${m}: model call error`, lastError);
         // Gratisgrenzen gelten je Modell → nächstes Modell probieren; „rate_limited“ erst, wenn alle begrenzt sind
         if (lastError.includes("(429)")) limited++;
+        else if (/\((4\d\d)\)/.test(lastError) || err instanceof SyntaxError || lastError.startsWith("No text response")) rejected++;
       }
     }
     if (limited > 0 && limited === models.length) return jsonResponse({ error: "rate_limited" }, 429);
+    // Liegt es an der Anfrage selbst (nicht an Überlast), soll der Stapellauf das Teil als Fehlversuch zählen statt zu pausieren
+    if (rejected > 0 && rejected + limited === models.length) return jsonResponse({ error: "model_rejected" }, 422);
     // Fehlertext des Anbieters nur ins Log, nicht an die App
     return jsonResponse({ error: "AI request failed" }, 502);
   } catch (err) {

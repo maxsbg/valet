@@ -170,12 +170,28 @@ export const batchSummary = (done: number, failed: number, skipped: number): str
   [`${done} ${done === 1 ? 'Teil' : 'Teile'} ergänzt`, failed ? `${failed} fehlgeschlagen` : '', `${skipped} übersprungen`].filter(Boolean).join(', ');
 
 /**
- * Fehler im Stapellauf einordnen: `pause` = vorübergehend (Kontingent, Überlast, Zeitüberschreitung, kein Netz) –
- * Lauf anhalten, kein Fehlversuch; `fail` = am Teil selbst (Bild fehlt, ungültige/leere Antwort) – Fehlversuch zählen.
+ * Fehler im Stapellauf einordnen: `pause` = vorübergehend (Kontingent, Überlast, Zeitüberschreitung, kein Netz,
+ * abgelaufene Anmeldung) – Lauf anhalten, kein Fehlversuch; `fail` = am Teil selbst (Bild fehlt, 404/413, `model_rejected` 422, ungültige/leere Antwort) – Fehlversuch zählen.
  */
 export function batchErrorKind(code: string, status: number | null): 'pause' | 'fail' {
   if (code === 'rate_limited' || status === 429) return 'pause';
+  if (status === 401 || status === 403) return 'pause'; // Sitzung abgelaufen: nicht dem Teil anlasten
   if (status == null && !code) return 'pause';
   if (status != null && status >= 500 && status !== 501) return 'pause';
   return 'fail';
+}
+
+/**
+ * Verständlicher Satz zu einem Fehler der KI (Code/Status aus kiError), für Blatt, Formular und „Infos auslesen“.
+ * Nie rohe englische Codes zeigen.
+ */
+export function kiMessage(code: string, status: number | null): string {
+  if (code === 'rate_limited' || status === 429) return 'Das Gratis-Kontingent der KI ist gerade erschöpft. Bitte später noch einmal.';
+  if (code === 'empty_answer') return 'Die KI hat nichts Brauchbares geliefert. Bitte noch einmal versuchen.';
+  if (status === 401 || status === 403) return 'Anmeldung abgelaufen. Bitte neu laden und noch einmal versuchen.';
+  if (status === 404) return 'Das Bild wurde nicht gefunden.';
+  if (code === 'model_rejected' || status === 422) return 'Die KI konnte dieses Bild nicht auswerten. Ein anderes Foto hilft oft.';
+  if (status === 413) return 'Das Bild ist zu groß oder hat ein unbekanntes Format.';
+  if (status == null) return 'Keine Verbindung zur KI. Bitte Netz prüfen und noch einmal versuchen.';
+  return 'Die KI ist gerade nicht erreichbar. Bitte später noch einmal.';
 }

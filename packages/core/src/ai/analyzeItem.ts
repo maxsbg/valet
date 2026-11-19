@@ -140,7 +140,8 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
   const f = fieldsFor(path.category, path.subcategory);
   // ohne erkannte Kategorie (Etikett, Screenshot) bleiben die Stufen roh; gefiltert wird beim Zusammenführen
   const scales = new Set<string>(path.category ? fitScalesOf(path.category).map((s) => s.key) : ['width', 'length', 'rise']);
-  const neck = f.neckline?.options ?? [];
+  // ohne erkannte Kategorie alle Kragen und Ausschnitte zulassen (gefiltert wird mit dem endgültigen Pfad)
+  const neck = path.category ? f.neckline?.options ?? [] : NECK_LIST;
   let colors = pickList(r.colors, COLOR_LIST, MAX_COLORS);
   if (colors.includes(MULTICOLOR)) colors = [MULTICOLOR];
   const pattern = f.pattern ? pickStr(r.pattern, PATTERNS) : null;

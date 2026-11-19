@@ -114,7 +114,7 @@ export function checkInfo(raw: unknown): Info {
   const p = (r.care && typeof r.care === 'object' ? r.care : {}) as Raw;
   for (const g of CARE) {
     const v = p[g.key];
-    if (typeof v === 'string' && g.options.some((o) => o.id === v)) care[g.key as CareGroup] = { v, src: 'etikett' };
+    if (typeof v === 'string' && g.options.some((o) => o.id === v)) care[g.key as CareGroup] = { v, src: 'etikett' }; // 'etikett' = abgelesen (Etikett oder Angabe des Shops), nicht geschätzt
   }
   const kind = r.kind === 'label' || r.kind === 'shop' || r.kind === 'order' ? r.kind : null;
   return {
@@ -122,6 +122,14 @@ export function checkInfo(raw: unknown): Info {
     shop: str(r.shop, 40), price: money(r.price), listPrice: money(r.list_price), purchaseDate: date(r.purchase_date),
     size: str(r.size, 12), articleNo: str(r.article_no, 40),
   };
+}
+
+/** Hat die ausgelesene Info überhaupt etwas ergeben? (leer → dem Nutzer sagen statt still schließen) */
+export function infoUsable(i: Info): boolean {
+  const it = i.item;
+  return !!(it.path.category || it.name || it.brand || it.colors.length || it.materials.length || it.pattern || it.seasons.length
+    || it.collar || it.closure || it.strap || Object.values(it.fit).some((v) => v != null)
+    || i.shop || i.price != null || i.listPrice != null || i.purchaseDate || i.size || i.articleNo || Object.keys(i.care).length);
 }
 
 // ---------- Ins Formular übernehmen ----------
@@ -137,9 +145,12 @@ export type PageFacts = {
   color?: string | null; material?: string | null; description?: string | null; shop?: string | null;
 };
 
+export const PAGE_FACTS_MAX = 2400;
+
 /** Prompt für den Text einer Produktseite; der Seitentext hängt die Edge Function `ki` dahinter. */
 export function readPagePrompt(facts: PageFacts): string {
-  const known = Object.entries(facts).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}: ${String(v).slice(0, 600)}`).join('\n');
+  // Grenze der Edge Function: Prompt ≤ 4000 Zeichen → Angaben je 300, zusammen höchstens 2400 (Beschreibung steht ohnehin im Seitentext)
+  const known = Object.entries(facts).filter(([, v]) => v != null && v !== '').map(([k, v]) => `${k}: ${String(v).replace(/\s+/g, ' ').slice(0, 300)}`).join('\n').slice(0, PAGE_FACTS_MAX);
   return `Unten steht der Text einer Produktseite eines Online-Shops zu einem Kleidungsstück (ohne Bilder).
 ${known ? `Strukturierte Angaben der Seite:\n${known}\n` : ''}
 Lies nur ab, was dort steht – nichts schätzen. Fehlt eine Angabe: null bzw. leere Liste.

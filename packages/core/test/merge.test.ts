@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { checkAnalysis } from '../src/ai/analyzeItem';
 import { checkInfo } from '../src/ai/readInfo';
 import { mergeSources, applyAnalysis, applyInfo, infoContext, confirmedContext, analysisSource, infoSource, DESCRIPTION_MAX, type SourceInfo } from '../src/ai/merge';
-import { emptyEditForm, setField } from '../src/edit';
+import { confirmAi, editChange, emptyEditForm, setField } from '../src/edit';
 
 const NOW = '2026-11-19T11:00:00.000Z';
 const blank = () => ({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] as string[] });
@@ -177,4 +177,91 @@ test('Neu analysieren: bestätigte Passform verdrängt widersprechende Begriffe 
   const ctx = confirmedContext(f);
   assert.ok(ctx.includes('Weite normal'));
   assert.ok(!/slim/i.test(ctx.split('\n').find((l) => l.startsWith('Passform')) ?? ''));
+});
+
+// ---------- Prüfung 20.11.2026, Runde 2 ----------
+
+test('Pflege je Gruppe: vom Nutzer gesetzte Gruppen ersetzt kein Etikett, offene Vorschläge nur gleich- oder höherrangig', () => {
+  const own = { ...blank(), care: { wash: { v: 'w30', src: 'hand' as const } } };
+  const a = applyInfo(own, checkInfo({ kind: 'label', care: { dry: 'nodry' } }));
+  assert.equal(a.care.dry?.v, 'nodry');
+  const b = applyInfo(a, checkInfo({ kind: 'label', care: { wash: 'w60' } }));
+  assert.equal(b.care.wash?.v, 'w30');
+  // offener Etikett-Vorschlag: Shop ersetzt ihn nicht, ein neues Etikett schon
+  const c = applyInfo(a, checkInfo({ kind: 'shop', care: { dry: 'drylow' } }));
+  assert.equal(c.care.dry?.v, 'nodry');
+  const d = applyInfo(a, checkInfo({ kind: 'label', care: { dry: 'drylow' } }));
+  assert.equal(d.care.dry?.v, 'drylow');
+  // geschätzte Pflege ersetzt jedes Etikett
+  const e = applyInfo({ ...blank(), care: { wash: { v: 'w30', src: 'geschaetzt' as const } } }, checkInfo({ kind: 'label', care: { wash: 'w40' } }));
+  assert.equal(e.care.wash?.v, 'w40');
+});
+
+test('Etikett ohne Shop, Preis, Kaufdatum (auch bei Wunschteilen)', () => {
+  const lab = checkInfo({ kind: 'label', price: 29.99, list_price: 39.99, shop: 'H&M', purchase_date: '2026-11-01', article_no: '0815', size: 'M' });
+  const f = applyInfo({ ...blank(), category: 'top', subcategory: 'shirt' }, lab);
+  assert.equal(f.price, ''); assert.equal(f.listPrice, ''); assert.equal(f.shop, ''); assert.equal(f.purchaseDate, null);
+  assert.equal(f.articleNo, '0815'); assert.equal(f.size, 'M');
+  const w = applyInfo({ ...emptyEditForm({ ownerId: 'max', wish: { wishlistId: 'l1' } }), aiPending: [] }, lab);
+  assert.equal(w.listPrice, '');
+});
+
+test('Zwei Schritte wie bei „Neues Teil“: Passform einer Info ohne Kategorie übersteht den Bild-Schritt und steht im Kontext', () => {
+  const shot = checkInfo({ kind: 'shop', category: null, width: 4 });
+  const infos: SourceInfo[] = [{ from: 'screenshot', info: shot }];
+  assert.match(infoContext(infos), /Passform: Weite weit/);
+  const step1 = mergeSources(blank(), { infos });
+  assert.equal(step1.fit.width, null); // noch keine Kategorie
+  const step2 = mergeSources(step1, { image: checkAnalysis({ category: 'top/t_shirt', width: 2, colors: ['white'] }), late: infos }, NOW);
+  assert.equal(step2.fit.width, 4);
+  assert.equal(step2.aiMeta?.source, 'image+screenshot');
+  // vom Nutzer in der Zwischenzeit gesetzte Passform bleibt
+  const own = setField({ ...step1, category: 'top', subcategory: 't_shirt' }, 'fit', { width: 1, length: null, rise: null });
+  assert.equal(mergeSources(own, { image: checkAnalysis({ category: 'top/t_shirt', width: 2 }), late: infos }, NOW).fit.width, 1);
+});
+
+test('Gespeichert wird nur die Herkunft noch offener Felder', () => {
+  const a = applyInfo(blank(), checkInfo({ kind: 'shop', colors: ['red'], brand: 'COS' }));
+  const ok = confirmAi(a, 'colors');
+  const r = editChange({ ...ok, name: 'Teil' }, { isNew: true });
+  assert.ok('change' in r);
+  const src = (r.change.analysis as { src?: Record<string, string> }).src ?? {};
+  assert.equal(src.colors, undefined); assert.equal(src.brand, 'screenshot');
+  const none = editChange({ ...confirmAi(ok, 'brand'), name: 'Teil' }, { isNew: true });
+  assert.ok('change' in none && !('src' in (none.change.analysis as object)));
+});
+
+test('Kategorie: genauerer Pfad derselben Richtung verfeinert, gröbere Angabe verdrängt ihn nicht', () => {
+  const shop = checkInfo({ kind: 'shop', category: 'top' });
+  const f = mergeSources(blank(), { image: checkAnalysis({ category: 'top/shirt/long_sleeve_shirt', colors: ['white'] }), infos: [{ from: 'page', info: shop }] }, NOW);
+  assert.deepEqual([f.category, f.subcategory, f.type], ['top', 'shirt', 'long_sleeve_shirt']);
+  // zwei Schritte: erst Shop „Schuh“, dann Bild „Sneaker“
+  const s1 = applyInfo(blank(), checkInfo({ kind: 'shop', category: 'shoe' }));
+  const s2 = applyAnalysis(s1, checkAnalysis({ category: 'shoe/sneaker', colors: ['white'] }), NOW);
+  assert.deepEqual([s2.category, s2.subcategory], ['shoe', 'sneaker']);
+  assert.equal((s2.analysisBase.src as Record<string, string>).category, 'screenshot');
+  // echter Widerspruch geht nach Rang
+  const s3 = applyAnalysis(s1, checkAnalysis({ category: 'top/shirt', colors: ['white'] }), NOW);
+  assert.equal(s3.category, 'shoe');
+});
+
+test('Versteckte Felder: offene KI-Werte, die es für den endgültigen Pfad nicht gibt, fallen weg', () => {
+  const shop = checkInfo({ kind: 'shop', category: 'pants/jeans' });
+  const img = checkAnalysis({ category: 'top/shirt', collar: 'button_down', layers: [0, 1], closure: 'buttons', colors: ['blue'] });
+  const f = mergeSources(blank(), { image: img, infos: [{ from: 'page', info: shop }] }, NOW);
+  assert.equal(f.category, 'pants');
+  assert.equal(f.collar, null); assert.deepEqual(f.layers, []); assert.equal(f.closure, null);
+  for (const k of ['collar', 'layers', 'closure']) assert.ok(!f.aiPending.includes(k), k);
+  // Ausschnitt aus einer Info ohne Kategorie bleibt, wenn das Formular schon ein T-Shirt ist
+  const tee = applyInfo({ ...blank(), category: 'top', subcategory: 't_shirt' }, checkInfo({ kind: 'shop', collar: 'crew_neck' }));
+  assert.equal(tee.collar, 'crew_neck');
+});
+
+test('Größe einer Info ohne Kategorie wird nach dem Bild mit dem endgültigen Pfad abgeglichen', () => {
+  const order = checkInfo({ kind: 'order', size: '42' });
+  const infos: SourceInfo[] = [{ from: 'screenshot', info: order }];
+  const s1 = mergeSources(blank(), { infos });
+  assert.equal(s1.size, null);
+  const s2 = mergeSources(s1, { image: checkAnalysis({ category: 'shoe/sneaker', colors: ['white'] }), late: infos }, NOW);
+  assert.equal(s2.size, '42'); assert.ok(s2.aiPending.includes('size'));
 });

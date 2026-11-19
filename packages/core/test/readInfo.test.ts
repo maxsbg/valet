@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { READ_INFO_SCHEMA, checkInfo, applyInfo, readInfoPrompt } from '../src/ai/readInfo';
+import { READ_INFO_SCHEMA, checkInfo, applyInfo, infoUsable, readInfoPrompt, readPagePrompt } from '../src/ai/readInfo';
 import { emptyEditForm, setField } from '../src/edit';
 import { CATEGORY_PATHS } from '../src/ai/analyzeItem';
 
@@ -72,4 +72,12 @@ test('checkInfo: kein Profil aus Infos, nur echte Kalendertage', () => {
   assert.equal(i.item.profile.sheen, null);
   assert.equal(i.purchaseDate, null);
   assert.equal(checkInfo({ purchase_date: '2024-02-29' }).purchaseDate, '2024-02-29');
+});
+
+test('Leere Info erkennen, Seiten-Prompt bleibt unter der Grenze der Edge Function', () => {
+  assert.equal(infoUsable(checkInfo({})), false);
+  assert.equal(infoUsable(checkInfo({ size: 'M' })), true);
+  const big = 'x'.repeat(5000);
+  const p = readPagePrompt({ name: big, brand: big, price: 1, currency: big, sku: big, color: big, material: big, description: big, shop: big });
+  assert.ok(p.length < 4000, String(p.length));
 });

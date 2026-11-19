@@ -130,12 +130,12 @@ export function TextField({ label, value, onChange, placeholder, keyboardType, a
 /**
  * Datumsfeld (ISO JJJJ-MM-TT). Web/iPhone: natives Datumsfeld (Safari zeigt das Rad), sonst Textfeld TT.MM.JJJJ.
  */
-export function DateField({ label, value, onChange, optional }: { label: string; value: string | null; onChange: (iso: string | null) => void; optional?: boolean }) {
+export function DateField({ label, value, onChange, optional, extra }: { label: string; value: string | null; onChange: (iso: string | null) => void; optional?: boolean; extra?: React.ReactNode }) {
   const t = useTheme();
   if (web) {
     return (
       <View style={{ gap: 6, flex: 1, minWidth: 0 }}>
-        <FieldLabel>{label}</FieldLabel>
+        {extra ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><FieldLabel>{label}</FieldLabel>{extra}</View> : <FieldLabel>{label}</FieldLabel>}
         {createElement('input', {
           type: 'date', value: value ?? '', 'aria-label': label,
           onChange: (e: { target: { value: string } }) => onChange(e.target.value || (optional ? null : value)),
@@ -150,7 +150,7 @@ export function DateField({ label, value, onChange, optional }: { label: string;
   }
   const de = value ? value.split('-').reverse().join('.') : '';
   return (
-    <TextField label={label} value={de} placeholder="TT.MM.JJJJ" onChange={(v) => {
+    <TextField label={label} value={de} placeholder="TT.MM.JJJJ" extra={extra} onChange={(v) => {
       const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v.trim());
       if (m) onChange(`${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`);
       else if (!v.trim() && optional) onChange(null);

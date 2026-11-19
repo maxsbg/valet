@@ -2,7 +2,7 @@
 // Läuft modulweit (nicht in der Seite), damit er beim Tab-Wechsel weiterläuft. Höchstens BATCH_PER_MIN je Minute
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
-import { BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
+import { BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -101,8 +101,9 @@ export async function startBatch(wardrobeId: string) {
     for (const r of todo) {
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       const path = paths.get(r.id);
-      if (!path) { // kein Bild: kein Aufruf, nur vermerken
-        await save(r.id, failedPatch(r.analysis)).catch(() => {});
+      if (!path) { // kein Bild: kein Aufruf, nur vermerken (frisch gelesen, falls inzwischen analysiert)
+        const now = await loadRow(r.id).catch(() => null);
+        if (now && batchPending(now.analysis)) await save(r.id, failedPatch(now.analysis)).catch(() => {});
         set({ failed: state.failed + 1 });
         continue;
       }
@@ -124,9 +125,7 @@ export async function startBatch(wardrobeId: string) {
         const { code, status } = await kiError(e);
         if (status != null || code) countCall(); // Anfrage kam an (zählt fürs Kontingent)
         if (batchErrorKind(code, status) === 'pause') {
-          set({ phase: 'paused', message: code === 'rate_limited' || status === 429
-            ? 'Gratis-Kontingent gerade erschöpft. Später „Weiter“ tippen.'
-            : 'KI oder Netz gerade nicht erreichbar. Später „Weiter“ tippen.' });
+          set({ phase: 'paused', message: `${kiMessage(code, status)} Später „Weiter“ tippen.` });
           return;
         }
         const now = await loadRow(r.id).catch(() => null);

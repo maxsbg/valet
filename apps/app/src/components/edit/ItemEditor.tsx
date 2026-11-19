@@ -330,7 +330,7 @@ export function ItemEditor(p: Props) {
               </View>
             )}
             <Pair>
-              <DateField label="Kaufdatum" value={f.purchaseDate} onChange={(v) => set('purchaseDate', v)} optional />
+              <DateField label="Kaufdatum" value={f.purchaseDate} onChange={(v) => set('purchaseDate', v)} optional extra={ai('purchaseDate') ? <KiBadge /> : null} />
               <TextField label="Shop" value={f.shop} onChange={(v) => set('shop', v)} placeholder="z. B. zalando.de" extra={ai('shop') ? <KiBadge /> : null} />
             </Pair>
           </>
@@ -410,7 +410,7 @@ export function ItemEditor(p: Props) {
           {f.aiPending.length > 0 && (
             <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
               <KiBadge />
-              <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.ink }}>Felder mit „KI“ hat die KI aus dem Foto vorausgefüllt. Die Markierung verschwindet, sobald du den Wert änderst oder bestätigst.</Text>
+              <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.ink }}>Felder mit „KI“ hat die KI vorausgefüllt (aus Foto, Shop, Etikett oder Name). Die Markierung verschwindet, sobald du den Wert änderst.</Text>
             </View>
           )}
           <TextField label="Name" value={f.name} onChange={(v) => onForm(setName(f, v))} placeholder="z. B. Relaxed Flannel Shirt" extra={ai('name') ? <KiBadge /> : null} />

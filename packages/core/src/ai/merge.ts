@@ -19,7 +19,15 @@ export type SourceInfo = { from: InfoSource; info: Info };
  * `image` = Bildanalyse, `infos` = ausgelesene Infos. `used` = Quellen, die als Kontext in die Bildanalyse eingingen
  * (nur für meta.source, wenn die Infos selbst schon vorher übernommen wurden).
  */
-export type Sources = { image?: Analysis | null; infos?: readonly SourceInfo[]; used?: readonly InfoSource[] };
+export type Sources = {
+  image?: Analysis | null; infos?: readonly SourceInfo[]; used?: readonly InfoSource[];
+  /**
+   * Infos, die schon übernommen wurden, deren Passform-Stufen und Größe aber evtl. noch nicht passten (Formular noch ohne
+   * Kategorie): nach dem Bild werden nur Stufen und Größe noch einmal mit dem endgültigen Pfad angewendet
+   * (zweiter Schritt bei „Neues Teil“; dreht sonst nichts zurück).
+   */
+  late?: readonly SourceInfo[];
+};
 
 /** Herkunft eines noch unbestätigten Werts: Bild, Begriffe im Namen oder eine Info */
 export type Origin = 'image' | 'name' | InfoSource;
@@ -59,11 +67,17 @@ function withOrigins(f: EditForm, set: Record<string, Origin>): EditForm {
   return { ...f, analysisBase: { ...f.analysisBase, src } };
 }
 
+/** a ist Anfang von b (gleiche Kategorie, Unterkategorie/Typ von a fehlen oder stimmen) */
+const prefixOf = (a: CategoryPath, b: CategoryPath) =>
+  !!a.category && a.category === b.category && (!a.subcategory || a.subcategory === b.subcategory) && (!a.type || a.type === b.type);
+const samePath = (a: CategoryPath, b: CategoryPath) => a.category === b.category && a.subcategory === b.subcategory && a.type === b.type;
+
 /** Herkunft des offenen Werts eines Felds (ohne Eintrag: Bild) */
 const originOf = (origins: Record<string, Origin>, k: string): Origin => origins[k] ?? 'image';
 
 /** Felder, die ein Etikett tragen kann (Marke, Material mit %, Größe, Pflege, Artikelnummer) – nie Farbe, Stil, Saison … */
 const LABEL_FACTS: ReadonlySet<string> = new Set(['brand', 'materials']);
+// (Größe, Pflege und Artikelnummer übernimmt applyExtras; Shop, Preise und Kaufdatum nie vom Etikett)
 
 // ---------- Eine Quelle ins Formular ----------
 
@@ -88,11 +102,25 @@ function applyFacts(form: EditForm, a: Analysis, from: Origin): EditForm {
     f = setField(f, k, v);
     marked.push(k); origin[k] = from;
   };
-  if (a.path.category && allowed('category') && may('category', !f.category)) {
+  if (a.path.category && allowed('category')) {
+    const cur = { category: f.category, subcategory: f.subcategory, type: f.type };
+    const curOrigin = originOf(origins, 'category');
+    const higher: Origin = RANK[from] > RANK[curOrigin] ? from : curOrigin;
     const sizeKept = !!f.size && !open.has('size') ? { size: f.size, sizeSystem: f.sizeSystem } : null;
-    f = setCategory(f, a.path);
-    if (sizeKept) f = { ...f, ...sizeKept };
-    marked.push('category'); origin.category = from;
+    const setPath = (p: CategoryPath, o: Origin) => {
+      f = setCategory(f, p);
+      if (sizeKept) f = { ...f, ...sizeKept };
+      marked.push('category'); origin.category = o;
+    };
+    if (f.category && open.has('category') && prefixOf(cur, a.path)) {
+      // gleiche Richtung, nur genauer (Shop „Oberteil“, Bild „Oberteil › Hemd › Langarmhemd“): verfeinern, Rang bleibt der höhere
+      if (!samePath(cur, a.path)) setPath(a.path, higher); else { marked.push('category'); origin.category = higher; }
+    } else if (f.category && open.has('category') && prefixOf(a.path, cur)) {
+      // gröbere Angabe derselben Richtung: genaueren Pfad behalten, Rang übernehmen
+      marked.push('category'); origin.category = higher;
+    } else if (may('category', !f.category)) {
+      setPath(a.path, from);
+    }
   }
   put('name', a.name ?? '', !f.name.trim(), !!a.name);
   put('brand', a.brand ?? '', !f.brand.trim(), !!a.brand);
@@ -137,32 +165,46 @@ function applyExtras(form: EditForm, info: Info, from: InfoSource): EditForm {
     f = setField(f, k, v);
     marked.push(k); origin[k] = from;
   };
-  if (info.shop) put('shop', info.shop, !f.shop.trim());
+  // Etikett: nur Artikelnummer, Größe, Pflege (kein Shop, Preis, Kaufdatum – die stehen nicht auf einem Etikett)
+  const label = from === 'label';
+  if (info.shop && !label) put('shop', info.shop, !f.shop.trim());
   if (info.articleNo) put('articleNo', info.articleNo, !f.articleNo.trim());
-  if (info.purchaseDate && !f.isWish) put('purchaseDate', info.purchaseDate, !f.purchaseDate);
+  if (info.purchaseDate && !f.isWish && !label) put('purchaseDate', info.purchaseDate, !f.purchaseDate);
   // Größe nur als Wert aus der Liste der Größen-Art (wie alle Listenfelder, kein freier Text)
   const hit = matchSize(fieldsFor(f.category, f.subcategory).size, info.size, f.category, f.subcategory);
   if (hit && may('size', !f.size)) {
     f = setField(setField(f, 'sizeSystem', hit.system), 'size', hit.size);
     marked.push('size'); origin.size = from;
   }
-  if (f.isWish) {
+  if (!label && f.isWish) {
     const p = info.price ?? info.listPrice;
     if (p != null) put('listPrice', eur(p), !f.listPrice.trim());
-  } else {
+  } else if (!label) {
     if (info.price != null) put('price', eur(info.price), !f.price.trim());
     if (info.listPrice != null) put('listPrice', eur(info.listPrice), !f.listPrice.trim());
   }
-  // Pflege je Gruppe: fehlende Gruppen immer, vorgeschlagene (unbestätigte) nur aus gleich- oder ranghöherer Quelle
+  // Pflege je Gruppe: fehlende Gruppen immer; vorhandene nur, wenn geschätzt oder selbst ein offener Vorschlag aus
+  // gleich- oder rangniedrigerer Quelle (Herkunft je Gruppe „care.wash“ …). Vom Nutzer gesetzte Gruppen („hand“) nie.
   const care: Care = { ...f.care };
-  let careNew = false;
-  const careMay = open.has('care') && RANK[originOf(origins, 'care')] <= RANK[from];
-  for (const [g, v] of Object.entries(info.care)) {
-    if (care[g as CareGroup] && !careMay) continue;
-    if (JSON.stringify(care[g as CareGroup]) === JSON.stringify(v)) continue;
-    care[g as CareGroup] = v; careNew = true;
+  const careOrigin: Record<string, Origin> = {};
+  const careOpen = open.has('care');
+  for (const [g, v] of Object.entries(info.care) as [CareGroup, NonNullable<Care[CareGroup]>][]) {
+    const cur = care[g];
+    if (cur) {
+      if (cur.src === 'hand') continue;
+      const own = origins[`care.${g}`];
+      const replaceable = cur.src === 'geschaetzt' || (careOpen && own != null && RANK[own] <= RANK[from]);
+      if (!replaceable) continue;
+    }
+    if (JSON.stringify(cur) === JSON.stringify(v)) continue;
+    care[g] = v; careOrigin[`care.${g}`] = from;
   }
-  if (careNew) put('care', care, true);
+  if (Object.keys(careOrigin).length) {
+    // setField nimmt 'care' aus aiPending → Herkunft der übrigen offenen Gruppen bewahren
+    const keep = careOpen ? Object.fromEntries(Object.entries(origins).filter(([k]) => k.startsWith('care.'))) : {};
+    f = setField(f, 'care', care);
+    marked.push('care'); Object.assign(origin, keep, careOrigin);
+  }
   return withOrigins(addPending(f, marked), origin);
 }
 
@@ -188,10 +230,15 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
   f = applyNameFit(f);
   const infos = [...(s.infos ?? [])].sort((a, b) => RANK[a.from] - RANK[b.from]);
   for (const x of infos) f = applyNameFit(applyExtras(applyFacts(f, x.info.item, x.from), x.info, x.from));
+  for (const x of [...(s.late ?? [])].sort((a, b) => RANK[a.from] - RANK[b.from])) {
+    f = applyFacts(f, { ...NO_FACTS, fit: x.info.item.fit }, x.from);
+    if (x.info.size) f = applyExtras(f, { ...NO_INFO, size: x.info.size }, x.from);
+  }
+  f = dropHidden(f);
   if (!s.image) return f;
   // Profil erst hier nach Kategorie bereinigen: mit dem endgültigen Pfad, Muster und Material (Spec 8)
   const ctx: Ctx = { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
-  const used = [...infos.map((x) => x.from), ...(s.used ?? [])].map((from) => ({ from }));
+  const used = [...infos.map((x) => x.from), ...(s.used ?? []), ...(s.late ?? []).map((x) => x.from)].map((from) => ({ from }));
   return { ...f, profile: legFromName(clearInactive(s.image.profile, ctx), f.name, ctx), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) };
 }
 
@@ -201,6 +248,39 @@ function applyNameFit(f: EditForm): EditForm {
   const part = nameFitFor(f.category, fitFromName(f.name).fit);
   return Object.keys(part).length ? applyFacts(f, { ...NO_FACTS, fit: { width: null, length: null, rise: null, ...part } }, 'name') : f;
 }
+const NO_INFO: Info = { kind: null, item: null as unknown as Analysis, shop: null, price: null, listPrice: null, purchaseDate: null, size: null, articleNo: null, care: {} };
+
+/**
+ * Offene KI-Werte in Feldern, die es für den endgültigen Pfad nicht gibt (Spec 8a „Die KI füllt nur die gezeigten Felder“),
+ * wieder leeren und aus aiPending nehmen – sonst stünden versteckte, nie bestätigbare Vorschläge im Formular.
+ * Vom Nutzer gesetzte (bestätigte) Werte bleiben wie immer gespeichert.
+ */
+function dropHidden(f: EditForm): EditForm {
+  const open = new Set(f.aiPending);
+  if (!open.size || !f.category) return f; // ohne Kategorie ist noch nichts endgültig
+  const fx = fieldsFor(f.category, f.subcategory);
+  const out: EditForm = { ...f };
+  const drop: string[] = [];
+  const clear = <K extends keyof EditForm>(k: K, empty: EditForm[K], hidden: boolean) => {
+    if (hidden && open.has(k)) { out[k] = empty; drop.push(k); }
+  };
+  clear('pattern', null, !fx.pattern);
+  clear('collar', null, !!f.collar && !(fx.neckline?.options.some((o) => o.key === f.collar)));
+  clear('closure', null, !fx.closure);
+  clear('strap', null, !fx.strap);
+  clear('layers', [], !fx.layers);
+  clear('warmth', null, !fx.weather);
+  clear('rain', null, !fx.weather);
+  if (open.has('fit')) {
+    const scales = new Set(fitScalesOf(f.category).map((sc) => sc.key));
+    const fit = { ...f.fit };
+    for (const k of ['width', 'length', 'rise'] as const) if (!scales.has(k)) fit[k] = null;
+    out.fit = fit;
+    if (fit.width == null && fit.length == null && fit.rise == null) drop.push('fit');
+  }
+  return drop.length ? { ...out, aiPending: out.aiPending.filter((k) => !drop.includes(k)) } : out;
+}
+
 const NO_FACTS: Analysis = {
   path: { category: null, subcategory: null, type: null }, name: null, brand: null, colors: [], pattern: null, materials: [], styles: [], seasons: [],
   collar: null, closure: null, strap: null, fit: { width: null, length: null, rise: null }, layers: [], warmth: null, rain: null,
@@ -231,8 +311,9 @@ const pathText = (p: CategoryPath): string => {
 };
 const materialText = (ms: readonly MaterialPart[]) =>
   ms.map((m) => `${m.pct ? `${m.pct} % ` : ''}${materialLabel(m.name)} (${m.name})`).join(', ');
+/** Stufen als Text; ohne Kategorie die allgemeinen Skalen (Weite, Länge kurz–lang, Bund) */
 const fitText = (category: string | null, fit: Partial<Record<FitScale['key'], number | null>>) =>
-  fitScalesOf(category).filter((sc) => fit[sc.key] != null).map((sc) => `${sc.label} ${sc.steps[fit[sc.key]!] ?? ''}`.trim());
+  fitScalesOf(category ?? 'pants').filter((sc) => fit[sc.key] != null).map((sc) => `${sc.label} ${sc.steps[fit[sc.key]!] ?? ''}`.trim());
 const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 
 type Facts = {

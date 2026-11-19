@@ -1,7 +1,7 @@
 // Blätter der Detailseite: Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4), KI-Analyse (Analyse v2, Spec 14)
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import { CARE, analysisNote, analysisSections, careLabel, colorCheck, confirmedContext, hasProfile, reanalysisChange, type CareGroup, type CareValue, type EditForm } from '@valet/core';
+import { CARE, kiMessage, analysisNote, analysisSections, careLabel, colorCheck, confirmedContext, hasProfile, reanalysisChange, type CareGroup, type CareValue, type EditForm } from '@valet/core';
 import { analysisImage, updateItem } from '@/lib/item';
 import { analyzeStored, kiError } from '@/lib/ki';
 import { Icon } from '@/components/Icon';
@@ -115,15 +115,15 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
     if (!img) { setError(imgError ? 'Bild konnte nicht geladen werden – bitte Verbindung prüfen und erneut öffnen.' : 'Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
     setBusy(true); setError(null);
     try {
-      const a = await analyzeStored(img.path, confirmedContext(f));
+      let a: Awaited<ReturnType<typeof analyzeStored>>;
+      try { a = await analyzeStored(img.path, confirmedContext(f)); } catch (e) {
+        const { code, status } = await kiError(e);
+        setError(kiMessage(code, status));
+        return;
+      }
       const row = { category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending, name: f.name };
-      await updateItem(itemId, reanalysisChange(f, row, a));
+      try { await updateItem(itemId, reanalysisChange(f, row, a)); } catch { setError('Speichern fehlgeschlagen. Bitte noch einmal versuchen.'); return; }
       onSaved('Neu analysiert.');
-    } catch (e) {
-      const { code } = await kiError(e);
-      setError(code === 'rate_limited' ? 'Das Gratis-Kontingent ist gerade erschöpft. Bitte später noch einmal.'
-        : code === 'empty_answer' ? 'Die KI hat nichts Brauchbares geliefert. Bitte noch einmal versuchen.'
-        : 'Analyse fehlgeschlagen: ' + (code || (e as Error).message));
     } finally { setBusy(false); }
   }
 
