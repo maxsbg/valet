@@ -10,7 +10,7 @@ const web = Platform.OS === 'web';
  * auf iOS gibt es den Farbkreis noch nicht → heller Ersatzton (glow.css).
  */
 export function glowBoxShadow(glow: Glow, blur: number, spread: number): string {
-  if (glow.kind === 'bunt' && !web) return `inset 0 0 ${blur}px ${spread}px ${glow.css}`;
+  if (glow.kind === 'multicolor' && !web) return `inset 0 0 ${blur}px ${spread}px ${glow.css}`;
   return glowShadow(glow, blur, spread);
 }
 
@@ -20,7 +20,7 @@ export function glowBoxShadow(glow: Glow, blur: number, spread: number): string 
  * Als erstes Kind der Kachel einsetzen (unter dem Foto). Für alle anderen Farben: nichts.
  */
 export function TileGlow({ glow, radius, blur, spread }: { glow: Glow; radius: number; blur: number; spread: number }) {
-  if (glow.kind !== 'bunt' || !web) return null;
+  if (glow.kind !== 'multicolor' || !web) return null;
   const ring = `conic-gradient(${[...glow.stops, glow.stops[0]].join(',')})`;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>

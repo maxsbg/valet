@@ -17,7 +17,8 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - Verbindliche Quelle: `docs/keys/key-zuordnung.json` (Kategorien als Baum, Farben, Material, Muster, Stil, Saison, Kragen/Ausschnitt, Verschluss, Trägerart, Anlässe; `other` = „Sonstiges“). Keys/Labels nicht ändern, keine erfinden; Test `keys.test.ts` vergleicht jede Liste im Code mit der JSON.
 - Helfer in `packages/core/src/keys.ts` (`label`, `toKey`, `toKeys`), je Liste `colorLabel`, `materialLabel`, `categoryLast`, `occasionLabel` …; Lesen ist tolerant (Key, deutsches Label oder Altwert → Key: `normalizeCategory`, `toColorKeys`, `toMaterialParts`, `migrateSeasons`, `normalizeOccasions`), angewendet in `toEditForm`, `wardrobe.ts`, `item.ts`, `outfits.ts`.
 - Nicht betroffen: Status, `wish_tag`, Pflege-IDs, Größen-Systeme, `persons.color`, Freitext-Spiegel `items.color/material/style` (weiter deutsches Label).
-- KI-Felder englisch (`category` als Pfad `top/shirt/long_sleeve_shirt`, `colors`, `materials` …), Enum-Werte = Keys, Beschreibungen nennen die Labels.
+- KI-Felder alle englisch (`category` als Pfad `top/shirt/long_sleeve_shirt`, `colors`, `materials`, `brand`, `price`, `list_price`, `purchase_date`, `size`, `article_no`, `material_parts` mit `pct`, `care` …), Enum-Werte = Keys, Beschreibungen nennen die Labels.
+- Interne Formen ebenfalls englisch (20.11.2026): `layoutKind`/`tileKind` = `coat`, `jacket`, `sweater`, `top`, `sport`, `dress`, `pants`, `shorts`, `skirt`, `shoe`, `bag`, `headwear`, `accessory`; Schein-Art `multicolor` statt `bunt`.
 - Stand: App liest alte und neue Werte und schreibt Keys; Migration 0014 noch nicht angewendet (19.11.2026).
 
 ## Aufbau (pnpm-Monorepo)

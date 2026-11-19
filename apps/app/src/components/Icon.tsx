@@ -48,7 +48,7 @@ export function Silhouette({ category, color }: { category: string; color: strin
     cap: 'M20 60c0-22 13-36 30-36s30 14 30 36ZM50 58h40c4 0 4 8 0 8H50Z',
     bag: 'M22 40h56v46a6 6 0 0 1-6 6H28a6 6 0 0 1-6-6ZM36 40c0-16 28-16 28 0',
   };
-  const KIND: Record<string, string> = { oberteil: 'shirt', pullover: 'shirt', sport: 'shirt', kleid: 'shirt', hose: 'pants', shorts: 'pants', rock: 'pants', jacke: 'jacket', mantel: 'jacket', schuhe: 'shoe', tasche: 'bag', kopf: 'cap', accessoire: 'cap' };
+  const KIND: Record<string, string> = { top: 'shirt', sweater: 'shirt', sport: 'shirt', dress: 'shirt', pants: 'pants', shorts: 'pants', skirt: 'pants', jacket: 'jacket', coat: 'jacket', shoe: 'shoe', bag: 'bag', headwear: 'cap', accessory: 'cap' };
   // Form (layoutKind) oder Kategorie-Name
   const kind = KIND[category] ?? KIND[layoutKind(category)] ?? 'shirt';
   return (

@@ -46,7 +46,7 @@ export type Rgb = [number, number, number];
 export type Glow =
   | { kind: 'solid'; name: string | null; rgb: Rgb; alpha: number; css: string }
   /** Bunt: Farbkreis nur am Rand (Ebene unter dem Foto). `css` = Ersatz, wo die Ebene nicht geht. */
-  | { kind: 'bunt'; name: string; stops: readonly string[]; alpha: number; css: string };
+  | { kind: 'multicolor'; name: string; stops: readonly string[]; alpha: number; css: string };
 
 const toRgb = (hex: string): Rgb => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as Rgb;
 const rgba = (c: Rgb, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
@@ -56,7 +56,7 @@ export function glowFor(colors: readonly string[] | null | undefined, photoHex?:
   const g = itemTile.glow;
   const name = glowColorName(colors, photoHex);
   const fallback = toRgb(g.fallback);
-  if (name === MULTICOLOR) return { kind: 'bunt', name, stops: MULTICOLOR_STOPS, alpha: g.alpha, css: rgba(fallback, g.alpha) };
+  if (name === MULTICOLOR) return { kind: 'multicolor', name, stops: MULTICOLOR_STOPS, alpha: g.alpha, css: rgba(fallback, g.alpha) };
   const hex = name ? colorHex(name) : null;
   // Weiß würde auf der weißen Kachel verschwinden → heller Ersatzton
   const rgb = !hex || hex.toLowerCase() === '#ffffff' ? fallback : toRgb(hex);
@@ -65,4 +65,4 @@ export function glowFor(colors: readonly string[] | null | undefined, photoHex?:
 
 /** box-shadow für den Schein (Bunt: keiner – dort zeichnet die Ebene). */
 export const glowShadow = (glow: Glow, blur: number, spread: number) =>
-  glow.kind === 'bunt' ? 'none' : `inset 0 0 ${blur}px ${spread}px ${glow.css}`;
+  glow.kind === 'multicolor' ? 'none' : `inset 0 0 ${blur}px ${spread}px ${glow.css}`;

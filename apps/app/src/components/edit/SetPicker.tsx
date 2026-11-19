@@ -36,7 +36,7 @@ export function SetPicker({ draft, onChange, current, items, width }: Props) {
         <View style={{ width: col, gap: 4 }}>
           {/* Wie die übrigen Set-Teile mit Bild; accent-Ring markiert das Teil, das gerade bearbeitet wird */}
           <View style={[s.tile, { height: col, boxShadow: `inset 0 0 0 2px ${t.accent}` }]} accessibilityLabel={current.name || 'Dieses Teil'}>
-            <ItemPicture uri={current.thumb} inset={8} category={current.kind ?? 'oberteil'} color={current.hex ?? '#d8d2c8'} />
+            <ItemPicture uri={current.thumb} inset={8} category={current.kind ?? 'top'} color={current.hex ?? '#d8d2c8'} />
           </View>
           <Text style={{ fontSize: 12, fontWeight: '600', color: t.ink }}>Dieses Teil</Text>
         </View>

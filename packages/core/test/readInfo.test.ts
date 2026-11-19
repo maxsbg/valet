@@ -11,8 +11,8 @@ test('Schema: alle Felder Pflicht, Kategorie darf fehlen', () => {
 });
 
 test('Prüfung: Etikett mit Prozent und Pflege', () => {
-  const i = checkInfo({ category: null, materialAnteile: [{ name: 'cotton', prozent: 98 }, { name: 'elastane', prozent: 2 }, { name: 'Glitzer', prozent: 5 }],
-    pflege: { wash: 'w30', bleach: 'nobleach', dry: 'kaputt', iron: null, pro: null }, preis: 'teuer', kaufdatum: '2026-13-45', groesse: ' M ' });
+  const i = checkInfo({ category: null, material_parts: [{ name: 'cotton', pct: 98 }, { name: 'elastane', pct: 2 }, { name: 'Glitzer', pct: 5 }],
+    care: { wash: 'w30', bleach: 'nobleach', dry: 'kaputt', iron: null, pro: null }, price: 'teuer', purchase_date: '2026-13-45', size: ' M ' });
   assert.deepEqual(i.item.materials, [{ name: 'cotton', pct: 98 }, { name: 'elastane', pct: 2 }]);
   assert.deepEqual(i.care, { wash: { v: 'w30', src: 'etikett' }, bleach: { v: 'nobleach', src: 'etikett' } });
   assert.equal(i.price, null);
@@ -22,7 +22,7 @@ test('Prüfung: Etikett mit Prozent und Pflege', () => {
 });
 
 test('Übernehmen: Bestellung in Kauf, Wunschteil-Preis als Listenpreis', () => {
-  const i = checkInfo({ shop: 'Zalando', preis: 59.95, listenpreis: 79.99, kaufdatum: '2026-11-10', artikelnummer: 'AB-12' });
+  const i = checkInfo({ shop: 'Zalando', price: 59.95, list_price: 79.99, purchase_date: '2026-11-10', article_no: 'AB-12' });
   const f = applyInfo(setField(emptyEditForm({ ownerId: 'max' }), 'shop', 'COS'), i);
   assert.equal(f.shop, 'COS'); // schon eingetragen → bleibt
   assert.equal(f.price, '59,95');
@@ -36,7 +36,7 @@ test('Übernehmen: Bestellung in Kauf, Wunschteil-Preis als Listenpreis', () => 
 });
 
 test('Übernehmen: Größe nur aus der festen Liste der Größen-Art', () => {
-  const at = (path: string, groesse: string) => applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ category: path, groesse }));
+  const at = (path: string, size: string) => applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ category: path, size }));
   const schuh = CATEGORY_PATHS.find((p) => p.startsWith('shoe'))!;
   const jeans = CATEGORY_PATHS.find((p) => p.startsWith('pants/jeans'))!;
   const shirt = CATEGORY_PATHS.find((p) => p.startsWith('top'))!;
@@ -46,5 +46,13 @@ test('Übernehmen: Größe nur aus der festen Liste der Größen-Art', () => {
   assert.equal(at(shirt, '2XL').size, 'XXL');
   assert.ok(at(shirt, 'xl').aiPending.includes('size'));
   assert.equal(at(shirt, 'Größe M (fällt klein aus)').size, null); // kein freier Text
-  assert.equal(applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ groesse: 'm' })).size, 'M'); // ohne Kategorie: Kleidergrößen
+  assert.equal(applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ size: 'm' })).size, 'M'); // ohne Kategorie: Kleidergrößen
+});
+
+test('Leitsatz: alle Feldnamen der KI-Schemas sind englisch', () => {
+  const names = (s: { properties?: Record<string, unknown> }): string[] =>
+    Object.entries(s.properties ?? {}).flatMap(([k, v]) => [k, ...names(v as { properties?: Record<string, unknown>; items?: { properties?: Record<string, unknown> } }), ...names((v as { items?: { properties?: Record<string, unknown> } }).items ?? {})]);
+  const all = names(READ_INFO_SCHEMA);
+  for (const n of ['brand', 'price', 'list_price', 'purchase_date', 'size', 'article_no', 'material_parts', 'pct', 'care', 'category', 'colors']) assert.ok(all.includes(n), n);
+  for (const n of ['marke', 'preis', 'listenpreis', 'kaufdatum', 'groesse', 'artikelnummer', 'materialAnteile', 'prozent', 'pflege']) assert.ok(!all.includes(n), n);
 });

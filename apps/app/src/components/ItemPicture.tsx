@@ -4,7 +4,7 @@ import { layoutKind } from '@valet/core';
 import { Silhouette } from './Icon';
 
 /** Seitenverhältnis (Höhe ÷ Breite) der Schrank-Kachel je Form (`Tile.size`) */
-export const RATIO: Record<string, number> = { mantel: 1.6, kleid: 1.55, hose: 1.45, jacke: 1.2, pullover: 1.1, oberteil: 1.1, sport: 1.1, rock: 1.05, shorts: 0.95, tasche: 0.95, schuhe: 0.72, kopf: 0.72, accessoire: 0.72 };
+export const RATIO: Record<string, number> = { coat: 1.6, dress: 1.55, pants: 1.45, jacket: 1.2, sweater: 1.1, top: 1.1, sport: 1.1, skirt: 1.05, shorts: 0.95, bag: 0.95, shoe: 0.72, headwear: 0.72, accessory: 0.72 };
 /** Kachelhöhe; nimmt die Form (kind) oder notfalls die Kategorie */
 export const tileHeight = (kindOrCategory: string, width: number) =>
   Math.round(width * (RATIO[kindOrCategory] ?? RATIO[layoutKind(kindOrCategory)] ?? 0.9));

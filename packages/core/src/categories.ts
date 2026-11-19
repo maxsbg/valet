@@ -100,23 +100,23 @@ export const FIT_TERMS: Readonly<Record<string, Partial<Record<FitScale['key'], 
  * Grobe Form für Kachelhöhe, Platzhalter-Silhouette und Board-Anordnung
  * (entspricht den alten Kategorien des alten Valet, plus Kleid/Rock/Kopf).
  */
-export type LayoutKind = 'mantel' | 'jacke' | 'pullover' | 'oberteil' | 'sport' | 'kleid' | 'hose' | 'shorts' | 'rock' | 'schuhe' | 'tasche' | 'kopf' | 'accessoire';
+export type LayoutKind = 'coat' | 'jacket' | 'sweater' | 'top' | 'sport' | 'dress' | 'pants' | 'shorts' | 'skirt' | 'shoe' | 'bag' | 'headwear' | 'accessory';
 
 export function layoutKind(category: string | null | undefined, subcategory?: string | null): LayoutKind {
   switch (category) {
     case 'top':
-      if (subcategory === 'sweatshirt' || subcategory === 'hoodie' || subcategory === 'sweater' || subcategory === 'sweater_vest') return 'pullover';
-      return subcategory === 'sports_top' ? 'sport' : 'oberteil';
-    case 'dress': return 'kleid';
-    case 'pants': return subcategory === 'pajama_pants' ? 'shorts' : 'hose';
+      if (subcategory === 'sweatshirt' || subcategory === 'hoodie' || subcategory === 'sweater' || subcategory === 'sweater_vest') return 'sweater';
+      return subcategory === 'sports_top' ? 'sport' : 'top';
+    case 'dress': return 'dress';
+    case 'pants': return subcategory === 'pajama_pants' ? 'shorts' : 'pants';
     case 'shorts': return 'shorts';
-    case 'skirt': return 'rock';
+    case 'skirt': return 'skirt';
     case 'outerwear':
-      return subcategory === 'coat' || subcategory === 'trench_coat' || subcategory === 'parka' ? 'mantel' : 'jacke';
-    case 'shoe': return 'schuhe';
-    case 'bag': return 'tasche';
-    case 'headwear': return 'kopf';
-    default: return 'accessoire';
+      return subcategory === 'coat' || subcategory === 'trench_coat' || subcategory === 'parka' ? 'coat' : 'jacket';
+    case 'shoe': return 'shoe';
+    case 'bag': return 'bag';
+    case 'headwear': return 'headwear';
+    default: return 'accessory';
   }
 }
 
@@ -127,22 +127,22 @@ export function layoutKind(category: string | null | undefined, subcategory?: st
  */
 const TILE_BY_TYPE: Readonly<Record<string, LayoutKind>> = {
   // kurz geschnittene Mäntel wie Jacken (Carcoat bleibt Mantel: meist oberschenkellang)
-  peacoat: 'jacke',
+  peacoat: 'jacket',
   // lange Teile
-  robe: 'mantel', nightgown: 'kleid', knee_boot: 'tasche', over_knee_boot: 'tasche', rain_boot: 'tasche',
+  robe: 'coat', nightgown: 'dress', knee_boot: 'bag', over_knee_boot: 'bag', rain_boot: 'bag',
   // Accessoires, die eigentlich Kleidung sind
-  undershirt: 'oberteil', swimsuit: 'oberteil', boxer_shorts: 'shorts', swim_shorts: 'shorts', swim_briefs: 'shorts',
+  undershirt: 'top', swimsuit: 'top', boxer_shorts: 'shorts', swim_shorts: 'shorts', swim_briefs: 'shorts',
   sleep_shorts: 'shorts',
 };
 const TILE_BY_SUB: Readonly<Record<string, LayoutKind>> = {
-  vest: 'oberteil', bolero: 'oberteil', playsuit: 'jacke', tunic: 'jacke', mermaid_skirt: 'hose',
-  pajama_pants: 'hose', traditional_clothing: 'kleid',
+  vest: 'top', bolero: 'top', playsuit: 'jacket', tunic: 'jacket', mermaid_skirt: 'pants',
+  pajama_pants: 'pants', traditional_clothing: 'dress',
 };
 
 export function tileKind(category: string | null | undefined, subcategory?: string | null, type?: string | null, fitLength?: number | null): LayoutKind {
   if (type && TILE_BY_TYPE[type]) return TILE_BY_TYPE[type]!;
-  if (category === 'dress' && fitLength != null) return fitLength <= 1 ? 'jacke' : 'kleid';
-  if (category === 'skirt' && fitLength != null) return fitLength >= 4 ? 'hose' : 'rock';
+  if (category === 'dress' && fitLength != null) return fitLength <= 1 ? 'jacket' : 'dress';
+  if (category === 'skirt' && fitLength != null) return fitLength >= 4 ? 'pants' : 'skirt';
   if (subcategory && TILE_BY_SUB[subcategory]) return TILE_BY_SUB[subcategory]!;
   return layoutKind(category, subcategory);
 }
