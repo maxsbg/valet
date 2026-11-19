@@ -264,8 +264,11 @@ export const MONO_LETTER = 0.55;
 export const monoInset = (height: number) => (height - MONO_SIZE.chip) / 2;
 export type MonoSize = keyof typeof MONO_SIZE;
 
-/** Oberkategorie → Symbol (Schrank-Chips) */
-export const CATEGORY_ICON: Record<string, SymbolName> = {'Oberbekleidung': 'catOberbekleidung', 'Oberteil': 'catOberteil', 'Kleid': 'catKleid', 'Hose': 'catHose', 'Shorts': 'catShorts', 'Rock': 'catRock', 'Schuh': 'catSchuh', 'Kopfbedeckung': 'catKopfbedeckung', 'Tasche': 'catTasche', 'Accessoire': 'catAccessoire', 'Schmuck': 'catSchmuck'};
+/** Oberkategorie (Key) → Symbol (Schrank-Chips) */
+export const CATEGORY_ICON: Record<string, SymbolName> = {
+  outerwear: 'catOberbekleidung', top: 'catOberteil', dress: 'catKleid', pants: 'catHose', shorts: 'catShorts', skirt: 'catRock',
+  shoe: 'catSchuh', headwear: 'catKopfbedeckung', bag: 'catTasche', accessory: 'catAccessoire', jewelry: 'catSchmuck',
+};
 
-/** Saison → Symbol */
-export const SEASON_ICON: Record<string, SymbolName> = { Frühling: 'sprout', Sommer: 'sun', Herbst: 'acorn', Winter: 'snow' };
+/** Saison (Key) → Symbol */
+export const SEASON_ICON: Record<string, SymbolName> = { spring: 'sprout', summer: 'sun', autumn: 'acorn', winter: 'snow' };

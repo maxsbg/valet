@@ -38,7 +38,7 @@ test('Getragen: Kosten pro Tragen und Outfit-Planungen zählen mit', () => {
 test('Getragen: Zeitraum, Nutzung, Outfits, Kombinationen, Saison', () => {
   const items = [
     item({ id: 'a', category: 'hose' }), item({ id: 'b', category: 'oberteil', pricePaid: 20 }),
-    item({ id: 'c', category: 'jacke', seasons: ['Sommer'] }), item({ id: 'd', category: 'hose', status: 'stored' }),
+    item({ id: 'c', category: 'jacke', seasons: ['summer'] }), item({ id: 'd', category: 'hose', status: 'stored' }),
   ];
   const o = { id: 'o', ownerId: null, itemIds: ['a', 'b'], occasions: [], plans: [{ id: 'p', date: '2026-11-10', personId: null }, { id: 'q', date: '2026-11-12', personId: null }] };
   const r = wearStats(items, null, { a: ['2026-01-05'] }, [o], '2026-11-13', '30');
@@ -48,7 +48,7 @@ test('Getragen: Zeitraum, Nutzung, Outfits, Kombinationen, Saison', () => {
   assert.equal(r.outfits[0]!.n, 2);
   assert.equal(r.pairs[0]!.n, 2);
   assert.equal(r.days['2026-11-10'], 2);
-  assert.equal(r.season, 'Winter');
+  assert.equal(r.season, 'winter');
   assert.ok(!r.idle.some((x) => x.item.id === 'c')); // Sommerteil im Winter nicht anmahnen
   assert.equal(wearStats(items, null, { a: ['2026-01-05'] }, [o], '2026-11-13', 'all').favorites[0]!.w.length, 3);
 });

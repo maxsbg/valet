@@ -42,7 +42,8 @@ export type Filters = { person: string | null; seasons: string[]; out?: boolean;
 export const NO_FILTERS: Filters = { person: null, seasons: [], out: false, sold: false };
 export const filterCount = (f: Filters) => (f.person ? 1 : 0) + f.seasons.length + (f.out ? 1 : 0) + (f.sold ? 1 : 0);
 
-export const SEASON_FILTERS: readonly string[] = SEASONS;
+/** Saison-Filter: Key (gespeichert/verglichen) + Label (angezeigt) */
+export const SEASON_FILTERS: readonly { key: string; label: string }[] = SEASONS;
 
 /** Innerhalb der Saisons „oder“, zwischen Person und Saison „und“. */
 export function applyFilters(items: Tile[], f: Filters): Tile[] {

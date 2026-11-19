@@ -19,8 +19,8 @@ export type Wear = { itemId: string; date: string; personId: string | null };
 /** Einzeln reserviertes Teil (ohne Outfit), von–bis einschließlich */
 export type Hold = { id: string; itemId: string; personId: string | null; from: string; to: string };
 
-/** Anlässe: feste Liste aus @valet/core (14.11.2026) – keine eigenen Anlässe mehr */
-export const allOccasions = (): string[] => OCCASIONS.map((o) => o.label);
+/** Anlässe: feste Liste aus @valet/core (14.11.2026) – keine eigenen Anlässe mehr; gespeichert werden die Keys */
+export const allOccasions = (): string[] => OCCASIONS.map((o) => o.key);
 
 type PlanRow = { id: string; plan_date: string; person_id: string | null; created_at: string };
 type OutfitRow = {
@@ -43,7 +43,7 @@ export async function loadOutfits(wardrobeId: string): Promise<{ outfits: Outfit
   const outfits = ((os.data ?? []) as unknown as OutfitRow[]).map((o) => ({
     id: o.id,
     name: o.name ?? '',
-    // alte Namen (Uni, Arbeit …) → neue; Unbekanntes fällt weg (gespeichert erst beim nächsten Ändern)
+    // Keys; deutsche Labels und alte Namen (Uni, Arbeit …) werden umgerechnet, Unbekanntes fällt weg (gespeichert erst beim nächsten Ändern)
     occasions: normalizeOccasions(o.occasions),
     ownerId: o.owner_id,
     createdAt: o.created_at,

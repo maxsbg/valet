@@ -1,4 +1,4 @@
-import { occasionOf } from '@valet/core';
+import { occasionLabel, occasionOf } from '@valet/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Page } from '@/components/Page';
@@ -124,7 +124,7 @@ export default function OutfitDetail() {
               <Text style={[s.section, { color: t.ink }]}>Anlass</Text>
               <View style={s.wrap}>
                 {o.occasions.map((x) => (
-                  <Chip key={x} label={x} selected icon={<Icon name={occasionOf(x)!.icon} size="chip" color={t.onFill} />} />
+                  <Chip key={x} label={occasionLabel(x)} selected icon={<Icon name={occasionOf(x)!.icon} size="chip" color={t.onFill} />} />
                 ))}
               </View>
             </>
@@ -193,7 +193,7 @@ export default function OutfitDetail() {
       </Sheet>
       {canExport && (
         <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Outfit als Bild" name={`${fileName(o.name || 'Outfit')}.png`}
-          make={() => outfitPng(o.pieces, byId, o.name || (o.occasions.length ? `Outfit · ${o.occasions.join(', ')}` : 'Outfit'))} />
+          make={() => outfitPng(o.pieces, byId, o.name || (o.occasions.length ? `Outfit · ${o.occasions.map(occasionLabel).join(', ')}` : 'Outfit'))} />
       )}
       {toast.node}
     </View>

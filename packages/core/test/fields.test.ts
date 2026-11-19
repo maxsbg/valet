@@ -7,36 +7,36 @@ import {
 import { SIZES } from '../src/attributes';
 
 test('Felder je Kategorie (Spec 8a)', () => {
-  const schuh = fieldsFor('Schuh', 'Sneaker');
+  const schuh = fieldsFor('shoe', 'sneaker');
   assert.deepEqual([schuh.pattern, schuh.reversible, schuh.size, schuh.care, schuh.closure, schuh.weather], [false, false, 'shoe', false, true, true]);
-  const tasche = fieldsFor('Tasche', 'Rucksack');
+  const tasche = fieldsFor('bag', 'backpack');
   assert.deepEqual([tasche.size, tasche.weather, tasche.strap, tasche.care], [null, false, true, false]);
-  assert.equal(fieldsFor('Schmuck', 'Ohrring').size, null);
-  assert.equal(fieldsFor('Schmuck', 'Ring').size, 'ring');
-  assert.equal(fieldsFor('Kopfbedeckung', 'Kappe').size, 'cap');
-  assert.equal(fieldsFor('Kopfbedeckung', 'Mütze').size, 'letters');
-  assert.equal(fieldsFor('Hose', 'Jeans').size, 'pants');
-  assert.ok(fieldsFor('Oberteil', 'T-Shirt').layers && fieldsFor('Oberbekleidung', 'Blouson').layers);
-  assert.ok(!fieldsFor('Kleid', null).layers);
+  assert.equal(fieldsFor('jewelry', 'earring').size, null);
+  assert.equal(fieldsFor('jewelry', 'ring').size, 'ring');
+  assert.equal(fieldsFor('headwear', 'cap').size, 'cap');
+  assert.equal(fieldsFor('headwear', 'beanie_cap').size, 'letters');
+  assert.equal(fieldsFor('pants', 'jeans').size, 'pants');
+  assert.ok(fieldsFor('top', 't_shirt').layers && fieldsFor('outerwear', 'blouson').layers);
+  assert.ok(!fieldsFor('dress', null).layers);
 });
 
 test('Ausschnitt oder Kragen nach Unterkategorie', () => {
-  assert.equal(fieldsFor('Oberteil', 'Hemd').neckline!.label, 'Kragen');
-  assert.equal(fieldsFor('Oberteil', 'Bluse').neckline!.label, 'Kragen');
-  assert.equal(fieldsFor('Oberteil', 'T-Shirt').neckline!.label, 'Ausschnitt');
-  assert.equal(fieldsFor('Kleid', 'Wickelkleid').neckline!.label, 'Ausschnitt');
-  const outer = fieldsFor('Oberbekleidung', 'Blouson').neckline!;
+  assert.equal(fieldsFor('top', 'shirt').neckline!.label, 'Kragen');
+  assert.equal(fieldsFor('top', 'blouse').neckline!.label, 'Kragen');
+  assert.equal(fieldsFor('top', 't_shirt').neckline!.label, 'Ausschnitt');
+  assert.equal(fieldsFor('dress', 'wrap_dress').neckline!.label, 'Ausschnitt');
+  const outer = fieldsFor('outerwear', 'blouson').neckline!;
   assert.equal(outer.label, 'Kragen');
-  assert.ok(outer.options.includes('Kapuze'));
-  assert.equal(fieldsFor('Hose', 'Jeans').neckline, null);
+  assert.ok(outer.options.some((o) => o.key === 'hood' && o.label === 'Kapuze'));
+  assert.equal(fieldsFor('pants', 'jeans').neckline, null);
 });
 
 test('Verschluss, Pflege und Wetter nur wo sinnvoll', () => {
-  assert.ok(fieldsFor('Oberteil', 'Hemd').closure);
-  assert.ok(!fieldsFor('Oberteil', 'T-Shirt').closure);
-  assert.ok(fieldsFor('Accessoire', 'Gürtel').closure && !fieldsFor('Accessoire', 'Brille').closure);
-  assert.ok(fieldsFor('Accessoire', 'Schal').care && !fieldsFor('Accessoire', 'Brille').care);
-  assert.ok(fieldsFor('Accessoire', 'Handschuh').weather && !fieldsFor('Accessoire', 'Gürtel').weather);
+  assert.ok(fieldsFor('top', 'shirt').closure);
+  assert.ok(!fieldsFor('top', 't_shirt').closure);
+  assert.ok(fieldsFor('accessory', 'belt').closure && !fieldsFor('accessory', 'glasses').closure);
+  assert.ok(fieldsFor('accessory', 'scarf').care && !fieldsFor('accessory', 'glasses').care);
+  assert.ok(fieldsFor('accessory', 'glove').weather && !fieldsFor('accessory', 'belt').weather);
 });
 
 test('Hosengröße W/L', () => {
@@ -45,7 +45,7 @@ test('Hosengröße W/L', () => {
   assert.deepEqual(parseWL('M'), { w: null, l: null });
   assert.equal(composeWL('W32', 'L34'), 'W32/L34');
   assert.equal(composeWL('W32', null), 'W32');
-  assert.ok(pantsWaistOnly('Shorts') && pantsWaistOnly('Hose', 'Pyjama-Hose') && !pantsWaistOnly('Hose', 'Jeans'));
+  assert.ok(pantsWaistOnly('shorts') && pantsWaistOnly('pants', 'pajama_pants') && !pantsWaistOnly('pants', 'jeans'));
   assert.equal(PANTS_WAIST[0], 'W24'); assert.equal(PANTS_WAIST.at(-1), 'W44');
   assert.equal(PANTS_LENGTH[0], 'L26'); assert.equal(PANTS_LENGTH.at(-1), 'L38');
 });
@@ -62,19 +62,19 @@ test('Schuh EU und Kappe', () => {
 
 test('Neue Größenarten je Unterkategorie', () => {
   const size = (c: string, s: string) => fieldsFor(c, s).size;
-  assert.equal(size('Accessoire', 'Handschuh'), 'glove');
-  assert.equal(size('Accessoire', 'Gürtel'), 'belt');
-  assert.equal(size('Accessoire', 'Socke'), 'sock');
-  assert.equal(size('Accessoire', 'Strumpfhose'), 'sock');
-  assert.equal(size('Accessoire', 'Unterwäsche'), 'underwear');
-  assert.equal(size('Accessoire', 'Bademode'), 'clothing');
-  assert.equal(size('Kopfbedeckung', 'Hut'), 'hat');
-  assert.equal(size('Kopfbedeckung', 'Hijab'), 'letters');
-  assert.equal(size('Kopfbedeckung', 'Sonstiges'), 'letters');
-  assert.equal(size('Schmuck', 'Armband'), 'bracelet');
-  assert.equal(size('Schmuck', 'Halskette'), 'necklace');
-  assert.equal(size('Schmuck', 'Uhr'), 'watch');
-  for (const sub of ['Brille', 'Geldbörse', 'Handyhülle', 'Haarschmuck', 'Anzug-Accessoire', 'Schal']) assert.equal(size('Accessoire', sub), null, sub);
+  assert.equal(size('accessory', 'glove'), 'glove');
+  assert.equal(size('accessory', 'belt'), 'belt');
+  assert.equal(size('accessory', 'sock'), 'sock');
+  assert.equal(size('accessory', 'tights'), 'sock');
+  assert.equal(size('accessory', 'underwear'), 'underwear');
+  assert.equal(size('accessory', 'swimwear'), 'clothing');
+  assert.equal(size('headwear', 'hat'), 'hat');
+  assert.equal(size('headwear', 'hijab'), 'letters');
+  assert.equal(size('headwear', 'other'), 'letters');
+  assert.equal(size('jewelry', 'bracelet'), 'bracelet');
+  assert.equal(size('jewelry', 'necklace'), 'necklace');
+  assert.equal(size('jewelry', 'watch'), 'watch');
+  for (const sub of ['glasses', 'wallet', 'phone_case', 'hair_accessory', 'suit_accessory', 'scarf']) assert.equal(size('accessory', sub), null, sub);
 });
 
 test('Größenlisten', () => {
@@ -86,8 +86,8 @@ test('Größenlisten', () => {
   assert.deepEqual([WATCH_SIZES[0], WATCH_SIZES.at(-1)], ['26 mm', '50 mm']);
   assert.ok(SOCK_SIZES.includes('39–42') && SOCK_SIZES.includes('40–42'));
   assert.deepEqual(SIZES.letters.slice(7, 10), ['3XL', '4XL', '5XL']);
-  assert.deepEqual(sizeChoices('pants', 'Hose', 'Stoffhose').map((c) => c.system), ['wl', 'letters', 'numbers']);
-  assert.deepEqual(sizeChoices('pants', 'Hose', 'Jeans').map((c) => c.system), ['wl', 'letters']);
+  assert.deepEqual(sizeChoices('pants', 'pants', 'trousers').map((c) => c.system), ['wl', 'letters', 'numbers']);
+  assert.deepEqual(sizeChoices('pants', 'pants', 'jeans').map((c) => c.system), ['wl', 'letters']);
   assert.deepEqual(sizeChoices('underwear').map((c) => c.values.at(-1)), ['One Size', '9']);
   assert.ok(sizeChoices('glove').find((c) => c.system === 'letters')!.doubles);
 });
@@ -118,9 +118,9 @@ test('matchSize für alle Arten', () => {
   assert.deepEqual(m('underwear', '5'), { system: 'numbers', size: '5' });
   assert.deepEqual(m('letters', 'one size'), { system: 'letters', size: 'One Size' });
   assert.equal(m('letters', '58'), null);
-  assert.deepEqual(m('pants', '50', 'Hose', 'Stoffhose'), { system: 'numbers', size: '50' });
-  assert.deepEqual(m('pants', '32/34', 'Hose', 'Jeans'), { system: 'wl', size: 'W32/L34' });
-  assert.deepEqual(m('pants', '32/34', 'Shorts', 'Cargoshorts'), { system: 'wl', size: 'W32' });
+  assert.deepEqual(m('pants', '50', 'pants', 'trousers'), { system: 'numbers', size: '50' });
+  assert.deepEqual(m('pants', '32/34', 'pants', 'jeans'), { system: 'wl', size: 'W32/L34' });
+  assert.deepEqual(m('pants', '32/34', 'shorts', 'cargo_shorts'), { system: 'wl', size: 'W32' });
   assert.equal(m('pants', 'XL/XXXL'), null);
 });
 

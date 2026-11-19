@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATEGORY_ICON, ICON_SIZE, MONO_SIZE, SEASON_ICON, SYMBOLS, type SymbolDef } from '@valet/ui';
-import { CARE, CATEGORY_NAMES, OCCASIONS, SEASONS, STATUS_LIST, WISH_TAGS } from '../src/index';
+import { CARE, CATEGORY_KEYS, OCCASIONS, SEASONS, STATUS_LIST, WISH_TAGS } from '../src/index';
 
 const entries = Object.entries(SYMBOLS) as [string, SymbolDef][];
 const names = new Set(entries.map(([n]) => n));
@@ -50,8 +50,8 @@ test('Status, Anlässe, Wunsch-Kategorien, Pflege, Saison und Oberkategorien hab
   for (const o of OCCASIONS) assert.ok(names.has(o.icon), `Anlass ${o.label}: ${o.icon}`);
   for (const w of WISH_TAGS) assert.ok(names.has(w.id), `Wunsch-Kategorie ${w.label}`);
   for (const g of CARE) for (const o of g.options) assert.ok(names.has(o.id), `Pflege ${o.id}`);
-  for (const s of SEASONS) assert.ok(SEASON_ICON[s] && names.has(SEASON_ICON[s]!), `Saison ${s}`);
-  for (const c of CATEGORY_NAMES) assert.ok(CATEGORY_ICON[c] && names.has(CATEGORY_ICON[c]!), `Oberkategorie ${c}`);
+  for (const s of SEASONS) assert.ok(SEASON_ICON[s.key] && names.has(SEASON_ICON[s.key]!), `Saison ${s.label}`);
+  for (const c of CATEGORY_KEYS) assert.ok(CATEGORY_ICON[c] && names.has(CATEGORY_ICON[c]!), `Oberkategorie ${c}`);
 });
 
 test('Größen-Stufen bleiben die festgelegten', () => {

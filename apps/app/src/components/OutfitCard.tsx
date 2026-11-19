@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { occasionSlots } from '@valet/core';
+import { occasionLabel, occasionSlots } from '@valet/core';
 import { itemTile, outfitCard as OC } from '@valet/ui';
 import { OutfitBoard } from './OutfitBoard';
 import { Glass, Num } from './tile/TileBadge';
@@ -33,7 +33,7 @@ export function OutfitCard({ outfit, byId, width, today, onPress, small }: Props
   const n = outfit.pieces.filter((p) => byId.has(p.id)).length;
   const slots = occasionSlots(outfit.occasions);
   const boardW = width - 2 * M.photoInset;
-  const label = [`Outfit mit ${n} Teilen`, outfit.occasions.length ? outfit.occasions.join(', ') : null, today ? (today.name ? `heute: ${today.name}` : 'heute') : null]
+  const label = [`Outfit mit ${n} Teilen`, outfit.occasions.length ? outfit.occasions.map(occasionLabel).join(', ') : null, today ? (today.name ? `heute: ${today.name}` : 'heute') : null]
     .filter(Boolean).join(', ');
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}

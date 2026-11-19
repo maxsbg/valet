@@ -2,7 +2,8 @@
 // Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten und Ansicht nicht gezeigt.
 // Gespeicherte Werte bleiben in der Datenbank. Eine Karte ohne sichtbare Zeile entfällt.
 
-import { COLLARS, LETTER_DOUBLES, SIZES, ONE_SIZE, sizeSystemOf, type SizeSystem } from './attributes';
+import { COLLAR_LIST, COLLARS, LETTER_DOUBLES, SIZES, ONE_SIZE, sizeSystemOf, type SizeSystem } from './attributes';
+import { KEY_LISTS, label, pickKeys, type KeyList } from './keys';
 
 /** Art der Größenangabe */
 export type SizeKind =
@@ -29,25 +30,28 @@ export type Fields = {
   layers: boolean;
   weather: boolean;
   /** „Kragen“ oder „Ausschnitt“ – eine Zeile, Name und Werte nach Unterkategorie */
-  neckline: { label: 'Kragen' | 'Ausschnitt'; options: readonly string[] } | null;
+  neckline: { label: 'Kragen' | 'Ausschnitt'; options: KeyList } | null;
   closure: boolean;
   strap: boolean;
   care: boolean;
 };
 
-export const NECKLINES = ['Rundhals', 'V-Ausschnitt', 'Knopfleiste', 'Polokragen', 'Rollkragen', 'Stehkragen', 'Kapuze'] as const;
-export const OUTER_COLLARS = [...COLLARS.filter((c) => c !== 'ohne Kragen'), 'Kapuze', 'ohne Kragen'] as const;
+/** Ausschnitte bei Oberteilen (außer Hemd/Bluse) und Kleidern */
+export const NECKLINES: KeyList = pickKeys(COLLAR_LIST, ['crew_neck', 'v_neck', 'placket', 'polo_collar', 'turtleneck', 'stand_collar', 'hood']);
+/** Kragen bei Oberbekleidung */
+export const OUTER_COLLARS: KeyList = pickKeys(COLLAR_LIST, [...COLLARS.map((c) => c.key).filter((k) => k !== 'no_collar'), 'hood', 'no_collar']);
 /** Trägerart bei Taschen (bestätigt 15.11.2026) */
-export const STRAPS = ['Henkel', 'Schultergurt', 'Umhängegurt', 'Rucksackgurte', 'Kette', 'ohne'] as const;
+export const STRAPS: KeyList = KEY_LISTS.straps;
+export const strapLabel = (key: string | null | undefined): string => label(STRAPS, key);
 
-const ACC_CARE = new Set(['Unterwäsche', 'Socke', 'Strumpfhose', 'Bademode', 'Schal', 'Anzug-Accessoire', 'Handschuh', 'Traditionelle Kleidung', 'Stulpe']);
-const ACC_WEATHER = new Set(['Schal', 'Handschuh', 'Socke', 'Strumpfhose', 'Stulpe', 'Bademode']);
-const TOP_CLOSURE = new Set(['Hemd', 'Bluse', 'Polohemd', 'Body']);
-const ACC_CLOSURE = new Set(['Gürtel', 'Handschuh']);
+const ACC_CARE = new Set(['underwear', 'sock', 'tights', 'swimwear', 'scarf', 'suit_accessory', 'glove', 'traditional_clothing', 'warmer']);
+const ACC_WEATHER = new Set(['scarf', 'glove', 'sock', 'tights', 'warmer', 'swimwear']);
+const TOP_CLOSURE = new Set(['shirt', 'blouse', 'polo', 'bodysuit']);
+const ACC_CLOSURE = new Set(['belt', 'glove']);
 /** Accessoires ohne Größenfeld (Werte bleiben gespeichert) */
-const ACC_NO_SIZE = new Set(['Brille', 'Geldbörse', 'Handyhülle', 'Haarschmuck', 'Anzug-Accessoire', 'Schal']);
-const ACC_SIZE: Readonly<Record<string, SizeKind>> = { Handschuh: 'glove', Gürtel: 'belt', Socke: 'sock', Strumpfhose: 'sock', Unterwäsche: 'underwear' };
-const JEWELRY_SIZE: Readonly<Record<string, SizeKind>> = { Ring: 'ring', Armband: 'bracelet', Halskette: 'necklace', Uhr: 'watch' };
+const ACC_NO_SIZE = new Set(['glasses', 'wallet', 'phone_case', 'hair_accessory', 'suit_accessory', 'scarf']);
+const ACC_SIZE: Readonly<Record<string, SizeKind>> = { glove: 'glove', belt: 'belt', sock: 'sock', tights: 'sock', underwear: 'underwear' };
+const JEWELRY_SIZE: Readonly<Record<string, SizeKind>> = { ring: 'ring', bracelet: 'bracelet', necklace: 'necklace', watch: 'watch' };
 
 /** Ohne Kategorie: alles zeigen (nichts verstecken, solange nichts gewählt ist) */
 const ALL: Fields = {
@@ -57,30 +61,30 @@ const ALL: Fields = {
 
 export function fieldsFor(category: string | null | undefined, sub?: string | null): Fields {
   switch (category) {
-    case 'Oberteil': {
-      const shirt = sub === 'Hemd' || sub === 'Bluse';
+    case 'top': {
+      const shirt = sub === 'shirt' || sub === 'blouse';
       return { pattern: true, reversible: true, size: 'clothing', layers: true, weather: true,
         neckline: shirt ? { label: 'Kragen', options: COLLARS } : { label: 'Ausschnitt', options: NECKLINES },
         closure: !sub || TOP_CLOSURE.has(sub), strap: false, care: true };
     }
-    case 'Kleid':
+    case 'dress':
       return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: true, neckline: { label: 'Ausschnitt', options: NECKLINES }, closure: false, strap: false, care: true };
-    case 'Hose':
-    case 'Shorts':
+    case 'pants':
+    case 'shorts':
       return { pattern: true, reversible: true, size: 'pants', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
-    case 'Rock':
+    case 'skirt':
       return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
-    case 'Oberbekleidung':
+    case 'outerwear':
       return { pattern: true, reversible: true, size: 'clothing', layers: true, weather: true, neckline: { label: 'Kragen', options: OUTER_COLLARS }, closure: true, strap: false, care: true };
-    case 'Schuh':
+    case 'shoe':
       return { pattern: false, reversible: false, size: 'shoe', layers: false, weather: true, neckline: null, closure: true, strap: false, care: false };
-    case 'Tasche':
+    case 'bag':
       return { pattern: true, reversible: true, size: null, layers: false, weather: false, neckline: null, closure: true, strap: true, care: false };
-    case 'Kopfbedeckung':
-      return { pattern: true, reversible: true, size: sub === 'Kappe' ? 'cap' : sub === 'Hut' ? 'hat' : 'letters', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
-    case 'Schmuck':
+    case 'headwear':
+      return { pattern: true, reversible: true, size: sub === 'cap' ? 'cap' : sub === 'hat' ? 'hat' : 'letters', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
+    case 'jewelry':
       return { pattern: false, reversible: false, size: (sub && JEWELRY_SIZE[sub]) || null, layers: false, weather: false, neckline: null, closure: false, strap: false, care: false };
-    case 'Accessoire':
+    case 'accessory':
       return { pattern: true, reversible: true, size: !sub ? 'clothing' : ACC_NO_SIZE.has(sub) ? null : ACC_SIZE[sub] ?? 'clothing', layers: false, weather: !!sub && ACC_WEATHER.has(sub), neckline: null,
         closure: !!sub && ACC_CLOSURE.has(sub), strap: false, care: !!sub && ACC_CARE.has(sub) };
     default:
@@ -136,10 +140,10 @@ export const UNDERWEAR_NUMBERS = range(4, 9).map(String);
 
 /** Hose ohne Länge: Shorts und Pyjama-Hose (Spec 7) */
 export const pantsWaistOnly = (category: string | null | undefined, sub?: string | null) =>
-  category === 'Shorts' || (category === 'Hose' && sub === 'Pyjama-Hose');
+  category === 'shorts' || (category === 'pants' && sub === 'pajama_pants');
 /** Hose mit Konfektionsgrößen (Zahlen 44–60): Anzug- und Stoffhosen */
 export const pantsNumbers = (category: string | null | undefined, sub?: string | null) =>
-  category === 'Hose' && sub === 'Stoffhose';
+  category === 'pants' && sub === 'trousers';
 
 /** „W32/L32“ → { w: 'W32', l: 'L32' } */
 export function parseWL(size: string | null | undefined): { w: string | null; l: string | null } {

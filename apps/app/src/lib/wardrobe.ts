@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { personText } from '@valet/ui';
-import { isWishTag, layoutKind, tileKind, migrateSeasons, normalizeCategory, type LayoutKind, type WishTag, type ItemStatus } from '@valet/core';
+import { isWishTag, layoutKind, tileKind, migrateSeasons, normalizeCategory, toColorKeys, type LayoutKind, type WishTag, type ItemStatus } from '@valet/core';
 import { loadOutfits, todayIds, todayWho, type Hold, type Outfit, type Wear } from './outfits';
 import type { PersonLook } from '@/components/ItemTile';
 
@@ -116,7 +116,8 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     kind: layoutKind(path.category, path.subcategory),
     size: tileKind(path.category, path.subcategory, path.type, i.fit_length),
     layers: i.layers ?? [],
-    colors: i.colors ?? [],
+    // Farben als Keys (liest auch deutsche Namen vor Migration 0014)
+    colors: toColorKeys(i.colors),
     color: i.color,
     ownerId: i.owner_id,
     owners: i.owner_ids ?? [],

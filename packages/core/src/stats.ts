@@ -97,7 +97,7 @@ export type WearPeriod = '30' | 'year' | 'all';
 /** Aktuelle Saison (wie die Saison-Angabe an den Teilen): Mär–Mai Frühling, Jun–Aug Sommer, Sep–Okt Herbst, Nov–Feb Winter */
 export function seasonOf(iso: string): Season {
   const m = Number(iso.slice(5, 7));
-  return m >= 11 || m <= 2 ? 'Winter' : m <= 5 ? 'Frühling' : m <= 8 ? 'Sommer' : 'Herbst';
+  return m >= 11 || m <= 2 ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn';
 }
 
 const shiftISO = (iso: string, n: number) => {

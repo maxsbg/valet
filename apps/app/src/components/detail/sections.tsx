@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, LAYERS, RAIN, SEASONS, WARMTH, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
+  CARE, LAYERS, RAIN, SEASONS, WARMTH, collarLabel, closureLabel, colorLabel, materialLabel, patternLabel, strapLabel, styleLabel, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
   shortDate, shortUrl, sizeText, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -72,7 +72,9 @@ function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
 export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void }) {
   const t = useTheme();
   const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x) => <ValueCapsule key={x} label={x} />);
-  const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={c}><ColorDot name={c} onFill /></ValueCircle>);
+  const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={colorLabel(c)}><ColorDot name={c} onFill /></ValueCircle>);
+  /** gespeicherter Key → deutsches Label (leer bleibt leer) */
+  const lbl = (fn: (k: string) => string) => (k: string | null | undefined) => (k ? fn(k) : null);
   const fx = fieldsFor(f.category, f.subcategory);
   const rev = fx.reversible && f.reversible;
   const scales = fitScalesOf(f.category);
@@ -84,12 +86,12 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
   const estimated = care.some((c) => c.src === 'geschaetzt');
   const aussehen: [string, React.ReactNode[]][] = [
     ['Kategorie', caps([categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })])],
-    ['Saison', SEASONS.filter((x) => f.seasons.includes(x)).map((x) => <ValueCircle key={x} a11y={x}><Icon name={SEASON_ICON[x]!} size="row" color={t.onFill} /></ValueCircle>)],
+    ['Saison', SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)],
     [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
     ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
-    [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([f.pattern]) : []],
-    ...(rev && fx.pattern ? [['Muster Seite B', caps([f.patternB])] as [string, React.ReactNode[]]] : []),
-    ['Material', caps(f.materials.map((m) => m.name))],
+    [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([lbl(patternLabel)(f.pattern)]) : []],
+    ...(rev && fx.pattern ? [['Muster Seite B', caps([lbl(patternLabel)(f.patternB)])] as [string, React.ReactNode[]]] : []),
+    ['Material', caps(f.materials.map((m) => materialLabel(m.name)))],
     ['Größe', fx.size ? caps([sizeText(f.sizeSystem, f.size), fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
   ];
   const tragen: [string, React.ReactNode[]][] = [
@@ -104,10 +106,10 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
     ]],
   ];
   const details: [string, React.ReactNode[]][] = [
-    ['Stil', caps(f.styles)],
-    [fx.neckline?.label ?? 'Kragen', fx.neckline ? caps([f.collar]) : []],
-    ['Verschluss', fx.closure ? caps([f.closure]) : []],
-    ['Trägerart', fx.strap ? caps([f.strap]) : []],
+    ['Stil', caps(f.styles.map(styleLabel))],
+    [fx.neckline?.label ?? 'Kragen', fx.neckline ? caps([lbl(collarLabel)(f.collar)]) : []],
+    ['Verschluss', fx.closure ? caps([lbl(closureLabel)(f.closure)]) : []],
+    ['Trägerart', fx.strap ? caps([lbl(strapLabel)(f.strap)]) : []],
   ];
   const has = (rows: [string, React.ReactNode[]][]) => rows.some(([, v]) => v.length > 0);
   return (

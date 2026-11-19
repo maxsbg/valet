@@ -4,7 +4,8 @@
 import { MATERIALS, CARE, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { setField, type EditForm } from '../edit';
 import { fieldsFor, matchSize } from '../fields';
-import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, checkAnalysis, applyAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
+import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, categoryDescription, checkAnalysis, applyAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
+import { toKey } from '../keys';
 
 export type InfoKind = 'label' | 'shop' | 'order';
 
@@ -17,9 +18,9 @@ const CARE_PROPS: Record<string, JsonSchema> = Object.fromEntries(CARE.map((g) =
 }]));
 
 // Steckbrief-Felder wie bei „Teil erkennen“, aber Kategorie darf fehlen (z. B. beim Etikett) und Material mit Prozent
-const { material: _material, kategorie: _kategorie, ...ITEM } = ANALYZE_ITEM_PROPS;
+const { materials: _materials, category: _category, ...ITEM } = ANALYZE_ITEM_PROPS;
 const PROPS: Record<string, JsonSchema> = {
-  kategorie: { type: ['string', 'null'], enum: [...CATEGORY_PATHS, null], description: 'Nur wenn aus Text oder Bild klar erkennbar: Kategorie › Unterkategorie › Typ' },
+  category: { type: ['string', 'null'], enum: [...CATEGORY_PATHS, null], description: categoryDescription('Nur wenn aus Text oder Bild klar erkennbar: Kategorie/Unterkategorie/Typ.') },
   ...ITEM,
   shop: text('Name des Shops oder Händlers'),
   preis: num('Aktueller bzw. bezahlter Preis je Stück in Euro (Zahl, z. B. 59.95)'),
@@ -28,8 +29,8 @@ const PROPS: Record<string, JsonSchema> = {
   groesse: text('Größe wie angegeben, nur die Größe ohne Zusätze, z. B. M, S/M (Doppelgröße), 4XL, 42, 42 1/2, 42 2/3 (Drittelgröße), W32/L34, 7 3/8 (Fitted), 8,5 (Handschuh), 39–42 (Socken), 95 cm (Gürtellänge), 58 cm (Kopfumfang Hut), 45 cm (Kettenlänge), 40 mm (Uhrgehäuse)'),
   artikelnummer: text('Artikel- oder Modellnummer, sonst null'),
   materialAnteile: {
-    type: 'array', description: 'Materialzusammensetzung laut Text oder Etikett, Hauptmaterial zuerst; nächstliegender Listenwert (z. B. Cotton → Baumwolle)',
-    items: { type: 'object', properties: { name: { type: 'string', enum: [...MATERIALS] }, prozent: { type: ['integer', 'null'] } }, required: ['name', 'prozent'], additionalProperties: false },
+    type: 'array', description: `Materialzusammensetzung laut Text oder Etikett, Hauptmaterial zuerst; nächstliegender Listenwert (z. B. Cotton, Baumwolle → cotton). Labels: ${MATERIALS.map((m) => `${m.key} = ${m.label}`).join(', ')}`,
+    items: { type: 'object', properties: { name: { type: 'string', enum: MATERIALS.map((m) => m.key) }, prozent: { type: ['integer', 'null'] } }, required: ['name', 'prozent'], additionalProperties: false },
   },
   pflege: { type: 'object', properties: CARE_PROPS, required: Object.keys(CARE_PROPS), additionalProperties: false, description: 'Pflegesymbole bzw. -hinweise, nur wenn angegeben' },
 };
@@ -45,7 +46,7 @@ const WHAT: Record<InfoKind, string> = {
 export function readInfoPrompt(kind: InfoKind | null): string {
   return `Du siehst ${kind ? WHAT[kind] : 'ein Etikett, einen Shop-Screenshot oder eine Bestellbestätigung zu einem Kleidungsstück'}.
 Lies nur ab, was dort steht oder klar zu sehen ist – nichts schätzen. Fehlt eine Angabe: null bzw. leere Liste.
-Nutze für Listenfelder nur die vorgegebenen Werte. Name = exakter Produktname aus dem Shop, ohne Farbe.
+Nutze für Listenfelder nur die vorgegebenen Werte (Keys). Name = exakter Produktname aus dem Shop, ohne Farbe.
 Stehen mehrere Artikel darauf, nimm nur den ersten bzw. den hervorgehobenen.`;
 }
 
@@ -72,10 +73,10 @@ export function checkInfo(raw: unknown): Info {
   const parts: MaterialPart[] = [];
   for (const m of Array.isArray(r.materialAnteile) ? r.materialAnteile : []) {
     const name = (m as Raw)?.name, pct = (m as Raw)?.prozent;
-    if (typeof name !== 'string' || !(MATERIALS as readonly string[]).includes(name) || parts.some((p) => p.name === name)) continue;
+    if (typeof name !== 'string' || toKey(MATERIALS, name) !== name || parts.some((p) => p.name === name)) continue;
     parts.push({ name, pct: typeof pct === 'number' && Number.isInteger(pct) && pct > 0 && pct <= 100 ? pct : null });
   }
-  const item = { ...checkAnalysis({ ...r, material: [] }), materials: parts.slice(0, 5) };
+  const item = { ...checkAnalysis({ ...r, materials: [] }), materials: parts.slice(0, 5) };
   const care: Care = {};
   const p = (r.pflege && typeof r.pflege === 'object' ? r.pflege : {}) as Raw;
   for (const g of CARE) {
@@ -141,7 +142,7 @@ export function readPagePrompt(facts: PageFacts): string {
 ${known ? `Strukturierte Angaben der Seite:\n${known}\n` : ''}
 Lies nur ab, was dort steht – nichts schätzen. Fehlt eine Angabe: null bzw. leere Liste.
 Achte besonders auf Beschreibung, Materialzusammensetzung (mit Prozent) und Pflegehinweise.
-Nutze für Listenfelder nur die vorgegebenen Werte. Name = exakter Produktname aus dem Shop, ohne Farbe.
+Nutze für Listenfelder nur die vorgegebenen Werte (Keys). Name = exakter Produktname aus dem Shop, ohne Farbe.
 Preis = aktueller Preis in Euro; listenpreis nur, wenn ein Streichpreis/UVP angegeben ist. kaufdatum = null.
 Farbe nur, wenn die Seite sie nennt. Ignoriere Navigation, Empfehlungen und andere Produkte.`;
 }

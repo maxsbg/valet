@@ -4,51 +4,52 @@ import {
   COLORS, colorHex, colorFamily, tapMainColor, tapNuance, rankInk, migrateSeasons, MATERIALS, PATTERNS, CLOSURES, sizeSystemOf, hasCollarSize,
   careList, confirmCare, careFromLabel, careLabel, nearestColor, type ColorPick,
 } from '../src/attributes';
+import { keysOf } from '../src/keys';
 
 const empty: ColorPick = { colors: [], open: null, full: false };
 
 test('Farben: Hauptfarben mit Nuancen, Hex nachschlagbar', () => {
   assert.equal(COLORS.length, 21);
-  assert.equal(colorHex('Olivgrün'), '#6b7a3c');
-  assert.equal(colorFamily('Olivgrün'), 'Grün');
-  assert.equal(colorFamily('Schwarz'), 'Schwarz');
+  assert.equal(colorHex('olive'), '#6b7a3c');
+  assert.equal(colorFamily('olive'), 'green');
+  assert.equal(colorFamily('black'), 'black');
   assert.equal(colorHex('Unbekannt'), null);
 });
 
 test('Farben: Hauptfarbe tippen → gewählt und aufgeklappt', () => {
-  const p = tapMainColor(empty, 'Grün');
-  assert.deepEqual(p, { colors: ['Grün'], open: 'Grün', full: false });
+  const p = tapMainColor(empty, 'green');
+  assert.deepEqual(p, { colors: ['green'], open: 'green', full: false });
   // ohne Nuancen: nicht aufgeklappt
-  assert.deepEqual(tapMainColor(empty, 'Schwarz'), { colors: ['Schwarz'], open: null, full: false });
+  assert.deepEqual(tapMainColor(empty, 'black'), { colors: ['black'], open: null, full: false });
 });
 
 test('Farben: Nuance ersetzt Hauptfarbe auf demselben Rang; erneut → zurück', () => {
-  let p = tapMainColor(empty, 'Schwarz');
-  p = tapMainColor(p, 'Grün');
-  p = tapNuance(p, 'Olivgrün');
-  assert.deepEqual(p.colors, ['Schwarz', 'Olivgrün']);
-  assert.deepEqual(tapNuance(p, 'Olivgrün').colors, ['Schwarz', 'Grün']);
+  let p = tapMainColor(empty, 'black');
+  p = tapMainColor(p, 'green');
+  p = tapNuance(p, 'olive');
+  assert.deepEqual(p.colors, ['black', 'olive']);
+  assert.deepEqual(tapNuance(p, 'olive').colors, ['black', 'green']);
   // Hauptfarbe tippen, während Nuance gewählt → zurück zur Hauptfarbe
-  assert.deepEqual(tapMainColor(p, 'Grün').colors, ['Schwarz', 'Grün']);
+  assert.deepEqual(tapMainColor(p, 'green').colors, ['black', 'green']);
 });
 
 test('Farben: Hauptfarbe nochmal → abgewählt', () => {
-  let p = tapMainColor(empty, 'Grün');
-  p = tapMainColor(p, 'Grün');
+  let p = tapMainColor(empty, 'green');
+  p = tapMainColor(p, 'green');
   assert.deepEqual(p, { colors: [], open: null, full: false });
   // gewählt, aber zugeklappt: erster Tipp klappt nur auf
-  const q = { colors: ['Grün'], open: null, full: false };
-  assert.deepEqual(tapMainColor(q, 'Grün'), { colors: ['Grün'], open: 'Grün', full: false });
+  const q = { colors: ['green'], open: null, full: false };
+  assert.deepEqual(tapMainColor(q, 'green'), { colors: ['green'], open: 'green', full: false });
 });
 
 test('Farben: höchstens 3, die vierte meldet „voll“', () => {
   let p = empty;
-  for (const c of ['Schwarz', 'Weiß', 'Rot']) p = tapMainColor(p, c);
-  const q = tapMainColor(p, 'Blau');
+  for (const c of ['black', 'white', 'red']) p = tapMainColor(p, c);
+  const q = tapMainColor(p, 'blue');
   assert.equal(q.full, true);
-  assert.deepEqual(q.colors, ['Schwarz', 'Weiß', 'Rot']);
+  assert.deepEqual(q.colors, ['black', 'white', 'red']);
   // Abwählen geht weiter
-  assert.deepEqual(tapMainColor(q, 'Weiß').colors, ['Schwarz', 'Rot']);
+  assert.deepEqual(tapMainColor(q, 'white').colors, ['black', 'red']);
 });
 
 test('Rang-Ziffer: dunkel auf hellen, weiß auf dunklen Farben', () => {
@@ -59,18 +60,18 @@ test('Rang-Ziffer: dunkel auf hellen, weiß auf dunklen Farben', () => {
 });
 
 test('Saison: Übergang → Frühling + Herbst, Reihenfolge fest', () => {
-  assert.deepEqual(migrateSeasons(['Winter', 'Übergang']), ['Frühling', 'Herbst', 'Winter']);
-  assert.deepEqual(migrateSeasons(['Sommer']), ['Sommer']);
+  assert.deepEqual(migrateSeasons(['winter', 'Übergang']), ['spring', 'autumn', 'winter']);
+  assert.deepEqual(migrateSeasons(['summer']), ['summer']);
   assert.deepEqual(migrateSeasons(null), []);
 });
 
 test('Listen: Flanell, Lammfell, Zopfmuster, Rippstrick ergänzt', () => {
-  assert.ok(MATERIALS.includes('Flanell') && MATERIALS.includes('Lammfell'));
-  assert.ok(PATTERNS.includes('Zopfmuster') && PATTERNS.includes('Rippstrick'));
+  assert.ok(keysOf(MATERIALS).includes('flannel') && keysOf(MATERIALS).includes('shearling'));
+  assert.ok(keysOf(PATTERNS).includes('cable_knit') && keysOf(PATTERNS).includes('rib_knit'));
 });
 
 test('Verschluss: Schnalle ergänzt (vor „ohne“)', () => {
-  assert.deepEqual(CLOSURES, ['Knöpfe', 'Reißverschluss', 'Druckknöpfe', 'Schnürung', 'Klett', 'Schnalle', 'ohne']);
+  assert.deepEqual(keysOf(CLOSURES), ['buttons', 'zipper', 'snaps', 'laces', 'velcro', 'buckle', 'none']);
 });
 
 test('Größe: System erkennen, Kragenweite nur bei Hemd', () => {
@@ -78,8 +79,8 @@ test('Größe: System erkennen, Kragenweite nur bei Hemd', () => {
   assert.equal(sizeSystemOf('50'), 'numbers');
   assert.equal(sizeSystemOf('W30/L32'), null);
   assert.equal(sizeSystemOf('One Size'), null);
-  assert.ok(hasCollarSize('Hemd'));
-  assert.ok(!hasCollarSize('Bluse'));
+  assert.ok(hasCollarSize('shirt'));
+  assert.ok(!hasCollarSize('blouse'));
 });
 
 test('Pflege: Reihenfolge, Bestätigen, Etikett ersetzt Schätzung', () => {
@@ -91,9 +92,9 @@ test('Pflege: Reihenfolge, Bestätigen, Etikett ersetzt Schätzung', () => {
 });
 
 test('Farbvorschlag aus dem Foto: nächstliegende Palettenfarbe', () => {
-  assert.equal(nearestColor('#1a1a1a'), 'Schwarz');
-  assert.equal(nearestColor('#f4f4f6'), 'Weiß');
-  assert.equal(nearestColor('#1f2f50'), 'Marineblau');
-  assert.equal(nearestColor('#6b7a3d'), 'Olivgrün');
+  assert.equal(nearestColor('#1a1a1a'), 'black');
+  assert.equal(nearestColor('#f4f4f6'), 'white');
+  assert.equal(nearestColor('#1f2f50'), 'navy');
+  assert.equal(nearestColor('#6b7a3d'), 'olive');
   assert.equal(nearestColor(null), null);
 });

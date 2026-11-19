@@ -30,14 +30,14 @@ const TILE_H: Record<string, number> = { mantel: 2, kleid: 1.75, hose: 1.5, rock
 const text = (i: BoardItem) => (i.name || '').toLowerCase();
 
 export const isCap = (i: BoardItem | null | undefined): boolean =>
-  !!i && (i.subcategory === 'Kappe' || ((kindOf(i) === 'kopf' || kindOf(i) === 'accessoire') && !i.subcategory &&
+  !!i && (i.subcategory === 'cap' || ((kindOf(i) === 'kopf' || kindOf(i) === 'accessoire') && !i.subcategory &&
   /\bcap\b|cappy|basecap|base cap|baseballcap|baseball-cap|baseball cap|kappe|snapback|trucker|fitted|5-panel|dad hat|schirmmütze/.test(text(i))));
 
-/** Körperbereich je Unterkategorie (Schmuck, Accessoire) */
+/** Körperbereich je Unterkategorie (Keys; Schmuck, Accessoire) */
 const BY_SUB: Record<string, { k: string; y: number }> = {
-  Brille: { k: 'face', y: 0.21 }, Schal: { k: 'neck', y: 0.32 }, Halskette: { k: 'neck', y: 0.32 }, 'Anzug-Accessoire': { k: 'neck', y: 0.32 },
-  Ohrring: { k: 'face', y: 0.21 }, Gürtel: { k: 'waist', y: 0.48 }, Armband: { k: 'hand', y: 0.56 }, Uhr: { k: 'hand', y: 0.56 },
-  Ring: { k: 'hand', y: 0.56 }, Handschuh: { k: 'hand', y: 0.56 }, Socke: { k: 'feet', y: 0.84 },
+  glasses: { k: 'face', y: 0.21 }, scarf: { k: 'neck', y: 0.32 }, necklace: { k: 'neck', y: 0.32 }, suit_accessory: { k: 'neck', y: 0.32 },
+  earring: { k: 'face', y: 0.21 }, belt: { k: 'waist', y: 0.48 }, bracelet: { k: 'hand', y: 0.56 }, watch: { k: 'hand', y: 0.56 },
+  ring: { k: 'hand', y: 0.56 }, glove: { k: 'hand', y: 0.56 }, sock: { k: 'feet', y: 0.84 },
 };
 
 /** Bereich am Körper (Höhe als Anteil der Fläche) */

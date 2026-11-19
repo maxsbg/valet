@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, COLORS, LAYERS, RAIN, WARMTH, nuancesOf, tapMainColor, tapNuance, type Care, type CareGroup, type ColorPick, type FitScale,
+  CARE, COLORS, LAYERS, colorLabel, RAIN, WARMTH, nuancesOf, tapMainColor, tapNuance, type Care, type CareGroup, type ColorPick, type FitScale,
   CAP_ADJUSTABLE, CAP_FITTED, CAP_FLEXFIT, COLLAR_SIZES, LETTER_DOUBLES, ONE_SIZE, PANTS_LENGTH, PANTS_WAIST, SHOE_SIZES, SHOE_THIRDS,
   composeWL, hasCollarSize, isShoeThird, pantsWaistOnly, parseWL, sizeChoices, type SizeChoice, type SizeKind, type SizeSystemAny,
 } from '@valet/core';
@@ -21,23 +21,23 @@ import type { SymbolName } from '@valet/ui';
 export function ColorPicker({ pick, onChange }: { pick: ColorPick; onChange: (p: ColorPick) => void }) {
   const t = useTheme();
   const rank = (n: string) => pick.colors.indexOf(n) + 1;
-  const famSelected = (main: string) => pick.colors.some((c) => c === main || nuancesOf(main).some((x) => x.name === c));
+  const famSelected = (main: string) => pick.colors.some((c) => c === main || nuancesOf(main).some((x) => x.key === c));
   const nu = pick.open ? nuancesOf(pick.open) : [];
   return (
     <View style={{ gap: 10 }}>
       <Wrap>
         {COLORS.map((c) => (
-          <Capsule key={c.name} label={c.name} selected={famSelected(c.name)} a11y={rank(c.name) ? `${c.name}, Rang ${rank(c.name)}` : c.name}
-            leading={<ColorDot name={c.name} rank={rank(c.name) || undefined} />} onPress={() => onChange(tapMainColor(pick, c.name))} />
+          <Capsule key={c.key} label={c.label} selected={famSelected(c.key)} a11y={rank(c.key) ? `${c.label}, Rang ${rank(c.key)}` : c.label}
+            leading={<ColorDot name={c.key} rank={rank(c.key) || undefined} />} onPress={() => onChange(tapMainColor(pick, c.key))} />
         ))}
       </Wrap>
       {nu.length > 0 && (
         <View style={[s.nuances, { backgroundColor: t.surfaceSunken }]}>
-          <FieldLabel>{pick.open}</FieldLabel>
+          <FieldLabel>{colorLabel(pick.open)}</FieldLabel>
           <Wrap>
             {nu.map((n) => (
-              <Capsule key={n.name} label={n.name} selected={rank(n.name) > 0} a11y={rank(n.name) ? `${n.name}, Rang ${rank(n.name)}` : n.name}
-                leading={<ColorDot name={n.name} rank={rank(n.name) || undefined} />} onPress={() => onChange(tapNuance(pick, n.name))} />
+              <Capsule key={n.key} label={n.label} selected={rank(n.key) > 0} a11y={rank(n.key) ? `${n.label}, Rang ${rank(n.key)}` : n.label}
+                leading={<ColorDot name={n.key} rank={rank(n.key) || undefined} />} onPress={() => onChange(tapNuance(pick, n.key))} />
             ))}
           </Wrap>
         </View>

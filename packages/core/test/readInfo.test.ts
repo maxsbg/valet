@@ -6,14 +6,14 @@ import { CATEGORY_PATHS } from '../src/ai/analyzeItem';
 
 test('Schema: alle Felder Pflicht, Kategorie darf fehlen', () => {
   assert.deepEqual(READ_INFO_SCHEMA.required, Object.keys(READ_INFO_SCHEMA.properties!));
-  assert.ok((READ_INFO_SCHEMA.properties!.kategorie!.enum as unknown[]).includes(null));
+  assert.ok((READ_INFO_SCHEMA.properties!.category!.enum as unknown[]).includes(null));
   assert.ok(readInfoPrompt('label').includes('Etikett'));
 });
 
 test('Prüfung: Etikett mit Prozent und Pflege', () => {
-  const i = checkInfo({ kategorie: null, materialAnteile: [{ name: 'Baumwolle', prozent: 98 }, { name: 'Elasthan', prozent: 2 }, { name: 'Glitzer', prozent: 5 }],
+  const i = checkInfo({ category: null, materialAnteile: [{ name: 'cotton', prozent: 98 }, { name: 'elastane', prozent: 2 }, { name: 'Glitzer', prozent: 5 }],
     pflege: { wash: 'w30', bleach: 'nobleach', dry: 'kaputt', iron: null, pro: null }, preis: 'teuer', kaufdatum: '2026-13-45', groesse: ' M ' });
-  assert.deepEqual(i.item.materials, [{ name: 'Baumwolle', pct: 98 }, { name: 'Elasthan', pct: 2 }]);
+  assert.deepEqual(i.item.materials, [{ name: 'cotton', pct: 98 }, { name: 'elastane', pct: 2 }]);
   assert.deepEqual(i.care, { wash: { v: 'w30', src: 'etikett' }, bleach: { v: 'nobleach', src: 'etikett' } });
   assert.equal(i.price, null);
   assert.equal(i.purchaseDate, null);
@@ -36,10 +36,10 @@ test('Übernehmen: Bestellung in Kauf, Wunschteil-Preis als Listenpreis', () => 
 });
 
 test('Übernehmen: Größe nur aus der festen Liste der Größen-Art', () => {
-  const at = (path: string, groesse: string) => applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ kategorie: path, groesse }));
-  const schuh = CATEGORY_PATHS.find((p) => p.startsWith('Schuh'))!;
-  const jeans = CATEGORY_PATHS.find((p) => p.startsWith('Hose › Jeans'))!;
-  const shirt = CATEGORY_PATHS.find((p) => p.startsWith('Oberteil'))!;
+  const at = (path: string, groesse: string) => applyInfo(emptyEditForm({ ownerId: 'max' }), checkInfo({ category: path, groesse }));
+  const schuh = CATEGORY_PATHS.find((p) => p.startsWith('shoe'))!;
+  const jeans = CATEGORY_PATHS.find((p) => p.startsWith('pants/jeans'))!;
+  const shirt = CATEGORY_PATHS.find((p) => p.startsWith('top'))!;
   assert.deepEqual([at(schuh, 'EU 42 1/2').size, at(schuh, 'EU 42 1/2').sizeSystem], ['42,5', 'eu']);
   assert.deepEqual([at(jeans, '32/34').size, at(jeans, '32/34').sizeSystem], ['W32/L34', 'wl']);
   assert.equal(at(shirt, 'xl').size, 'XL');

@@ -6,7 +6,7 @@ import type { JsonSchema } from './analyzeItem';
 
 export const PROFILE_PROMPT_VERSION = '2.0';
 
-/** Worauf ein Feld schaut: Kategorie-Pfad + Steckbrief-Werte, von denen es abhängt */
+/** Worauf ein Feld schaut: Kategorie-Pfad + Steckbrief-Werte (alles Keys), von denen es abhängt */
 export type Ctx = { category: string | null; sub: string | null; pattern: string | null; materials: readonly string[] };
 export type Applies = (c: Ctx) => boolean;
 export type Group = 'surface' | 'shape' | 'style';
@@ -21,22 +21,22 @@ export type ProfileField =
 
 // ---------- Bedingungen ----------
 
-const CLOTHING = ['Oberbekleidung', 'Oberteil', 'Kleid', 'Hose', 'Shorts', 'Rock'];
-const UPPER = ['Oberbekleidung', 'Oberteil', 'Kleid'];
+const CLOTHING = ['outerwear', 'top', 'dress', 'pants', 'shorts', 'skirt'];
+const UPPER = ['outerwear', 'top', 'dress'];
 const is = (cats: readonly string[]): Applies => (c) => cats.includes(c.category ?? '');
 const all: Applies = () => true;
 const clothing = is(CLOTHING);
 const upper = is(UPPER);
-const shapeCats = is([...UPPER, 'Rock']);
-const legCats = is(['Hose', 'Shorts']);
-const shoe = is(['Schuh']);
-const bag = is(['Tasche']);
-const notJewelry: Applies = (c) => c.category !== 'Schmuck';
+const shapeCats = is([...UPPER, 'skirt']);
+const legCats = is(['pants', 'shorts']);
+const shoe = is(['shoe']);
+const bag = is(['bag']);
+const notJewelry: Applies = (c) => c.category !== 'jewelry';
 const structured: Applies = (c) => clothing(c) || shoe(c) || bag(c);
-const patterned: Applies = (c) => c.pattern != null && c.pattern !== 'Unifarben';
-const denim: Applies = (c) => c.materials.includes('Denim');
+const patterned: Applies = (c) => c.pattern != null && c.pattern !== 'solid';
+const denim: Applies = (c) => c.materials.includes('denim');
 const metal: Applies = (c) =>
-  ['Oberbekleidung', 'Schuh', 'Tasche', 'Schmuck'].includes(c.category ?? '') || (c.category === 'Accessoire' && c.sub === 'Gürtel');
+  ['outerwear', 'shoe', 'bag', 'jewelry'].includes(c.category ?? '') || (c.category === 'accessory' && c.sub === 'belt');
 
 // ---------- Werte ----------
 

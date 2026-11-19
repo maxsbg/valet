@@ -5,7 +5,7 @@ import {
   splitView, qtyHint, editChange, totalOf, type EditForm,
 } from '../src/edit';
 
-const base = (p: Partial<EditForm> = {}): EditForm => ({ ...emptyEditForm({ ownerId: 'max' }), name: 'Hemd', ...p });
+const base = (p: Partial<EditForm> = {}): EditForm => ({ ...emptyEditForm({ ownerId: 'max' }), name: 'shirt', ...p });
 
 test('Laden: Zahler fehlen → Besitzer; eigene Beträge erkannt', () => {
   const f = toEditForm({ name: 'X', owner_ids: ['max', 'paul'], price_paid: 59, payers: null });
@@ -25,11 +25,11 @@ test('KI-Markierung verschwindet beim Ändern oder Bestätigen', () => {
 });
 
 test('Material: Rang nach Reihenfolge, abwählen rückt nach', () => {
-  let m = toggleMaterial([], 'Flanell');
-  m = toggleMaterial(m, 'Baumwolle');
-  assert.equal(materialRank(m, 'Baumwolle'), 2);
-  m = toggleMaterial(m, 'Flanell');
-  assert.equal(materialRank(m, 'Baumwolle'), 1);
+  let m = toggleMaterial([], 'flannel');
+  m = toggleMaterial(m, 'cotton');
+  assert.equal(materialRank(m, 'cotton'), 2);
+  m = toggleMaterial(m, 'flannel');
+  assert.equal(materialRank(m, 'cotton'), 1);
 });
 
 test('Größe: Systemwechsel setzt die Größe zurück, One Size bleibt', () => {
@@ -74,26 +74,28 @@ test('Anzahl-Hinweis: Preis gilt je Stück', () => {
 
 test('Speichern: Pflicht Name, Kategorie-Pfad gültig, Zahlen geprüft', () => {
   assert.deepEqual(editChange(base({ name: ' ' })), { error: 'Bitte einen Namen eingeben.' });
-  assert.deepEqual(editChange(base({ category: 'Oberteil', subcategory: 'Jeans' })), { error: 'Kategorie ist unvollständig.' });
+  assert.deepEqual(editChange(base({ category: 'top', subcategory: 'jeans' })), { error: 'Kategorie ist unvollständig.' });
   assert.deepEqual(editChange(base({ price: 'abc' })), { error: 'Bezahlt ist keine gültige Zahl.' });
 });
 
 test('Speichern: Spiegel, Passform nur passend zur Kategorie, Farben B nur bei Wendbar', () => {
   const r = editChange(base({
-    category: 'Schuh', subcategory: 'Sneaker', colors: ['Weiß', 'Schwarz'], colorsB: ['Rot'], materials: [{ name: 'Leder' }],
-    styles: ['Street'], fit: { width: 2, length: 2, rise: 1 }, price: '120', qty: 2,
+    category: 'shoe', subcategory: 'sneaker', colors: ['white', 'black'], colorsB: ['red'], materials: [{ name: 'leather' }],
+    styles: ['street'], fit: { width: 2, length: 2, rise: 1 }, price: '120', qty: 2,
   }));
   assert.ok('change' in r);
   const c = r.change;
   assert.equal(c.color, 'Weiß/Schwarz');
+  // Spiegel der alten Freitext-Felder: deutsches Label
   assert.equal(c.material, 'Leder');
   assert.equal(c.style, 'Street');
+  assert.deepEqual(c.colors, ['white', 'black']);
   // Spec 8a: Passform wird beim Schuh nicht gezeigt, gespeicherte Werte bleiben aber erhalten
   assert.deepEqual([c.fit_width, c.fit_length, c.fit_rise], [2, 2, 1]);
   assert.deepEqual(c.colors_b, []);
   assert.equal(c.price_paid, 120);
   assert.equal(c.qty, 2);
-  const h = editChange(base({ category: 'Hose', fit: { width: 3, length: 2, rise: 2 } }));
+  const h = editChange(base({ category: 'pants', fit: { width: 3, length: 2, rise: 2 } }));
   assert.ok('change' in h && h.change.fit_rise === 2);
 });
 
@@ -115,7 +117,7 @@ test('Speichern: Aufteilung – unstimmige Summe blockiert, sonst Beträge', () 
 });
 
 test('Speichern: Wunschteil – Preis = Listenpreis, beim Anlegen „Preis beim Merken“', () => {
-  const f = { ...emptyEditForm({ wish: { wishlistId: 'L1' } }), name: 'Mantel', listPrice: '249', wishTag: 'grail' as const, buyOn: '2026-12-01' };
+  const f = { ...emptyEditForm({ wish: { wishlistId: 'L1' } }), name: 'coat', listPrice: '249', wishTag: 'grail' as const, buyOn: '2026-12-01' };
   const r = editChange(f, { isNew: true });
   assert.ok('change' in r);
   assert.deepEqual([r.change.is_wish, r.change.list_price, r.change.wish_price, r.change.wishlist_id, r.change.wish_tag, r.change.buy_on],
@@ -125,7 +127,7 @@ test('Speichern: Wunschteil – Preis = Listenpreis, beim Anlegen „Preis beim 
 });
 
 test('Speichern: Wunschteil ohne Liste geht nicht', () => {
-  const f = { ...emptyEditForm({ wish: { wishlistId: null } }), name: 'Mantel' };
+  const f = { ...emptyEditForm({ wish: { wishlistId: null } }), name: 'coat' };
   assert.deepEqual(editChange(f, { isNew: true }), { error: 'Bitte eine Liste wählen.' });
 });
 
@@ -137,23 +139,43 @@ test('Speichern: ohne Kategorie leerer Text (Spalte ist not null)', () => {
 });
 
 test('Größe beim Laden: Schuh → EU, Jeans W/L, Kappe „7 3/8 (58,7 cm)“ → Fitted 7 3/8', () => {
-  assert.equal(toEditForm({ name: 'S', category: 'Schuh', subcategory: 'Sneaker', size: '44', size_system: 'numbers' }).sizeSystem, 'eu');
-  assert.equal(toEditForm({ name: 'J', category: 'Hose', subcategory: 'Jeans', size: 'W30/L34' }).sizeSystem, 'wl');
-  assert.equal(toEditForm({ name: 'J', category: 'Hose', subcategory: 'Jeans', size: 'L', size_system: 'letters' }).sizeSystem, 'letters');
-  const cap = toEditForm({ name: 'C', category: 'Kopfbedeckung', subcategory: 'Kappe', size: '7 3/8 (58,7 cm)' });
+  assert.equal(toEditForm({ name: 'S', category: 'shoe', subcategory: 'sneaker', size: '44', size_system: 'numbers' }).sizeSystem, 'eu');
+  assert.equal(toEditForm({ name: 'J', category: 'pants', subcategory: 'jeans', size: 'W30/L34' }).sizeSystem, 'wl');
+  assert.equal(toEditForm({ name: 'J', category: 'pants', subcategory: 'jeans', size: 'L', size_system: 'letters' }).sizeSystem, 'letters');
+  const cap = toEditForm({ name: 'C', category: 'headwear', subcategory: 'cap', size: '7 3/8 (58,7 cm)' });
   assert.deepEqual([cap.sizeSystem, cap.size], ['cap', '7 3/8']);
-  assert.equal(toEditForm({ name: 'C', category: 'Kopfbedeckung', subcategory: 'Kappe', size: 'One Size' }).size, 'Verstellbar');
+  assert.equal(toEditForm({ name: 'C', category: 'headwear', subcategory: 'cap', size: 'One Size' }).size, 'Verstellbar');
 });
 
 test('Kategorie-Wechsel: Größen-System passt sich an', () => {
-  const f = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Hose', subcategory: 'Jeans', type: null });
+  const f = setCategory(base({ category: 'top', sizeSystem: 'letters', size: 'M' }), { category: 'pants', subcategory: 'jeans', type: null });
   assert.deepEqual([f.sizeSystem, f.size], ['letters', 'M']);
-  const e = setCategory(base({ category: 'Oberteil', sizeSystem: 'numbers', size: '50' }), { category: 'Hose', subcategory: 'Jeans', type: null });
+  const e = setCategory(base({ category: 'top', sizeSystem: 'numbers', size: '50' }), { category: 'pants', subcategory: 'jeans', type: null });
   assert.deepEqual([e.sizeSystem, e.size], ['wl', null]);
-  const h = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Schuh', subcategory: 'Sneaker', type: null });
+  const h = setCategory(base({ category: 'top', sizeSystem: 'letters', size: 'M' }), { category: 'shoe', subcategory: 'sneaker', type: null });
   assert.deepEqual([h.sizeSystem, h.size], ['eu', null]);
-  const b = setCategory(base({ category: 'Hose', sizeSystem: 'letters', size: 'L' }), { category: 'Oberteil', subcategory: null, type: null });
+  const b = setCategory(base({ category: 'pants', sizeSystem: 'letters', size: 'L' }), { category: 'top', subcategory: null, type: null });
   assert.deepEqual([b.sizeSystem, b.size], ['letters', 'L']);
-  const g = setCategory(base({ category: 'Oberteil', sizeSystem: 'letters', size: 'M' }), { category: 'Oberbekleidung', subcategory: null, type: null });
+  const g = setCategory(base({ category: 'top', sizeSystem: 'letters', size: 'M' }), { category: 'outerwear', subcategory: null, type: null });
   assert.deepEqual([g.sizeSystem, g.size], ['letters', 'M']);
+});
+
+test('Laden ist tolerant: deutsche Labels und Altwerte werden zu Keys, Unbekanntes fällt weg', () => {
+  const f = toEditForm({
+    name: 'Alt', category: 'Oberteil', subcategory: 'Hemd', item_type: 'Langarmhemd', seasons: ['Winter', 'Übergang'],
+    colors: ['Marineblau', 'Weiß', 'Unbekannt'], colors_b: ['navy'], pattern: 'Kariert', pattern_b: 'plaid',
+    materials: [{ name: 'Baumwolle', pct: 80 }, { name: 'elastane', pct: 20 }, { name: 'Quatsch' }],
+    styles: ['Casual', 'classic'], collar: 'Button-down', closure: 'Knöpfe', strap: 'Kette',
+  });
+  assert.deepEqual([f.category, f.subcategory, f.type], ['top', 'shirt', 'long_sleeve_shirt']);
+  assert.deepEqual(f.seasons, ['spring', 'autumn', 'winter']);
+  assert.deepEqual(f.colors, ['navy', 'white']);
+  assert.deepEqual(f.colorsB, ['navy']);
+  assert.deepEqual([f.pattern, f.patternB], ['plaid', 'plaid']);
+  assert.deepEqual(f.materials, [{ name: 'cotton', pct: 80 }, { name: 'elastane', pct: 20 }]);
+  assert.deepEqual(f.styles, ['casual', 'classic']);
+  assert.deepEqual([f.collar, f.closure, f.strap], ['button_down', 'buttons', 'chain']);
+  // Neue Daten bleiben unverändert
+  const g = toEditForm({ name: 'Neu', category: 'top', subcategory: 'shirt', colors: ['navy'], styles: ['street'] });
+  assert.deepEqual([g.category, g.subcategory, g.colors, g.styles], ['top', 'shirt', ['navy'], ['street']]);
 });
