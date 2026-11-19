@@ -218,12 +218,33 @@ export function activeProfile(p: Profile, c: Ctx): Partial<Profile> {
 
 export const profileField = (key: string): ProfileField | undefined => PROFILE_FIELDS.find((f) => f.key === key);
 
-/** Anzeige eines Werts: „Feinstrick“, „2–4“, „3 von 5“, „Clean, Weich“; leer → '' */
+/** Skalen als Wörter, Stufe 1–5 (Index 0–4); Max, 19.11.2026 */
+export const SCALE_WORDS: Record<'sheen' | 'texture_intensity' | 'visual_weight' | 'pattern_contrast' | 'structure' | 'presence' | 'versatility' | 'formality', readonly string[]> = {
+  sheen: ['matt', 'leicht matt', 'leichter Schimmer', 'glänzend', 'stark glänzend'],
+  texture_intensity: ['glatt', 'leicht strukturiert', 'strukturiert', 'stark strukturiert', 'sehr stark strukturiert'],
+  visual_weight: ['sehr leicht', 'leicht', 'mittel', 'schwer', 'sehr schwer'],
+  pattern_contrast: ['Ton in Ton', 'dezent', 'deutlich', 'stark', 'sehr stark'],
+  structure: ['fließend', 'weich', 'mittel', 'formstabil', 'sehr formstabil'],
+  presence: ['sehr zurückhaltend', 'zurückhaltend', 'mittel', 'auffällig', 'sehr auffällig'],
+  versatility: ['sehr speziell', 'eher speziell', 'mittel', 'vielseitig', 'sehr vielseitig'],
+  formality: ['Freizeit', 'Casual', 'Smart Casual', 'Business', 'Formell'],
+};
+
+/** Wort einer Skalenstufe (1–5); unbekannt → '' */
+export const scaleWord = (key: string, n: unknown): string =>
+  typeof n === 'number' ? ((SCALE_WORDS as Record<string, readonly string[] | undefined>)[key]?.[n - 1] ?? '') : '';
+
+/** Anzeige eines Werts: „Feinstrick“, „Freizeit bis Casual“, „matt“, „Clean, Weich“; leer → '' */
 export function profileLabel(key: string, value: unknown): string {
   const f = profileField(key);
   if (!f || value == null) return '';
-  if (f.kind === 'scale') return typeof value === 'number' ? `${value} von 5` : '';
-  if (f.kind === 'range') return Array.isArray(value) ? (value[0] === value[1] ? `${value[0]}` : `${value[0]}–${value[1]}`) : '';
+  if (f.kind === 'scale') return scaleWord(key, value);
+  if (f.kind === 'range') {
+    if (!Array.isArray(value)) return '';
+    const [lo, hi] = [scaleWord(key, value[0]), scaleWord(key, value[1])];
+    if (!lo || !hi) return '';
+    return lo === hi ? lo : `${lo} bis ${hi}`;
+  }
   const name = (k: unknown) => f.values.find((v) => v.key === k)?.label ?? '';
   if (f.kind === 'enum') return name(value);
   return Array.isArray(value) ? value.map(name).filter(Boolean).join(', ') : '';

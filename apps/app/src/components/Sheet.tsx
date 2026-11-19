@@ -31,8 +31,11 @@ export function Sheet({ open, onClose, title, children, footer, head }: Props) {
         <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Schließen" />
       </Animated.View>
       <Animated.View style={[s.sheet, { backgroundColor: t.bg, maxHeight: height * 0.88, width: Math.min(width, 560), paddingBottom: Math.max(bottom, space.md), transform: [{ translateY: y }] }]}>
-        <View style={[s.grab, { backgroundColor: t.hairline }]} />
-        {head ?? <Text style={[s.title, { color: t.ink }]} accessibilityRole="header">{title}</Text>}
+        {/* Kopf mit festem, deckendem Hintergrund: Inhalt läuft beim Scrollen nie darunter durch */}
+        <View style={[s.head, { backgroundColor: t.bg }]}>
+          <View style={[s.grab, { backgroundColor: t.hairline }]} />
+          {head ?? <Text style={[s.title, { color: t.ink }]} accessibilityRole="header">{title}</Text>}
+        </View>
         <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: space.md, paddingBottom: space.md }}>{children}</ScrollView>
         {footer && <View style={s.footer}>{footer}</View>}
       </Animated.View>
@@ -68,7 +71,8 @@ export function SectionLabel({ children }: { children: string }) {
 }
 
 const s = StyleSheet.create({
-  sheet: { position: 'absolute', bottom: 0, alignSelf: 'center', borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: '0 -8px 32px rgba(42,26,29,0.14)' },
+  sheet: { position: 'absolute', bottom: 0, alignSelf: 'center', borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: '0 -8px 32px rgba(42,26,29,0.14)', overflow: 'hidden' },
+  head: { position: 'relative', zIndex: 1, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
   grab: { width: 40, height: 5, borderRadius: 3, alignSelf: 'center', marginTop: 8 },
   title: { fontFamily: DISPLAY, fontSize: 28, paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: space.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 56, paddingHorizontal: space.xs },

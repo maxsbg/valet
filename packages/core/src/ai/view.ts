@@ -62,6 +62,8 @@ export function analysisNote(analysis: unknown): string {
 }
 
 const SECTION_TITLE: Record<Group, string> = { shape: 'Form', surface: 'Oberfläche', style: 'Wirkung' };
+/** Zeilen im Blatt nicht wie ihr Abschnitt benennen (Labels in Bearbeiten bleiben) */
+const ROW_LABEL: Partial<Record<ProfileKey, string>> = { silhouette: 'Silhouette', surface: 'Stoffbild', effects: 'Eindruck' };
 const WEAK = 6;
 
 /**
@@ -95,7 +97,7 @@ export function analysisSections(f: EditForm): AnalysisSection[] {
     const p = activeProfile(f.profile, profileCtx(f)) as Record<string, unknown>;
     for (const g of ['shape', 'surface', 'style'] as const) {
       const rows = PROFILE_FIELDS.filter((x) => x.group === g && x.key in p)
-        .flatMap((x) => row(x.label, profileLabel(x.key, p[x.key as ProfileKey])));
+        .flatMap((x) => row(ROW_LABEL[x.key as ProfileKey] ?? x.label, profileLabel(x.key, p[x.key as ProfileKey])));
       const c = f.confidence[g];
       out.push({ key: g, title: SECTION_TITLE[g], rows, weak: c != null && c < WEAK });
     }

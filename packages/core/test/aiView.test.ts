@@ -35,10 +35,11 @@ test('Blatt: Details/Tragen aus dem Steckbrief, Profil nur mit meta.v 2', () => 
   assert.deepEqual(s.map((x) => x.title), ['Details', 'Tragen', 'Form', 'Oberfläche', 'Wirkung']);
   const surface = s.find((x) => x.key === 'surface')!;
   assert.equal(surface.weak, true);
-  assert.deepEqual(surface.rows, [{ label: 'Glanz', value: '1 von 5' }, { label: 'Oberfläche', value: 'Feinstrick' }]);
+  assert.deepEqual(surface.rows, [{ label: 'Glanz', value: 'matt' }, { label: 'Stoffbild', value: 'Feinstrick' }]);
   // Beinverlauf gilt nicht für Oberteile → nie angezeigt
   assert.ok(!s.find((x) => x.key === 'shape')!.rows.some((r) => r.label === 'Beinverlauf'));
-  assert.deepEqual(s.find((x) => x.key === 'style')!.rows, [{ label: 'Formalität', value: '2–4' }]);
+  assert.deepEqual(s.find((x) => x.key === 'style')!.rows, [{ label: 'Formalität', value: 'Casual bis Business' }]);
+  assert.ok(s.find((x) => x.key === 'shape')!.rows.some((r) => r.label === 'Silhouette'));
 });
 
 test('Meta: Hinweiszeile, Profil erkannt, tolerant', () => {
