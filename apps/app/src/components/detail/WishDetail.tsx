@@ -24,7 +24,7 @@ import { Toolbar, TOOLBAR_SPACE } from './Toolbar';
 import { PullMenu, type Anchor } from '@/components/StatusMenu';
 import { HeadButton } from './parts';
 import { NotesCard, SteckbriefView } from './sections';
-import { CareConfirmSheet } from './sheets';
+import { AnalysisSheet, CareConfirmSheet } from './sheets';
 import { BoughtSheet, BuyDaySheet, TryOnCard, WishKaufView, WishListRow, WorthCard, WISH_ORDER, type BuyInput } from './wish';
 import { Icon } from '@/components/Icon';
 import type { SymbolName } from '@valet/ui';
@@ -47,6 +47,7 @@ export function WishDetail({ id }: { id: string }) {
   const [menu, setMenu] = useState<Anchor | null>(null);
   const [exporting, setExporting] = useState(false);
   const [care, setCare] = useState<CareGroup | null>(null);
+  const [analysis, setAnalysis] = useState(false);
 
   const today = todayLocal();
   const load = useCallback(() => { loadItem(id).then(setD).catch((e) => setErr(e.message ?? String(e))); }, [id]);
@@ -142,7 +143,7 @@ export function WishDetail({ id }: { id: string }) {
           <Segmented items={[{ key: 'overview', label: 'Übersicht' }, { key: 'profile', label: 'Steckbrief' }, { key: 'purchase', label: 'Kauf' }]} value={tab} onChange={setTab} />
 
           {tab === 'overview' ? overview
-            : tab === 'profile' ? <SteckbriefView f={f} onCare={setCare} onEdit={() => edit()} />
+            : tab === 'profile' ? <SteckbriefView f={f} onCare={setCare} onEdit={() => edit()} onAnalysis={() => setAnalysis(true)} />
             : <WishKaufView row={row} link={f.link} onEdit={() => edit('kauf')} />}
         </View>
       </Page>
@@ -171,6 +172,7 @@ export function WishDetail({ id }: { id: string }) {
       {canExport && mainPic && (
         <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Bild teilen" name={`${fileName(it.name)}.png`} make={() => itemPng(mainPic)} />
       )}
+      <AnalysisSheet open={analysis} itemId={id} f={f} onClose={() => setAnalysis(false)} onSaved={(m) => { setAnalysis(false); load(); toast.show(m); }} />
       {toast.node}
     </View>
   );

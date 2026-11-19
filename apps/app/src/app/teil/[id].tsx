@@ -27,7 +27,7 @@ import { DetailImage } from '@/components/detail/DetailImage';
 import { Toolbar, TOOLBAR_SPACE } from '@/components/detail/Toolbar';
 import { HeadButton } from '@/components/detail/parts';
 import { KaufView, NotesCard, OutfitsCard, SetCard, StatTiles, SteckbriefView } from '@/components/detail/sections';
-import { CareConfirmSheet, ReserveSheet, type HoldRow } from '@/components/detail/sheets';
+import { AnalysisSheet, CareConfirmSheet, ReserveSheet, type HoldRow } from '@/components/detail/sheets';
 import { WishDetail } from '@/components/detail/WishDetail';
 import { Icon } from '@/components/Icon';
 
@@ -59,6 +59,7 @@ function ClosetDetail({ id }: { id: string }) {
   const [reserve, setReserve] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [care, setCare] = useState<CareGroup | null>(null);
+  const [analysis, setAnalysis] = useState(false);
 
   const today = todayLocal();
   const loadHolds = useCallback(() => { holdsOf(id, today).then(setHolds).catch(() => {}); }, [id, today]);
@@ -200,7 +201,7 @@ function ClosetDetail({ id }: { id: string }) {
           <Segmented items={[{ key: 'overview', label: 'Übersicht' }, { key: 'profile', label: 'Steckbrief' }, { key: 'purchase', label: 'Kauf' }]} value={tab} onChange={setTab} />
 
           {tab === 'overview' ? overview
-            : tab === 'profile' ? <SteckbriefView f={f} onCare={setCare} onEdit={() => edit()} />
+            : tab === 'profile' ? <SteckbriefView f={f} onCare={setCare} onEdit={() => edit()} onAnalysis={() => setAnalysis(true)} />
             : <KaufView f={f} row={row as never} wasWish={it.was_wish} createdAt={it.created_at} persons={wardrobe?.persons ?? []} meId={me} onEdit={() => edit('kauf')} />}
         </View>
       </Page>
@@ -222,6 +223,7 @@ function ClosetDetail({ id }: { id: string }) {
       {canExport && mainPic && (
         <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Bild teilen" name={`${fileName(it.name)}.png`} make={() => itemPng(mainPic)} />
       )}
+      <AnalysisSheet open={analysis} itemId={id} f={f} onClose={() => setAnalysis(false)} onSaved={(m) => { setAnalysis(false); load(); toast.show(m); }} />
       {toast.node}
     </View>
   );

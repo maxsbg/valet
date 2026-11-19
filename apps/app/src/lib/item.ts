@@ -117,6 +117,18 @@ export async function loadStoredPicture(itemId: string, side: 'a' | 'b'): Promis
   return storedPicture(imageUrl(main.storage_path as string), imageUrl(thumb.storage_path as string), main.kind as Picture['kind'], (main.colors ?? []) as Picture['colors']);
 }
 
+/**
+ * Bild für die KI-Nachanalyse (Spec 8): freigestelltes Hauptbild Seite A, sonst Original; dazu die Foto-Farben
+ * (für „Farbe prüfen“). null = kein Bild.
+ */
+export async function analysisImage(itemId: string): Promise<{ path: string; colors: { h: string; s: number }[] } | null> {
+  const r = await supabase.from('item_images').select('side,kind,storage_path,colors').eq('item_id', itemId).in('kind', ['cutout', 'original']);
+  if (r.error) throw r.error;
+  const rows = (r.data ?? []).filter((x) => (x.side ?? 'a').trim().toLowerCase() !== 'b');
+  const main = rows.find((x) => x.kind === 'cutout') ?? rows.find((x) => x.kind === 'original');
+  return main ? { path: main.storage_path as string, colors: Array.isArray(main.colors) ? main.colors as { h: string; s: number }[] : [] } : null;
+}
+
 export type NewItem = ItemChange & { name: string; category: string };
 
 /**

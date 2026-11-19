@@ -1,7 +1,10 @@
-// Blätter der Detailseite: Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4)
+// Blätter der Detailseite: Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4), KI-Analyse (Analyse v2, Spec 14)
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
-import { CARE, careLabel, type CareGroup, type CareValue } from '@valet/core';
+import { ActivityIndicator, Text, View } from 'react-native';
+import { CARE, analysisNote, analysisSections, careLabel, colorCheck, hasProfile, reanalysisChange, type CareGroup, type CareValue, type EditForm } from '@valet/core';
+import { analysisImage, updateItem } from '@/lib/item';
+import { analyzeStored, kiError } from '@/lib/ki';
+import { Icon } from '@/components/Icon';
 import { useTheme } from '@/lib/theme';
 import { todayLocal, type Person } from '@/lib/wardrobe';
 import { fmtShort } from '@/lib/outfits';
@@ -82,3 +85,72 @@ export function CareConfirmSheet({ group, value, onConfirm, onChange, onClose }:
   );
 }
 export const CARE_GROUPS = CARE.map((c) => c.key);
+
+// ---------- KI-Analyse (Spec 11 Schritt 5, 14) ----------
+
+/**
+ * Schlichtes Blatt: Abschnitte Details, Tragen (Steckbrief-Felder), Form, Oberfläche, Wirkung (Profil, nur activeProfile)
+ * als Liste „Label: Wert“; Gruppen mit Konfidenz unter 6 grau. Darunter Modell + Datum und „Neu analysieren“.
+ * Keine Bearbeitung – geändert wird in Bearbeiten.
+ */
+export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
+  open: boolean; itemId: string; f: EditForm; onSaved: (msg: string) => void; onClose: () => void;
+}) {
+  const t = useTheme();
+  const [img, setImg] = useState<{ path: string; colors: { h: string; s: number }[] } | null | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    setError(null);
+    analysisImage(itemId).then(setImg).catch(() => setImg(null));
+  }, [open, itemId]);
+  const sections = analysisSections(f);
+  const profiled = hasProfile(f.analysisBase);
+  const note = analysisNote(f.analysisBase);
+  const checkColor = profiled && !!img && colorCheck(f.colors, img.colors);
+
+  async function run() {
+    if (!img) { setError('Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
+    setBusy(true); setError(null);
+    try {
+      const a = await analyzeStored(img.path);
+      const row = { category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending };
+      await updateItem(itemId, reanalysisChange(f, row, a));
+      onSaved('Neu analysiert.');
+    } catch (e) {
+      const { code } = await kiError(e);
+      setError(code === 'rate_limited' ? 'Das Gratis-Kontingent ist gerade erschöpft. Bitte später noch einmal.' : 'Analyse fehlgeschlagen: ' + (code || (e as Error).message));
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title="KI-Analyse" head={<SheetHead title="KI-Analyse" onCancel={onClose} />}>
+      <View style={{ gap: 18, paddingTop: 14 }}>
+        {checkColor && <Hint accent>Farbe prüfen: Die gewählte Farbe passt nicht zum Foto.</Hint>}
+        {sections.map((sec) => {
+          const muted = sec.weak;
+          return (
+            <View key={sec.key} style={{ gap: 6 }}>
+              <Text style={{ fontSize: 16, lineHeight: 21, fontWeight: '600', color: muted ? t.inkMuted : t.ink }} accessibilityRole="header">{sec.title}</Text>
+              {sec.rows.map((r) => (
+                <Text key={r.label} style={{ fontSize: 15, lineHeight: 21, color: muted ? t.inkMuted : t.ink }}>
+                  <Text style={{ color: t.inkMuted }}>{r.label}: </Text>{r.value}
+                </Text>
+              ))}
+            </View>
+          );
+        })}
+        {!profiled && <Hint>Noch kein KI-Profil für dieses Teil.</Hint>}
+        {!!note && <Hint>{note}</Hint>}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Capsule label={busy ? 'Analysiere …' : 'Neu analysieren'} selected onPress={busy || img === undefined ? undefined : run}
+            icon={(c) => <Icon name="sparkle" size="chip" color={c} />} />
+          {busy && <ActivityIndicator color={t.accent} />}
+        </View>
+        {profiled && <Hint>Füllt nur leere oder noch unbestätigte Felder; das Profil wird ersetzt.</Hint>}
+        {error && <Hint accent>{error}</Hint>}
+      </View>
+    </Sheet>
+  );
+}
