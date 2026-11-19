@@ -118,6 +118,10 @@ export type Confidence = Record<ConfidenceGroup, number | null>;
 
 export const emptyProfile = (): Profile =>
   Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, f.kind === 'list' ? [] : null])) as unknown as Profile;
+/** Herkunft der letzten Analyse (items.analysis.meta) */
+export type AiMeta = { v: 2; prompt: string; model: string | null; at: string };
+export const aiMeta = (model: string | null, at: string): AiMeta => ({ v: 2, prompt: PROFILE_PROMPT_VERSION, model, at });
+
 export const emptyConfidence = (): Confidence => Object.fromEntries(CONFIDENCE_GROUPS.map((g) => [g, null])) as Confidence;
 
 // ---------- Schema ----------
@@ -157,16 +161,32 @@ type Raw = Record<string, unknown>;
 const scale = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 5 ? v : null);
 const keyOf = (v: unknown, values: readonly Opt[]): string | null => (typeof v === 'string' && values.some((x) => x.key === v) ? v : null);
 
-/** Nur Werteprüfung (unabhängig von der Kategorie): Ungültiges → null bzw. [] */
+/** Bereich aus zwei Werten: beide → [min, max] (min > max → null), nur einer → [v, v] */
+const range = (a: unknown, b: unknown): Range | null => {
+  const lo = scale(a), hi = scale(b);
+  return lo != null && hi != null ? (lo <= hi ? [lo, hi] : null) : lo != null ? [lo, lo] : hi != null ? [hi, hi] : null;
+};
+
+/** Nur Werteprüfung (unabhängig von der Kategorie): Ungültiges → null bzw. []. Rohantwort der KI (Bereich als _min/_max). */
 export function checkProfile(raw: unknown): Profile {
-  const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
+  return readProfileWith(raw, (r, key) => range(r[`${key}_min`], r[`${key}_max`]));
+}
+
+/** Gespeichertes Profil (items.analysis.profile, Bereich als [min, max]) tolerant lesen; fehlt → emptyProfile() */
+export function readProfile(stored: unknown): Profile {
+  return readProfileWith(stored, (r, key) => {
+    const v = r[key];
+    return Array.isArray(v) && v.length === 2 && scale(v[0]) != null && scale(v[1]) != null && (v[0] as number) <= (v[1] as number) ? [v[0], v[1]] : null;
+  });
+}
+
+function readProfileWith(raw: unknown, readRange: (r: Raw, key: string) => Range | null): Profile {
+  const r: Raw = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Raw) : {};
   const p = emptyProfile() as Record<string, ProfileValue>;
   for (const f of PROFILE_FIELDS) {
     if (f.kind === 'scale') p[f.key] = scale(r[f.key]);
-    else if (f.kind === 'range') {
-      const lo = scale(r[`${f.key}_min`]), hi = scale(r[`${f.key}_max`]);
-      p[f.key] = lo != null && hi != null ? (lo <= hi ? [lo, hi] : null) : lo != null ? [lo, lo] : hi != null ? [hi, hi] : null;
-    } else if (f.kind === 'enum') p[f.key] = keyOf(r[f.key], f.values);
+    else if (f.kind === 'range') p[f.key] = readRange(r, f.key);
+    else if (f.kind === 'enum') p[f.key] = keyOf(r[f.key], f.values);
     else {
       const v = r[f.key];
       p[f.key] = Array.isArray(v) ? [...new Set(v.map((x) => keyOf(x, f.values)).filter((x): x is string => x != null))].slice(0, f.max) : [];
@@ -175,6 +195,7 @@ export function checkProfile(raw: unknown): Profile {
   return p as unknown as Profile;
 }
 
+/** Konfidenz 0–10 je Gruppe (Rohantwort und gespeicherter Wert haben dieselbe Form) */
 export function checkConfidence(raw: unknown): Confidence {
   const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
   const ok = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 10 ? v : null);

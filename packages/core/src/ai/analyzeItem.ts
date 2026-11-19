@@ -3,11 +3,11 @@
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
 import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../categories';
-import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, type MaterialPart } from '../attributes';
+import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
 import { fieldsFor, STRAPS } from '../fields';
-import { keysOf, type KeyList } from '../keys';
-import { setField, setCategory, type EditForm } from '../edit';
-import { PROFILE_SCHEMA, CONFIDENCE_SCHEMA, checkProfile, checkConfidence, clearInactive, type Profile, type Confidence } from './profile';
+import { keysOf, toKey, type KeyList } from '../keys';
+import { setField, setCategory, mergeAnalysis, type EditForm } from '../edit';
+import { PROFILE_SCHEMA, CONFIDENCE_SCHEMA, aiMeta, checkProfile, checkConfidence, clearInactive, readProfile, type Profile, type Confidence } from './profile';
 
 /**
  * JSON-Schema für „Structured Outputs“ (OpenAI-kompatibel, strict):
@@ -173,10 +173,11 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
 // ---------- Ins Formular übernehmen ----------
 
 /**
- * Vorschläge nur in leere oder noch unbestätigte Felder schreiben; jedes übernommene Feld kommt in `aiPending`
+ * Steckbrief: Vorschläge nur in leere oder noch unbestätigte Felder schreiben; jedes übernommene Feld kommt in `aiPending`
  * (wird beim Ändern oder Bestätigen wieder entfernt, siehe setField / confirmAi).
+ * Profil (Spec 6.4): profile, confidence und aiMeta werden immer komplett ersetzt, ohne Markierung in aiPending.
  */
-export function applyAnalysis(form: EditForm, a: Analysis): EditForm {
+export function applyAnalysis(form: EditForm, a: Analysis, now: string = new Date().toISOString()): EditForm {
   let f = form;
   const marked: string[] = [];
   // Noch nicht bestätigte Vorschläge (z. B. Farbe aus dem Foto) gelten als leer und dürfen ersetzt werden
@@ -205,5 +206,34 @@ export function applyAnalysis(form: EditForm, a: Analysis): EditForm {
   put('layers', a.layers, f.layers.length === 0, a.layers.length > 0);
   put('warmth', a.warmth, f.warmth == null, a.warmth != null);
   put('rain', a.rain, f.rain == null, a.rain != null);
-  return { ...f, aiPending: [...new Set([...f.aiPending, ...marked])] };
+  return {
+    ...f, aiPending: [...new Set([...f.aiPending, ...marked])],
+    profile: a.profile, confidence: a.confidence, aiMeta: aiMeta(a.model, now),
+  };
+}
+
+// ---------- Stapellauf: nur das Profil eines gespeicherten Teils (Spec 8) ----------
+
+export type ProfilePatchRow = {
+  category: string | null; subcategory: string | null; pattern: string | null;
+  /** items.materials (jsonb, [{ name, pct? }]); reine Namen werden auch gelesen */
+  materials: readonly (string | MaterialPart)[] | null;
+  analysis: Record<string, unknown> | null; ai_pending: string[] | null;
+};
+
+/**
+ * Nur analysis eines gespeicherten Teils, Steckbrief und ai_pending bleiben unberührt (kein Name nötig).
+ * applies-Filter nach dem GESPEICHERTEN Pfad/Muster/Material; Profil wird komplett ersetzt, Altschlüssel bleiben,
+ * meta = { v: 2, prompt, model, at: now } (damit fällt auch meta.failed weg).
+ */
+export function profilePatch(
+  row: ProfilePatchRow,
+  a: Pick<Analysis, 'profile' | 'confidence' | 'model'>,
+  now: string = new Date().toISOString(),
+): { analysis: Record<string, unknown> } {
+  const materials = toMaterialParts((row.materials ?? []).map((m) => (typeof m === 'string' ? { name: m } : m))).map((m) => m.name);
+  const ctx = { category: row.category || null, sub: row.subcategory || null, pattern: toKey(PATTERNS, row.pattern), materials };
+  // a.profile kann aus einer anderen Quelle stammen → Werte noch einmal prüfen
+  const profile = clearInactive(readProfile(a.profile), ctx);
+  return { analysis: mergeAnalysis(row.analysis, profile, checkConfidence(a.confidence), aiMeta(a.model ?? null, now)) };
 }

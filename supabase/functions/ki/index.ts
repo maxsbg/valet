@@ -35,7 +35,23 @@ interface RequestPayload {
   schema?: JsonSchema;
   /** Nur Text, ohne Bild (z. B. ausgelesene Produktseite) – wird hinter den Prompt gehängt */
   text?: string;
+  /** 0–1, Standard 0,2 (Teil-Analyse schickt 0) */
+  temperature?: number;
+  /** Erzwingt ein Modell ohne Ersatz – nur für Nutzer-IDs aus dem Secret KI_EVAL_USERS (Eval), sonst ignoriert */
+  model?: string;
 }
+
+const DEFAULT_TEMPERATURE = 0.2;
+/** Gültige Temperatur 0–1, sonst Standard */
+function temperatureOf(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1 ? v : DEFAULT_TEMPERATURE;
+}
+/** Nutzer-IDs aus KI_EVAL_USERS (durch Komma, Leerzeichen oder Zeilenumbruch getrennt) */
+function evalUsers(): string[] {
+  return (Deno.env.get("KI_EVAL_USERS") ?? "").split(/[\s,]+/).map((x) => x.trim()).filter(Boolean);
+}
+/** Modellname nur aus harmlosen Zeichen (z. B. „gemini-3.5-flash-lite“) */
+const MODEL_NAME = /^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,79}$/;
 
 const MAX_PROMPT = 4000;
 const MAX_TEXT = 20000;
@@ -59,6 +75,7 @@ async function callModel(params: {
   base64Image: string | null;
   mimeType: string;
   schema: JsonSchema;
+  temperature: number;
 }): Promise<unknown> {
   const content = params.base64Image
     ? [
@@ -75,7 +92,7 @@ async function callModel(params: {
     },
     body: JSON.stringify({
       model: params.model,
-      temperature: 0.2,
+      temperature: params.temperature,
       messages: [
         {
           role: "user",
@@ -193,14 +210,18 @@ Deno.serve(async (req: Request) => {
     }
 
     // 5. Modell-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
-    // Gewähltes Modell zuerst; bei Überlastung (503) die Ersatzmodelle, sonst ein Wiederholungsversuch
-    const models = [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
+    // Gewähltes Modell zuerst; bei Überlastung (503) die Ersatzmodelle, sonst ein Wiederholungsversuch.
+    // Eval: erzwungenes Modell (nur erlaubte Nutzer) ohne Ersatz – ein Fehler soll sichtbar bleiben.
+    const temperature = temperatureOf(payload.temperature);
+    const forced = typeof payload.model === "string" ? payload.model.trim() : "";
+    const useForced = !!forced && MODEL_NAME.test(forced) && evalUsers().includes(user.id);
+    const models = useForced ? [forced] : [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
     const started = Date.now();
     for (const m of models) {
       if (Date.now() - started > TOTAL_MS - CALL_MS) break;
       try {
-        const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema });
+        const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema, temperature });
         return jsonResponse({ data, model: m }, 200);
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
