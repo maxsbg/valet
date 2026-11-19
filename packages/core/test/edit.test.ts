@@ -179,3 +179,117 @@ test('Laden ist tolerant: deutsche Labels und Altwerte werden zu Keys, Unbekannt
   const g = toEditForm({ name: 'Neu', category: 'top', subcategory: 'shirt', colors: ['navy'], styles: ['street'] });
   assert.deepEqual([g.category, g.subcategory, g.colors, g.styles], ['top', 'shirt', ['navy'], ['street']]);
 });
+
+// ---------- KI-Profil (Analyse v2, Spec 6.4–6.6, 8, 13) ----------
+
+import { applyAnalysis, checkAnalysis, profilePatch } from '../src/ai/analyzeItem';
+import { activeProfile, emptyConfidence, emptyProfile, PROFILE_PROMPT_VERSION } from '../src/ai/profile';
+import { mergeAnalysis } from '../src/edit';
+
+const NOW = '2026-11-19T11:00:00.000Z';
+const OLD = { vdesc: 'Blauer Pullover', matInfo: { main: 'Wolle' }, extra: [1, 2] };
+const jeansAnalysis = () => checkAnalysis({
+  category: 'pants/jeans', name: 'Jeans', colors: ['blue'], materials: ['denim'],
+  profile: { leg: 'tapered', denim_wash: 'dark', sheen: 2, formality_min: 1, formality_max: 3, effects: ['rugged'] },
+  confidence: { category: 10, color: 9, material: 7, surface: 8, shape: 9, style: 8 },
+}, 'gemini-3.5-flash-lite');
+
+test('Laden: items.analysis → Profil, Konfidenz, Altdaten gemerkt; fehlt → leeres Profil', () => {
+  const f = toEditForm({ name: 'X', analysis: { ...OLD, profile: { sheen: 2, formality: [2, 4], surface: 'fine_knit', toe: 'Quatsch', effects: ['soft', 'soft'] }, confidence: { color: 9, style: 11 } } });
+  assert.equal(f.profile.sheen, 2);
+  assert.deepEqual(f.profile.formality, [2, 4]);
+  assert.equal(f.profile.surface, 'fine_knit');
+  assert.equal(f.profile.toe, null);
+  assert.deepEqual(f.profile.effects, ['soft']);
+  assert.equal(f.confidence.color, 9);
+  assert.equal(f.confidence.style, null);
+  assert.equal(f.aiMeta, null);
+  assert.deepEqual(f.analysisBase.vdesc, OLD.vdesc);
+  const g = toEditForm({ name: 'X', analysis: null });
+  assert.deepEqual(g.profile, emptyProfile());
+  assert.deepEqual(g.confidence, emptyConfidence());
+  assert.deepEqual(g.analysisBase, {});
+  assert.deepEqual(emptyEditForm().analysisBase, {});
+});
+
+test('Formular: applyAnalysis ersetzt das Profil komplett, ohne profile.*-Markierung, bestätigte Felder bleiben', () => {
+  const start: EditForm = {
+    ...base({ name: 'Meine Jeans', colors: ['black'], profile: { ...emptyProfile(), toe: 'round', sheen: 5 }, aiPending: [] }),
+  };
+  const f = applyAnalysis(start, jeansAnalysis(), NOW);
+  assert.equal(f.name, 'Meine Jeans'); // bestätigt → bleibt
+  assert.deepEqual(f.colors, ['black']);
+  assert.deepEqual(f.profile, jeansAnalysis().profile); // komplett ersetzt: toe weg, sheen 2
+  assert.equal(f.profile.toe, null);
+  assert.equal(f.profile.sheen, 2);
+  assert.equal(f.confidence.category, 10);
+  assert.deepEqual(f.aiMeta, { v: 2, prompt: PROFILE_PROMPT_VERSION, model: 'gemini-3.5-flash-lite', at: NOW });
+  assert.ok(!f.aiPending.some((k) => k === 'profile' || k.startsWith('profile.') || k === 'confidence'));
+  assert.ok(f.aiPending.includes('category') && !f.aiPending.includes('name'));
+});
+
+test('Speichern: mergeAnalysis behält Altdaten, ersetzt profile/confidence, meta nur nach neuer Analyse', () => {
+  const stored = { ...OLD, profile: { sheen: 4 }, confidence: { color: 3 }, meta: { v: 2, prompt: '2.0', model: 'alt', at: '2026-11-01T00:00:00Z' } };
+  const p = { ...emptyProfile(), sheen: 1 };
+  const kept = mergeAnalysis(stored, p, emptyConfidence(), null);
+  assert.deepEqual(kept.vdesc, OLD.vdesc); assert.deepEqual(kept.matInfo, OLD.matInfo); assert.deepEqual(kept.extra, OLD.extra);
+  assert.deepEqual(kept.profile, p);
+  assert.deepEqual(kept.confidence, emptyConfidence());
+  assert.deepEqual(kept.meta, stored.meta); // keine neue Analyse → meta unverändert
+  const meta = { v: 2 as const, prompt: '2.0', model: 'neu', at: NOW };
+  assert.deepEqual(mergeAnalysis(stored, p, emptyConfidence(), meta).meta, meta);
+  assert.deepEqual(mergeAnalysis(null, p, emptyConfidence(), null), { profile: p, confidence: emptyConfidence() });
+
+  // Ganzer Weg: Laden → Analyse → editChange
+  const f = toEditForm({ name: 'Jeans', category: 'pants', subcategory: 'jeans', analysis: stored });
+  const unchanged = editChange(f);
+  assert.ok('change' in unchanged);
+  const a1 = (unchanged as { change: Record<string, unknown> }).change.analysis as Record<string, unknown>;
+  assert.deepEqual(a1.meta, stored.meta); assert.equal(a1.vdesc, OLD.vdesc);
+  const r = editChange(applyAnalysis(f, jeansAnalysis(), NOW));
+  assert.ok('change' in r);
+  const a2 = r.change.analysis as Record<string, unknown>;
+  assert.equal(a2.vdesc, OLD.vdesc);
+  assert.equal((a2.meta as { v: number }).v, 2);
+  assert.equal((a2.meta as { model: string }).model, 'gemini-3.5-flash-lite');
+  assert.equal((a2.profile as { leg: string }).leg, 'tapered');
+  // Neues Teil: nur profile/confidence/meta
+  const n = editChange(applyAnalysis({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] }, jeansAnalysis(), NOW), { isNew: true });
+  assert.ok('change' in n);
+  assert.deepEqual(Object.keys(n.change.analysis as object).sort(), ['confidence', 'meta', 'profile']);
+});
+
+test('Stapellauf: profilePatch läuft ohne Name, ersetzt das Profil, behält Altschlüssel, löscht meta.failed', () => {
+  const row = {
+    category: 'pants', subcategory: 'jeans', pattern: 'solid', materials: [{ name: 'denim', pct: 98 }, { name: 'elastane' }],
+    analysis: { ...OLD, profile: { toe: 'round' }, meta: { failed: { n: 2, at: '2026-11-18T00:00:00Z' } } }, ai_pending: ['colors'],
+  };
+  const a = { ...jeansAnalysis(), profile: { ...jeansAnalysis().profile, pattern_scale: 'large', toe: 'pointed' } };
+  const patch = profilePatch(row, a, NOW);
+  assert.deepEqual(Object.keys(patch), ['analysis']); // Steckbrief, Name und ai_pending unberührt
+  const an = patch.analysis as Record<string, any>;
+  assert.equal(an.vdesc, OLD.vdesc); assert.deepEqual(an.extra, OLD.extra);
+  assert.equal(an.profile.leg, 'tapered');
+  assert.equal(an.profile.denim_wash, 'dark'); // gespeichertes Material Denim
+  assert.equal(an.profile.pattern_scale, null); // gespeichertes Muster Unifarben
+  assert.equal(an.profile.toe, null); // Hose, kein Schuh
+  assert.deepEqual(an.meta, { v: 2, prompt: PROFILE_PROMPT_VERSION, model: 'gemini-3.5-flash-lite', at: NOW });
+  assert.equal(an.confidence.color, 9);
+  // ohne Kategorie und ohne Altdaten
+  const bare = profilePatch({ category: null, subcategory: null, pattern: null, materials: null, analysis: null, ai_pending: null }, a, NOW);
+  assert.equal((bare.analysis as Record<string, any>).meta.v, 2);
+});
+
+test('Kategoriewechsel: Hose → Schuh blendet leg in activeProfile aus, zurück ist es wieder da', () => {
+  const jeans = applyAnalysis({ ...base(), aiPending: [] }, jeansAnalysis(), NOW);
+  const ctx = (f: EditForm) => ({ category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) });
+  assert.equal(activeProfile(jeans.profile, ctx(jeans)).leg, 'tapered');
+  const shoe = setCategory(jeans, { category: 'shoe', subcategory: 'sneaker', type: null });
+  assert.ok(!('leg' in activeProfile(shoe.profile, ctx(shoe))));
+  assert.equal(shoe.profile.leg, 'tapered'); // gespeichert bleibt es
+  const back = setCategory(shoe, { category: 'pants', subcategory: 'jeans', type: null });
+  assert.equal(activeProfile(back.profile, ctx(back)).leg, 'tapered');
+  const r = editChange(shoe);
+  assert.ok('change' in r);
+  assert.equal(((r.change.analysis as Record<string, any>).profile).leg, 'tapered');
+});

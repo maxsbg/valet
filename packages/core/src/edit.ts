@@ -8,6 +8,7 @@ import { normalizeCategory } from './import/categorize';
 import { capSize, fieldsFor, kindHasLetters, sizeSystemOn, STRAPS, type SizeSystemAny } from './fields';
 import { equalSplit, formatPrice, parseAmount, splitGap } from './money';
 import { isWishTag, type WishTag } from './tile';
+import { checkConfidence, emptyConfidence, readProfile, type AiMeta, type Confidence, type Profile } from './ai/profile';
 
 /** Spalten der Tabelle items, die das Formular liest (Teilmenge, alles optional) */
 export type EditRow = Partial<{
@@ -23,6 +24,8 @@ export type EditRow = Partial<{
   owner_ids: string[] | null; owner_id: string | null; qty: number | null;
   is_wish: boolean | null; wishlist_id: string | null; wish_tag: string | null; buy_on: string | null; wish_price: number | null;
   ai_pending: string[] | null;
+  /** KI-Analyse (jsonb): Altdaten aus dem Import (vdesc, matInfo, extra …) + profile/confidence/meta (Analyse v2, Spec 6.6) */
+  analysis: Record<string, unknown> | null;
 }>;
 
 export type SplitMode = 'equal' | 'custom';
@@ -44,8 +47,14 @@ export type EditForm = {
   owners: string[]; qty: number;
   // Wunschteil
   isWish: boolean; wishlistId: string | null; wishTag: WishTag | null; buyOn: string | null;
-  /** von der KI vorausgefüllt, noch nicht bestätigt */
+  /** von der KI vorausgefüllt, noch nicht bestätigt (nur Steckbrief, nie profile.*) */
   aiPending: string[];
+  // KI-Profil (Analyse v2, Spec 6.4/6.6)
+  profile: Profile; confidence: Confidence;
+  /** gesetzt, wenn in dieser Sitzung eine Analyse lief; sonst bleibt das gespeicherte meta */
+  aiMeta: AiMeta | null;
+  /** ganzes items.analysis beim Laden (Altschlüssel bleiben beim Speichern erhalten); neues Teil = {} */
+  analysisBase: Record<string, unknown>;
 };
 
 const eur = (n: number | null | undefined) => (n == null ? '' : n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -81,7 +90,24 @@ export function toEditForm(r: EditRow): EditForm {
     owners, qty: Math.max(1, Math.round(Number(r.qty) || 1)),
     isWish: !!r.is_wish, wishlistId: r.wishlist_id ?? null, wishTag: isWishTag(r.wish_tag) ? r.wish_tag : null, buyOn: r.buy_on ?? null,
     aiPending: r.ai_pending ?? [],
+    ...readAnalysis(r.analysis),
   };
+}
+
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** items.analysis → Profil, Konfidenz und das ganze Objekt (fehlt → leeres Profil, {}) */
+function readAnalysis(a: unknown): Pick<EditForm, 'profile' | 'confidence' | 'aiMeta' | 'analysisBase'> {
+  const base = isObj(a) ? a : {};
+  return { profile: readProfile(base.profile), confidence: isObj(base.confidence) ? checkConfidence(base.confidence) : emptyConfidence(), aiMeta: null, analysisBase: base };
+}
+
+/**
+ * Neues items.analysis: alle Altschlüssel (vdesc, matInfo, extra …) bleiben, profile und confidence werden ersetzt,
+ * meta nur, wenn eine neue Analyse lief (sonst bleibt das gespeicherte meta unverändert).
+ */
+export function mergeAnalysis(base: Record<string, unknown> | null | undefined, profile: Profile, confidence: Confidence, meta: AiMeta | null): Record<string, unknown> {
+  return { ...(isObj(base) ? base : {}), profile, confidence, ...(meta ? { meta } : {}) };
 }
 
 // ---------- Ändern ----------
@@ -219,6 +245,7 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
     reversible: f.reversible, notes: f.notes.trim(),
     shop: f.shop.trim(), link: f.link.trim(), article_no: f.articleNo.trim(),
     ai_pending: f.aiPending,
+    analysis: mergeAnalysis(f.analysisBase, f.profile, f.confidence, f.aiMeta),
     // Spiegel der alten Felder (deutsches Label wie bisher)
     color: f.colors.map(colorLabel).join('/'), material: f.materials[0] ? materialLabel(f.materials[0].name) : '', style: f.styles[0] ? styleLabel(f.styles[0]) : '',
   };
