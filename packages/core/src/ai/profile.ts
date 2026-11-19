@@ -175,6 +175,18 @@ export function checkProfile(raw: unknown): Profile {
   return p as unknown as Profile;
 }
 
+/** Gespeichertes Profil (items.analysis.profile, Bereiche als [von, bis]) tolerant lesen; fehlt/kaputt → emptyProfile() */
+export function readProfile(raw: unknown): Profile {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return emptyProfile();
+  const r: Raw = { ...(raw as Raw) };
+  for (const f of PROFILE_FIELDS) {
+    if (f.kind !== 'range') continue;
+    const v = r[f.key];
+    if (Array.isArray(v)) { r[`${f.key}_min`] = v[0]; r[`${f.key}_max`] = v[1]; }
+  }
+  return checkProfile(r);
+}
+
 export function checkConfidence(raw: unknown): Confidence {
   const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
   const ok = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 10 ? v : null);
