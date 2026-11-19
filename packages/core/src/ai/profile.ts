@@ -3,6 +3,7 @@
 // Leitsatz (19.11.2026): englische Keys, deutsche Labels nur in der Oberfläche.
 
 import type { JsonSchema } from './analyzeItem';
+import { fieldsFor } from '../fields';
 
 export const PROFILE_PROMPT_VERSION = '2.0';
 
@@ -33,7 +34,8 @@ const shoe = is(['shoe']);
 const bag = is(['bag']);
 const notJewelry: Applies = (c) => c.category !== 'jewelry';
 const structured: Applies = (c) => clothing(c) || shoe(c) || bag(c);
-const patterned: Applies = (c) => c.pattern != null && c.pattern !== 'solid';
+/** gemustert und die Kategorie hat überhaupt ein Musterfeld (Altmuster an einem Schuh zählt nicht) */
+const patterned: Applies = (c) => c.pattern != null && c.pattern !== 'solid' && fieldsFor(c.category, c.sub).pattern;
 const denim: Applies = (c) => c.materials.includes('denim');
 const metal: Applies = (c) =>
   ['outerwear', 'shoe', 'bag', 'jewelry'].includes(c.category ?? '') || (c.category === 'accessory' && c.sub === 'belt');
@@ -49,12 +51,12 @@ export const PATTERN_SCALES = o('fine Fein · medium Mittel · large Groß');
 export const DENIM_WASHES = o('raw Raw · dark Dunkel · mid Mittel · light Hell · black Schwarz · distressed Used');
 export const METAL_TONES = o('none Keiner · silver Silber · gold Gold · rose_gold Roségold · black Schwarz · mixed Gemischt');
 export const SILHOUETTES = o('straight Gerade · fitted Tailliert · a_line A-Linie · boxy Kastig · cocoon Kokon');
-export const SHOULDERS = o('natural Natürlich · structured Gepolstert · dropped Überschnitten · raglan Raglan · sleeveless Ärmellos · off_shoulder Schulterfrei');
+export const SHOULDERS = o('natural Natürlich · structured Gepolstert · dropped Überschnitten · raglan Raglan · sleeveless Ärmellos/Träger · off_shoulder Schulterfrei');
 export const LEGS = o('straight Gerade · tapered Zulaufend · flared Ausgestellt · barrel Bogen');
 export const TOES = o('round Rund · almond Mandel · pointed Spitz · square Eckig · open Offen');
 export const SHAFTS = o('low Halbschuh · ankle Knöchel · mid Wade · high Knie und höher');
 export const SOLES = o('slim Schmal · regular Normal · chunky Klobig · platform Plateau');
-export const HEELS = o('none Kein Absatz · low Niedrig · mid Mittel · high Hoch');
+export const HEELS = o('none Keiner · low unter 3 cm · mid 3–7 cm · high über 7 cm');
 export const BAG_SIZES = o('mini Mini · small Klein · medium Mittel · large Groß');
 export const EFFECTS = o('clean Clean · rugged Robust · soft Weich · sharp Streng · playful Verspielt · bold Markant');
 

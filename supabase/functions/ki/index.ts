@@ -200,13 +200,15 @@ Deno.serve(async (req: Request) => {
         .from(storageBucket)
         .download(imagePath!);
       if (storageError || !fileBlob) {
-        return jsonResponse(
-          { error: `Failed to download image from bucket '${storageBucket}'`, details: storageError?.message },
-          404
-        );
+        console.warn("storage download failed", storageError?.message);
+        return jsonResponse({ error: `Failed to download image from bucket '${storageBucket}'` }, 404);
+      }
+      mimeType = fileBlob.type || "image/jpeg";
+      // gleiche Grenzen wie für mitgeschickte Bilder (Base64 ist ~4/3 der Bytes)
+      if (!IMAGE_TYPES.includes(mimeType) || fileBlob.size * 4 / 3 > MAX_IMAGE_B64) {
+        return jsonResponse({ error: "unsupported or too large image" }, 413);
       }
       base64Image = encodeBase64(await fileBlob.arrayBuffer());
-      mimeType = fileBlob.type || "image/jpeg";
     }
 
     // 5. Modell-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
@@ -217,6 +219,7 @@ Deno.serve(async (req: Request) => {
     const useForced = !!forced && MODEL_NAME.test(forced) && evalUsers().includes(user.id);
     const models = useForced ? [forced] : [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
+    let limited = 0;
     const started = Date.now();
     for (const m of models) {
       if (Date.now() - started > TOTAL_MS - CALL_MS) break;
@@ -226,10 +229,13 @@ Deno.serve(async (req: Request) => {
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
         console.warn(`${m}: model call error`, lastError);
-        if (lastError.includes("(429)")) return jsonResponse({ error: "rate_limited" }, 429);
+        // Gratisgrenzen gelten je Modell → nächstes Modell probieren; „rate_limited“ erst, wenn alle begrenzt sind
+        if (lastError.includes("(429)")) limited++;
       }
     }
-    return jsonResponse({ error: "AI request failed", details: lastError }, 502);
+    if (limited > 0 && limited === models.length) return jsonResponse({ error: "rate_limited" }, 429);
+    // Fehlertext des Anbieters nur ins Log, nicht an die App
+    return jsonResponse({ error: "AI request failed" }, 502);
   } catch (err) {
     console.error("Unexpected error in ki:", err);
     return jsonResponse({ error: "Internal server error" }, 500);

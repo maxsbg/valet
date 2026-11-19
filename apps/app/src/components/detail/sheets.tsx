@@ -98,12 +98,13 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
 }) {
   const t = useTheme();
   const [img, setImg] = useState<{ path: string; colors: { h: string; s: number }[] } | null | undefined>(undefined);
+  const [imgError, setImgError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (!open) return;
-    setError(null);
-    analysisImage(itemId).then(setImg).catch(() => setImg(null));
+    setError(null); setImgError(false);
+    analysisImage(itemId).then(setImg).catch(() => { setImg(null); setImgError(true); });
   }, [open, itemId]);
   const sections = analysisSections(f);
   const profiled = hasProfile(f.analysisBase);
@@ -111,7 +112,7 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
   const checkColor = profiled && !!img && colorCheck(f.colors, img.colors);
 
   async function run() {
-    if (!img) { setError('Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
+    if (!img) { setError(imgError ? 'Bild konnte nicht geladen werden – bitte Verbindung prüfen und erneut öffnen.' : 'Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
     setBusy(true); setError(null);
     try {
       const a = await analyzeStored(img.path, confirmedContext(f));
@@ -120,7 +121,9 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
       onSaved('Neu analysiert.');
     } catch (e) {
       const { code } = await kiError(e);
-      setError(code === 'rate_limited' ? 'Das Gratis-Kontingent ist gerade erschöpft. Bitte später noch einmal.' : 'Analyse fehlgeschlagen: ' + (code || (e as Error).message));
+      setError(code === 'rate_limited' ? 'Das Gratis-Kontingent ist gerade erschöpft. Bitte später noch einmal.'
+        : code === 'empty_answer' ? 'Die KI hat nichts Brauchbares geliefert. Bitte noch einmal versuchen.'
+        : 'Analyse fehlgeschlagen: ' + (code || (e as Error).message));
     } finally { setBusy(false); }
   }
 

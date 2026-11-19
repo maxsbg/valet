@@ -85,3 +85,14 @@ test('Bearbeiten: Name schlägt Passform nur vor, bestätigte bleibt', () => {
   // ohne Begriff: nichts vorgeschlagen
   assert.deepEqual(setName(shirt(), 'Ribbed Shirt').aiPending, []);
 });
+
+test('Weitere Shop-Schreibweisen (Prüfung 20.11.2026)', () => {
+  assert.deepEqual(fitFromName('Skinny Jeans').fit, { width: 0 });
+  assert.deepEqual(fitFromName('Slimfit Hemd').fit, { width: 0 });
+  assert.deepEqual(fitFromName('High Rise Jeans').fit, { rise: 2 });
+  assert.deepEqual(fitFromName('Highwaist Jeans').fit, { rise: 2 });
+  assert.deepEqual(fitFromName('Loose Fit Jeans').fit, { width: 3 });
+  assert.equal(fitFromName('Bootcut Jeans').leg, 'flared');
+  assert.equal(fitFromName('Flared Jeans').leg, 'flared');
+  assert.equal(fitFromName('Straight Fit Jeans').leg, 'straight');
+});

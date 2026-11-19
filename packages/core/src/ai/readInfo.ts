@@ -3,6 +3,7 @@
 
 import { MATERIALS, CARE, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, categoryDescription, checkAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
+import { emptyConfidence, emptyProfile } from './profile';
 import { toKey } from '../keys';
 
 export type InfoKind = 'label' | 'shop' | 'order';
@@ -15,12 +16,33 @@ const CARE_PROPS: Record<string, JsonSchema> = Object.fromEntries(CARE.map((g) =
   description: `${g.label}: ${g.options.map((o) => `${o.id} = ${o.short}`).join(', ')}`,
 }]));
 
-// Steckbrief-Felder wie bei „Teil erkennen“, aber Kategorie darf fehlen (z. B. beim Etikett) und Material mit Prozent
-const { materials: _materials, category: _category, ...ITEM } = ANALYZE_ITEM_PROPS;
+// Steckbrief-Felder wie bei „Teil erkennen“ (gleiche Keys), aber zum Ablesen statt Schätzen: eigene Beschreibungen,
+// Kategorie und Name dürfen fehlen, Material mit Prozent. Ohne Profil, Konfidenz, Stil, Lagen und Wetter – das sind
+// Schätzungen aus dem Foto, die eine Info nicht liefern soll (Spec 6.7: Profil nur aus dem Bild).
+const { materials: _m, category: _c, name: _n, profile: _p, confidence: _cf, styles: _s, layers: _l, warmth: _w, rain: _r, ...ITEM } = ANALYZE_ITEM_PROPS;
+/** Labels einer Liste aus der Beschreibung von „Teil erkennen“ übernehmen, Anweisung ersetzen */
+const read = (key: string, intro: string): JsonSchema => {
+  const base = ITEM[key]!;
+  const labels = /\(([^()]*=[^()]*)\)$/.exec(base.description ?? '')?.[1];
+  return { ...base, description: labels ? `${intro} (${labels})` : intro };
+};
+const READ_ITEM: Record<string, JsonSchema> = {
+  name: text('Exakter Produktname, wie er dasteht, ohne Farbe; sonst null (auf einem Etikett meist null)'),
+  brand: text('Marke, nur wenn sie dasteht, sonst null'),
+  colors: read('colors', 'Nur die genannte Farbangabe (Farbname des Shops/der Bestellung), höchstens 3; sonst leere Liste. Nicht aus dem Produktfoto schätzen.'),
+  pattern: read('pattern', 'Nur wenn das Muster genannt ist (z. B. „gestreift“, „kariert“), sonst null'),
+  seasons: read('seasons', 'Nur wenn ausdrücklich genannt (z. B. „Sommerkollektion“), sonst leere Liste'),
+  collar: read('collar', 'Nur wenn genannt (z. B. „Rundhals“, „Button-Down“), sonst null'),
+  closure: read('closure', 'Nur wenn genannt, sonst null'),
+  strap: read('strap', 'Nur wenn genannt (bei Taschen), sonst null'),
+  width: { ...ITEM.width!, description: 'Nur wenn ein Passform-Begriff genannt ist: 0 Slim/Skinny … 2 Regular … 3 Relaxed, 4 Oversized/Baggy/Wide; sonst null' },
+  length: { ...ITEM.length!, description: 'Nur wenn genannt: 0 Cropped/kurz … 4 lang (bei Kleid/Rock: 0 Mini, 1 über Knie, 2 Knie, 3 Midi, 4 Maxi); sonst null' },
+  rise: { ...ITEM.rise!, description: 'Nur wenn genannt: 0 Low Rise, 1 Mid Rise, 2 High Waist/High Rise; sonst null' },
+};
 const PROPS: Record<string, JsonSchema> = {
   kind: { type: ['string', 'null'], enum: ['label', 'shop', 'order', null], description: 'Art des Bildes: label = Etikett/Pflegeetikett, shop = Produktseite eines Shops, order = Bestellbestätigung/Rechnung; null bei reinem Seitentext' },
   category: { type: ['string', 'null'], enum: [...CATEGORY_PATHS, null], description: categoryDescription('Nur wenn aus Text oder Bild klar erkennbar: Kategorie/Unterkategorie/Typ.') },
-  ...ITEM,
+  ...READ_ITEM,
   shop: text('Name des Shops oder Händlers'),
   price: num('Aktueller bzw. bezahlter Preis je Stück in Euro (Zahl, z. B. 59.95)'),
   list_price: num('Durchgestrichener Preis oder UVP in Euro, sonst null'),
@@ -45,7 +67,7 @@ const WHAT: Record<InfoKind, string> = {
 export function readInfoPrompt(kind: InfoKind | null): string {
   return `Du siehst ${kind ? WHAT[kind] : 'ein Etikett, einen Shop-Screenshot oder eine Bestellbestätigung zu einem Kleidungsstück'}.
 Lies nur ab, was dort steht oder klar zu sehen ist – nichts schätzen. Fehlt eine Angabe: null bzw. leere Liste.
-Nutze für Listenfelder nur die vorgegebenen Werte (Keys). name = exakter Produktname aus dem Shop, ohne Farbe.
+Nutze für Listenfelder nur die vorgegebenen Werte (Keys). name = exakter Produktname, ohne Farbe (sonst null).
 Stehen mehrere Artikel darauf, nimm nur den ersten bzw. den hervorgehobenen.`;
 }
 
@@ -67,7 +89,13 @@ export type Info = {
 type Raw = Record<string, unknown>;
 const str = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 const money = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v < 100000 ? Math.round(v * 100) / 100 : null);
-const date = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) ? v : null);
+/** JJJJ-MM-TT, nur echte Kalendertage (2026-02-30 → null) */
+const date = (v: unknown) => {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+  const [y, m, d] = v.split('-').map(Number);
+  const t = new Date(Date.UTC(y!, m! - 1, d!));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m! - 1 && t.getUTCDate() === d ? v : null;
+};
 
 export function checkInfo(raw: unknown): Info {
   const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
@@ -77,7 +105,11 @@ export function checkInfo(raw: unknown): Info {
     if (typeof name !== 'string' || toKey(MATERIALS, name) !== name || parts.some((p) => p.name === name)) continue;
     parts.push({ name, pct: typeof pct === 'number' && Number.isInteger(pct) && pct > 0 && pct <= 100 ? pct : null });
   }
-  const item = { ...checkAnalysis({ ...r, materials: [] }), materials: parts.slice(0, 5) };
+  // Profil, Konfidenz, Stil, Lagen und Wetter liefert eine Info nie (auch wenn die Antwort sie enthielte)
+  const item: Analysis = {
+    ...checkAnalysis({ ...r, materials: [], profile: null, confidence: null, styles: [], layers: [], warmth: null, rain: null }),
+    materials: parts.slice(0, 5), profile: emptyProfile(), confidence: emptyConfidence(),
+  };
   const care: Care = {};
   const p = (r.care && typeof r.care === 'object' ? r.care : {}) as Raw;
   for (const g of CARE) {

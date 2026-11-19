@@ -197,7 +197,8 @@ export default function Neu() {
         try {
           const a = await analyzePicture(p.main, infoContext(extra.infos, extra.description));
           if (n !== run.current) return;
-          setF((cur) => cur && mergeSources(cur, { image: a, infos: extra.infos }));
+          // Infos sind schon übernommen (mit Herkunft); nur noch das Bild – so dreht es keine Eingaben des Nutzers zurück
+          setF((cur) => cur && mergeSources(cur, { image: a, used: extra.infos.map((x) => x.from) }));
         } catch (e) { errors.push(e); }
       }
       if (n !== run.current || !errors.length) return;

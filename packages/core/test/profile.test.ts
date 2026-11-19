@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ANALYZE_ITEM_SCHEMA, checkAnalysis } from '../src/ai/analyzeItem';
+import { applyAnalysis } from '../src/ai/merge';
+import { emptyEditForm } from '../src/edit';
 import {
   PROFILE_FIELDS, PROFILE_SCHEMA, CONFIDENCE_SCHEMA, checkProfile, checkConfidence, clearInactive, activeProfile,
   SCALE_WORDS, emptyProfile, profileLabel, readProfile, type Ctx, type Profile,
@@ -84,14 +86,17 @@ test('activeProfile: Kategoriewechsel blendet aus, Werte bleiben gespeichert', (
   assert.equal(p.leg, 'tapered');
 });
 
-test('checkAnalysis: Profil nach erkannter Kategorie bereinigt, Modell übernommen', () => {
+test('checkAnalysis: Profil nur geprüft (bereinigt wird beim Zusammenführen), Modell übernommen', () => {
   const a = checkAnalysis({
     category: 'pants/jeans', pattern: 'solid', materials: ['denim'],
     profile: { leg: 'tapered', toe: 'round', denim_wash: 'dark', pattern_scale: 'fine', formality_min: 1, formality_max: 3, surface: 'smooth' },
     confidence: { category: 9 },
   }, 'gemini-3.5-flash-lite');
-  assert.equal(a.profile.leg, 'tapered'); assert.equal(a.profile.toe, null);
-  assert.equal(a.profile.denim_wash, 'dark'); assert.equal(a.profile.pattern_scale, null);
+  assert.equal(a.profile.leg, 'tapered'); assert.equal(a.profile.toe, 'round');
+  assert.equal(a.profile.denim_wash, 'dark'); assert.equal(a.profile.pattern_scale, 'fine');
+  // mit dem endgültigen Pfad (hier gleich dem erkannten) bereinigt
+  const f = applyAnalysis({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] }, a, '2026-11-20T10:00:00Z');
+  assert.equal(f.profile.leg, 'tapered'); assert.equal(f.profile.toe, null); assert.equal(f.profile.pattern_scale, null);
   assert.deepEqual(a.profile.formality, [1, 3]);
   assert.equal(a.confidence.category, 9);
   assert.equal(a.model, 'gemini-3.5-flash-lite');
@@ -130,4 +135,20 @@ test('readProfile: gespeichertes Profil mit Bereich [von, bis], tolerant', () =>
   assert.equal(readProfile({ formality: [4, 2] }).formality, null);
   assert.deepEqual(readProfile(null), emptyProfile());
   assert.deepEqual(readProfile('kaputt'), emptyProfile());
+});
+
+test('Typ Profile und Feldtabelle decken sich (zur Übersetzungszeit geprüft)', () => {
+  // fehlt ein Key in der Tabelle oder im Typ, schlägt der Typecheck fehl
+  const keys: Record<keyof Profile, true> = {
+    sheen: true, texture_intensity: true, visual_weight: true, pattern_contrast: true, structure: true, presence: true, versatility: true,
+    formality: true, surface: true, opacity: true, pattern_scale: true, denim_wash: true, metal_tone: true, silhouette: true, shoulder: true,
+    leg: true, toe: true, shaft: true, sole: true, heel: true, bag_size: true, effects: true,
+  };
+  assert.deepEqual(PROFILE_FIELDS.map((f) => f.key).sort(), Object.keys(keys).sort());
+});
+
+test('Labels nach Spec 3.2 (Absatz, Schulter)', () => {
+  assert.equal(profileLabel('heel', 'low'), 'unter 3 cm');
+  assert.equal(profileLabel('heel', 'none'), 'Keiner');
+  assert.equal(profileLabel('shoulder', 'sleeveless'), 'Ärmellos/Träger');
 });

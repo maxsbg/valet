@@ -1,5 +1,5 @@
 // KI „Teil erkennen“: Prompt, Antwort-Schema und Prüfung der Antwort.
-// Die Edge Function `ki` ist nur ein Durchreicher zu einem OpenAI-kompatiblen Anbieter (Standard Mistral) (Bild + Prompt + Schema);
+// Die Edge Function `ki` ist nur ein Durchreicher zu Gemini (OpenAI-kompatible Schnittstelle; Bild + Prompt + Schema);
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
 import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../categories';
@@ -108,7 +108,7 @@ export type Analysis = {
   layers: number[];
   warmth: number | null;
   rain: number | null;
-  /** KI-Profil (v2), bereits nach Kategorie bereinigt */
+  /** KI-Profil (v2), Werte geprüft; nach Kategorie bereinigt wird erst beim Zusammenführen (endgültiger Pfad) */
   profile: Profile;
   confidence: Confidence;
   /** tatsächlich genutztes Modell (Antwort der Edge Function) */
@@ -138,13 +138,13 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
   const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
   const path = parsePath(r.category);
   const f = fieldsFor(path.category, path.subcategory);
-  const scales = new Set(fitScalesOf(path.category).map((s) => s.key));
+  // ohne erkannte Kategorie (Etikett, Screenshot) bleiben die Stufen roh; gefiltert wird beim Zusammenführen
+  const scales = new Set<string>(path.category ? fitScalesOf(path.category).map((s) => s.key) : ['width', 'length', 'rise']);
   const neck = f.neckline?.options ?? [];
   let colors = pickList(r.colors, COLOR_LIST, MAX_COLORS);
   if (colors.includes(MULTICOLOR)) colors = [MULTICOLOR];
   const pattern = f.pattern ? pickStr(r.pattern, PATTERNS) : null;
   const materials = pickList(r.materials, MATERIALS, 3);
-  const ctx = { category: path.category, sub: path.subcategory, pattern, materials };
   return {
     path,
     name: text(r.name),
@@ -165,10 +165,20 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
     layers: f.layers && Array.isArray(r.layers) ? [...new Set(r.layers.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
     warmth: f.weather ? pickLevel(r.warmth, 3) : null,
     rain: f.weather ? pickLevel(r.rain, 2) : null,
-    profile: clearInactive(checkProfile(r.profile), ctx),
+    // nur Werte prüfen; nach Kategorie bereinigt wird erst mit dem endgültigen Pfad (mergeSources, profilePatch)
+    profile: checkProfile(r.profile),
     confidence: checkConfidence(r.confidence),
     model: typeof model === 'string' && model.trim() ? model.trim().slice(0, 80) : null,
   };
+}
+
+/**
+ * Taugt die geprüfte Antwort als Analyse? Leere oder kaputte Antworten (kein Objekt, weder Kategorie noch Farbe noch
+ * irgendein Profilwert) gelten als Fehlschlag – sonst stünde ein leeres Profil als „analysiert“ (meta.v = 2) da.
+ */
+export function analysisUsable(a: Analysis): boolean {
+  if (a.path.category || a.colors.length) return true;
+  return Object.values(a.profile).some((v) => (Array.isArray(v) ? v.length > 0 : v != null));
 }
 
 // ---------- Ins Formular übernehmen ----------

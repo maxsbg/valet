@@ -104,3 +104,77 @@ test('Neu analysieren: nur bestätigte Werte als Kontext', () => {
   assert.doesNotMatch(text, /Farben/);
   assert.equal(confirmedContext(blank()), '');
 });
+
+// ---------- Prüfung 20.11.2026: Rangfolge über mehrere Aufrufe, Etikett-Felder, endgültige Kategorie ----------
+
+test('Rangfolge über Aufrufe: „Neu analysieren“ ersetzt offene Etikett-Werte nicht (Herkunft in analysis.src)', () => {
+  const withLabel = applyInfo(blank(), checkInfo({ kind: 'label', material_parts: [{ name: 'wool', pct: 80 }, { name: 'nylon', pct: 20 }], size: 'M' }));
+  assert.ok(withLabel.aiPending.includes('materials'));
+  assert.equal((withLabel.analysisBase.src as Record<string, string>).materials, 'label');
+  const again = applyAnalysis(withLabel, checkAnalysis({ category: 'top/sweater', materials: ['cotton'], colors: ['navy'] }), NOW);
+  assert.deepEqual(again.materials, [{ name: 'wool', pct: 80 }, { name: 'nylon', pct: 20 }]);
+  assert.deepEqual(again.colors, ['navy']);
+  // später ausgelesener Shop (Rang 2) ersetzt das offene Etikett (Rang 3) nicht, wohl aber ein neues Etikett
+  const shop = applyInfo(again, checkInfo({ kind: 'shop', material_parts: [{ name: 'cotton', pct: 100 }], size: 'L' }));
+  assert.equal(shop.materials[0]!.name, 'wool');
+  const label2 = applyInfo(again, checkInfo({ kind: 'label', material_parts: [{ name: 'cashmere', pct: 100 }] }));
+  assert.equal(label2.materials[0]!.name, 'cashmere');
+});
+
+test('Etikett liefert nur Marke, Material, Größe, Pflege, Artikelnummer – nie Farbe, Saison, Stil, Name', () => {
+  const lab = checkInfo({ kind: 'label', name: 'Etikett', colors: ['white'], seasons: ['summer'], styles: ['casual'], brand: 'COS', material_parts: [{ name: 'wool', pct: 100 }] });
+  const f = mergeSources(blank(), { image: checkAnalysis({ category: 'top/sweater', name: 'Strickpullover', colors: ['navy'], seasons: ['autumn', 'winter'] }), infos: [{ from: 'label', info: lab }] }, NOW);
+  assert.equal(f.name, 'Strickpullover');
+  assert.deepEqual(f.colors, ['navy']);
+  assert.deepEqual(f.seasons, ['autumn', 'winter']);
+  assert.equal(f.brand, 'COS');
+  assert.equal(f.materials[0]!.name, 'wool');
+  assert.ok(!infoContext([{ from: 'label', info: lab }]).includes('Weiß'));
+});
+
+test('Profil wird mit der endgültigen Kategorie bereinigt (Shop sagt Jeans, Bild sagt T-Shirt)', () => {
+  const img = checkAnalysis({ category: 'top/t_shirt', colors: ['blue'], profile: { leg: 'tapered', denim_wash: 'dark', silhouette: 'boxy' } });
+  assert.equal(img.profile.leg, 'tapered'); // checkAnalysis prüft nur Werte
+  const shop = checkInfo({ kind: 'shop', category: 'pants/jeans', material_parts: [{ name: 'denim', pct: 100 }] });
+  const f = mergeSources(blank(), { image: img, infos: [{ from: 'screenshot', info: shop }] }, NOW);
+  assert.equal(f.category, 'pants');
+  assert.equal(f.profile.leg, 'tapered');
+  assert.equal(f.profile.denim_wash, 'dark');
+  assert.equal(f.profile.silhouette, null);
+  // ungültiger Pfad im Bild: Profil bleibt für die feststehende Kategorie erhalten
+  const fixed = { ...blank(), category: 'pants', subcategory: 'jeans' };
+  const g = applyAnalysis(fixed, checkAnalysis({ category: 'quatsch', colors: ['blue'], profile: { leg: 'straight', opacity: 'opaque' } }), NOW);
+  assert.equal(g.profile.leg, 'straight'); assert.equal(g.profile.opacity, 'opaque');
+});
+
+test('Passform aus einer Info ohne Kategorie bleibt und schlägt die Begriffe im Namen', () => {
+  const shot = checkInfo({ kind: 'shop', category: null, width: 3 });
+  assert.equal(shot.item.fit.width, 3);
+  const f = mergeSources({ ...blank(), name: 'Slim Jeans', category: 'pants', subcategory: 'jeans' }, { infos: [{ from: 'screenshot', info: shot }] });
+  assert.equal(f.fit.width, 3);
+  // ohne Info gewinnt der Name über das Bild
+  const g = applyAnalysis({ ...blank(), name: 'Slim Jeans', category: 'pants', subcategory: 'jeans' }, checkAnalysis({ category: 'pants/jeans', width: 2, colors: ['blue'] }), NOW);
+  assert.equal(g.fit.width, 0);
+});
+
+test('Zweiter Schritt bei „Neues Teil“: nur das Bild, keine zurückgedrehten Eingaben, bestätigte Größe bleibt', () => {
+  const shop = checkInfo({ kind: 'shop', brand: 'Zara', category: 'top/shirt' });
+  const step1 = mergeSources(blank(), { infos: [{ from: 'screenshot', info: shop }] });
+  const edited = setField(setField(step1, 'brand', ''), 'size', 'L');
+  const step2 = mergeSources(edited, { image: checkAnalysis({ category: 'shoe/sneaker', colors: ['white'] }), used: ['screenshot'] }, NOW);
+  assert.equal(step2.brand, '');
+  assert.equal(step2.category, 'top'); // Shop-Kategorie (Rang 2) schlägt das Bild
+  assert.equal(step2.size, 'L');
+  assert.equal(step2.aiMeta?.source, 'image+screenshot');
+  // ohne Info: Bild-Kategorie darf die bestätigte Größe nicht leeren
+  const own = setField({ ...blank(), category: null }, 'size', 'L');
+  const h = applyAnalysis(own, checkAnalysis({ category: 'shoe/sneaker', colors: ['white'] }), NOW);
+  assert.equal(h.category, 'shoe'); assert.equal(h.size, 'L');
+});
+
+test('Neu analysieren: bestätigte Passform verdrängt widersprechende Begriffe im Namen aus dem Kontext', () => {
+  const f = { ...blank(), name: 'Slim Jeans', category: 'pants', subcategory: 'jeans', fit: { width: 2, length: null, rise: null } };
+  const ctx = confirmedContext(f);
+  assert.ok(ctx.includes('Weite normal'));
+  assert.ok(!/slim/i.test(ctx.split('\n').find((l) => l.startsWith('Passform')) ?? ''));
+});

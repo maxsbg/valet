@@ -51,13 +51,13 @@ Wunschteil-Übersicht: Zeile mit der Liste (nur Name; die Kategorie steht unten 
 
 ## 4. Detailseite – Steckbrief
 
-Karten **Aussehen** (Kategorie, Saison, Farben, Muster, Material, Größe), **Tragen**, **Details** (Stil, Kragen, Verschluss), **Pflege**. Zeilen: Bezeichnung links (15 px, `ink-muted`), Werte rechts als gefüllte Kapseln bzw. Kreise, gleichmäßig umbrochen.
+> **Stand 19.11.2026 – ersetzt durch KI-Analyse v2, Spec Abschnitt 14 (`docs/ki/analyse-v2/VALET_ANALYSE_V2_SPEC.html`):** Der Steckbrief-Reiter zeigt nur noch **Kategorie, Saison, Farben, Material, Größe, Passform, Pflege**; Muster, Stil, Kragen/Ausschnitt, Verschluss, Trägerart, Lagen und Wetter stehen im Blatt **„KI-Analyse ›“** (Abschnitte Details, Tragen, Form, Oberfläche, Wirkung). Bei Widerspruch gilt die v2-Spec. Der frühere Stand steht unten nur noch zur Nachvollziehbarkeit.
+
+Zeilen: Bezeichnung links (15 px, `ink-muted`), Werte rechts als gefüllte Kapseln bzw. Kreise, gleichmäßig umbrochen.
 
 - Kategorie: nur die letzte gewählte Stufe (z. B. „Kurzarmhemd“), kein Pfad. Typnamen sind deshalb immer allein verständlich (Liste und Namensregeln in Abschnitt 8).
-- **Tragen als Skalen, nicht als Kapseln:**
-  - Passform: zwei 5er-Skalen – Weite (schmal → weit) und Länge (kurz → lang), rechts das Wort (z. B. „eher weit“). Bei Hose und Rock dazu eine 3er-Skala Bund (tief · normal · hoch). Kleid und Rock nur Länge (Mini · über Knie · Knie · Midi · Maxi), keine Weite. „Oversized“ = weit + lang, „Boxy“ = weit + kurz, kein eigener Wert. Shop-Begriffe rechnet die KI auf die beiden Stufen um.
-  - Lagen: 4 Stufen von innen nach außen (Unterlage, Mitte zu, Mitte offen, Außen), mehrere möglich, rechts „auch allein tragbar“.
-  - Wetter: Balken für Wärme (0–3: sehr leicht, leicht, mittel, warm) und Regen (schlecht, mittel, gut).
+- **Passform als Begriffe (v2, 14.2):** Kapseln in der Reihenfolge Form (Silhouette bzw. Beinverlauf bei Hose/Shorts), Weite, Länge, Bund, Schulter (nur ≠ „Natürlich“), z. B. Jeans „Zulaufend · Normal · Lang · Hoch“. Kommt dasselbe Wort mehrfach vor (z. B. alles „normal“), steht die Bezeichnung davor („Weite normal · Länge normal“). Leere Werte entfallen; ohne Wert entfällt die Zeile. Die Form kommt aus dem KI-Profil, deshalb kann die Zeile auch bei Oberbekleidung erscheinen (z. B. „A-Linie · Überschnitten“), obwohl es dort keine Skalen gibt.
+- *Früherer Stand (15.11.2026, überholt):* Karten Aussehen (mit Muster), Tragen (Passform als 5er-/3er-Skalen, Lagen, Wetter-Balken), Details (Stil, Kragen, Verschluss). In **Bearbeiten** bleiben Passform, Lagen und Wetter weiterhin antippbare Skalen (Abschnitt 6).
 - Pflege als Symbol-Kreise in der Reihenfolge Waschen, Bleichen, Trocknen, Bügeln, Professionell. Ohne Angabe und ohne Schätzung: „noch leer“ mit „Etikett“ und „Selbst wählen“.
 - **Geschätzte Pflege (entschieden 15.11.2026):** Gibt es kein Etikett, schätzt die KI die Pflege aus dem Material, aber nur wenn das Material bekannt ist, und im Zweifel die vorsichtigere Stufe (30 °C statt 40 °C, Trockner „nicht“ statt „niedrig“). Professionelle Reinigung wird nie geschätzt. Geschätzte Symbole: Kreis ohne Füllung, Symbol in `ink-muted`, kleiner Stern (✱) oben rechts am Kreis; darunter einmal „geschätzt aus Material“. Antippen eines geschätzten Symbols → Blatt „Stimmt das?“ mit Bestätigen (wird normal gefüllt) oder Ändern. Ein Etikett-Foto ersetzt jede Schätzung. Speichern je Wert mit Herkunft (`etikett` / `geschaetzt` / `hand`).
 - **Wendbar:** zwei Fotos; die Wende-Plakette oben rechts auf der Kachel wechselt die Seite (bestehende Drehung aus `ItemTile`/`useFlip` beibehalten), dazu zwei Punkte unter dem Bild und „Seite A / B“. Farben (und ggf. Muster) je Seite: „Farben Seite A“, „Farben Seite B“.
@@ -166,7 +166,7 @@ Ersetzt die alte Acloset-Liste (Plural, übersetzte Typen wie „Denimjacke“ u
 | Rock | Länge 5 (wie Kleid) · Bund 3 |
 | alle anderen | keine Passform-Zeile |
 
-Shop-Begriffe rechnet die KI um (Slim = schmal, Relaxed = eher weit, Oversized = weit + lang, Boxy = weit + kurz, Cropped = kurz, Baggy = weit, High Waist = Bund hoch, Low Rise = Bund tief). Tapered, Bootcut und Flared entfallen.
+Shop-Begriffe rechnet die KI um (Slim = schmal, Relaxed = eher weit, Oversized = weit + lang, Boxy = weit + kurz, Cropped = kurz, Baggy = weit, High Waist = Bund hoch, Low Rise = Bund tief). Tapered, Bootcut und Flared entfallen als Stufen; seit 20.11.2026 gehen sie (wie Straight Leg/Straight Fit) als Beinverlauf ins KI-Profil (`profile.leg`, Bootcut/Flared → Ausgestellt). Weitere Schreibweisen im Namen: Skinny/Slimfit = Slim, High Rise/Highwaist = High Waist, Loose Fit = Relaxed.
 
 **Weitere Listen:** Material zusätzlich Flanell und Lammfell, Muster zusätzlich Zopfmuster und Rippstrick, Verschluss zusätzlich Schnalle (z. B. Tasche mit Schnallen). Kragenweite bei der Größe nur für Unterkategorie Hemd.
 
@@ -174,7 +174,7 @@ Shop-Begriffe rechnet die KI um (Slim = schmal, Relaxed = eher weit, Oversized =
 
 ## 8a. Welche Felder je Kategorie (entschieden 15.11.2026)
 
-Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten **und** in der Ansicht gar nicht gezeigt (keine leere Zeile, kein „Auswählen“). Eine Karte ohne sichtbare Zeile entfällt ganz. Bereits gespeicherte Werte bleiben in der DB, werden aber nicht angezeigt. Die KI füllt nur die gezeigten Felder.
+Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten **und** in der Ansicht gar nicht gezeigt (Ansicht seit 19.11.2026: Steckbrief bzw. Blatt „KI-Analyse“, siehe Abschnitt 4; die Passform-Zeile der Ansicht zeigt zusätzlich die Form aus dem KI-Profil, auch dort, wo die Tabelle „–“ hat) (keine leere Zeile, kein „Auswählen“). Eine Karte ohne sichtbare Zeile entfällt ganz. Bereits gespeicherte Werte bleiben in der DB, werden aber nicht angezeigt. Die KI füllt nur die gezeigten Felder.
 
 | Feld | Oberteil | Kleid | Hose | Rock | Oberbekl. | Schuh | Tasche | Kopfbed. | Schmuck | Accessoire |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -182,7 +182,7 @@ Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten **und*
 | Muster | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ | – | ✓ |
 | Wendbar | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ | – | ✓ |
 | Größe | ✓ | ✓ | ✓ (W/L) | ✓ | ✓ | ✓ (EU) | – | ✓ (Kappe, Hut, Buchstaben) | Ring, Armband, Halskette, Uhr | ✓ außer Brille, Geldbörse, Handyhülle, Haarschmuck, Anzug-Accessoire, Schal |
-| Passform | Weite, Länge | Länge | Weite, Länge, Bund | Länge, Bund | – | – | – | – | – | – |
+| Passform (Skalen) | Weite, Länge | Länge | Weite, Länge, Bund | Länge, Bund | – | – | – | – | – | – |
 | Lagen + „auch allein tragbar“ | ✓ | – | – | – | ✓ | – | – | – | – | – |
 | Wetter | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | – | ✓ |
 | Ausschnitt / Kragen | ✓ | ✓ (Ausschnitt) | – | – | ✓ (Kragen) | – | – | – | – | – |

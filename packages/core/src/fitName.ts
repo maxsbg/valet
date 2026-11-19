@@ -3,17 +3,22 @@
 import { FIT_TERMS, fitScalesOf, type FitScale } from './categories';
 
 type FitPart = Partial<Record<FitScale['key'], number>>;
-export type NameFit = { fit: FitPart; leg?: 'straight' | 'tapered' };
+export type NameFit = { fit: FitPart; leg?: 'straight' | 'tapered' | 'flared' };
 
 /** Schreibweisen im Namen → Begriff aus FIT_TERMS */
 const ALIASES: Readonly<Record<string, string>> = {
-  'slim fit': 'slim', oversize: 'oversized', 'over sized': 'oversized', 'over size': 'oversized',
-  'high waisted': 'high waist', 'relaxed fit': 'relaxed',
+  'slim fit': 'slim', slimfit: 'slim', skinny: 'slim', 'skinny fit': 'slim',
+  oversize: 'oversized', 'over sized': 'oversized', 'over size': 'oversized',
+  'high waisted': 'high waist', highwaist: 'high waist', 'high rise': 'high waist', highrise: 'high waist',
+  'relaxed fit': 'relaxed', 'loose fit': 'relaxed', 'low waist': 'low rise',
 };
 /** Zusätzlich zu FIT_TERMS (nur fürs Auslesen des Namens) */
 const EXTRA: Readonly<Record<string, FitPart>> = { 'wide leg': { width: 4 } };
 /** Nur Hinweis für profile.leg (keine Stufe der Passform) */
-const LEG_TERMS: Readonly<Record<string, 'straight' | 'tapered'>> = { 'straight leg': 'straight', tapered: 'tapered' };
+const LEG_TERMS: Readonly<Record<string, NonNullable<NameFit['leg']>>> = {
+  'straight leg': 'straight', 'straight fit': 'straight', tapered: 'tapered',
+  bootcut: 'flared', 'boot cut': 'flared', flared: 'flared', flare: 'flared',
+};
 
 const norm = (s: string) => ` ${s.toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim()} `;
 const has = (n: string, term: string) => n.includes(` ${term} `);

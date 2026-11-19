@@ -2,7 +2,7 @@
 // Läuft modulweit (nicht in der Seite), damit er beim Tab-Wechsel weiterläuft. Höchstens BATCH_PER_MIN je Minute
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
-import { BATCH_PER_DAY, BATCH_PER_MIN, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
+import { BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -11,7 +11,7 @@ export type BatchState = {
   phase: 'idle' | 'loading' | 'running' | 'paused' | 'done' | 'error';
   /** offen beim Start dieses Laufs */
   total: number; done: number; failed: number;
-  /** Teile ohne Profil, die nach 3 Fehlversuchen übersprungen werden */
+  /** Teile ohne Profil, die nach 3 Fehlversuchen übersprungen werden (failed = in diesem Lauf fehlgeschlagen, wird erneut versucht) */
   skipped: number;
   message: string;
 };
@@ -66,6 +66,13 @@ async function loadPaths(ids: string[]): Promise<Map<string, string>> {
   return new Map([...best].map(([k, v]) => [k, v.path]));
 }
 
+/** Ein Teil frisch laden (vor dem Speichern); gelöscht → null */
+async function loadRow(id: string): Promise<Row | null> {
+  const { data, error } = await supabase.from('items').select('id,name,category,subcategory,pattern,materials,analysis,ai_pending').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return (data as Row | null) ?? null;
+}
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const save = async (id: string, change: Record<string, unknown>) => {
   const r = await supabase.from('items').update(change).eq('id', id);
@@ -87,7 +94,7 @@ export async function startBatch(wardrobeId: string) {
     const todo = rows.filter((r) => batchPending(r.analysis));
     const skipped = rows.filter((r) => batchSkipped(r.analysis)).length;
     set({ total: todo.length, skipped });
-    if (!todo.length) { set({ phase: 'done', message: skipped ? batchSummary(0, skipped) : 'Alle Teile haben ein Profil.' }); return; }
+    if (!todo.length) { set({ phase: 'done', message: skipped ? batchSummary(0, 0, skipped) : 'Alle Teile haben ein Profil.' }); return; }
     const paths = await loadPaths(todo.map((r) => r.id));
     set({ phase: 'running' });
     let last = 0;
@@ -104,19 +111,30 @@ export async function startBatch(wardrobeId: string) {
       if (gap > 0) await wait(gap);
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       last = Date.now();
-      countCall();
       try {
         const a = await analyzeStored(path);
-        await save(r.id, profilePatch(r, a));
+        countCall();
+        // frisch lesen: wurde das Teil während des Laufs bearbeitet oder neu analysiert, gilt dessen Stand
+        const now = await loadRow(r.id);
+        if (!now) continue; // inzwischen gelöscht
+        if (!batchPending(now.analysis)) { set({ done: state.done + 1 }); continue; }
+        await save(r.id, profilePatch(now, a));
         set({ done: state.done + 1 });
       } catch (e) {
-        const { code } = await kiError(e);
-        if (code === 'rate_limited') { set({ phase: 'paused', message: 'Gratis-Kontingent gerade erschöpft. Später „Weiter“ tippen.' }); return; }
-        await save(r.id, failedPatch(r.analysis)).catch(() => {});
+        const { code, status } = await kiError(e);
+        if (status != null || code) countCall(); // Anfrage kam an (zählt fürs Kontingent)
+        if (batchErrorKind(code, status) === 'pause') {
+          set({ phase: 'paused', message: code === 'rate_limited' || status === 429
+            ? 'Gratis-Kontingent gerade erschöpft. Später „Weiter“ tippen.'
+            : 'KI oder Netz gerade nicht erreichbar. Später „Weiter“ tippen.' });
+          return;
+        }
+        const now = await loadRow(r.id).catch(() => null);
+        await save(r.id, failedPatch((now ?? r).analysis)).catch(() => {});
         set({ failed: state.failed + 1 });
       }
     }
-    set({ phase: 'done', message: batchSummary(state.done, state.failed + state.skipped) });
+    set({ phase: 'done', message: batchSummary(state.done, state.failed, state.skipped) });
   } catch (e) {
     set({ phase: 'error', message: 'Fehler: ' + (e as Error).message });
   }

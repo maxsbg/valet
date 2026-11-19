@@ -56,3 +56,20 @@ test('Leitsatz: alle Feldnamen der KI-Schemas sind englisch', () => {
   for (const n of ['brand', 'price', 'list_price', 'purchase_date', 'size', 'article_no', 'material_parts', 'pct', 'care', 'category', 'colors']) assert.ok(all.includes(n), n);
   for (const n of ['marke', 'preis', 'listenpreis', 'kaufdatum', 'groesse', 'artikelnummer', 'materialAnteile', 'prozent', 'pflege']) assert.ok(!all.includes(n), n);
 });
+
+test('READ_INFO_SCHEMA: ablesen statt schätzen – ohne Profil, Konfidenz, Stil, Lagen, Wetter; Name darf fehlen', () => {
+  const p = READ_INFO_SCHEMA.properties!;
+  for (const k of ['profile', 'confidence', 'styles', 'layers', 'warmth', 'rain']) assert.ok(!(k in p), k);
+  assert.deepEqual(p.name!.type, ['string', 'null']);
+  assert.match(p.colors!.description!, /^Nur die genannte Farbangabe/);
+  assert.match(p.colors!.description!, /navy = /);
+  assert.ok(JSON.stringify(READ_INFO_SCHEMA).length < 28000);
+});
+
+test('checkInfo: kein Profil aus Infos, nur echte Kalendertage', () => {
+  const i = checkInfo({ kind: 'shop', profile: { sheen_min: 3 }, styles: ['casual'], purchase_date: '2026-02-30' });
+  assert.deepEqual(i.item.styles, []);
+  assert.equal(i.item.profile.sheen, null);
+  assert.equal(i.purchaseDate, null);
+  assert.equal(checkInfo({ purchase_date: '2024-02-29' }).purchaseDate, '2024-02-29');
+});
