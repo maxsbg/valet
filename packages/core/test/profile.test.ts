@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ANALYZE_ITEM_SCHEMA, checkAnalysis } from '../src/ai/analyzeItem';
 import {
   PROFILE_FIELDS, PROFILE_SCHEMA, CONFIDENCE_SCHEMA, checkProfile, checkConfidence, clearInactive, activeProfile,
-  emptyProfile, profileLabel, type Ctx, type Profile,
+  emptyProfile, profileLabel, readProfile, type Ctx, type Profile,
 } from '../src/ai/profile';
 
 const ctx = (category: string | null, extra: Partial<Ctx> = {}): Ctx => ({ category, sub: null, pattern: 'solid', materials: [], ...extra });
@@ -107,4 +107,13 @@ test('profileLabel: deutsche Anzeige', () => {
   assert.equal(profileLabel('effects', ['clean', 'soft']), 'Clean, Weich');
   assert.equal(profileLabel('surface', null), '');
   assert.equal(profileLabel('unbekannt', 1), '');
+});
+
+test('readProfile: gespeichertes Profil mit Bereich [von, bis], tolerant', () => {
+  const p = readProfile({ formality: [2, 4], presence: 3, surface: 'fine_knit', effects: ['clean', 'x'] });
+  assert.deepEqual(p.formality, [2, 4]);
+  assert.equal(p.presence, 3); assert.equal(p.surface, 'fine_knit'); assert.deepEqual(p.effects, ['clean']);
+  assert.equal(readProfile({ formality: [4, 2] }).formality, null);
+  assert.deepEqual(readProfile(null), emptyProfile());
+  assert.deepEqual(readProfile('kaputt'), emptyProfile());
 });
