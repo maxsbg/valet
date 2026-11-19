@@ -1,5 +1,6 @@
 export * from './catalog';
 export * from './model';
+export * from './keys';
 export * from './money';
 export * from './items';
 export * from './wear';
