@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { checkAnalysis } from '../src/ai/analyzeItem';
 import { checkInfo } from '../src/ai/readInfo';
 import { mergeSources, applyAnalysis, applyInfo, infoContext, confirmedContext, analysisSource, infoSource, DESCRIPTION_MAX, type SourceInfo } from '../src/ai/merge';
-import { confirmAi, editChange, emptyEditForm, setField } from '../src/edit';
+import { confirmAi, confirmAllAi, editChange, emptyEditForm, setField } from '../src/edit';
 
 const NOW = '2026-11-19T11:00:00.000Z';
 const blank = () => ({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] as string[] });
@@ -264,4 +264,44 @@ test('Größe einer Info ohne Kategorie wird nach dem Bild mit dem endgültigen 
   assert.equal(s1.size, null);
   const s2 = mergeSources(s1, { image: checkAnalysis({ category: 'shoe/sneaker', colors: ['white'] }), late: infos }, NOW);
   assert.equal(s2.size, '42'); assert.ok(s2.aiPending.includes('size'));
+});
+
+// ---------- Prüfung 20.11.2026, Runde 3 ----------
+
+test('Begriffe im KI-erzeugten Namen zählen nicht als eigene Quelle', () => {
+  const f = applyAnalysis(blank(), checkAnalysis({ category: 'top/sweater', name: 'Oversized Hoodie', width: 2, length: 2, colors: ['grey'] }), NOW);
+  assert.deepEqual([f.fit.width, f.fit.length], [2, 2]);
+  const jeans = applyAnalysis(blank(), checkAnalysis({ category: 'pants/jeans', name: 'Straight Leg Jeans', colors: ['blue'], profile: { leg: 'tapered' } }), NOW);
+  assert.equal(jeans.profile.leg, 'tapered');
+  // Name vom Shop dagegen schon
+  const shop = mergeSources(blank(), { image: checkAnalysis({ category: 'pants/jeans', width: 2, colors: ['blue'], profile: { leg: 'tapered' } }),
+    infos: [{ from: 'page', info: checkInfo({ name: 'Straight Leg Jeans', category: 'pants/jeans' }) }] }, NOW);
+  assert.equal(shop.profile.leg, 'straight');
+});
+
+test('Kategorie-Herkunft je Ebene: Shop „Oberteil“ bestätigt nicht die Unterkategorie aus dem Bild', () => {
+  const a = mergeSources(blank(), { image: checkAnalysis({ category: 'top/shirt', colors: ['white'] }), infos: [{ from: 'page', info: checkInfo({ category: 'top' }) }] }, NOW);
+  assert.equal(a.subcategory, 'shirt');
+  const b = applyAnalysis(a, checkAnalysis({ category: 'top/sweater', colors: ['white'] }), NOW);
+  assert.deepEqual([b.category, b.subcategory], ['top', 'sweater']);
+  assert.equal((b.analysisBase.src as Record<string, string>).category, 'page');
+  // nennt der Shop die Unterkategorie selbst, bleibt sie
+  const c = mergeSources(blank(), { infos: [{ from: 'page', info: checkInfo({ category: 'top/shirt' }) }] });
+  assert.equal(applyAnalysis(c, checkAnalysis({ category: 'top/sweater', colors: ['white'] }), NOW).subcategory, 'shirt');
+});
+
+test('Offene Markierungen ohne Wert verschwinden (Größe nach Kategoriewechsel, Pflege bei Schuhen)', () => {
+  const lab = applyInfo(blank(), checkInfo({ kind: 'label', size: 'M', care: { wash: 'w30' } }));
+  assert.ok(lab.aiPending.includes('size') && lab.aiPending.includes('care'));
+  const shoe = applyAnalysis(lab, checkAnalysis({ category: 'shoe/sneaker', colors: ['white'] }), NOW);
+  assert.equal(shoe.size, null);
+  assert.ok(!shoe.aiPending.includes('size'));
+  assert.ok(!shoe.aiPending.includes('care'));
+});
+
+test('„Alle übernehmen“: Vorschläge gelten danach als bestätigt', () => {
+  const f = confirmAllAi(applyAnalysis(blank(), checkAnalysis({ category: 'top/shirt', name: 'Oxford-Hemd', colors: ['white'] }), NOW));
+  assert.deepEqual(f.aiPending, []);
+  const again = applyAnalysis(f, checkAnalysis({ category: 'top/shirt', name: 'Hemd', colors: ['blue'] }), NOW);
+  assert.equal(again.name, 'Oxford-Hemd'); assert.deepEqual(again.colors, ['white']);
 });

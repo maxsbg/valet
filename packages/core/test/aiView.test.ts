@@ -118,3 +118,9 @@ test('Fehlertexte der KI auf Deutsch, abgelaufene Anmeldung pausiert den Stapell
     assert.ok(m && !/AI request|bucket|rate_limited|empty_answer/.test(m), m);
   }
 });
+
+test('Einstellungsfehler der KI pausieren, 4xx bekommt einen eigenen Satz', () => {
+  assert.equal(batchErrorKind('config_error', 503), 'pause');
+  assert.match(kiMessage('config_error', 503), /eingerichtet/);
+  assert.match(kiMessage('', 400), /ungültig/);
+});

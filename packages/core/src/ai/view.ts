@@ -136,6 +136,9 @@ export function reanalysisChange(form: EditForm, row: ProfilePatchRow, a: Analys
 
 // ---------- Stapellauf „Profile ergänzen“ (Spec 8) ----------
 
+/** Ab so vielen „model_rejected“ hintereinander liegt es eher am Anbieter als an den Teilen → Lauf anhalten */
+export const BATCH_MAX_REJECTED_RUN = 3;
+
 /** Höchstens 6 Aufrufe je Minute und 100 je Tag (Gratis-Kontingent; ≥ 30 % bleiben für die normale Nutzung) */
 export const BATCH_PER_MIN = 6;
 export const BATCH_PER_DAY = 100;
@@ -177,6 +180,7 @@ export function batchErrorKind(code: string, status: number | null): 'pause' | '
   if (code === 'rate_limited' || status === 429) return 'pause';
   if (status === 401 || status === 403) return 'pause'; // Sitzung abgelaufen: nicht dem Teil anlasten
   if (status == null && !code) return 'pause';
+  if (code === 'config_error') return 'pause';
   if (status != null && status >= 500 && status !== 501) return 'pause';
   return 'fail';
 }
@@ -190,8 +194,10 @@ export function kiMessage(code: string, status: number | null): string {
   if (code === 'empty_answer') return 'Die KI hat nichts Brauchbares geliefert. Bitte noch einmal versuchen.';
   if (status === 401 || status === 403) return 'Anmeldung abgelaufen. Bitte neu laden und noch einmal versuchen.';
   if (status === 404) return 'Das Bild wurde nicht gefunden.';
-  if (code === 'model_rejected' || status === 422) return 'Die KI konnte dieses Bild nicht auswerten. Ein anderes Foto hilft oft.';
-  if (status === 413) return 'Das Bild ist zu groß oder hat ein unbekanntes Format.';
+  if (code === 'model_rejected' || status === 422) return 'Die KI konnte das nicht auswerten. Ein anderes Foto bzw. ein anderer Link hilft oft.';
+  if (status === 413) return 'Das Bild bzw. der Text ist zu groß oder hat ein unbekanntes Format.';
+  if (code === 'config_error') return 'Die KI ist gerade falsch eingerichtet (Schlüssel oder Modell). Bitte Bescheid geben.';
   if (status == null) return 'Keine Verbindung zur KI. Bitte Netz prüfen und noch einmal versuchen.';
+  if (status >= 400 && status < 500) return 'Die Anfrage an die KI war ungültig. Bitte noch einmal versuchen.';
   return 'Die KI ist gerade nicht erreichbar. Bitte später noch einmal.';
 }

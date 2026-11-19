@@ -220,10 +220,13 @@ Deno.serve(async (req: Request) => {
     const models = useForced ? [forced] : [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
     let limited = 0;
-    let rejected = 0; // Anbieter lehnt dieses Bild/diese Anfrage ab (4xx außer 429, leere oder kaputte Antwort)
+    let rejected = 0; // Anbieter lehnt dieses Bild/diese Anfrage ab (400/422 …, leere oder kaputte Antwort)
+    let config = 0; // Einstellungsfehler (Schlüssel ungültig 401/403, Modell unbekannt 404) – nicht dem Teil anlasten
+    let attempted = 0;
     const started = Date.now();
     for (const m of models) {
       if (Date.now() - started > TOTAL_MS - CALL_MS) break;
+      attempted++;
       try {
         const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema, temperature });
         return jsonResponse({ data, model: m }, 200);
@@ -232,12 +235,18 @@ Deno.serve(async (req: Request) => {
         console.warn(`${m}: model call error`, lastError);
         // Gratisgrenzen gelten je Modell → nächstes Modell probieren; „rate_limited“ erst, wenn alle begrenzt sind
         if (lastError.includes("(429)")) limited++;
+        else if (/\((401|403|404)\)/.test(lastError)) config++;
         else if (/\((4\d\d)\)/.test(lastError) || err instanceof SyntaxError || lastError.startsWith("No text response")) rejected++;
       }
     }
-    if (limited > 0 && limited === models.length) return jsonResponse({ error: "rate_limited" }, 429);
+    // gezählt wird gegen die tatsächlich versuchten Modelle (die Zeitgrenze kann die Schleife früher beenden)
+    if (limited > 0 && limited === attempted) return jsonResponse({ error: "rate_limited" }, 429);
+    if (config > 0) {
+      console.error("ki: provider configuration error (key/model)", lastError);
+      return jsonResponse({ error: "config_error" }, 503);
+    }
     // Liegt es an der Anfrage selbst (nicht an Überlast), soll der Stapellauf das Teil als Fehlversuch zählen statt zu pausieren
-    if (rejected > 0 && rejected + limited === models.length) return jsonResponse({ error: "model_rejected" }, 422);
+    if (rejected > 0 && rejected + limited === attempted && attempted === models.length) return jsonResponse({ error: "model_rejected" }, 422);
     // Fehlertext des Anbieters nur ins Log, nicht an die App
     return jsonResponse({ error: "AI request failed" }, 502);
   } catch (err) {

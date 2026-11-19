@@ -2,7 +2,7 @@
 // Läuft modulweit (nicht in der Seite), damit er beim Tab-Wechsel weiterläuft. Höchstens BATCH_PER_MIN je Minute
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
-import { BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
+import { BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -23,6 +23,8 @@ const GAP_MS = Math.ceil(60000 / BATCH_PER_MIN);
 
 let state: BatchState = { phase: 'idle', total: 0, done: 0, failed: 0, skipped: 0, message: '' };
 let stopFlag = false;
+/** Teil, an dem der Lauf zuletzt wegen eines vorübergehenden Fehlers pausierte (zweimal hintereinander → Fehlversuch) */
+let pausedOn: string | null = null;
 const subs = new Set<() => void>();
 const set = (p: Partial<BatchState>) => { state = { ...state, ...p }; subs.forEach((f) => f()); };
 
@@ -98,6 +100,7 @@ export async function startBatch(wardrobeId: string) {
     const paths = await loadPaths(todo.map((r) => r.id));
     set({ phase: 'running' });
     let last = 0;
+    let rejectedRun = 0;
     for (const r of todo) {
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       const path = paths.get(r.id);
@@ -112,25 +115,42 @@ export async function startBatch(wardrobeId: string) {
       if (gap > 0) await wait(gap);
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       last = Date.now();
+      let a: Awaited<ReturnType<typeof analyzeStored>>;
       try {
-        const a = await analyzeStored(path);
+        a = await analyzeStored(path);
         countCall();
-        // frisch lesen: wurde das Teil während des Laufs bearbeitet oder neu analysiert, gilt dessen Stand
-        const now = await loadRow(r.id);
-        if (!now) continue; // inzwischen gelöscht
-        if (!batchPending(now.analysis)) { set({ done: state.done + 1 }); continue; }
-        await save(r.id, profilePatch(now, a));
-        set({ done: state.done + 1 });
       } catch (e) {
         const { code, status } = await kiError(e);
         if (status != null || code) countCall(); // Anfrage kam an (zählt fürs Kontingent)
-        if (batchErrorKind(code, status) === 'pause') {
+        const kind = batchErrorKind(code, status);
+        const global = code === 'rate_limited' || status === 429 || code === 'config_error' || status === 401 || status === 403 || (status == null && !code);
+        // scheitert dasselbe Teil nach „Weiter“ erneut vorübergehend, liegt es wohl am Teil → Fehlversuch statt Endlos-Pause
+        if (kind === 'pause' && (global || pausedOn !== r.id)) {
+          if (!global) pausedOn = r.id;
           set({ phase: 'paused', message: `${kiMessage(code, status)} Später „Weiter“ tippen.` });
           return;
         }
+        pausedOn = null;
         const now = await loadRow(r.id).catch(() => null);
         await save(r.id, failedPatch((now ?? r).analysis)).catch(() => {});
         set({ failed: state.failed + 1 });
+        rejectedRun = code === 'model_rejected' ? rejectedRun + 1 : 0;
+        if (rejectedRun >= BATCH_MAX_REJECTED_RUN) {
+          set({ phase: 'paused', message: `${BATCH_MAX_REJECTED_RUN} Teile hintereinander abgelehnt – vermutlich ein Problem bei der KI. Später „Weiter“ tippen.` });
+          return;
+        }
+        continue;
+      }
+      pausedOn = null; rejectedRun = 0;
+      try {
+        // frisch lesen: wurde das Teil während des Laufs bearbeitet oder neu analysiert, gilt dessen Stand
+        const now = await loadRow(r.id);
+        if (!now) continue; // inzwischen gelöscht
+        if (batchPending(now.analysis)) await save(r.id, profilePatch(now, a));
+        set({ done: state.done + 1 });
+      } catch (e) {
+        set({ phase: 'error', message: 'Speichern fehlgeschlagen: ' + ((e as Error)?.message ?? String(e)) });
+        return;
       }
     }
     set({ phase: 'done', message: batchSummary(state.done, state.failed, state.skipped) });

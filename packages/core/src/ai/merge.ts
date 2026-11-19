@@ -112,12 +112,17 @@ function applyFacts(form: EditForm, a: Analysis, from: Origin): EditForm {
       if (sizeKept) f = { ...f, ...sizeKept };
       marked.push('category'); origin.category = o;
     };
+    // Herkunft der Unterkategorie/des Typs getrennt (category.sub): eine gröbere ranghöhere Angabe bestätigt nur die Kategorie
+    const subOrigin = origins['category.sub'] ?? curOrigin;
     if (f.category && open.has('category') && prefixOf(cur, a.path)) {
-      // gleiche Richtung, nur genauer (Shop „Oberteil“, Bild „Oberteil › Hemd › Langarmhemd“): verfeinern, Rang bleibt der höhere
-      if (!samePath(cur, a.path)) setPath(a.path, higher); else { marked.push('category'); origin.category = higher; }
+      // gleiche Richtung, nur genauer (Shop „Oberteil“, Bild „Oberteil › Hemd › Langarmhemd“): verfeinern
+      if (!samePath(cur, a.path)) { setPath(a.path, higher); origin['category.sub'] = from; } else { marked.push('category'); origin.category = higher; origin['category.sub'] = RANK[from] > RANK[subOrigin] ? from : subOrigin; }
     } else if (f.category && open.has('category') && prefixOf(a.path, cur)) {
-      // gröbere Angabe derselben Richtung: genaueren Pfad behalten, Rang übernehmen
-      marked.push('category'); origin.category = higher;
+      // gröbere Angabe derselben Richtung: genaueren Pfad behalten, nur die Kategorie bekommt den höheren Rang
+      marked.push('category'); origin.category = higher; origin['category.sub'] = subOrigin;
+    } else if (f.category && open.has('category') && a.path.category === f.category && RANK[from] >= RANK[subOrigin]) {
+      // gleiche Kategorie, andere Unterkategorie: nach dem Rang der Unterkategorie (Kategorie behält ihre Herkunft)
+      setPath(a.path, curOrigin); origin['category.sub'] = from;
     } else if (may('category', !f.category)) {
       setPath(a.path, from);
     }
@@ -232,23 +237,31 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
   for (const x of infos) f = applyNameFit(applyExtras(applyFacts(f, x.info.item, x.from), x.info, x.from));
   for (const x of [...(s.late ?? [])].sort((a, b) => RANK[a.from] - RANK[b.from])) {
     f = applyFacts(f, { ...NO_FACTS, fit: x.info.item.fit }, x.from);
-    if (x.info.size) f = applyExtras(f, { ...NO_INFO, size: x.info.size }, x.from);
+    if (x.info.size) f = applyExtras(f, { ...noInfo(), size: x.info.size }, x.from);
   }
   f = dropHidden(f);
   if (!s.image) return f;
   // Profil erst hier nach Kategorie bereinigen: mit dem endgültigen Pfad, Muster und Material (Spec 8)
   const ctx: Ctx = { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
   const used = [...infos.map((x) => x.from), ...(s.used ?? []), ...(s.late ?? []).map((x) => x.from)].map((from) => ({ from }));
-  return { ...f, profile: legFromName(clearInactive(s.image.profile, ctx), f.name, ctx), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) };
+  return { ...f, profile: legFromName(clearInactive(s.image.profile, ctx), nameTrusted(f) ? f.name : null, ctx), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) };
 }
+
+/**
+ * Zählen Begriffe im Namen als eigene Quelle? Nur, wenn der Name nicht selbst eine Bildschätzung der KI ist
+ * (sonst schlüge die KI mit „Oversized Hoodie“ ihre eigene Foto-Schätzung): vom Nutzer (bestätigt) oder aus Shop/Etikett.
+ */
+export const nameTrusted = (f: Pick<EditForm, 'aiPending' | 'analysisBase'>): boolean =>
+  !f.aiPending.includes('name') || originOf(originsOf(f), 'name') !== 'image';
 
 /** Passform-Stufen aus Begriffen im Namen (Rang „name“) in offene Stufen gleichen oder niedrigeren Rangs */
 function applyNameFit(f: EditForm): EditForm {
-  if (!fitOpen(f)) return f;
+  if (!fitOpen(f) || !nameTrusted(f)) return f;
   const part = nameFitFor(f.category, fitFromName(f.name).fit);
   return Object.keys(part).length ? applyFacts(f, { ...NO_FACTS, fit: { width: null, length: null, rise: null, ...part } }, 'name') : f;
 }
-const NO_INFO: Info = { kind: null, item: null as unknown as Analysis, shop: null, price: null, listPrice: null, purchaseDate: null, size: null, articleNo: null, care: {} };
+/** Info ohne Inhalt (für das Nachziehen der Größe in `late`); item wird dort nicht gelesen */
+const noInfo = (): Info => ({ kind: null, item: NO_FACTS, shop: null, price: null, listPrice: null, purchaseDate: null, size: null, articleNo: null, care: {} });
 
 /**
  * Offene KI-Werte in Feldern, die es für den endgültigen Pfad nicht gibt (Spec 8a „Die KI füllt nur die gezeigten Felder“),
@@ -271,6 +284,7 @@ function dropHidden(f: EditForm): EditForm {
   clear('layers', [], !fx.layers);
   clear('warmth', null, !fx.weather);
   clear('rain', null, !fx.weather);
+  clear('size', null, fx.size == null);
   if (open.has('fit')) {
     const scales = new Set(fitScalesOf(f.category).map((sc) => sc.key));
     const fit = { ...f.fit };
@@ -278,7 +292,19 @@ function dropHidden(f: EditForm): EditForm {
     out.fit = fit;
     if (fit.width == null && fit.length == null && fit.rise == null) drop.push('fit');
   }
+  if (!fx.care && open.has('care')) { out.care = {}; drop.push('care'); }
+  // offene Markierungen ohne Wert (z. B. Größe, die setCategory geleert hat) nicht stehen lassen
+  for (const k of open) if (emptyValue(out, k)) drop.push(k);
   return drop.length ? { ...out, aiPending: out.aiPending.filter((k) => !drop.includes(k)) } : out;
+}
+
+/** Ist das Formularfeld leer? (unbekannte Schlüssel gelten als nicht leer) */
+function emptyValue(f: EditForm, k: string): boolean {
+  if (k === 'fit') return f.fit.width == null && f.fit.length == null && f.fit.rise == null;
+  if (k === 'care') return Object.keys(f.care).length === 0;
+  if (!(k in f)) return false;
+  const v = (f as unknown as Record<string, unknown>)[k];
+  return v == null || v === '' || (Array.isArray(v) && v.length === 0);
 }
 
 const NO_FACTS: Analysis = {

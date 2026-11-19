@@ -7,7 +7,7 @@ import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
-  applyInfo, shopFromLink, tileKind,
+  applyInfo, confirmAllAi, shopFromLink, tileKind,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -410,7 +410,12 @@ export function ItemEditor(p: Props) {
           {f.aiPending.length > 0 && (
             <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
               <KiBadge />
-              <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.ink }}>Felder mit „KI“ hat die KI vorausgefüllt (aus Foto, Shop, Etikett oder Name). Die Markierung verschwindet, sobald du den Wert änderst.</Text>
+              <View style={{ flex: 1, gap: 10 }}>
+                <Text style={{ fontSize: 14, lineHeight: 19, color: t.ink }}>Felder mit „KI“ hat die KI vorausgefüllt (aus Foto, Shop, Etikett oder Name). Prüfe sie und übernimm sie – erst dann gelten sie als bestätigt und eine neue Analyse ändert sie nicht mehr. Ändern bestätigt einen Wert ebenfalls.</Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <Capsule label="Alle übernehmen" selected onPress={() => onForm(confirmAllAi(f))} icon={(c) => <Icon name="check" size="chip" color={c} />} />
+                </View>
+              </View>
             </View>
           )}
           <TextField label="Name" value={f.name} onChange={(v) => onForm(setName(f, v))} placeholder="z. B. Relaxed Flannel Shirt" extra={ai('name') ? <KiBadge /> : null} />

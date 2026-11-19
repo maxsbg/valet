@@ -308,6 +308,12 @@ Die Foto-Farbwerte, die beim Hochladen schon in <code>item_images.colors</code> 
     Pflege je Gruppe: vom Nutzer gesetzte Gruppen (<code>hand</code>) ersetzt keine Info; geschätzte immer; offene Vorschläge nur aus gleich- oder ranghöherer Quelle (Herkunft <code>care.wash</code> …).
     Etikett ohne Shop, Preise und Kaufdatum. Gespeichert wird <code>analysis.src</code> nur für noch offene Felder.
     Fehler: Lehnt das Modell eine Anfrage selbst ab (4xx außer 429, leere/kaputte Antwort), antwortet <code>ki</code> mit 422 <code>model_rejected</code> – im Stapellauf ein Fehlversuch, keine Pause. Abgelaufene Anmeldung (401/403) pausiert. Dem Nutzer werden nur deutsche Sätze gezeigt (<code>kiMessage</code>).</li>
+  <li><b>Runde 3 (20.11.2026):</b>
+    Begriffe im Namen zählen nur, wenn der Name nicht selbst eine offene Bildschätzung der KI ist (<code>nameTrusted</code>: vom Nutzer bestätigt oder aus Shop/Etikett) – sonst schlüge die KI mit „Oversized Hoodie“ ihre eigene Foto-Schätzung; das Schema verlangt den KI-Namen ohne Passform-Begriffe. Gilt auch für den Beinverlauf (<code>legFromName</code>, <code>profilePatch</code>).
+    Kategorie-Herkunft je Ebene (<code>category</code> und <code>category.sub</code>): eine gröbere ranghöhere Angabe bestätigt nur die Oberkategorie; eine andere Unterkategorie derselben Kategorie entscheidet der Rang der Unterkategorie.
+    Offene Markierungen ohne Wert (z. B. Größe nach Kategoriewechsel) und Pflege bei Kategorien ohne Pflegefeld fallen weg.
+    In Bearbeiten/Neu gibt es „Alle übernehmen“ (<code>confirmAllAi</code>): danach gelten die Vorschläge als bestätigt (Detailseiten-Spec 7 „bis sie bestätigt oder geändert sind“).
+    Edge Function: Schlüssel/Modell-Fehler des Anbieters (401/403/404) → 503 <code>config_error</code> (Stapellauf pausiert); <code>rate_limited</code> gegen die tatsächlich versuchten Modelle. Stapellauf: scheitert dasselbe Teil nach „Weiter“ erneut vorübergehend → Fehlversuch; drei <code>model_rejected</code> hintereinander → Pause; Speicherfehler → Fehlermeldung statt KI-Text. „Neues Teil“: leere Infos werden gemeldet und zählen nicht für <code>meta.source</code>; Fehler beim Laden eines Links haben eine eigene Meldung.</li>
 </ol>
 
 <h2>7. Prompt 2.0</h2>

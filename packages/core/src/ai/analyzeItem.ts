@@ -7,6 +7,7 @@ import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, S
 import { fieldsFor, STRAPS } from '../fields';
 import { keysOf, toKey, type KeyList } from '../keys';
 import { mergeAnalysis } from '../edit';
+import { normalizeCategory } from '../import/categorize';
 import { legFromName } from './merge';
 import { PROFILE_SCHEMA, CONFIDENCE_SCHEMA, aiMeta, checkProfile, checkConfidence, clearInactive, readProfile, type Profile, type Confidence } from './profile';
 
@@ -50,8 +51,8 @@ const level = (max: number, description: string): JsonSchema => ({ type: ['integ
 export const categoryDescription = (intro: string) => `${intro} Pfad aus Keys, getrennt mit „${SEP}“. Labels: ${CATEGORY_PATH_LABELS}`;
 
 export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
-  category: { type: 'string', enum: [...CATEGORY_PATHS], description: categoryDescription('So genau wie sicher erkennbar: Kategorie/Unterkategorie/Typ. Typ weglassen, wenn unsicher.') },
-  name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe und ohne Marke, z. B. „Oxford-Hemd“' },
+  category: { type: 'string', enum: [...CATEGORY_PATHS], description: categoryDescription('Immer angeben, mindestens die Oberkategorie; so genau wie sicher erkennbar: Kategorie/Unterkategorie/Typ. Typ bzw. Unterkategorie weglassen, wenn unsicher.') },
+  name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe, Marke und Passform-Begriffe (Slim, Oversized …), z. B. „Oxford-Hemd“' },
   brand: { type: ['string', 'null'], description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
   colors: list(COLOR_LIST, `1 bis ${MAX_COLORS} Farben, nach Flächenanteil sortiert. Nuance statt Hauptfarbe, wenn eindeutig (z. B. navy). multicolor nur bei mehr als drei Farben.`),
   pattern: str(PATTERNS, 'Muster des Stoffs'),
@@ -64,7 +65,7 @@ export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   width: level(4, 'Passform Weite 0 schmal … 2 normal … 4 weit; nur Oberteil, Hose, Shorts'),
   length: level(4, 'Länge 0 kurz … 4 lang (bei Kleid/Rock: 0 Mini, 1 über Knie, 2 Knie, 3 Midi, 4 Maxi)'),
   rise: level(2, 'Bundhöhe 0 tief, 1 normal, 2 hoch; nur Hose, Shorts, Rock'),
-  layers: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} ${l}`).join(', ')}; nur Oberteil und Oberbekleidung` },
+  layers: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} = ${l}`).join('; ')}; nur Oberteil und Oberbekleidung` },
   warmth: level(3, `Wärme: ${WARMTH.map((w, i) => `${i} ${w}`).join(', ')}`),
   rain: level(2, `Regentauglich: ${RAIN.map((r, i) => `${i} ${r}`).join(', ')}`),
   profile: { ...PROFILE_SCHEMA, description: 'Mode-Profil des Teils (Analyse v2): streng nach den Ankern, nur das Teil selbst' },
@@ -186,6 +187,7 @@ export function analysisUsable(a: Analysis): boolean {
 
 // applyAnalysis und legFromName liegen in merge.ts (Rangfolge der Quellen, mergeSources)
 export { applyAnalysis, legFromName } from './merge';
+import { nameTrusted } from './merge';
 
 // ---------- Stapellauf: nur das Profil eines gespeicherten Teils (Spec 8) ----------
 
@@ -209,8 +211,12 @@ export function profilePatch(
   now: string = new Date().toISOString(),
 ): { analysis: Record<string, unknown> } {
   const materials = toMaterialParts((row.materials ?? []).map((m) => (typeof m === 'string' ? { name: m } : m))).map((m) => m.name);
-  const ctx = { category: row.category || null, sub: row.subcategory || null, pattern: toKey(PATTERNS, row.pattern), materials };
+  // Kategorie tolerant lesen wie in toEditForm (Altwerte „Hose“ → pants)
+  const path = normalizeCategory({ category: row.category || null, subcategory: row.subcategory, name: row.name });
+  const ctx = { category: path.category, sub: path.subcategory, pattern: toKey(PATTERNS, row.pattern), materials };
   // a.profile kann aus einer anderen Quelle stammen → Werte noch einmal prüfen
-  const profile = legFromName(clearInactive(readProfile(a.profile), ctx), row.name, ctx);
+  // Beinverlauf aus dem Namen nur, wenn der Name nicht selbst eine offene Bildschätzung ist
+  const trusted = nameTrusted({ aiPending: row.ai_pending ?? [], analysisBase: row.analysis ?? {} });
+  const profile = legFromName(clearInactive(readProfile(a.profile), ctx), trusted ? row.name : null, ctx);
   return { analysis: mergeAnalysis(row.analysis, profile, checkConfidence(a.confidence), aiMeta(a.model ?? null, now)) };
 }

@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { editChange, emptyEditForm, infoContext, kiMessage, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
+import { editChange, emptyEditForm, infoContext, infoUsable, kiMessage, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
 import { analyzePicture, kiError, readInfo, readPage } from '@/lib/ki';
 import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
@@ -23,6 +23,8 @@ import { itemTile } from '@valet/ui';
 type Step = 'start' | 'web' | 'work' | 'review' | 'more' | 'form';
 /** Ausgelesene Infos (Seite, Screenshot, Etikett) + Beschreibungstext der Seite – Kontext für die Bildanalyse */
 type Extra = { infos: SourceInfo[]; description: string | null };
+/** Fehler beim Laden einer Produktseite (kein KI-Fehler) – eigene Meldung */
+const pageError = (message: string) => Object.assign(new Error(message), { page: true });
 const MAROON = '#722638';
 
 /**
@@ -159,8 +161,10 @@ export default function Neu() {
     if (!url) return toast.show('Kein Link gefunden');
     toForm(picture, {
       link: url,
-      read: loadProduct(url).then(async (page): Promise<Extra> => {
-        if (page.text.length <= 200) throw new Error('Auf der Seite steht zu wenig Text.');
+      // Fehler beim Laden der Seite eigens kennzeichnen (sonst sähe der Nutzer „Keine Verbindung zur KI“)
+      read: loadProduct(url).catch((e) => { throw pageError(productError(e)); }).then(async (page): Promise<Extra> => {
+        if (page.blocked) throw pageError('Der Shop lässt die Seite nicht von außen laden.');
+        if (page.text.length <= 200) throw pageError('Auf der Seite steht zu wenig Text.');
         return { infos: [{ from: 'page', info: await readPage(page.text, page.facts) }], description: page.facts.description ?? null };
       }),
     });
@@ -192,6 +196,9 @@ export default function Neu() {
       const errors: unknown[] = [];
       if (read) { try { extra = await read; } catch (e) { errors.push(e); } }
       if (n !== run.current) return;
+      // leere Infos (nichts Lesbares) nicht übernehmen und nicht als Kontext zählen
+      if (extra.infos.length && !extra.infos.some((x) => infoUsable(x.info))) toast.show('Auf dem Bild bzw. der Seite war nichts Lesbares – weiter nur mit dem Foto.');
+      extra = { ...extra, infos: extra.infos.filter((x) => infoUsable(x.info)) };
       if (extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
       if (p) {
         try {
@@ -203,7 +210,9 @@ export default function Neu() {
         } catch (e) { errors.push(e); }
       }
       if (n !== run.current || !errors.length) return;
-      const { code, status } = await kiError(errors[0]);
+      const first = errors[0] as { page?: boolean; message?: string };
+      if (first?.page) return toast.show(`${first.message} Weiter nur mit dem Foto.`);
+      const { code, status } = await kiError(first);
       toast.show(`${kiMessage(code, status)} Felder bitte selbst prüfen.`);
     })();
   }

@@ -160,6 +160,8 @@ export function setName(f: EditForm, name: string): EditForm {
 
 /** KI-Vorschlag bestätigen (Wert bleibt) */
 export const confirmAi = (f: EditForm, k: string): EditForm => ({ ...f, aiPending: f.aiPending.filter((x) => x !== k) });
+/** Alle KI-Vorschläge übernehmen (Knopf „Alle übernehmen“): danach gelten sie als bestätigt (Spec 7, Detailseite) */
+export const confirmAllAi = (f: EditForm): EditForm => ({ ...f, aiPending: [] });
 
 /** Mehrfachauswahl: an/aus (Reihenfolge = Reihenfolge der Wahl) */
 export const toggleIn = <T>(list: readonly T[], v: T): T[] => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
