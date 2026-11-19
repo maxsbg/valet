@@ -51,8 +51,8 @@ test('Stärke immer 60 %; Weiß und „keine Farbe“ → heller Ersatzton', () 
 
 test('Bunt → Farbkreis am Rand (kein box-shadow), Ersatz-CSS hell', () => {
   const g = glowFor(['multicolor', 'black']);
-  assert.equal(g.kind, 'bunt');
+  assert.equal(g.kind, 'multicolor');
   assert.equal(glowShadow(g, 22, 3), 'none');
-  assert.equal(glowFor(['white', 'multicolor']).kind, 'bunt'); // Bunt steht ganz oben
+  assert.equal(glowFor(['white', 'multicolor']).kind, 'multicolor'); // Bunt steht ganz oben
   assert.equal(glowShadow(glowFor(['red']), 22, 3), 'inset 0 0 22px 3px rgba(192,57,43,0.6)');
 });

@@ -37,7 +37,7 @@ const item = (k: string, h: number, x: Partial<TileItem> & { today?: string } = 
   const { today, ...rest } = x;
   return {
     img: k, h, today: today ?? null,
-    item: { name: k, category: 'oberteil', hex: C[k]![0], colors: C[k]![1], status: null, reversible: false, qty: 1, thumb: img(k), owners: ['M'], isWish: false, ...rest },
+    item: { name: k, category: 'top', hex: C[k]![0], colors: C[k]![1], status: null, reversible: false, qty: 1, thumb: img(k), owners: ['M'], isWish: false, ...rest },
   };
 };
 

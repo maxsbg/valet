@@ -73,50 +73,50 @@ test('Passform je Kategorie', () => {
 });
 
 test('Form für Mosaik und Board', () => {
-  assert.equal(layoutKind('outerwear', 'coat'), 'mantel');
-  assert.equal(layoutKind('outerwear', 'blouson'), 'jacke');
-  assert.equal(layoutKind('top', 'hoodie'), 'pullover');
-  assert.equal(layoutKind('top', 'shirt'), 'oberteil');
+  assert.equal(layoutKind('outerwear', 'coat'), 'coat');
+  assert.equal(layoutKind('outerwear', 'blouson'), 'jacket');
+  assert.equal(layoutKind('top', 'hoodie'), 'sweater');
+  assert.equal(layoutKind('top', 'shirt'), 'top');
   assert.equal(layoutKind('shorts', 'cargo_shorts'), 'shorts');
-  assert.equal(layoutKind('pants', 'jeans'), 'hose');
-  assert.equal(layoutKind('headwear', 'cap'), 'kopf');
-  assert.equal(layoutKind('jewelry', 'watch'), 'accessoire');
-  assert.equal(layoutKind(null), 'accessoire');
+  assert.equal(layoutKind('pants', 'jeans'), 'pants');
+  assert.equal(layoutKind('headwear', 'cap'), 'headwear');
+  assert.equal(layoutKind('jewelry', 'watch'), 'accessory');
+  assert.equal(layoutKind(null), 'accessory');
 });
 
 test('Kachelhöhe: Typ und Länge zählen', () => {
-  assert.equal(tileKind('outerwear', 'coat', 'peacoat'), 'jacke');
-  assert.equal(tileKind('outerwear', 'coat', 'car_coat'), 'mantel');
-  assert.equal(tileKind('outerwear', 'coat', null), 'mantel');
-  assert.equal(tileKind('outerwear', 'vest', 'puffer_vest'), 'oberteil');
-  assert.equal(tileKind('outerwear', 'other', 'robe'), 'mantel');
-  assert.equal(tileKind('pants', 'pajama_pants', null), 'hose');
+  assert.equal(tileKind('outerwear', 'coat', 'peacoat'), 'jacket');
+  assert.equal(tileKind('outerwear', 'coat', 'car_coat'), 'coat');
+  assert.equal(tileKind('outerwear', 'coat', null), 'coat');
+  assert.equal(tileKind('outerwear', 'vest', 'puffer_vest'), 'top');
+  assert.equal(tileKind('outerwear', 'other', 'robe'), 'coat');
+  assert.equal(tileKind('pants', 'pajama_pants', null), 'pants');
   assert.equal(tileKind('pants', 'pajama_pants', 'sleep_shorts'), 'shorts');
-  assert.equal(tileKind('dress', 'sheath_dress', null, 0), 'jacke');
-  assert.equal(tileKind('dress', 'sheath_dress', null, 3), 'kleid');
-  assert.equal(tileKind('dress', 'playsuit', null), 'jacke');
-  assert.equal(tileKind('dress', 'tunic', null, 4), 'kleid');
-  assert.equal(tileKind('skirt', 'mermaid_skirt', null), 'hose');
-  assert.equal(tileKind('skirt', 'pencil_skirt', null, 4), 'hose');
-  assert.equal(tileKind('skirt', 'mermaid_skirt', null, 1), 'rock');
-  assert.equal(tileKind('shoe', 'boot', 'knee_boot'), 'tasche');
-  assert.equal(tileKind('shoe', 'boot', 'chelsea_boot'), 'schuhe');
-  assert.equal(tileKind('accessory', 'traditional_clothing', null), 'kleid');
+  assert.equal(tileKind('dress', 'sheath_dress', null, 0), 'jacket');
+  assert.equal(tileKind('dress', 'sheath_dress', null, 3), 'dress');
+  assert.equal(tileKind('dress', 'playsuit', null), 'jacket');
+  assert.equal(tileKind('dress', 'tunic', null, 4), 'dress');
+  assert.equal(tileKind('skirt', 'mermaid_skirt', null), 'pants');
+  assert.equal(tileKind('skirt', 'pencil_skirt', null, 4), 'pants');
+  assert.equal(tileKind('skirt', 'mermaid_skirt', null, 1), 'skirt');
+  assert.equal(tileKind('shoe', 'boot', 'knee_boot'), 'bag');
+  assert.equal(tileKind('shoe', 'boot', 'chelsea_boot'), 'shoe');
+  assert.equal(tileKind('accessory', 'traditional_clothing', null), 'dress');
   assert.equal(tileKind('accessory', 'swimwear', 'swim_briefs'), 'shorts');
-  assert.equal(tileKind('accessory', 'belt', null), 'accessoire');
+  assert.equal(tileKind('accessory', 'belt', null), 'accessory');
 });
 
 test('Set-Reihenfolge: von oben nach unten am Körper, außen vor innen', () => {
   const items = [
     { id: 'schuh', category: 'shoe', subcategory: 'sneaker' },
-    { id: 'tasche', category: 'bag', subcategory: 'backpack' },
+    { id: 'bag', category: 'bag', subcategory: 'backpack' },
     { id: 'shirt', category: 'top', subcategory: 't_shirt' },
-    { id: 'hose', category: 'pants', subcategory: 'jeans' },
+    { id: 'pants', category: 'pants', subcategory: 'jeans' },
     { id: 'cap', category: 'headwear', subcategory: 'cap' },
-    { id: 'jacke', category: 'outerwear', subcategory: 'blouson' },
+    { id: 'jacket', category: 'outerwear', subcategory: 'blouson' },
     { id: 'hemd', category: 'top', subcategory: 'shirt' },
   ];
-  assert.deepEqual(setOrder(items).map((i) => i.id), ['cap', 'jacke', 'hemd', 'shirt', 'hose', 'schuh', 'tasche']);
+  assert.deepEqual(setOrder(items).map((i) => i.id), ['cap', 'jacket', 'hemd', 'shirt', 'pants', 'schuh', 'bag']);
   // Lagen haben Vorrang vor der Unterkategorie
   const anzug = [{ id: 'weste', category: 'outerwear', subcategory: 'vest', layers: [1] }, { id: 'blazer', category: 'outerwear', subcategory: 'blazer', layers: [3] }];
   assert.deepEqual(setOrder(anzug).map((i) => i.id), ['blazer', 'weste']);

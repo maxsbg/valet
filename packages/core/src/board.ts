@@ -25,12 +25,12 @@ export interface BoardBox { w: number; h: number }
 export interface BoardPlaced { item: BoardItem; left: number; top: number; width: number; height: number; z: number }
 
 /** Kachelhöhe je Kategorie (wie TILE_AUTO/TILE_H im alten Valet) */
-const TILE_H: Record<string, number> = { mantel: 2, kleid: 1.75, hose: 1.5, rock: 1.1, jacke: 1.25, oberteil: 1.25, pullover: 1.25, sport: 1.25, schuhe: 0.75, kopf: 0.75, accessoire: 0.75 };
+const TILE_H: Record<string, number> = { coat: 2, dress: 1.75, pants: 1.5, skirt: 1.1, jacket: 1.25, top: 1.25, sweater: 1.25, sport: 1.25, shoe: 0.75, headwear: 0.75, accessory: 0.75 };
 
 const text = (i: BoardItem) => (i.name || '').toLowerCase();
 
 export const isCap = (i: BoardItem | null | undefined): boolean =>
-  !!i && (i.subcategory === 'cap' || ((kindOf(i) === 'kopf' || kindOf(i) === 'accessoire') && !i.subcategory &&
+  !!i && (i.subcategory === 'cap' || ((kindOf(i) === 'headwear' || kindOf(i) === 'accessory') && !i.subcategory &&
   /\bcap\b|cappy|basecap|base cap|baseballcap|baseball-cap|baseball cap|kappe|snapback|trucker|fitted|5-panel|dad hat|schirmmütze/.test(text(i))));
 
 /** Körperbereich je Unterkategorie (Keys; Schmuck, Accessoire) */
@@ -43,10 +43,10 @@ const BY_SUB: Record<string, { k: string; y: number }> = {
 /** Bereich am Körper (Höhe als Anteil der Fläche) */
 export function zoneOf(i: BoardItem): { k: string; y: number } {
   const c = kindOf(i), n = text(i);
-  if (c === 'kopf') return { k: 'head', y: 0.09 };
+  if (c === 'headwear') return { k: 'head', y: 0.09 };
   const sub = BY_SUB[i.subcategory ?? ''];
-  if (c === 'accessoire' && sub) return sub;
-  if (c === 'accessoire' || c === 'sonstiges') {
+  if (c === 'accessory' && sub) return sub;
+  if (c === 'accessory') {
     if (/cap|mütze|muetze|beanie|hut\b|hat\b|basecap|kappe|bucket/.test(n)) return { k: 'head', y: 0.09 };
     if (/brille|glasses|sunglass/.test(n)) return { k: 'face', y: 0.21 };
     if (/schal|kette|necklace|scarf|tuch|krawatte/.test(n)) return { k: 'neck', y: 0.32 };
@@ -56,9 +56,9 @@ export function zoneOf(i: BoardItem): { k: string; y: number } {
     return { k: 'acc', y: 0.4 };
   }
   const z: Record<string, { k: string; y: number }> = {
-    kleid: { k: 'top', y: 0.4 }, rock: { k: 'legs', y: 0.57 },
-    mantel: { k: 'top', y: 0.31 }, jacke: { k: 'top', y: 0.3 }, pullover: { k: 'top', y: 0.29 }, sport: { k: 'top', y: 0.28 }, oberteil: { k: 'top', y: 0.27 },
-    hose: { k: 'legs', y: 0.62 }, shorts: { k: 'legs', y: 0.57 }, schuhe: { k: 'feet', y: 0.89 }, tasche: { k: 'thigh', y: 0.6 },
+    dress: { k: 'top', y: 0.4 }, skirt: { k: 'legs', y: 0.57 },
+    coat: { k: 'top', y: 0.31 }, jacket: { k: 'top', y: 0.3 }, sweater: { k: 'top', y: 0.29 }, sport: { k: 'top', y: 0.28 }, top: { k: 'top', y: 0.27 },
+    pants: { k: 'legs', y: 0.62 }, shorts: { k: 'legs', y: 0.57 }, shoe: { k: 'feet', y: 0.89 }, bag: { k: 'thigh', y: 0.6 },
   };
   return z[c] ?? { k: 'acc', y: 0.45 };
 }
@@ -73,10 +73,10 @@ export function boxOf(i: BoardItem): BoardBox {
 /** Lagen bei Oberteilen (hinten → vorne): Mantel, Jacke, offene Lagen, Langarm/Hemd, T-Shirt, Pullover/Hoodie */
 export function topRank(i: BoardItem): number {
   const c = kindOf(i), n = text(i);
-  if (c === 'mantel' || /mantel|parka|trenchcoat|\bcoat\b/.test(n)) return 0;
+  if (c === 'coat' || /mantel|parka|trenchcoat|\bcoat\b/.test(n)) return 0;
   if (/strickjacke|cardigan|zipper|\bzip\b|zip-up|zip up|full zip|half zip|half-zip|quarter zip|troyer/.test(n)) return 2;
-  if (c === 'jacke' || /jacke|jacket|blouson|blazer|anorak|weste|gilet|bomber|overshirt|windbreaker/.test(n)) return 1;
-  if (c === 'pullover' || /pulli|pullover|hoodie|sweat|strick|knit|crewneck/.test(n)) return 5;
+  if (c === 'jacket' || /jacke|jacket|blouson|blazer|anorak|weste|gilet|bomber|overshirt|windbreaker/.test(n)) return 1;
+  if (c === 'sweater' || /pulli|pullover|hoodie|sweat|strick|knit|crewneck/.test(n)) return 5;
   if (/longsleeve|long sleeve|langarm|hemd|bluse|shirt langarm|rollkragen|turtleneck|button/.test(n) && !/t-shirt|tshirt|\btee\b/.test(n)) return 3;
   return 4;
 }
@@ -90,13 +90,13 @@ export function thickOf(i: BoardItem): number {
   return 1;
 }
 
-const isTop = (i: BoardItem) => ['mantel', 'jacke', 'pullover', 'oberteil', 'sport', 'kleid'].includes(kindOf(i));
+const isTop = (i: BoardItem) => ['coat', 'jacket', 'sweater', 'top', 'sport', 'dress'].includes(kindOf(i));
 
 /** Ebene (größer = weiter vorne) */
 export function baseZ(i: BoardItem): number {
   if (isTop(i)) { const r = topRank(i), d = thickOf(i); return r === 0 ? 77 : 84 + r * 3 + (d === 0 ? 1 : d === 2 ? -1 : 0); }
   const b = boxOf(i), z = Math.round(100 - b.w * b.h * 100 * BOARD_AR);
-  return ['accessoire', 'tasche', 'kopf'].includes(kindOf(i)) ? z + 10 : z;
+  return ['accessory', 'bag', 'headwear'].includes(kindOf(i)) ? z + 10 : z;
 }
 
 /** Ungefähr auf Körperhöhe und innerhalb der Fläche halten */
@@ -143,7 +143,7 @@ export function autoLayout(its: BoardItem[]): Record<string, BoardPos> {
   const tops = by('top').sort((a, b) => topRank(a) - topRank(b) || thickOf(b) - thickOf(a));
   spread(tops, 0.5, tops.length > 1 ? Math.min(0.22, 0.5 / (tops.length - 1)) : 0, null, 0.02);
   spread(by('legs'), 0.48, 0.24, null);
-  spread(by('feet').filter((i) => kindOf(i) === 'schuhe'), 0.5, 0.3, null);
+  spread(by('feet').filter((i) => kindOf(i) === 'shoe'), 0.5, 0.3, null);
 
   // Accessoires und Taschen links oder rechts auf Körperhöhe – dort, wo am wenigsten überlappt
   const placed = its.filter((i) => L[i.id]).map((i) => ({ main: true, r: rect(i, L[i.id]!) }));

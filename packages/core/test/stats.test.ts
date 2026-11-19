@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sharesOf, spendStats, wearStats, closetStats, type StatItem } from '../src/stats';
 
-const base: StatItem = { id: 'x', ownerId: 'max', category: 'hose', brand: 'Nike', qty: 1, pricePaid: 100, listPrice: 150, payers: null, purchaseDate: '2025-03-01', status: null, soldPrice: null, isWish: false, createdAt: '2025-03-01T10:00:00Z' };
+const base: StatItem = { id: 'x', ownerId: 'max', category: 'pants', brand: 'Nike', qty: 1, pricePaid: 100, listPrice: 150, payers: null, purchaseDate: '2025-03-01', status: null, soldPrice: null, isWish: false, createdAt: '2025-03-01T10:00:00Z' };
 const item = (p: Partial<StatItem>): StatItem => ({ ...base, ...p });
 
 test('Anteile: ohne Zahler zahlt der Besitzer, sonst gleich oder nach Betrag', () => {
@@ -37,8 +37,8 @@ test('Getragen: Kosten pro Tragen und Outfit-Planungen zählen mit', () => {
 
 test('Getragen: Zeitraum, Nutzung, Outfits, Kombinationen, Saison', () => {
   const items = [
-    item({ id: 'a', category: 'hose' }), item({ id: 'b', category: 'oberteil', pricePaid: 20 }),
-    item({ id: 'c', category: 'jacke', seasons: ['summer'] }), item({ id: 'd', category: 'hose', status: 'stored' }),
+    item({ id: 'a', category: 'pants' }), item({ id: 'b', category: 'top', pricePaid: 20 }),
+    item({ id: 'c', category: 'jacket', seasons: ['summer'] }), item({ id: 'd', category: 'pants', status: 'stored' }),
   ];
   const o = { id: 'o', ownerId: null, itemIds: ['a', 'b'], occasions: [], plans: [{ id: 'p', date: '2026-11-10', personId: null }, { id: 'q', date: '2026-11-12', personId: null }] };
   const r = wearStats(items, null, { a: ['2026-01-05'] }, [o], '2026-11-13', '30');
@@ -56,7 +56,7 @@ test('Getragen: Zeitraum, Nutzung, Outfits, Kombinationen, Saison', () => {
 test('Bestand: aussortierte Teile zählen nicht in Kategorien', () => {
   const r = closetStats([item({ id: 'a', qty: 2 }), item({ id: 'b', status: 'out' }), item({ id: 'c', isWish: true })], null);
   assert.equal(r.pieces, 3);
-  assert.deepEqual(r.categories, [{ key: 'hose', value: 2 }]);
+  assert.deepEqual(r.categories, [{ key: 'pants', value: 2 }]);
   assert.equal(r.wishes, 1);
 });
 

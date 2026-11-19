@@ -51,7 +51,7 @@ export const categoryDescription = (intro: string) => `${intro} Pfad aus Keys, g
 export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   category: { type: 'string', enum: [...CATEGORY_PATHS], description: categoryDescription('So genau wie sicher erkennbar: Kategorie/Unterkategorie/Typ. Typ weglassen, wenn unsicher.') },
   name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe und ohne Marke, z. B. „Oxford-Hemd“' },
-  marke: { type: ['string', 'null'], description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
+  brand: { type: ['string', 'null'], description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
   colors: list(COLOR_LIST, `1 bis ${MAX_COLORS} Farben, nach Flächenanteil sortiert. Nuance statt Hauptfarbe, wenn eindeutig (z. B. navy). multicolor nur bei mehr als drei Farben.`),
   pattern: str(PATTERNS, 'Muster des Stoffs'),
   materials: list(MATERIALS, 'Höchstens 3 geschätzte Materialien, Hauptmaterial zuerst. Leer, wenn nicht sinnvoll schätzbar.'),
@@ -147,7 +147,7 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
   return {
     path,
     name: text(r.name),
-    brand: text(r.marke, 40),
+    brand: text(r.brand, 40),
     colors,
     pattern,
     materials: materials.map((name) => ({ name })),
