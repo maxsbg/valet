@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ANALYZE_ITEM_SCHEMA, checkAnalysis } from '../src/ai/analyzeItem';
 import {
   PROFILE_FIELDS, PROFILE_SCHEMA, CONFIDENCE_SCHEMA, checkProfile, checkConfidence, clearInactive, activeProfile,
-  emptyProfile, profileLabel, readProfile, type Ctx, type Profile,
+  SCALE_WORDS, emptyProfile, profileLabel, readProfile, type Ctx, type Profile,
 } from '../src/ai/profile';
 
 const ctx = (category: string | null, extra: Partial<Ctx> = {}): Ctx => ({ category, sub: null, pattern: 'solid', materials: [], ...extra });
@@ -99,11 +99,25 @@ test('checkAnalysis: Profil nach erkannter Kategorie bereinigt, Modell übernomm
   assert.equal(checkAnalysis({}).model, null);
 });
 
+test('Skalen-Wörter: jede Skala und Formalität mit 5 Stufen', () => {
+  for (const f of PROFILE_FIELDS.filter((x) => x.kind === 'scale' || x.kind === 'range')) {
+    assert.equal(SCALE_WORDS[f.key as keyof typeof SCALE_WORDS]?.length, 5, f.key);
+  }
+});
+
 test('profileLabel: deutsche Anzeige', () => {
   assert.equal(profileLabel('surface', 'fine_knit'), 'Feinstrick');
-  assert.equal(profileLabel('formality', [2, 4]), '2–4');
-  assert.equal(profileLabel('formality', [3, 3]), '3');
-  assert.equal(profileLabel('sheen', 2), '2 von 5');
+  assert.equal(profileLabel('formality', [1, 2]), 'Freizeit bis Casual');
+  assert.equal(profileLabel('formality', [3, 3]), 'Smart Casual');
+  assert.equal(profileLabel('formality', [2, 4]), 'Casual bis Business');
+  assert.equal(profileLabel('sheen', 2), 'leicht matt');
+  assert.equal(profileLabel('sheen', 9), '');
+  assert.equal(profileLabel('texture_intensity', 5), 'sehr stark strukturiert');
+  assert.equal(profileLabel('visual_weight', 3), 'mittel');
+  assert.equal(profileLabel('pattern_contrast', 1), 'Ton in Ton');
+  assert.equal(profileLabel('structure', 4), 'formstabil');
+  assert.equal(profileLabel('presence', 1), 'sehr zurückhaltend');
+  assert.equal(profileLabel('versatility', 5), 'sehr vielseitig');
   assert.equal(profileLabel('effects', ['clean', 'soft']), 'Clean, Weich');
   assert.equal(profileLabel('surface', null), '');
   assert.equal(profileLabel('unbekannt', 1), '');
