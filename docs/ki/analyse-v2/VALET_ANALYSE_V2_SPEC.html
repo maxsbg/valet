@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valet – Teil-Analyse v2 (technische Spezifikation)</title>
+<style>
+  :root { --ink:#2a1a1d; --soft:#6b5a5d; --line:#e8dcd6; --bg:#faf6f1; --accent:#722638; --code:#f1e9e3; }
+  body { font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); margin: 0; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 18px 80px; }
+  h1 { font-size: 28px; margin: 8px 0 4px; } h2 { font-size: 21px; margin: 36px 0 8px; border-top: 1px solid var(--line); padding-top: 20px; }
+  h3 { font-size: 17px; margin: 22px 0 6px; } .sub { color: var(--soft); margin: 0 0 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0 14px; display: block; overflow-x: auto; }
+  th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f3ebe5; white-space: nowrap; }
+  code { background: var(--code); padding: 1px 4px; border-radius: 4px; font-size: 13.5px; }
+  pre { background: var(--code); padding: 12px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.45; }
+  pre code { background: none; padding: 0; }
+  .box { border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+  .rule { border-left: 4px solid var(--accent); }
+  .muted { color: var(--soft); font-size: 14px; }
+  li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<main>
+<h1>Valet – Teil-Analyse v2</h1>
+<p class="sub">Technische Spezifikation für <code>packages/core/src/ai/</code> · Stand 19.11.2026 · Grundlage: „Variante C“, verschlankt und gegen den Code geprüft</p>
+
+<div class="box rule">
+<b>Kurzfassung.</b> Die KI liefert in <b>einem</b> Aufruf wie bisher den Steckbrief (unverändert) und zusätzlich ein <b>Profil</b> mit 22 Feldern. Pro Teil gelten davon je nach Kategorie nur 11 bis 15.
+Farbwirkung und alle Matching-Werte <b>rechnet der Code</b>.
+Alle Profil-Felder stehen in <b>einer</b> Feldtabelle. Daraus entstehen Schema, Prüfung, Typen und deutsche Labels.
+Gespeichert wird in <code>items.analysis.profile</code>, ohne neue Spalte und ohne Migration. Das Profil ist nur zum Nachsehen da: ein schlichtes Blatt hinter einem Knopf im Steckbrief, ohne eigene Bestätigung.
+</div>
+
+<h2>1. Leitsätze</h2>
+<ol>
+  <li><b>Englische Keys, deutsche Labels (gilt für die ganze App, seit 19.11.2026).</b> Code, Datenbank und KI-Schema verwenden englische Keys (<code>fine_knit</code>). Deutsch erscheint nur in der Oberfläche, über Labels. Neue Listen folgen dem ab sofort. Wie die bestehenden deutschen Listen umgestellt werden, steht in Abschnitt 12.</li>
+  <li><b>Einmal analysieren, dann gilt der gespeicherte Stand.</b> Matching liest nur gespeicherte Werte und schaut nie wieder ins Bild.</li>
+  <li><b>Jede Eigenschaft hat genau ein Feld.</b> Was aus vorhandenen Feldern folgt, wird berechnet und nicht gespeichert. Das Profil wiederholt keine Steckbrief-Felder: Weite und Länge stehen in <code>fit</code>, der Stil in <code>styles</code>, die Lagen in <code>layers</code>.</li>
+  <li><b>Die KI schätzt nur, was echtes Bildverständnis braucht.</b></li>
+  <li><b>Farben kommen weiter nur von der KI</b> (Entscheidung 16.11.2026). Es gibt keine Pixel-Farbe. Die Farbwirkung berechnet der Code aus den HEX-Werten der <i>gewählten Palettenfarben</i>.</li>
+  <li><b>Lieber leer als falsch.</b> Ist ein Wert nicht erkennbar, bleibt er <code>null</code>. Gilt ein Feld nicht für die Kategorie, wird es nicht ausgewertet (Abschnitt 6.5).</li>
+  <li><b>Menschliche Korrektur gewinnt immer.</b> Ein bestätigter Steckbrief-Wert wird nie automatisch überschrieben. Das Profil bearbeitet niemand von Hand (Entscheidung 19.11.2026). Es gehört der KI und wird bei jeder neuen Analyse komplett ersetzt.</li>
+</ol>
+
+<h2>2. Was gegenüber „Variante C“ wegfällt</h2>
+<table>
+<tr><th>Feld aus Variante C</th><th>Entscheidung</th><th>Grund</th></tr>
+<tr><td>compatibility_profile</td><td>berechnet (<code>matchTraits</code>)</td><td>Folgt vollständig aus Steckbrief + Profil. Wird die Logik geändert, muss nichts neu analysiert werden.</td></tr>
+<tr><td>Farbtemperatur, Helligkeit, Sättigung, Farbkontrast, Farbverteilung, HEX</td><td>berechnet aus der Palette</td><td>Deterministisch, kostet keine Tokens, keine Pixel-Farbe.</td></tr>
+<tr><td>style_tags</td><td>entfällt</td><td>Dafür gibt es <code>styles</code>.</td></tr>
+<tr><td>dress_codes, formality, formality_range</td><td>ein Bereich <code>formality</code> [von, bis]</td><td>Ein Konzept statt drei.</td></tr>
+<tr><td>Silhouettenweite, „slim/oversized/wide“ als Silhouette</td><td>entfällt</td><td>Dafür gibt es <code>fit.width</code>. Die Silhouette beschreibt nur noch die <i>Form</i>.</td></tr>
+<tr><td>drape, structure (zweimal), Formstabilität</td><td>ein Feld <code>structure</code></td><td>Alle meinen dasselbe.</td></tr>
+<tr><td>versatility, style_flexibility</td><td>ein Feld <code>versatility</code></td><td>Doppelt.</td></tr>
+<tr><td>Stilwirkung (14 Werte)</td><td><code>effects</code> mit 6 Werten</td><td>Nur Werte, die <code>styles</code> nicht abdeckt (z. B. kein „lässig“, „luxuriös“). Gender-Konnotationen gestrichen.</td></tr>
+<tr><td>Musterdichte, Regelmäßigkeit, Proportionswirkung</td><td>entfällt (Proportion: v3)</td><td>Wenig Nutzen fürs Matching, streut stark. Ohne Körperdaten nicht belastbar.</td></tr>
+<tr><td>evidence pro Wert, Konfidenz pro Feld</td><td>Konfidenz je Gruppe</td><td>Spart Tokens. Die Konfidenz dient nur dem Eval und der Anzeige.</td></tr>
+<tr><td>Status pending/confirmed, Prüf-Ablauf</td><td>entfällt</td><td>Das Profil ist nur lesbar (Entscheidung 19.11.2026). Die Qualität sichert das Gold-Set (Abschnitt 9) statt einer Prüfung bei jedem Teil.</td></tr>
+</table>
+
+<h2>3. Die Profil-Felder</h2>
+<p>Gilt für: <b>K</b> = Kleidung (Oberbekleidung, Oberteil, Kleid, Hose, Shorts, Rock) · <b>O</b> = Oberbekleidung, Oberteil, Kleid · <b>S</b> = Schuh · <b>T</b> = Tasche · <b>alle</b>. Gruppen: surface (Oberfläche), shape (Form), style (Wirkung).</p>
+
+<h3>3.1 Skalen 1–5 (feste Anker, für jedes Produkt gleich)</h3>
+<table>
+<tr><th>Key</th><th>Label</th><th>1</th><th>3</th><th>5</th><th>gilt für</th><th>Gruppe</th></tr>
+<tr><td><code>sheen</code></td><td>Glanz</td><td>matt (Baumwoll-Sweat)</td><td>leichter Schimmer (glattes Leder, Satin-Futter)</td><td>stark glänzend (Lack, Pailletten)</td><td>alle</td><td>surface</td></tr>
+<tr><td><code>texture_intensity</code></td><td>Struktur</td><td>glatt (Popeline)</td><td>erkennbar (Piqué, Feinrippe)</td><td>sehr stark (Zopfstrick, Teddy)</td><td>alle</td><td>surface</td></tr>
+<tr><td><code>visual_weight</code></td><td>Optisches Gewicht</td><td>sehr leicht (Chiffon-Top)</td><td>mittel (Sweatshirt)</td><td>sehr schwer (Daunenparka, Chunky Boot)</td><td>alle</td><td>surface</td></tr>
+<tr><td><code>pattern_contrast</code></td><td>Musterkontrast</td><td>Ton in Ton</td><td>deutlich</td><td>sehr stark (Schwarz-Weiß-Hahnentritt)</td><td>alle, nur mit Muster</td><td>surface</td></tr>
+<tr><td><code>structure</code></td><td>Formstabilität</td><td>fließend (Seidenbluse)</td><td>mittel (Oxford-Hemd)</td><td>sehr formstabil (Wollmantel, Ledertasche)</td><td>K, S, T</td><td>shape</td></tr>
+<tr><td><code>presence</code></td><td>Auffälligkeit</td><td>unauffällig (graues T-Shirt)</td><td>mittel (Karo-Hemd)</td><td>sehr dominant (Leopard-Mantel, Neon)</td><td>alle</td><td>style</td></tr>
+<tr><td><code>versatility</code></td><td>Vielseitigkeit</td><td>sehr speziell (Kostüm-Teil)</td><td>mittel</td><td>passt in viele Stile (weißes Hemd)</td><td>alle</td><td>style</td></tr>
+<tr><td><code>formality</code> (Bereich)</td><td>Formalität von–bis</td><td>Freizeit, Sport</td><td>Smart Casual</td><td>sehr formell, festlich</td><td>alle</td><td>style</td></tr>
+</table>
+<p class="muted">Die Werte 2 und 4 sind die Zwischenstufen. Formalität: 1 Freizeit · 2 Casual · 3 Smart Casual · 4 Business/elegant · 5 sehr formell. Beispiele: weißer Sneaker = [1, 3], Oxford-Hemd = [2, 4], Smoking-Hose = [5, 5].</p>
+
+<h3>3.2 Auswahl-Felder</h3>
+<table>
+<tr><th>Key</th><th>Label</th><th>Werte (Key → Label)</th><th>gilt für</th><th>Gruppe</th></tr>
+<tr><td><code>surface</code></td><td>Oberfläche</td><td>smooth Glatt · fine_knit Feinstrick · chunky_knit Grobstrick · ribbed Gerippt · quilted Gesteppt · fuzzy Flauschig · brushed Angeraut · grainy Genarbt · technical Funktionsstoff</td><td>alle außer Schmuck</td><td>surface</td></tr>
+<tr><td><code>opacity</code></td><td>Transparenz</td><td>opaque Blickdicht · semi_sheer Leicht durchscheinend · sheer Durchsichtig</td><td>K</td><td>surface</td></tr>
+<tr><td><code>pattern_scale</code></td><td>Mustergröße</td><td>fine Fein · medium Mittel · large Groß</td><td>alle, nur mit Muster</td><td>surface</td></tr>
+<tr><td><code>denim_wash</code></td><td>Waschung</td><td>raw Raw · dark Dunkel · mid Mittel · light Hell · black Schwarz · distressed Used</td><td>nur mit Material Denim</td><td>surface</td></tr>
+<tr><td><code>metal_tone</code></td><td>Metallton</td><td>none Keiner · silver Silber · gold Gold · rose_gold Roségold · black Schwarz · mixed Gemischt</td><td>Oberbekleidung, S, T, Gürtel, Uhr, Schmuck</td><td>surface</td></tr>
+<tr><td><code>silhouette</code></td><td>Form</td><td>straight Gerade · fitted Tailliert · a_line A-Linie · boxy Kastig · cocoon Kokon</td><td>O, Rock</td><td>shape</td></tr>
+<tr><td><code>shoulder</code></td><td>Schulter</td><td>natural Natürlich · structured Gepolstert · dropped Überschnitten · raglan Raglan · sleeveless Ärmellos/Träger · off_shoulder Schulterfrei</td><td>O</td><td>shape</td></tr>
+<tr><td><code>leg</code></td><td>Beinverlauf</td><td>straight Gerade · tapered Zulaufend · flared Ausgestellt · barrel Bogen</td><td>Hose, Shorts</td><td>shape</td></tr>
+<tr><td><code>toe</code></td><td>Schuhspitze</td><td>round Rund · almond Mandel · pointed Spitz · square Eckig · open Offen</td><td>S</td><td>shape</td></tr>
+<tr><td><code>shaft</code></td><td>Schafthöhe</td><td>low Halbschuh · ankle Knöchel · mid Wade · high Knie und höher</td><td>S</td><td>shape</td></tr>
+<tr><td><code>sole</code></td><td>Sohle</td><td>slim Schmal · regular Normal · chunky Klobig · platform Plateau</td><td>S</td><td>shape</td></tr>
+<tr><td><code>heel</code></td><td>Absatz</td><td>none Keiner · low unter 3 cm · mid 3–7 cm · high über 7 cm</td><td>S</td><td>shape</td></tr>
+<tr><td><code>bag_size</code></td><td>Taschengröße</td><td>mini Mini · small Klein · medium Mittel · large Groß</td><td>T</td><td>shape</td></tr>
+<tr><td><code>effects</code></td><td>Wirkung (0–2)</td><td>clean Clean · rugged Robust · soft Weich · sharp Streng · playful Verspielt · bold Markant</td><td>alle</td><td>style</td></tr>
+</table>
+<p class="muted">Zusammen 22 Felder: 8 Skalen (einschließlich Bereich) und 14 Auswahl-Felder. Wie viele davon ein Teil hat, hängt von der Kategorie ab, zum Beispiel: Pullover unifarben 12 (gemustert 14), Jeans 12, Shorts 12, Schuh 14, Tasche 11, gemusterte Jacke 15. Kragen, Verschluss und Träger bleiben im Steckbrief.</p>
+
+<h3>3.3 Konfidenz</h3>
+<p>Je Gruppe eine <b>ganze Zahl von 0 bis 10</b> (Ganzzahl-Enum wie die übrigen Zahlen, im strikten Modus sicher): <code>category</code>, <code>color</code>, <code>material</code>, <code>surface</code>, <code>shape</code>, <code>style</code>.
+Sie wird gespeichert und im Eval ausgewertet (Abschnitt 9). Im Matching zählt sie nicht, denn LLM-Konfidenzen sind nicht kalibriert. Im Profil-Blatt stehen Gruppen unter 6 grau.</p>
+
+<h2>4. Eine Quelle der Wahrheit: die Feldtabelle</h2>
+<p>Neue Datei <code>packages/core/src/ai/profile.ts</code>. Aus <code>PROFILE_FIELDS</code> entstehen <b>automatisch</b> die Schema-Properties, die Prüfung, die TS-Typen, die Labels und die Feldbeschreibungen für die KI.</p>
+<pre><code>/** Worauf ein Feld schaut: Kategorie-Pfad + Steckbrief-Werte, von denen es abhängt */
+export type Ctx = { category: string | null; sub: string | null; pattern: string | null; materials: readonly string[] };
+export type Applies = (c: Ctx) =&gt; boolean;
+export type Group = 'surface' | 'shape' | 'style';
+export type Opt = { readonly key: string; readonly label: string };
+
+type Base = { key: string; label: string; group: Group; applies: Applies; hint: string };
+export type ProfileField =
+  | (Base &amp; { kind: 'scale' })                                   // 1–5
+  | (Base &amp; { kind: 'range' })                                   // [von, bis], je 1–5
+  | (Base &amp; { kind: 'enum'; values: readonly Opt[] })
+  | (Base &amp; { kind: 'list'; values: readonly Opt[]; max: number });
+
+// Bedingungen (eine Stelle, getestet)
+const all: Applies = () =&gt; true;
+const clothing: Applies = (c) =&gt; CLOTHING.includes(c.category ?? '');          // K
+const upper: Applies = (c) =&gt; ['Oberbekleidung', 'Oberteil', 'Kleid'].includes(c.category ?? '');
+const patterned: Applies = (c) =&gt; c.pattern != null &amp;&amp; c.pattern !== 'Unifarben';
+const denim: Applies = (c) =&gt; c.materials.includes('Denim');
+// … shoe, bag, metal, silhouetteCats, notJewelry
+
+export const SURFACES = [
+  { key: 'smooth', label: 'Glatt' }, { key: 'fine_knit', label: 'Feinstrick' }, /* … */
+] as const satisfies readonly Opt[];
+
+export const PROFILE_FIELDS = [
+  { key: 'sheen', kind: 'scale', label: 'Glanz', group: 'surface', applies: all,
+    hint: '1 matt (Sweat) · 3 leichter Schimmer (glattes Leder) · 5 stark glänzend (Lack, Pailletten)' },
+  { key: 'formality', kind: 'range', label: 'Formalität', group: 'style', applies: all,
+    hint: '1 Freizeit · 2 Casual · 3 Smart Casual · 4 Business · 5 sehr formell; von ≤ bis' },
+  { key: 'surface', kind: 'enum', label: 'Oberfläche', group: 'surface', applies: notJewelry, values: SURFACES,
+    hint: 'sichtbare Oberfläche, nicht die Faser' },
+  { key: 'effects', kind: 'list', label: 'Wirkung', group: 'style', applies: all, values: EFFECTS, max: 2, hint: '…' },
+  // … alle Felder aus Abschnitt 3 (Reihenfolge = Reihenfolge im Schema und in der Oberfläche)
+] as const satisfies readonly ProfileField[];
+
+type F = (typeof PROFILE_FIELDS)[number];
+type ValueOf&lt;X&gt; = X extends { kind: 'scale' } ? 1 | 2 | 3 | 4 | 5
+  : X extends { kind: 'range' } ? readonly [number, number]
+  : X extends { kind: 'enum'; values: readonly (infer O extends Opt)[] } ? O['key']
+  : X extends { kind: 'list'; values: readonly (infer O extends Opt)[] } ? O['key'][]
+  : never;
+export type ProfileKey = F['key'];
+/** Listen: [] statt null; sonst null = unbekannt */
+export type Profile = { [X in F as X['key']]: X extends { kind: 'list' } ? ValueOf&lt;X&gt; : ValueOf&lt;X&gt; | null };
+
+export const PROFILE_PROMPT_VERSION = '2.0';
+export function profileProps(): Record&lt;string, JsonSchema&gt;;      // range → zwei Props &lt;key&gt;_min / &lt;key&gt;_max
+export function checkProfile(raw: unknown): Profile;              // nur Werteprüfung (6.2), unabhängig von der Kategorie
+export function activeProfile(p: Profile, c: Ctx): Partial&lt;Profile&gt;; // nur Felder, deren applies(c) gilt
+export const emptyProfile: () =&gt; Profile;
+export function profileLabel(key: ProfileKey, value: unknown): string;   // „Feinstrick“, „2–4“
+</code></pre>
+<p class="muted">Umsetzung (19.11.2026): <code>Profile</code> ist ausdrücklich ausgeschrieben statt per Typ-Akrobatik abgeleitet (besser lesbar). Ein Test stellt sicher, dass Typ und Feldtabelle dieselben Keys haben.</p>
+<p><b>Warum keine Zod-Bibliothek</b> (abweichend von meinem ersten Vorschlag): <code>@valet/core</code> hängt nur von <code>@valet/ui</code> ab, und Zods <code>toJSONSchema</code> erzeugt <code>anyOf</code>/<code>$schema</code>, die Geminis strikte OpenAI-Schnittstelle nicht sicher annimmt. Die Feldtabelle bringt denselben Vorteil (eine Quelle, getypte Werte über <code>as const</code>) und erzeugt genau das Schema-Format, das heute läuft (<code>type: ['integer','null']</code> + <code>enum</code>).</p>
+
+<h3>4.1 Schema-Regeln (Gemini, strikt)</h3>
+<ul>
+  <li>Neues Unterobjekt <code>profil</code> (flach, <code>required</code> = alle Props, <code>additionalProperties: false</code>) und <code>konfidenz</code> (6 Props). Beide stehen am Ende von <code>ANALYZE_ITEM_PROPS</code>.</li>
+  <li>Zahlen nur als Ganzzahl-<code>enum</code> mit <code>null</code>. Der Bereich wird zu <code>formality_min</code> + <code>formality_max</code>.</li>
+  <li>Jede Beschreibung = <code>hint</code> + „nur für …, sonst null“, erzeugt aus einem Text je Bedingung (<code>APPLIES_TEXT</code>).</li>
+  <li><b>Abnahme Schritt 1:</b> ein echter Probeaufruf mit Testkonto gegen <code>gemini-3.5-flash-lite</code> <b>und</b> beide Ersatzmodelle. Er muss gültiges JSON liefern, ohne Fehler wie „schema too complex / too many states“. Klappt das nicht, gilt diese Reihenfolge: zuerst die <code>hint</code>s kürzen, dann <code>konfidenz</code> auf 3 Gruppen zusammenfassen, zuletzt Felder streichen.</li>
+  <li>Test: JSON-Länge des Schemas &lt; 60 000 Zeichen (<code>MAX_SCHEMA</code> der Edge Function).</li>
+</ul>
+
+<h2>5. Vom Code berechnete Werte</h2>
+<p>Neue Datei <code>packages/core/src/traits.ts</code>, reine Funktionen.</p>
+<h3>5.1 Farbwirkung aus der Palette (OKLCH aus dem HEX-Wert)</h3>
+<table>
+<tr><th>Wert</th><th>Regel</th></tr>
+<tr><td><code>neutral</code></td><td>Chroma C &lt; 0,035</td></tr>
+<tr><td><code>temperature</code></td><td>neutral → <code>neutral</code>; Farbton h &lt; 115° oder h ≥ 330° → <code>warm</code>; sonst <code>cool</code></td></tr>
+<tr><td><code>lightness</code> 1–5</td><td>L &lt; 0,35 → 1 · &lt; 0,50 → 2 · &lt; 0,65 → 3 · &lt; 0,80 → 4 · sonst 5</td></tr>
+<tr><td><code>chroma</code> 1–5</td><td>C &lt; 0,035 → 1 · &lt; 0,075 → 2 · &lt; 0,11 → 3 · &lt; 0,145 → 4 · sonst 5</td></tr>
+<tr><td>Overrides</td><td><code>COLOR_TRAIT_OVERRIDES</code> (nur <code>temperature</code>): Olivgrün → warm (h 121° knapp über der Grenze); Pink, Rosa, Magenta → cool. Weitere Fälle trägt Max nach Prüfung ein. „Bunt“ = mixed, Helligkeit 3, Chroma 5.</td></tr>
+</table>
+<p>Grenzfälle mit den heutigen HEX-Werten (nachgerechnet; der Test rechnet sie aus <code>COLORS</code> und vergleicht mit dieser Erwartung – ändert sich ein HEX-Wert, schlägt er bewusst fehl):</p>
+<table>
+<tr><th>Farbe</th><th>L / C / h</th><th>Ergebnis</th></tr>
+<tr><td>Schwarz</td><td>0,23 / 0 / –</td><td>neutral, Helligkeit 1, Chroma 1</td></tr>
+<tr><td>Marineblau</td><td>0,31 / 0,072 / 265°</td><td>cool, 1, 2</td></tr>
+<tr><td>Elfenbein · Taupe</td><td>0,93 / 0,028 · 0,61 / 0,028</td><td>neutral (5, 1 · 3, 1)</td></tr>
+<tr><td>Beige</td><td>0,84 / 0,047 / 82°</td><td>warm, 5, 2</td></tr>
+<tr><td>Camel</td><td>0,67 / 0,090 / 69°</td><td>warm, 4, 3</td></tr>
+<tr><td>Braun</td><td>0,44 / 0,057 / 56°</td><td>warm, 2, 2</td></tr>
+<tr><td>Khaki · Olivgrün</td><td>0,66 / 0,070 / 102° · 0,55 / 0,088 / 121°</td><td>warm (Olivgrün über Override)</td></tr>
+<tr><td>Silber</td><td>0,799 / 0,010</td><td>neutral, 4, 1 (bewusst neutral: wirkt als Kleidungsfarbe wie Hellgrau; der Metallton steht in <code>metal_tone</code>)</td></tr>
+<tr><td>Magenta · Pink · Rosa</td><td>0,54 / 0,212 / 353° · 0,70 / 0,133 / 357° · 0,84 / 0,072 / 1°</td><td>cool über Override (Blaustich, nach Farbtypenlehre kühl); Altrosa bleibt warm</td></tr>
+</table>
+<pre><code>export function colorTraits(colors: readonly string[]): {
+  temperature: 'warm' | 'cool' | 'neutral' | 'mixed'; // Neutrale ignoriert; nur warm → warm, nur kühl → cool, beides → mixed, keine → neutral
+  lightness: number;   // gerundet, gewichtet nach Rang 0,6 / 0,3 / 0,1 (bei 2 Farben 0,7 / 0,3)
+  chroma: number;      // wie lightness
+  contrast: number;    // größtes ΔL zwischen zwei Farben: &lt; 0,15 → 1 · &lt; 0,30 → 2 · &lt; 0,45 → 3 · &lt; 0,60 → 4 · sonst 5; eine Farbe → 1
+  distribution: 'solid' | 'tonal' | 'neutral_contrast' | 'multicolor';
+  // Prüfreihenfolge, erste passende gewinnt:
+  // 1. eine Farbe → solid
+  // 2. nur Neutrale und contrast ≥ 4 → neutral_contrast
+  // 3. ALLE Paare gleiche Farbfamilie (colorFamily) oder ΔL &lt; 0,15 → tonal
+  // 4. sonst (auch Bunt) → multicolor
+} | null   // null ohne Farben</code></pre>
+<p>Die Tabelle aller Palettenfarben wird mit <code>pnpm farbmerkmale</code> als <code>docs/ki/analyse-v2/farb-merkmale.html</code> erzeugt, damit Max sie prüfen kann.</p>
+
+<h3>5.2 Matching-Merkmale</h3>
+<pre><code>export function matchTraits(item: { category; subcategory; colors; pattern; materials; layers; fit; styles; analysis }): {
+  color: ReturnType&lt;typeof colorTraits&gt;;
+  formality: readonly [number, number];  // Profil, sonst Hülle der STYLE_FORMALITY-Bereiche aller styles; ohne Stil [2,3]
+  presence: number;                      // Profil, sonst Maximum aus: Muster ≠ Unifarben → 3, Chroma 5 → 4, Bunt → 4, sonst 2
+  weight: number; texture: number;       // Profil, sonst 3
+  layerRole: 'base' | 'mid' | 'outer' | null;  // aus layers: 0 → base, 1/2 → mid, 3 → outer (höchste Lage gewinnt)
+  statement: boolean;                    // presence ≥ 4 || pattern_contrast ≥ 4
+  partial: boolean;                      // true, wenn ein Profil-Wert ersetzt wurde
+}</code></pre>
+<p>Ersatz-Tabelle <code>STYLE_FORMALITY</code> (deckt alle 18 <code>STYLES</code> ab, Test prüft Vollständigkeit):</p>
+<table>
+<tr><th>Bereich</th><th>Stile</th></tr>
+<tr><td>[1, 2]</td><td>Bequem, Sportlich, Athleisure, Kidcore</td></tr>
+<tr><td>[1, 3]</td><td>Lässig, Boho, Street</td></tr>
+<tr><td>[2, 3]</td><td>Trendig, Künstlerisch, Sonstiges</td></tr>
+<tr><td>[2, 4]</td><td>Modern, Klassisch, Minimalistisch, Feminin</td></tr>
+<tr><td>[3, 4]</td><td>Business Casual</td></tr>
+<tr><td>[3, 5]</td><td>Luxus</td></tr>
+<tr><td>[4, 5]</td><td>Formell, Festlich</td></tr>
+</table>
+<p><code>matchTraits</code> nutzt nur <code>activeProfile(…)</code>. Werte, die für die aktuelle Kategorie nicht gelten, zählen also nie. Teile ohne v2-Profil lassen sich trotzdem kombinieren.</p>
+
+<h3>5.3 Pixel nur als Kontrolle (Schritt 2, klein)</h3>
+<p>Welche Farbe ein Teil hat, entscheidet die KI. Sie unterscheidet Stoff von Schatten, Glanzlicht, Logo und Futter, ein Pixel-Algorithmus kann das nicht (Beispiel: ein schwarzer Lederschuh mit hellem Glanz würde als Grau gemessen).
+Die Wirkung (Helligkeit, Sättigung, Temperatur) rechnet der Code aus den gewählten Palettenfarben, damit ist sie stabil und vergleichbar.
+Die Foto-Farbwerte, die beim Hochladen schon in <code>item_images.colors</code> landen, nutzt nur eine Plausibilitätsprüfung: Ist Rang 1 farbig und weicht der vorherrschende Foto-Farbton um mehr als 60° ab (z. B. KI „Rot“, Foto eindeutig blau), zeigt das Profil-Blatt „Farbe prüfen“. Die Werte werden nie automatisch geändert.</p>
+
+<h2>6. Antwort, Prüfung, Übernahme, Speicherung</h2>
+<h3>6.1 Rohantwort der KI (Beispiel Pullover)</h3>
+<pre><code>{ "kategorie": "Oberteil › Pullover", "name": "Feinstrickpullover", "marke": null,
+  "farben": ["Marineblau"], "muster": "Unifarben", "material": ["Merinowolle"], "stil": ["Klassisch","Minimalistisch"],
+  "saison": ["Herbst","Winter"], "kragen": "Rundhals", "verschluss": null, "traeger": null,
+  "weite": 2, "laenge": 2, "bund": null, "lagen": [0,1], "waerme": 2, "regen": 0,
+  "profil": { "sheen": 1, "texture_intensity": 2, "visual_weight": 2, "pattern_contrast": null, "structure": 2,
+    "presence": 2, "versatility": 4, "formality_min": 2, "formality_max": 4,
+    "surface": "fine_knit", "opacity": "opaque", "pattern_scale": null, "denim_wash": null, "metal_tone": null,
+    "silhouette": "straight", "shoulder": "natural", "leg": null, "toe": null, "shaft": null, "sole": null,
+    "heel": null, "bag_size": null, "effects": ["clean","soft"] },
+  "konfidenz": { "category": 10, "color": 9, "material": 7, "surface": 8, "shape": 9, "style": 8 } }</code></pre>
+
+<h3>6.2 Prüfung (<code>checkProfile</code>, aufgerufen von <code>checkAnalysis</code>)</h3>
+<ol>
+  <li>Unbekannter Enum-Wert, Zahl außerhalb 1–5 oder keine ganze Zahl → <code>null</code> (verwerfen statt ablehnen, wie bisher).</li>
+  <li><code>formality</code>: beide gesetzt und min ≤ max → <code>[min, max]</code>; nur einer gesetzt → <code>[v, v]</code>; min &gt; max → <code>null</code>.</li>
+  <li>Listen: nur bekannte Keys, ohne Doppelte, auf <code>max</code> gekürzt; fehlt die Liste → <code>[]</code>.</li>
+  <li>Konfidenz: nur ganze Zahl 0–10, sonst <code>null</code>.</li>
+  <li><b>Kategorie-Bedingungen:</b> <code>checkAnalysis</code> setzt zusätzlich alle Felder mit <code>!applies(ctx)</code> auf <code>null</code>/<code>[]</code>. <code>ctx</code> wird aus dem erkannten Pfad, Muster und Material gebildet. So kommt nichts Unpassendes erst ins Formular.</li>
+</ol>
+<p><code>Analysis</code> bekommt <code>profile: Profile</code>, <code>confidence: Confidence</code> und <code>model: string | null</code>.</p>
+
+<h3>6.3 Modellname</h3>
+<p>Die Edge Function liefert schon heute <code>{ data, model }</code>. In <code>apps/app/src/lib/ki.ts</code> gibt <code>ask()</code> künftig <code>{ data, model }</code> zurück. <code>analyzePicture</code> reicht <code>model</code> an <code>checkAnalysis(raw, model)</code> weiter, und <code>readInfo</code> nutzt nur <code>data</code>. Neu in der Edge Function sind nur zwei optionale Parameter: <code>temperature</code> (0–1, Standard 0,2; die Teil-Analyse schickt <code>0</code>) und <code>model</code> (erzwingt ein bestimmtes Modell ohne Ersatz). <code>model</code> wird nur angenommen, wenn die Nutzer-ID in der Liste aus dem Secret <code>KI_EVAL_USERS</code> steht, also nur für das Testkonto beim Eval. Sonst wird der Parameter ignoriert.</p>
+
+<h3>6.4 Übernahme ins Formular</h3>
+<ul>
+  <li>Neue Formularfelder: <code>profile: Profile</code>, <code>confidence: Confidence</code>, <code>aiMeta: Meta | null</code> (<code>Meta = { v: 2; prompt: string; model: string | null; at: string }</code>).</li>
+  <li><code>applyAnalysis</code> füllt den Steckbrief wie bisher (nur leere oder offene Felder, Markierung in <code>aiPending</code>) und ersetzt danach <b>immer</b> <code>profile</code>, <code>confidence</code> und <code>aiMeta</code> komplett. Profil-Felder kommen nicht in <code>aiPending</code>.</li>
+  <li><code>aiMeta</code> bleibt <code>null</code>, wenn in dieser Sitzung keine Analyse lief. Dann bleibt das gespeicherte <code>meta</code> unverändert.</li>
+</ul>
+<h3>6.5 Kategoriewechsel</h3>
+<p>Wie im Steckbrief („versteckte Werte bleiben gespeichert“, Spec 8a) bleiben Profil-Werte beim Kategoriewechsel <b>gespeichert</b>, werden aber nicht mehr angezeigt oder ausgewertet. Oberfläche, Steckbrief und <code>matchTraits</code> lesen dafür ausschließlich <code>activeProfile(profile, ctx)</code>. Wechselt der Nutzer zurück, sind die Werte wieder da.</p>
+
+<h3>6.6 Speicherung</h3>
+<p><code>items.analysis</code> (jsonb, seit 0001) enthält Altdaten aus dem Import (<code>vdesc</code>, <code>matInfo</code>, <code>extra</code> …). Diese bleiben erhalten.</p>
+<pre><code>items.analysis = {
+  …Altdaten unverändert…,
+  "profile":    { …Profile… },
+  "confidence": { "category": 10, "color": 9, … },
+  "meta":       { "v": 2, "prompt": "2.0", "model": "gemini-3.5-flash-lite", "at": "2026-11-19T11:00:00Z" }
+}</code></pre>
+<ol>
+  <li><b>Laden:</b> <code>EditRow</code> bekommt <code>analysis: Record&lt;string, unknown&gt; | null</code>. Die Abfrage in <code>lib/item.ts</code> nutzt schon <code>select('*')</code>. <code>toEditForm</code> liest <code>profile</code>/<code>confidence</code> (fehlt → <code>emptyProfile()</code>) und merkt sich das ganze Objekt als <code>EditForm.analysisBase</code>.</li>
+  <li><b>Schreiben:</b> Der Speicher-Datensatz (<code>base</code> in <code>edit.ts</code>) bekommt <code>analysis: mergeAnalysis(f.analysisBase, f.profile, f.confidence, f.aiMeta)</code>. Die Funktion übernimmt alle Altschlüssel und ersetzt <code>profile</code> und <code>confidence</code>; <code>meta</code> nur, wenn <code>aiMeta</code> gesetzt ist.</li>
+  <li><b>Neues Teil:</b> <code>analysisBase = {}</code>.</li>
+  <li>Gleichzeitiges Bearbeiten desselben Teils ist bei zwei Nutzern selten. Es gilt wie bei allen anderen Feldern: Wer zuletzt speichert, gewinnt. Deshalb ist keine RPC und keine Migration nötig.</li>
+</ol>
+
+<h2>7. Prompt 2.0</h2>
+<p>Kurz gehalten, weil Anker und Werte in den Feldbeschreibungen stehen und sonst bei jedem Aufruf doppelt Tokens kosten.</p>
+<pre><code>Du siehst ein Kleidungsstück oder Accessoire (Produktbild oder Handyfoto) und füllst
+für die Kleiderschrank-App Valet einen Steckbrief und ein Mode-Profil aus.
+
+1. Bewerte nur das Hauptteil – nicht Person, Hintergrund, andere Teile oder Styling.
+2. Nur Werte aus den vorgegebenen Listen. Nicht erkennbar oder laut Feldbeschreibung
+   nicht für diese Kategorie → null bzw. leere Liste. Material darfst du aus sichtbaren
+   Hinweisen schätzen.
+3. Skalen 1–5: streng nach den Ankern in der Feldbeschreibung, jedes Teil für sich.
+4. Das Profil beschreibt das Teil selbst, nicht eine Person, die es trägt.
+5. Konfidenz je Gruppe 0–10 ehrlich: 10 = eindeutig, 5 = halb geraten.
+   Bist du dir bei einem Wert sehr unsicher, lieber null.</code></pre>
+
+<h2>8. Bestehende Teile (Nachanalyse)</h2>
+<ul>
+  <li><b>Bild:</b> dasselbe wie bei der Neuanlage, also das freigestellte Hauptbild Seite A (<code>item_images</code> Art <code>cutout</code>), ersatzweise <code>original</code>. Übergeben wird es über den Pfad (<code>imagePath</code>, das kann die Edge Function schon). Dazu kommt in <code>ki.ts</code> <code>analyzeStored(path)</code>.</li>
+  <li><b>Einzeln:</b> Im Profil-Blatt steht „Neu analysieren“. Ohne Profil zeigt das Blatt nur diesen Knopf.</li>
+  <li><b>Stapellauf:</b> Statistik → Werkzeuge → „Profile ergänzen“. Höchstens <code>BATCH_PER_MIN = 6</code> und <code>BATCH_PER_DAY = 100</code> (Konstanten). Vor der Umsetzung werden sie mit den dann gültigen Gratis-Grenzen in Google AI Studio abgeglichen und so gewählt, dass für die normale Nutzung mindestens 30 % des Tageskontingents übrig bleiben. Bei <code>rate_limited</code> pausiert der Lauf und macht beim nächsten Start weiter (Fortschritt = Teile ohne <code>meta.v ≥ 2</code>). Andere Fehler (kein Bild, 404, ungültige Antwort) schreiben nur <code>analysis.meta.failed = { n, at }</code>. Ab <code>n ≥ 3</code> überspringt der Lauf das Teil; „Neu analysieren“ im Profil-Blatt geht weiter. Am Ende zeigt der Lauf: „x Teile ergänzt, z übersprungen“.</li>
+  <li><b>Speichern im Stapellauf</b> ohne Formular, weil der normale Speicherweg (<code>base</code> in <code>edit.ts</code>) Pflichtfelder wie den Namen prüft und Altteile sonst scheitern würden. Reine Funktion in core (ersetzt das Profil komplett, <code>ai_pending</code> bleibt unverändert):
+<pre><code>/** Nur analysis + ai_pending eines gespeicherten Teils, Steckbrief bleibt unberührt */
+export function profilePatch(
+  row: { category: string | null; subcategory: string | null; pattern: string | null; materials: string[];
+         analysis: Record&lt;string, unknown&gt; | null; ai_pending: string[] | null },
+  a: Pick&lt;Analysis, 'profile' | 'confidence' | 'model'&gt;,
+  now: string = new Date().toISOString(),
+): { analysis: Record&lt;string, unknown&gt; };
+// applies-Filter nach dem GESPEICHERTEN Pfad/Muster/Material (Steckbrief wird nicht angefasst);
+// meta = { v: 2, prompt: PROFILE_PROMPT_VERSION, model: a.model, at: now }, löscht meta.failed</code></pre>
+  <code>lib/item.ts</code> schreibt nur die Spalte <code>analysis</code> (<code>update(…).eq('id', id)</code>).</li>
+  <li><b>Was überschrieben wird:</b> Bei der <b>Einzel-Nachanalyse</b> („Neu analysieren“ im Profil-Blatt) gilt 6.4: Der Steckbrief wird nur in leeren oder offenen Feldern gefüllt, das Profil wird ersetzt. Beim <b>Stapellauf</b> wird nur das Profil gefüllt, der Steckbrief bleibt ganz unberührt.</li>
+</ul>
+
+<h2>9. Qualität messen, bevor das Matching kommt</h2>
+<ol>
+  <li><b>Gold-Set:</b> 60 echte Teile, je Feld mindestens <b>n ≥ 8</b> Teile, für die das Feld gilt (also mindestens 8 Schuhe, 8 Hosen, 8 Taschen, 8 gemusterte und 8 Denim-Teile; Teile dürfen mehrfach zählen). Felder mit kleinerem n gelten als „nicht bewertet“ und bleiben bis zur Nachmessung ausgeblendet.</li>
+  <li><b>Erfassen:</b> <code>pnpm ki-gold</code> erzeugt <code>gold-erfassen.html</code> mit Bild, Auswahl-Menüs je Feld und ohne KI-Vorbelegung, damit nichts beeinflusst wird. Max wählt aus und lädt <code>gold.json</code> herunter.</li>
+  <li><b>Messen:</b> <code>packages/core/scripts/ki-eval.ts</code> (Node + <code>@supabase/supabase-js</code>) meldet sich mit dem Testkonto an. Die Zugangsdaten kommen aus den Umgebungsvariablen <code>VALET_TEST_EMAIL</code>/<code>VALET_TEST_PASSWORD</code> und stehen nie im Repo. Das Skript ruft die Edge Function je Bild <b>2× mit dem Hauptmodell und 1× mit dem ersten Ersatzmodell</b> auf (über den Parameter <code>model</code>, nur für das Testkonto erlaubt) und schreibt <code>eval-&lt;datum&gt;.html</code>. Das sind 180 Aufrufe, verteilt nach den Grenzen aus Abschnitt 8. Das Eval (Schritt 4) läuft <b>vor</b> dem Stapellauf (Schritt 5); beide teilen sich das Tageskontingent nie am selben Tag.</li>
+  <li><b>Abnahme je Feld:</b>
+    <table>
+      <tr><th>Art</th><th>Treffer gegen Gold</th><th>besser als Raten</th><th>Stabilität</th></tr>
+      <tr><td>Auswahl</td><td>≥ 75 % exakt</td><td>Cohens Kappa ≥ 0,4 und balanced accuracy ≥ 0,6 (beides fair bei unausgewogenen Feldern wie <code>opacity</code>); hat das Gold-Set nur einen Wert, gilt nur „exakt“</td><td>Hauptmodell 2/2 gleich ≥ 95 %; Ersatzmodell gleich ≥ 75 %</td></tr>
+      <tr><td>Skala, Bereich</td><td>≥ 50 % exakt <b>und</b> ≥ 90 % mit |Δ| ≤ 1 (Bereich: exakt = beide Enden gleich, Δ = größere Abweichung der beiden Enden)</td><td>gewichtetes Kappa ≥ 0,4</td><td>Ersatzmodell |Δ| ≤ 1 bei ≥ 90 %</td></tr>
+      <tr><td>Liste (effects)</td><td>Jaccard ≥ 0,5</td><td>–</td><td>Ersatzmodell Jaccard ≥ 0,5</td></tr>
+    </table>
+    Zusätzlich die Überschneidungsprüfung: Tritt ein <code>effects</code>-Wert in ≥ 80 % der Fälle zusammen mit einem bestimmten Stil oder einer Oberfläche auf (z. B. clean + Minimalistisch, soft + fuzzy), ist er doppelt und wird gestrichen.<br>Schafft ein Feld die Abnahme nach <b>einer</b> Prompt-Überarbeitung nicht, wird die Skala auf 3 Stufen gekürzt oder das Feld gestrichen.</li>
+</ol>
+
+<h2>10. Ausblick Matching (Schnittstelle, Umsetzung in eigener Spec)</h2>
+<ol>
+  <li><b>Harte Filter</b> (beschlossen 16.11.2026): Saison, Wetter, Status, Lagen. Neu dazu: Der Formalitätsbereich muss sich mit dem Anlass überschneiden (Zuordnung Anlass → Bereich in <code>occasions.ts</code>).</li>
+  <li><b>Bewertung</b> aus <code>matchTraits</code>-Paaren: Farbe 25 · Silhouette 25 · Stil/Formalität 20 · Material/Textur 15 · Gesamtwirkung 15. Gesamtwirkung heißt höchstens ein <code>statement</code>-Teil, außer der Nutzer wünscht einen Statement-Look. Die Gewichte sind Konstanten, die ein Wunsch überschreiben kann.</li>
+  <li>Die KI (Groq, nur Text) wählt nur unter den 10 bestbewerteten Kandidaten.</li>
+</ol>
+
+<h2>11. Umsetzung in Schritten</h2>
+<table>
+<tr><th>Schritt</th><th>Inhalt</th><th>Dateien</th><th>fertig, wenn</th></tr>
+<tr><td>1</td><td>Feldtabelle, Schema, Prüfung, Labels, Probeaufruf</td><td><code>ai/profile.ts</code>, <code>ai/analyzeItem.ts</code>, <code>index.ts</code></td><td>Tests aus 13 grün; Probeaufruf mit allen 3 Modellen erfolgreich</td></tr>
+<tr><td>2</td><td>Farb- und Matching-Merkmale</td><td><code>traits.ts</code>, <code>farb-merkmale.html</code></td><td>Tests grün, Max hat die Farbtabelle geprüft</td></tr>
+<tr><td>3</td><td>Formular + Speichern: <code>applyAnalysis</code>, <code>mergeAnalysis</code>, <code>profilePatch</code>; Edge Function <code>temperature</code>; <code>ask()</code> mit <code>model</code></td><td><code>edit.ts</code>, <code>lib/ki.ts</code>, <code>lib/item.ts</code>, <code>functions/ki</code></td><td>Neues Teil hat <code>meta.v = 2</code>, Altdaten bleiben (Test + Testkonto); Secret <code>KI_EVAL_USERS</code> angelegt und im KI-Abschnitt von CLAUDE.md vermerkt</td></tr>
+<tr><td>4</td><td>Gold-Set, Eval, Prompt nachschärfen</td><td><code>scripts/ki-gold.ts</code>, <code>scripts/ki-eval.ts</code></td><td>Abnahme aus 9 erfüllt bzw. Felder gekürzt/gestrichen</td></tr>
+<tr><td>5</td><td>Oberfläche nach 14.2: Zeile „KI-Analyse ›“ (Funkeln-Symbol) am Ende des Steckbrief-Reiters → schlichtes Blatt (<code>Sheet</code>) mit Abschnitten „Details“, „Tragen“, „Form“, „Oberfläche“, „Wirkung“ als Liste „Label: Wert“, darunter Modell + Datum und „Neu analysieren“; Steckbrief verschlanken; Stapellauf</td><td><code>detail/sections.tsx</code>, <code>detail/sheets.tsx</code>, Statistik</td><td>Funktioniert am iPhone; bewusst schlicht, kein eigener Entwurf</td></tr>
+<tr><td>6</td><td>Matching</td><td><code>match.ts</code></td><td>eigene Spec</td></tr>
+</table>
+
+<h2>12. Englische Keys für die bestehenden Listen (eigener Schritt 7)</h2>
+<p>Heute speichert die Datenbank deutsche Namen (<code>items.category/subcategory/item_type</code>, <code>colors</code>, <code>materials</code>, <code>pattern</code>, <code>styles</code>, <code>seasons</code>, <code>collar</code>, <code>closure</code>, <code>strap</code>, Anlässe). Das Profil nutzt ab Schritt 1 englische Keys. Diese Mischung ist <b>übergangsweise</b> erlaubt und endet mit Schritt 7:</p>
+<ol>
+  <li>Jede Liste in <code>attributes.ts</code>, <code>categories.ts</code>, <code>fields.ts</code> und <code>occasions.ts</code> wird zu <code>{ key, label }</code> (z. B. <code>navy</code> → „Marineblau“). Die Oberfläche zeigt nur noch das <code>label</code>.</li>
+  <li>Eine SQL-Migration schreibt alle deutschen Werte auf Keys um. Zusätzlich gibt es <code>LEGACY_*</code>-Zuordnungen beim Laden für verbliebene Altwerte.</li>
+  <li>Auch im KI-Schema werden die Namen der Steckbrief-Felder englisch (<code>kategorie</code> → <code>category</code>, <code>farben</code> → <code>colors</code> …). Die Werte sind Keys, die deutschen Labels stehen in der Feldbeschreibung.</li>
+</ol>
+<p><b>Zeitpunkt (Okay von Max, 19.11.2026):</b> Die Migration ist freigegeben und läuft <b>vor dem frischen Datenimport</b>. Am besten direkt nach Schritt 1, damit die Schritte 2–6 schon mit Keys arbeiten und nichts doppelt umgebaut wird.</p>
+
+<h2>13. Tests</h2>
+<p><code>packages/core/test/profile.test.ts</code>, <code>traits.test.ts</code>, Ergänzungen in <code>edit.test.ts</code>:</p>
+<ul>
+  <li><b>Schema:</b> Jedes Feld der Tabelle steht in <code>profil</code>, ist <code>required</code>, alle Skalen/Enums enthalten <code>null</code>, <code>formality</code> erscheint als <code>_min</code>/<code>_max</code>; JSON-Länge &lt; 60 000.</li>
+  <li><b>Leitsatz:</b> Alle Keys sind eindeutig und entsprechen <code>/^[a-z][a-z_]*$/</code>, jeder Wert hat ein nicht leeres deutsches Label.</li>
+  <li><b>checkProfile:</b>
+    <ul>
+      <li>unbekannter Wert → null</li>
+      <li>0, 6 und 2,5 → null</li>
+      <li>Bereich: [4,2] → null, [3,null] → [3,3]</li>
+      <li>Liste mit Doppelten und 5 Einträgen → eindeutig, höchstens 2</li>
+      <li>Konfidenz 11 und 0,5 → null</li>
+    </ul></li>
+  <li><b>checkAnalysis:</b>
+    <ul>
+      <li>Schuh mit <code>leg</code> → null</li>
+      <li>Unifarben mit <code>pattern_scale</code> → null</li>
+      <li><code>denim_wash</code> ohne Denim → null</li>
+      <li>Schmuck mit <code>surface</code> → null</li>
+    </ul></li>
+  <li><b>Formular:</b> <code>applyAnalysis</code> ersetzt das Profil komplett, schreibt keine <code>profile.*</code>-Markierungen und lässt bestätigte Steckbrief-Felder unberührt.</li>
+  <li><b>Stapellauf:</b> <code>profilePatch</code> läuft ohne Name durch, ersetzt das Profil und behält die Altschlüssel.</li>
+  <li><b>Speichern:</b> <code>mergeAnalysis</code> behält <code>vdesc</code>, <code>matInfo</code> und <code>extra</code>, ersetzt nur <code>profile</code>/<code>confidence</code>/<code>meta</code> und lässt <code>meta</code> ohne neue Analyse unverändert.</li>
+  <li><b>Kategoriewechsel:</b> Hose → Schuh blendet <code>leg</code> in <code>activeProfile</code> aus, zurück zur Hose ist es wieder da.</li>
+  <li><b>colorTraits:</b> alle Grenzfälle aus 5.1, dazu:
+    <ul>
+      <li>[Schwarz, Weiß] → contrast 5, neutral_contrast</li>
+      <li>[Schwarz, Dunkelgrau, Weiß] → neutral_contrast</li>
+      <li>[Marineblau, Blau] → tonal</li>
+      <li>[Marineblau] → solid</li>
+      <li>[Camel, Marineblau] → mixed</li>
+      <li>[] → null</li>
+      <li>Bunt → mixed/multicolor</li>
+    </ul></li>
+  <li><b>matchTraits:</b> ohne Profil → <code>partial: true</code>, keine Ausnahme; layers [0,1] → mid; [3] → outer.</li>
+</ul>
+
+<h2>14. Entscheidungen vom 19.11.2026</h2>
+<ol>
+  <li><b>Key-Migration</b> ist freigegeben und läuft vor dem frischen Import (Abschnitt 12).</li>
+  <li><b>Profil in der Oberfläche:</b> Am Ende des Steckbrief-Reiters steht die Zeile „KI-Analyse“, dahinter ein schlichtes Blatt mit Text. Keine Bearbeitung, keine Prüf-Hinweise, keine aufwendige Gestaltung.<br>
+  <b>Steckbrief verschlanken (entschieden 19.11.2026):</b> Auf der Detailseite bleiben nur Kategorie, Saison, Farben, Material, Größe, Passform und Pflege. Muster, Stil, Kragen/Ausschnitt, Verschluss, Trägerart, Lagen und Wetter wandern in das Blatt „KI-Analyse“ (Abschnitte „Details“ und „Tragen“). In <b>Bearbeiten</b> bleiben alle Felder wie bisher.<br><b>Passform als Begriffe:</b> Statt der Skalen-Balken zeigt die Zeile Kapseln mit Wörtern, in dieser Reihenfolge: Form (<code>silhouette</code> bzw. bei Hose/Shorts <code>leg</code>), Weite, Länge, Bund (die Stufen-Wörter aus <code>fitScalesOf</code>), Schulter (<code>shoulder</code>, nur wenn nicht „Natürlich“). Beispiel Jeans: „Zulaufend · Normal · Lang · Hoch“. Leere Werte entfallen. Ist nichts gesetzt, entfällt die Zeile.</li>
+  <li><b>Details-Liste:</b> Es gibt keine eigene Liste. „Details“ im Doc meint die schon vorhandenen Felder Stil, Trägerart, Ausschnitt, Kragen und Verschluss. Der Punkt ist erledigt.</li>
+  <li><b>Farbmerkmale:</b> Schritt 2 erzeugt <code>farb-merkmale.html</code>, eine Tabelle aller Palettenfarben mit warm/kühl/neutral, Helligkeit und Sättigung. Max schaut sie an und nennt, was sich falsch anfühlt. Diese Korrekturen kommen in <code>COLOR_TRAIT_OVERRIDES</code>. Vorbelegt sind Olivgrün → warm und Pink/Rosa/Magenta → kühl.</li>
+  <li><b>Farben:</b> Die KI wählt die Farben, Pixel dienen nur als Kontrolle (Abschnitt 5.3).</li>
+</ol>
+</main>
+</body>
+</html>

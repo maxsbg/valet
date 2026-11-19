@@ -6,6 +6,7 @@ import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../c
 import { COLORS, MAX_COLORS, MATERIALS, PATTERNS, STYLES, SEASONS, COLLARS, CLOSURES, LAYERS, WARMTH, RAIN, type MaterialPart } from '../attributes';
 import { fieldsFor, NECKLINES, OUTER_COLLARS, STRAPS } from '../fields';
 import { setField, setCategory, type EditForm } from '../edit';
+import { PROFILE_SCHEMA, CONFIDENCE_SCHEMA, checkProfile, checkConfidence, clearInactive, type Profile, type Confidence } from './profile';
 
 /**
  * JSON-Schema für „Structured Outputs“ (OpenAI-kompatibel, strict):
@@ -53,6 +54,8 @@ export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   lagen: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} ${l}`).join(', ')}; nur Oberteil und Oberbekleidung` },
   waerme: level(3, `Wärme: ${WARMTH.map((w, i) => `${i} ${w}`).join(', ')}`),
   regen: level(2, `Regentauglich: ${RAIN.map((r, i) => `${i} ${r}`).join(', ')}`),
+  profil: { ...PROFILE_SCHEMA, description: 'Mode-Profil des Teils (Analyse v2): streng nach den Ankern, nur das Teil selbst' },
+  konfidenz: { ...CONFIDENCE_SCHEMA, description: 'Ehrliche Sicherheit je Gruppe, 0–10' },
 };
 
 export const ANALYZE_ITEM_SCHEMA: JsonSchema = {
@@ -62,10 +65,17 @@ export const ANALYZE_ITEM_SCHEMA: JsonSchema = {
   additionalProperties: false,
 };
 
-export const ANALYZE_ITEM_PROMPT = `Du siehst ein Kleidungsstück oder Accessoire (Produktbild oder Handyfoto).
-Fülle den Steckbrief nur mit Werten aus den vorgegebenen Listen.
-Erkenne nur, was im Bild sichtbar ist. Bei Unsicherheit null bzw. leere Liste statt raten – außer beim Material, das darfst du schätzen.
-Bewerte nur das Hauptteil im Bild, nicht Person, Hintergrund oder andere Teile.`;
+export const ANALYZE_ITEM_PROMPT = `Du siehst ein Kleidungsstück oder Accessoire (Produktbild oder Handyfoto) und füllst
+für die Kleiderschrank-App Valet einen Steckbrief und ein Mode-Profil aus.
+
+1. Bewerte nur das Hauptteil – nicht Person, Hintergrund, andere Teile oder Styling.
+2. Nur Werte aus den vorgegebenen Listen. Nicht erkennbar oder laut Feldbeschreibung
+   nicht für diese Kategorie → null bzw. leere Liste. Material darfst du aus sichtbaren
+   Hinweisen schätzen.
+3. Skalen 1–5: streng nach den Ankern in der Feldbeschreibung, jedes Teil für sich.
+4. Das Profil beschreibt das Teil selbst, nicht eine Person, die es trägt.
+5. Konfidenz je Gruppe 0–10 ehrlich: 10 = eindeutig, 5 = halb geraten.
+   Bist du dir bei einem Wert sehr unsicher, lieber null.`;
 
 // ---------- Antwort prüfen ----------
 
@@ -85,6 +95,11 @@ export type Analysis = {
   layers: number[];
   warmth: number | null;
   rain: number | null;
+  /** KI-Profil (v2), bereits nach Kategorie bereinigt */
+  profile: Profile;
+  confidence: Confidence;
+  /** tatsächlich genutztes Modell (Antwort der Edge Function) */
+  model: string | null;
 };
 
 type Raw = Record<string, unknown>;
@@ -106,7 +121,7 @@ export function parsePath(v: unknown): CategoryPath {
  * Rohantwort der KI → saubere Werte. Ungültiges wird verworfen statt abgelehnt,
  * Felder, die es für die erkannte Kategorie nicht gibt, bleiben leer (fieldsFor / fitScalesOf).
  */
-export function checkAnalysis(raw: unknown): Analysis {
+export function checkAnalysis(raw: unknown, model: string | null = null): Analysis {
   const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
   const path = parsePath(r.kategorie);
   const f = fieldsFor(path.category, path.subcategory);
@@ -114,13 +129,16 @@ export function checkAnalysis(raw: unknown): Analysis {
   const neck = f.neckline?.options ?? [];
   let colors = pickList(r.farben, COLOR_NAMES, MAX_COLORS);
   if (colors.includes('Bunt')) colors = ['Bunt'];
+  const pattern = f.pattern ? pickStr(r.muster, PATTERNS) : null;
+  const materials = pickList(r.material, MATERIALS, 3);
+  const ctx = { category: path.category, sub: path.subcategory, pattern, materials };
   return {
     path,
     name: text(r.name),
     brand: text(r.marke, 40),
     colors,
-    pattern: f.pattern ? pickStr(r.muster, PATTERNS) : null,
-    materials: pickList(r.material, MATERIALS, 3).map((name) => ({ name })),
+    pattern,
+    materials: materials.map((name) => ({ name })),
     styles: pickList(r.stil, STYLES, 3),
     seasons: SEASONS.filter((s) => pickList(r.saison, SEASONS).includes(s)),
     collar: pickStr(r.kragen, neck),
@@ -134,6 +152,9 @@ export function checkAnalysis(raw: unknown): Analysis {
     layers: f.layers && Array.isArray(r.lagen) ? [...new Set(r.lagen.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
     warmth: f.weather ? pickLevel(r.waerme, 3) : null,
     rain: f.weather ? pickLevel(r.regen, 2) : null,
+    profile: clearInactive(checkProfile(r.profil), ctx),
+    confidence: checkConfidence(r.konfidenz),
+    model: typeof model === 'string' && model.trim() ? model.trim().slice(0, 80) : null,
   };
 }
 

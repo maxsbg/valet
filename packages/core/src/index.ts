@@ -22,3 +22,4 @@ export * from './wish';
 export * from './precut';
 export * from './ai/analyzeItem';
 export * from './ai/readInfo';
+export * from './ai/profile';
