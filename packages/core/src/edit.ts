@@ -2,6 +2,7 @@
 // Plattformunabhängig: Laden aus der Datenbank-Zeile, Ändern, Prüfen, zurück in eine Datenbank-Änderung.
 
 import { isValidPath, type FitScale } from './categories';
+import { fitFromName, nameFitFor } from './fitName';
 import { COLLAR_LIST, CLOSURES, MAX_COLORS, ONE_SIZE, PATTERNS, colorLabel, materialLabel, migrateSeasons, styleLabel, toColorKeys, toMaterialParts, toStyleKeys, type Care, type MaterialPart } from './attributes';
 import { toKey } from './keys';
 import { normalizeCategory } from './import/categorize';
@@ -125,6 +126,26 @@ export function setCategory(f: EditForm, p: { category: string | null; subcatego
   // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.
   const keepLetters = f.sizeSystem === 'letters' && !!f.size && kindHasLetters(after);
   return keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null };
+}
+
+/** Passform noch offen: leer oder nur unbestätigt vorgeschlagen (vom Nutzer bestätigte Passform bleibt immer) */
+export const fitOpen = (f: Pick<EditForm, 'fit' | 'aiPending'>): boolean =>
+  (f.fit.width == null && f.fit.length == null && f.fit.rise == null) || f.aiPending.includes('fit');
+
+/**
+ * Shop-Begriffe im Namen („Slim“, „Oversized“, „Wide Leg“ …) → Passform, als unbestätigt markiert ('fit' in aiPending).
+ * Nur wenn `open` (Passform vorher leer oder unbestätigt) und der Name für die Kategorie etwas hergibt.
+ */
+export function suggestFitFromName(f: EditForm, open: boolean = fitOpen(f)): EditForm {
+  if (!open) return f;
+  const part = nameFitFor(f.category, fitFromName(f.name).fit);
+  if (Object.keys(part).length === 0) return f;
+  return { ...f, fit: { ...f.fit, ...part }, aiPending: f.aiPending.includes('fit') ? f.aiPending : [...f.aiPending, 'fit'] };
+}
+
+/** Name ändern (Bearbeiten): enthält er einen Passform-Begriff, wird die Passform nur vorgeschlagen, nie still überschrieben */
+export function setName(f: EditForm, name: string): EditForm {
+  return suggestFitFromName(setField(f, 'name', name), fitOpen(f));
 }
 
 /** KI-Vorschlag bestätigen (Wert bleibt) */

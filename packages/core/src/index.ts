@@ -11,6 +11,7 @@ export * from './tile';
 export * from './glow';
 export * from './occasions';
 export * from './categories';
+export * from './fitName';
 export * from './attributes';
 export * from './layout';
 export * from './import/categorize';

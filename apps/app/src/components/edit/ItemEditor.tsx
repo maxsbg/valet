@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useW
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
-  layoutKind, pickCategory, setField, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
+  layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, shopFromLink, tileKind,
 } from '@valet/core';
@@ -413,7 +413,7 @@ export function ItemEditor(p: Props) {
               <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.ink }}>Felder mit „KI“ hat die KI aus dem Foto vorausgefüllt. Die Markierung verschwindet, sobald du den Wert änderst oder bestätigst.</Text>
             </View>
           )}
-          <TextField label="Name" value={f.name} onChange={(v) => set('name', v)} placeholder="z. B. Relaxed Flannel Shirt" extra={ai('name') ? <KiBadge /> : null} />
+          <TextField label="Name" value={f.name} onChange={(v) => onForm(setName(f, v))} placeholder="z. B. Relaxed Flannel Shirt" extra={ai('name') ? <KiBadge /> : null} />
           <TextField label="Marke" value={f.brand} onChange={(v) => set('brand', v)} placeholder="z. B. COS" extra={ai('brand') ? <KiBadge /> : null} />
           <Segmented items={[{ key: 'steck', label: 'Steckbrief' }, { key: 'kauf', label: f.isWish ? 'Wunsch' : 'Kauf' }]} value={tab} onChange={setTab} />
           {tab === 'steck' ? steckbrief : f.isWish ? wunsch : kauf}
