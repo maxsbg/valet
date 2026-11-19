@@ -178,7 +178,8 @@ export function profileLabel(key: ProfileKey, value: unknown): string;   // „F
 <tr><td><code>temperature</code></td><td>neutral → <code>neutral</code>; Farbton h &lt; 115° oder h ≥ 330° → <code>warm</code>; sonst <code>cool</code></td></tr>
 <tr><td><code>lightness</code> 1–5</td><td>L &lt; 0,35 → 1 · &lt; 0,50 → 2 · &lt; 0,65 → 3 · &lt; 0,80 → 4 · sonst 5</td></tr>
 <tr><td><code>chroma</code> 1–5</td><td>C &lt; 0,035 → 1 · &lt; 0,075 → 2 · &lt; 0,11 → 3 · &lt; 0,145 → 4 · sonst 5</td></tr>
-<tr><td>Overrides</td><td><code>COLOR_TRAIT_OVERRIDES</code> (nur <code>temperature</code>): Olivgrün → warm (h 121° knapp über der Grenze); Pink, Rosa, Magenta → cool. Weitere Fälle trägt Max nach Prüfung ein. „Bunt“ = mixed, Helligkeit 3, Chroma 5.</td></tr>
+<tr><td>Overrides</td><td><code>COLOR_TRAIT_OVERRIDES</code> (nur <code>temperature</code>): Olivgrün → warm (h 121° knapp über der Grenze); Pink, Rosa, Magenta → cool (von Max am 19.11.2026 bestätigt). Burgunderrot bekommt <b>keinen</b> Override und bleibt rechnerisch warm. „Bunt“ = mixed, Helligkeit 3, Chroma 5; Bunt allein: Kontrast fest 4.</td></tr>
+<tr><td><code>wearNeutral</code></td><td>Mode-Neutrale (19.11.2026), Liste <code>WEAR_NEUTRALS</code>: Beige, Camel, Khaki, Braun, Olivgrün, Marineblau, Elfenbein, Taupe, Weiß, Hellgrau, Dunkelgrau, Schwarz, Silber → <code>true</code>, sonst (auch Bunt) <code>false</code>. Ändert die berechnete <code>temperature</code> nicht. Im späteren Matching lösen <code>wearNeutral</code>-Farben <b>keine Temperatur-Konflikte</b> aus (Camel zu Marineblau ist kein warm/kühl-Bruch).</td></tr>
 </table>
 <p>Grenzfälle mit den heutigen HEX-Werten (nachgerechnet; der Test rechnet sie aus <code>COLORS</code> und vergleicht mit dieser Erwartung – ändert sich ein HEX-Wert, schlägt er bewusst fehl):</p>
 <table>
@@ -197,7 +198,8 @@ export function profileLabel(key: ProfileKey, value: unknown): string;   // „F
   temperature: 'warm' | 'cool' | 'neutral' | 'mixed'; // Neutrale ignoriert; nur warm → warm, nur kühl → cool, beides → mixed, keine → neutral
   lightness: number;   // gerundet, gewichtet nach Rang 0,6 / 0,3 / 0,1 (bei 2 Farben 0,7 / 0,3)
   chroma: number;      // wie lightness
-  contrast: number;    // größtes ΔL zwischen zwei Farben: &lt; 0,15 → 1 · &lt; 0,30 → 2 · &lt; 0,45 → 3 · &lt; 0,60 → 4 · sonst 5; eine Farbe → 1
+  contrast: number;    // größtes ΔL zwischen zwei Farben: &lt; 0,15 → 1 · &lt; 0,30 → 2 · &lt; 0,45 → 3 · &lt; 0,60 → 4 · sonst 5; eine Farbe → 1; nur „Bunt“ → fest 4
+  allWearNeutral: boolean; // alle Farben des Teils sind Mode-Neutrale (wearNeutral); mit Bunt → false
   distribution: 'solid' | 'tonal' | 'neutral_contrast' | 'multicolor';
   // Prüfreihenfolge, erste passende gewinnt:
   // 1. eine Farbe → solid
@@ -233,7 +235,7 @@ export function profileLabel(key: ProfileKey, value: unknown): string;   // „F
 <h3>5.3 Pixel nur als Kontrolle (Schritt 2, klein)</h3>
 <p>Welche Farbe ein Teil hat, entscheidet die KI. Sie unterscheidet Stoff von Schatten, Glanzlicht, Logo und Futter, ein Pixel-Algorithmus kann das nicht (Beispiel: ein schwarzer Lederschuh mit hellem Glanz würde als Grau gemessen).
 Die Wirkung (Helligkeit, Sättigung, Temperatur) rechnet der Code aus den gewählten Palettenfarben, damit ist sie stabil und vergleichbar.
-Die Foto-Farbwerte, die beim Hochladen schon in <code>item_images.colors</code> landen, nutzt nur eine Plausibilitätsprüfung: Ist Rang 1 farbig und weicht der vorherrschende Foto-Farbton um mehr als 60° ab (z. B. KI „Rot“, Foto eindeutig blau), zeigt das Profil-Blatt „Farbe prüfen“. Die Werte werden nie automatisch geändert.</p>
+Die Foto-Farbwerte, die beim Hochladen schon in <code>item_images.colors</code> landen, nutzt nur eine Plausibilitätsprüfung: Ist Rang 1 farbig und weicht der vorherrschende Foto-Farbton um mehr als 60° ab (z. B. KI „Rot“, Foto eindeutig blau), zeigt das Profil-Blatt „Farbe prüfen“. Zusätzlich (19.11.2026): Ist Rang 1 farbig mit Sättigung ≥ 3 (<code>COLOR_CHECK_MIN_CHROMA</code>) und enthält das Foto <b>nur neutrale</b> Farben (z. B. KI „Rot“, Foto grau), erscheint der Hinweis ebenfalls. Nur neutrale Foto-Farben ohne farbigen Rang 1 (oder bei schwach gesättigtem Rang 1 wie Marineblau, Rosa) → kein Hinweis. Die Werte werden nie automatisch geändert.</p>
 
 <h2>6. Antwort, Prüfung, Übernahme, Speicherung</h2>
 <h3>6.1 Rohantwort der KI (Beispiel Pullover)</h3>
@@ -405,6 +407,15 @@ export function profilePatch(
   <li><b>Details-Liste:</b> Es gibt keine eigene Liste. „Details“ im Doc meint die schon vorhandenen Felder Stil, Trägerart, Ausschnitt, Kragen und Verschluss. Der Punkt ist erledigt.</li>
   <li><b>Farbmerkmale:</b> Schritt 2 erzeugt <code>farb-merkmale.html</code>, eine Tabelle aller Palettenfarben mit warm/kühl/neutral, Helligkeit und Sättigung. Max schaut sie an und nennt, was sich falsch anfühlt. Diese Korrekturen kommen in <code>COLOR_TRAIT_OVERRIDES</code>. Vorbelegt sind Olivgrün → warm und Pink/Rosa/Magenta → kühl.</li>
   <li><b>Farben:</b> Die KI wählt die Farben, Pixel dienen nur als Kontrolle (Abschnitt 5.3).</li>
+  <li><b>Nach Prüfung von <code>farb-merkmale.html</code> (Max, 19.11.2026):</b>
+    <ul>
+      <li><b>Magenta/Pink/Rosa kühl:</b> Overrides bestätigt, Olivgrün bleibt warm.</li>
+      <li><b>Burgund bleibt warm:</b> kein Override, der berechnete Wert gilt.</li>
+      <li><b>Mode-Neutrale:</b> neues Merkmal <code>wearNeutral</code> je Farbe und <code>allWearNeutral</code> je Teil (Liste in 5.1). Die Temperatur bleibt berechnet; das Matching wertet Mode-Neutrale nicht als Temperatur-Konflikt.</li>
+      <li><b>Farbprüfung:</b> „Farbe prüfen“ auch, wenn Rang 1 farbig mit Sättigung ≥ 3 ist und das Foto nur neutrale Farben zeigt (5.3).</li>
+      <li><b>Bunt-Kontrast:</b> „Bunt“ allein hat Kontrast fest 4, wie die übrigen festen Werte (gemischt, Helligkeit 3, Sättigung 5).</li>
+    </ul>
+    Damit ist Schritt 2 (Farbmerkmale) abgeschlossen.</li>
 </ol>
 </main>
 </body>

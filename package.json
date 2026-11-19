@@ -5,7 +5,8 @@
   "scripts": {
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "symbole": "tsx docs/design/symbole/erstellen.ts"
+    "symbole": "tsx docs/design/symbole/erstellen.ts",
+    "farbmerkmale": "tsx docs/ki/analyse-v2/erstellen.ts"
   },
   "devDependencies": {
     "tsx": "4"
