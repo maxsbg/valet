@@ -1,0 +1,1959 @@
+{
+ "categories": [
+  {
+   "key": "outerwear",
+   "label": "Oberbekleidung",
+   "subs": [
+    {
+     "key": "coat",
+     "label": "Mantel",
+     "types": [
+      {
+       "key": "chesterfield_coat",
+       "label": "Chesterfield-Mantel"
+      },
+      {
+       "key": "peacoat",
+       "label": "Peacoat"
+      },
+      {
+       "key": "covert_coat",
+       "label": "Covert-Mantel"
+      },
+      {
+       "key": "duster_coat",
+       "label": "Duster-Mantel"
+      },
+      {
+       "key": "car_coat",
+       "label": "Carcoat"
+      }
+     ]
+    },
+    {
+     "key": "trench_coat",
+     "label": "Trenchcoat",
+     "types": []
+    },
+    {
+     "key": "parka",
+     "label": "Parka",
+     "types": []
+    },
+    {
+     "key": "puffer_jacket",
+     "label": "Steppjacke",
+     "types": []
+    },
+    {
+     "key": "blazer",
+     "label": "Blazer",
+     "types": [
+      {
+       "key": "single_breasted_blazer",
+       "label": "Einreihiger Blazer"
+      },
+      {
+       "key": "double_breasted_blazer",
+       "label": "Zweireihiger Blazer"
+      }
+     ]
+    },
+    {
+     "key": "vest",
+     "label": "Weste",
+     "types": [
+      {
+       "key": "suit_vest",
+       "label": "Anzugweste"
+      },
+      {
+       "key": "puffer_vest",
+       "label": "Steppweste"
+      },
+      {
+       "key": "knit_vest",
+       "label": "Strickweste"
+      }
+     ]
+    },
+    {
+     "key": "cardigan",
+     "label": "Strickjacke",
+     "types": []
+    },
+    {
+     "key": "sweat_jacket",
+     "label": "Sweatjacke",
+     "types": [
+      {
+       "key": "zip_hoodie",
+       "label": "Zip-Hoodie"
+      }
+     ]
+    },
+    {
+     "key": "overshirt",
+     "label": "Hemdjacke",
+     "types": []
+    },
+    {
+     "key": "shearling_jacket",
+     "label": "Shearlingjacke",
+     "types": []
+    },
+    {
+     "key": "blouson",
+     "label": "Blouson",
+     "types": [
+      {
+       "key": "bomber_jacket",
+       "label": "Bomberjacke"
+      },
+      {
+       "key": "harrington_jacket",
+       "label": "Harrington-Jacke"
+      }
+     ]
+    },
+    {
+     "key": "varsity_jacket",
+     "label": "Collegejacke",
+     "types": []
+    },
+    {
+     "key": "coach_jacket",
+     "label": "Coachjacke",
+     "types": []
+    },
+    {
+     "key": "trucker_jacket",
+     "label": "Truckerjacke",
+     "types": []
+    },
+    {
+     "key": "biker_jacket",
+     "label": "Bikerjacke",
+     "types": []
+    },
+    {
+     "key": "field_jacket",
+     "label": "Feldjacke",
+     "types": []
+    },
+    {
+     "key": "sports_jacket",
+     "label": "Sportjacke",
+     "types": [
+      {
+       "key": "anorak",
+       "label": "Anorak"
+      },
+      {
+       "key": "rain_jacket",
+       "label": "Regenjacke"
+      },
+      {
+       "key": "windbreaker",
+       "label": "Windbreaker"
+      },
+      {
+       "key": "track_jacket",
+       "label": "Trainingsjacke"
+      },
+      {
+       "key": "thermal_jacket",
+       "label": "Thermojacke"
+      }
+     ]
+    },
+    {
+     "key": "bolero",
+     "label": "Bolero",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": [
+      {
+       "key": "poncho",
+       "label": "Poncho"
+      },
+      {
+       "key": "cape",
+       "label": "Cape"
+      },
+      {
+       "key": "robe",
+       "label": "Morgenmantel"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "top",
+   "label": "Oberteil",
+   "subs": [
+    {
+     "key": "t_shirt",
+     "label": "T-Shirt",
+     "types": [
+      {
+       "key": "henley_t_shirt",
+       "label": "Henley-T-Shirt"
+      }
+     ]
+    },
+    {
+     "key": "long_sleeve",
+     "label": "Langarmshirt",
+     "types": [
+      {
+       "key": "henley_long_sleeve",
+       "label": "Henley-Langarmshirt"
+      }
+     ]
+    },
+    {
+     "key": "sleeveless_shirt",
+     "label": "Ärmelloses Shirt",
+     "types": []
+    },
+    {
+     "key": "tank_top",
+     "label": "Trägertop",
+     "types": []
+    },
+    {
+     "key": "strapless_top",
+     "label": "Trägerloses Top",
+     "types": []
+    },
+    {
+     "key": "crop_top",
+     "label": "Crop Top",
+     "types": []
+    },
+    {
+     "key": "polo",
+     "label": "Polohemd",
+     "types": [
+      {
+       "key": "short_sleeve_polo",
+       "label": "Kurzarm-Polohemd"
+      },
+      {
+       "key": "long_sleeve_polo",
+       "label": "Langarm-Polohemd"
+      }
+     ]
+    },
+    {
+     "key": "shirt",
+     "label": "Hemd",
+     "types": [
+      {
+       "key": "short_sleeve_shirt",
+       "label": "Kurzarmhemd"
+      },
+      {
+       "key": "long_sleeve_shirt",
+       "label": "Langarmhemd"
+      }
+     ]
+    },
+    {
+     "key": "blouse",
+     "label": "Bluse",
+     "types": [
+      {
+       "key": "short_sleeve_blouse",
+       "label": "Kurzarmbluse"
+      },
+      {
+       "key": "long_sleeve_blouse",
+       "label": "Langarmbluse"
+      },
+      {
+       "key": "sleeveless_blouse",
+       "label": "Ärmellose Bluse"
+      }
+     ]
+    },
+    {
+     "key": "sweatshirt",
+     "label": "Sweatshirt",
+     "types": []
+    },
+    {
+     "key": "hoodie",
+     "label": "Kapuzenpullover",
+     "types": []
+    },
+    {
+     "key": "sweater",
+     "label": "Pullover",
+     "types": []
+    },
+    {
+     "key": "sweater_vest",
+     "label": "Pullunder",
+     "types": []
+    },
+    {
+     "key": "sports_top",
+     "label": "Sporttop",
+     "types": [
+      {
+       "key": "jersey",
+       "label": "Trikot"
+      },
+      {
+       "key": "performance_shirt",
+       "label": "Funktionsshirt"
+      },
+      {
+       "key": "sports_bra",
+       "label": "Sport-BH"
+      }
+     ]
+    },
+    {
+     "key": "bodysuit",
+     "label": "Body",
+     "types": []
+    },
+    {
+     "key": "pajama_top",
+     "label": "Pyjama-Oberteil",
+     "types": [
+      {
+       "key": "pajama_shirt",
+       "label": "Pyjama-Shirt"
+      },
+      {
+       "key": "nightgown",
+       "label": "Nachthemd"
+      }
+     ]
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "dress",
+   "label": "Kleid",
+   "subs": [
+    {
+     "key": "t_shirt_dress",
+     "label": "T-Shirt-Kleid",
+     "types": []
+    },
+    {
+     "key": "shirt_dress",
+     "label": "Hemdkleid",
+     "types": []
+    },
+    {
+     "key": "sheath_dress",
+     "label": "Etuikleid",
+     "types": []
+    },
+    {
+     "key": "a_line_dress",
+     "label": "A-Linien-Kleid",
+     "types": []
+    },
+    {
+     "key": "wrap_dress",
+     "label": "Wickelkleid",
+     "types": []
+    },
+    {
+     "key": "bodycon_dress",
+     "label": "Bodycon-Kleid",
+     "types": []
+    },
+    {
+     "key": "shift_dress",
+     "label": "Shiftkleid",
+     "types": []
+    },
+    {
+     "key": "slip_dress",
+     "label": "Slipdress",
+     "types": []
+    },
+    {
+     "key": "skater_dress",
+     "label": "Skaterkleid",
+     "types": []
+    },
+    {
+     "key": "tiered_dress",
+     "label": "Stufenkleid",
+     "types": []
+    },
+    {
+     "key": "tunic",
+     "label": "Tunika",
+     "types": []
+    },
+    {
+     "key": "coat_dress",
+     "label": "Mantelkleid",
+     "types": []
+    },
+    {
+     "key": "jumpsuit",
+     "label": "Jumpsuit",
+     "types": []
+    },
+    {
+     "key": "playsuit",
+     "label": "Playsuit",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "pants",
+   "label": "Hose",
+   "subs": [
+    {
+     "key": "jeans",
+     "label": "Jeans",
+     "types": []
+    },
+    {
+     "key": "trousers",
+     "label": "Stoffhose",
+     "types": [
+      {
+       "key": "chino",
+       "label": "Chino"
+      },
+      {
+       "key": "suit_trousers",
+       "label": "Anzughose"
+      },
+      {
+       "key": "pleated_trousers",
+       "label": "Bundfaltenhose"
+      }
+     ]
+    },
+    {
+     "key": "cargo_pants",
+     "label": "Cargohose",
+     "types": []
+    },
+    {
+     "key": "sweatpants",
+     "label": "Jogginghose",
+     "types": [
+      {
+       "key": "track_pants",
+       "label": "Trainingshose"
+      }
+     ]
+    },
+    {
+     "key": "leggings",
+     "label": "Leggings",
+     "types": []
+    },
+    {
+     "key": "overalls",
+     "label": "Latzhose",
+     "types": []
+    },
+    {
+     "key": "pajama_pants",
+     "label": "Pyjama-Hose",
+     "types": [
+      {
+       "key": "sleep_shorts",
+       "label": "Schlafshorts"
+      }
+     ]
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "shorts",
+   "label": "Shorts",
+   "subs": [
+    {
+     "key": "sports_shorts",
+     "label": "Sportshorts",
+     "types": []
+    },
+    {
+     "key": "cargo_shorts",
+     "label": "Cargoshorts",
+     "types": []
+    },
+    {
+     "key": "bermuda_shorts",
+     "label": "Bermudashorts",
+     "types": []
+    },
+    {
+     "key": "suit_shorts",
+     "label": "Anzugshorts",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "skirt",
+   "label": "Rock",
+   "subs": [
+    {
+     "key": "a_line_skirt",
+     "label": "A-Linien-Rock",
+     "types": []
+    },
+    {
+     "key": "pencil_skirt",
+     "label": "Bleistiftrock",
+     "types": []
+    },
+    {
+     "key": "wrap_skirt",
+     "label": "Wickelrock",
+     "types": []
+    },
+    {
+     "key": "pleated_skirt",
+     "label": "Plisseerock",
+     "types": []
+    },
+    {
+     "key": "tiered_skirt",
+     "label": "Stufenrock",
+     "types": []
+    },
+    {
+     "key": "circle_skirt",
+     "label": "Tellerrock",
+     "types": []
+    },
+    {
+     "key": "mermaid_skirt",
+     "label": "Meerjungfrau-Rock",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "shoe",
+   "label": "Schuh",
+   "subs": [
+    {
+     "key": "sneaker",
+     "label": "Sneaker",
+     "types": [
+      {
+       "key": "low_top_sneaker",
+       "label": "Low-Top-Sneaker"
+      },
+      {
+       "key": "mid_top_sneaker",
+       "label": "Mid-Top-Sneaker"
+      },
+      {
+       "key": "high_top_sneaker",
+       "label": "High-Top-Sneaker"
+      },
+      {
+       "key": "chunky_sneaker",
+       "label": "Chunky Sneaker"
+      },
+      {
+       "key": "platform_sneaker",
+       "label": "Plateau-Sneaker"
+      }
+     ]
+    },
+    {
+     "key": "sports_shoe",
+     "label": "Sportschuh",
+     "types": [
+      {
+       "key": "running_shoe",
+       "label": "Laufschuh"
+      },
+      {
+       "key": "football_boot",
+       "label": "Fußballschuh"
+      },
+      {
+       "key": "indoor_shoe",
+       "label": "Hallenschuh"
+      },
+      {
+       "key": "basketball_shoe",
+       "label": "Basketballschuh"
+      },
+      {
+       "key": "tennis_shoe",
+       "label": "Tennisschuh"
+      },
+      {
+       "key": "training_shoe",
+       "label": "Trainingsschuh"
+      }
+     ]
+    },
+    {
+     "key": "dress_shoe",
+     "label": "Halbschuh",
+     "types": [
+      {
+       "key": "oxford",
+       "label": "Oxford-Schuh"
+      },
+      {
+       "key": "derby",
+       "label": "Derby-Schuh"
+      },
+      {
+       "key": "monk_strap",
+       "label": "Monkstrap-Schuh"
+      },
+      {
+       "key": "loafer",
+       "label": "Loafer"
+      },
+      {
+       "key": "wholecut",
+       "label": "Wholecut-Schuh"
+      },
+      {
+       "key": "boat_shoe",
+       "label": "Bootsschuh"
+      },
+      {
+       "key": "moccasin",
+       "label": "Mokassin"
+      }
+     ]
+    },
+    {
+     "key": "slip_on",
+     "label": "Slip-On",
+     "types": [
+      {
+       "key": "espadrille",
+       "label": "Espadrille"
+      },
+      {
+       "key": "slipper",
+       "label": "Slipper"
+      }
+     ]
+    },
+    {
+     "key": "boot",
+     "label": "Stiefel",
+     "types": [
+      {
+       "key": "chelsea_boot",
+       "label": "Chelsea Boot"
+      },
+      {
+       "key": "desert_boot",
+       "label": "Desert Boot"
+      },
+      {
+       "key": "lace_up_boot",
+       "label": "Schnürboot"
+      },
+      {
+       "key": "western_boot",
+       "label": "Westernstiefel"
+      },
+      {
+       "key": "rain_boot",
+       "label": "Gummistiefel"
+      },
+      {
+       "key": "sheepskin_boot",
+       "label": "Lammfellstiefel"
+      },
+      {
+       "key": "knee_boot",
+       "label": "Kniestiefel"
+      },
+      {
+       "key": "over_knee_boot",
+       "label": "Overknee-Stiefel"
+      }
+     ]
+    },
+    {
+     "key": "hiking_shoe",
+     "label": "Wanderschuh",
+     "types": [
+      {
+       "key": "hiking_boot",
+       "label": "Wanderstiefel"
+      },
+      {
+       "key": "low_hiking_shoe",
+       "label": "Wanderhalbschuh"
+      },
+      {
+       "key": "trail_running_shoe",
+       "label": "Trailrunning-Schuh"
+      }
+     ]
+    },
+    {
+     "key": "sandal",
+     "label": "Sandale",
+     "types": [
+      {
+       "key": "trekking_sandal",
+       "label": "Trekkingsandale"
+      },
+      {
+       "key": "strappy_sandal",
+       "label": "Riemchensandale"
+      },
+      {
+       "key": "gladiator_sandal",
+       "label": "Gladiatorensandale"
+      }
+     ]
+    },
+    {
+     "key": "slide",
+     "label": "Pantolette",
+     "types": [
+      {
+       "key": "pool_slide",
+       "label": "Badelatsche"
+      },
+      {
+       "key": "flip_flop",
+       "label": "Flip-Flop"
+      },
+      {
+       "key": "mule",
+       "label": "Mule"
+      }
+     ]
+    },
+    {
+     "key": "house_shoe",
+     "label": "Hausschuh",
+     "types": []
+    },
+    {
+     "key": "clog",
+     "label": "Clog",
+     "types": []
+    },
+    {
+     "key": "flat",
+     "label": "Flacher Schuh",
+     "types": [
+      {
+       "key": "ballerina",
+       "label": "Ballerina"
+      },
+      {
+       "key": "mary_jane",
+       "label": "Mary-Jane-Schuh"
+      },
+      {
+       "key": "slingback",
+       "label": "Slingback"
+      }
+     ]
+    },
+    {
+     "key": "high_heel",
+     "label": "High Heel",
+     "types": [
+      {
+       "key": "pump",
+       "label": "Pumps"
+      },
+      {
+       "key": "stiletto",
+       "label": "Stiletto"
+      },
+      {
+       "key": "block_heel",
+       "label": "Blockabsatzschuh"
+      },
+      {
+       "key": "wedge",
+       "label": "Keilabsatzschuh"
+      },
+      {
+       "key": "platform_heel",
+       "label": "Plateau-Heel"
+      },
+      {
+       "key": "heeled_sandal",
+       "label": "Sandalette"
+      },
+      {
+       "key": "heeled_mule",
+       "label": "Mule Heel"
+      }
+     ]
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "headwear",
+   "label": "Kopfbedeckung",
+   "subs": [
+    {
+     "key": "cap",
+     "label": "Kappe",
+     "types": [
+      {
+       "key": "baseball_cap",
+       "label": "Baseball-Cap"
+      },
+      {
+       "key": "flat_brim_cap",
+       "label": "Flat-Brim-Cap"
+      },
+      {
+       "key": "trucker_cap",
+       "label": "Trucker-Cap"
+      },
+      {
+       "key": "five_panel_cap",
+       "label": "5-Panel-Cap"
+      },
+      {
+       "key": "dad_cap",
+       "label": "Dad Cap"
+      }
+     ]
+    },
+    {
+     "key": "hat",
+     "label": "Hut",
+     "types": [
+      {
+       "key": "fedora",
+       "label": "Fedora"
+      },
+      {
+       "key": "bucket_hat",
+       "label": "Bucket Hat"
+      },
+      {
+       "key": "sun_hat",
+       "label": "Sonnenhut"
+      },
+      {
+       "key": "panama_hat",
+       "label": "Panamahut"
+      }
+     ]
+    },
+    {
+     "key": "beanie_cap",
+     "label": "Mütze",
+     "types": [
+      {
+       "key": "beanie",
+       "label": "Beanie"
+      },
+      {
+       "key": "beret",
+       "label": "Baskenmütze"
+      },
+      {
+       "key": "flat_cap",
+       "label": "Schiebermütze"
+      }
+     ]
+    },
+    {
+     "key": "hijab",
+     "label": "Hijab",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "bag",
+   "label": "Tasche",
+   "subs": [
+    {
+     "key": "handbag",
+     "label": "Handtasche",
+     "types": [
+      {
+       "key": "shopper",
+       "label": "Shopper"
+      },
+      {
+       "key": "hobo_bag",
+       "label": "Hobo-Bag"
+      },
+      {
+       "key": "bowling_bag",
+       "label": "Bowlingtasche"
+      },
+      {
+       "key": "satchel",
+       "label": "Satchel"
+      },
+      {
+       "key": "baguette_bag",
+       "label": "Baguette-Bag"
+      },
+      {
+       "key": "half_moon_bag",
+       "label": "Halbmondtasche"
+      },
+      {
+       "key": "saddle_bag",
+       "label": "Satteltasche"
+      },
+      {
+       "key": "barrel_bag",
+       "label": "Barrel-Bag"
+      }
+     ]
+    },
+    {
+     "key": "clutch",
+     "label": "Clutch",
+     "types": [
+      {
+       "key": "minaudiere",
+       "label": "Minaudière"
+      }
+     ]
+    },
+    {
+     "key": "backpack",
+     "label": "Rucksack",
+     "types": []
+    },
+    {
+     "key": "belt_bag",
+     "label": "Bauchtasche",
+     "types": []
+    },
+    {
+     "key": "cloth_bag",
+     "label": "Stoffbeutel",
+     "types": [
+      {
+       "key": "jute_bag",
+       "label": "Jutebeutel"
+      },
+      {
+       "key": "gym_sack",
+       "label": "Turnbeutel"
+      }
+     ]
+    },
+    {
+     "key": "travel_bag",
+     "label": "Reisetasche",
+     "types": [
+      {
+       "key": "weekender",
+       "label": "Weekender"
+      },
+      {
+       "key": "duffel_bag",
+       "label": "Duffel-Bag"
+      },
+      {
+       "key": "sports_bag",
+       "label": "Sporttasche"
+      }
+     ]
+    },
+    {
+     "key": "work_bag",
+     "label": "Arbeitstasche",
+     "types": [
+      {
+       "key": "briefcase",
+       "label": "Aktentasche"
+      },
+      {
+       "key": "laptop_bag",
+       "label": "Laptoptasche"
+      }
+     ]
+    },
+    {
+     "key": "suitcase",
+     "label": "Koffer",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "accessory",
+   "label": "Accessoire",
+   "subs": [
+    {
+     "key": "underwear",
+     "label": "Unterwäsche",
+     "types": [
+      {
+       "key": "boxer_shorts",
+       "label": "Boxershorts"
+      },
+      {
+       "key": "briefs",
+       "label": "Slip"
+      },
+      {
+       "key": "undershirt",
+       "label": "Unterhemd"
+      },
+      {
+       "key": "bra",
+       "label": "BH"
+      },
+      {
+       "key": "thermal_underwear",
+       "label": "Thermowäsche"
+      }
+     ]
+    },
+    {
+     "key": "sock",
+     "label": "Socke",
+     "types": [
+      {
+       "key": "ankle_sock",
+       "label": "Sneakersocke"
+      },
+      {
+       "key": "sports_sock",
+       "label": "Sportsocke"
+      },
+      {
+       "key": "football_sock",
+       "label": "Stutzen"
+      },
+      {
+       "key": "knee_sock",
+       "label": "Kniestrumpf"
+      }
+     ]
+    },
+    {
+     "key": "tights",
+     "label": "Strumpfhose",
+     "types": []
+    },
+    {
+     "key": "swimwear",
+     "label": "Bademode",
+     "types": [
+      {
+       "key": "swim_shorts",
+       "label": "Badeshorts"
+      },
+      {
+       "key": "swim_briefs",
+       "label": "Badehose"
+      },
+      {
+       "key": "bikini",
+       "label": "Bikini"
+      },
+      {
+       "key": "swimsuit",
+       "label": "Badeanzug"
+      }
+     ]
+    },
+    {
+     "key": "belt",
+     "label": "Gürtel",
+     "types": []
+    },
+    {
+     "key": "scarf",
+     "label": "Schal",
+     "types": [
+      {
+       "key": "knit_scarf",
+       "label": "Strickschal"
+      },
+      {
+       "key": "loop_scarf",
+       "label": "Loop-Schal"
+      },
+      {
+       "key": "neckerchief",
+       "label": "Halstuch"
+      },
+      {
+       "key": "bandana",
+       "label": "Bandana"
+      }
+     ]
+    },
+    {
+     "key": "suit_accessory",
+     "label": "Anzug-Accessoire",
+     "types": [
+      {
+       "key": "tie",
+       "label": "Krawatte"
+      },
+      {
+       "key": "bow_tie",
+       "label": "Fliege"
+      },
+      {
+       "key": "pocket_square",
+       "label": "Einstecktuch"
+      },
+      {
+       "key": "cufflink",
+       "label": "Manschettenknopf"
+      }
+     ]
+    },
+    {
+     "key": "glove",
+     "label": "Handschuh",
+     "types": [
+      {
+       "key": "finger_glove",
+       "label": "Fingerhandschuh"
+      },
+      {
+       "key": "mitten",
+       "label": "Fäustling"
+      },
+      {
+       "key": "sports_glove",
+       "label": "Sporthandschuh"
+      },
+      {
+       "key": "goalkeeper_glove",
+       "label": "Torwarthandschuh"
+      }
+     ]
+    },
+    {
+     "key": "glasses",
+     "label": "Brille",
+     "types": [
+      {
+       "key": "eyeglasses",
+       "label": "Sehbrille"
+      },
+      {
+       "key": "sunglasses",
+       "label": "Sonnenbrille"
+      }
+     ]
+    },
+    {
+     "key": "hair_accessory",
+     "label": "Haarschmuck",
+     "types": []
+    },
+    {
+     "key": "wallet",
+     "label": "Geldbörse",
+     "types": []
+    },
+    {
+     "key": "phone_case",
+     "label": "Handyhülle",
+     "types": []
+    },
+    {
+     "key": "traditional_clothing",
+     "label": "Traditionelle Kleidung",
+     "types": []
+    },
+    {
+     "key": "warmer",
+     "label": "Stulpe",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  },
+  {
+   "key": "jewelry",
+   "label": "Schmuck",
+   "subs": [
+    {
+     "key": "earring",
+     "label": "Ohrring",
+     "types": []
+    },
+    {
+     "key": "necklace",
+     "label": "Halskette",
+     "types": []
+    },
+    {
+     "key": "bracelet",
+     "label": "Armband",
+     "types": []
+    },
+    {
+     "key": "ring",
+     "label": "Ring",
+     "types": []
+    },
+    {
+     "key": "brooch",
+     "label": "Brosche",
+     "types": []
+    },
+    {
+     "key": "watch",
+     "label": "Uhr",
+     "types": []
+    },
+    {
+     "key": "other",
+     "label": "Sonstiges",
+     "types": []
+    }
+   ]
+  }
+ ],
+ "colors": [
+  {
+   "key": "yellow",
+   "label": "Gelb"
+  },
+  {
+   "key": "light_yellow",
+   "label": "Hellgelb"
+  },
+  {
+   "key": "mustard",
+   "label": "Senfgelb"
+  },
+  {
+   "key": "orange",
+   "label": "Orange"
+  },
+  {
+   "key": "coral",
+   "label": "Koralle"
+  },
+  {
+   "key": "terracotta",
+   "label": "Terrakotta"
+  },
+  {
+   "key": "red",
+   "label": "Rot"
+  },
+  {
+   "key": "burgundy",
+   "label": "Burgunderrot"
+  },
+  {
+   "key": "maroon",
+   "label": "Maroon"
+  },
+  {
+   "key": "pink",
+   "label": "Pink"
+  },
+  {
+   "key": "rose",
+   "label": "Rosa"
+  },
+  {
+   "key": "dusty_rose",
+   "label": "Altrosa"
+  },
+  {
+   "key": "magenta",
+   "label": "Magenta"
+  },
+  {
+   "key": "green",
+   "label": "Grün"
+  },
+  {
+   "key": "mint",
+   "label": "Mint"
+  },
+  {
+   "key": "light_green",
+   "label": "Hellgrün"
+  },
+  {
+   "key": "olive",
+   "label": "Olivgrün"
+  },
+  {
+   "key": "khaki",
+   "label": "Khaki"
+  },
+  {
+   "key": "dark_green",
+   "label": "Dunkelgrün"
+  },
+  {
+   "key": "blue",
+   "label": "Blau"
+  },
+  {
+   "key": "sky_blue",
+   "label": "Himmelblau"
+  },
+  {
+   "key": "navy",
+   "label": "Marineblau"
+  },
+  {
+   "key": "petrol",
+   "label": "Petrol"
+  },
+  {
+   "key": "cyan",
+   "label": "Cyan"
+  },
+  {
+   "key": "turquoise",
+   "label": "Türkis"
+  },
+  {
+   "key": "purple",
+   "label": "Lila"
+  },
+  {
+   "key": "lavender",
+   "label": "Lavendel"
+  },
+  {
+   "key": "lilac",
+   "label": "Flieder"
+  },
+  {
+   "key": "violet",
+   "label": "Violett"
+  },
+  {
+   "key": "white",
+   "label": "Weiß"
+  },
+  {
+   "key": "ivory",
+   "label": "Elfenbein"
+  },
+  {
+   "key": "beige",
+   "label": "Beige"
+  },
+  {
+   "key": "taupe",
+   "label": "Taupe"
+  },
+  {
+   "key": "camel",
+   "label": "Camel"
+  },
+  {
+   "key": "brown",
+   "label": "Braun"
+  },
+  {
+   "key": "caramel",
+   "label": "Karamell"
+  },
+  {
+   "key": "light_grey",
+   "label": "Hellgrau"
+  },
+  {
+   "key": "dark_grey",
+   "label": "Dunkelgrau"
+  },
+  {
+   "key": "black",
+   "label": "Schwarz"
+  },
+  {
+   "key": "gold",
+   "label": "Gold"
+  },
+  {
+   "key": "silver",
+   "label": "Silber"
+  },
+  {
+   "key": "bronze",
+   "label": "Bronze"
+  },
+  {
+   "key": "multicolor",
+   "label": "Bunt"
+  }
+ ],
+ "materials": [
+  {
+   "key": "cotton",
+   "label": "Baumwolle"
+  },
+  {
+   "key": "linen",
+   "label": "Leinen"
+  },
+  {
+   "key": "wool",
+   "label": "Wolle"
+  },
+  {
+   "key": "merino",
+   "label": "Merinowolle"
+  },
+  {
+   "key": "cashmere",
+   "label": "Kaschmir"
+  },
+  {
+   "key": "alpaca",
+   "label": "Alpaka"
+  },
+  {
+   "key": "mohair",
+   "label": "Mohair"
+  },
+  {
+   "key": "angora",
+   "label": "Angora"
+  },
+  {
+   "key": "silk",
+   "label": "Seide"
+  },
+  {
+   "key": "viscose",
+   "label": "Viskose"
+  },
+  {
+   "key": "lyocell",
+   "label": "Lyocell"
+  },
+  {
+   "key": "cupro",
+   "label": "Cupro"
+  },
+  {
+   "key": "polyester",
+   "label": "Polyester"
+  },
+  {
+   "key": "nylon",
+   "label": "Nylon"
+  },
+  {
+   "key": "elastane",
+   "label": "Elasthan"
+  },
+  {
+   "key": "acrylic",
+   "label": "Acryl"
+  },
+  {
+   "key": "denim",
+   "label": "Denim"
+  },
+  {
+   "key": "canvas",
+   "label": "Canvas"
+  },
+  {
+   "key": "corduroy",
+   "label": "Cord"
+  },
+  {
+   "key": "flannel",
+   "label": "Flanell"
+  },
+  {
+   "key": "tweed",
+   "label": "Tweed"
+  },
+  {
+   "key": "boucle",
+   "label": "Bouclé"
+  },
+  {
+   "key": "velvet",
+   "label": "Samt"
+  },
+  {
+   "key": "fleece",
+   "label": "Fleece"
+  },
+  {
+   "key": "chiffon",
+   "label": "Chiffon"
+  },
+  {
+   "key": "mesh",
+   "label": "Mesh"
+  },
+  {
+   "key": "lace",
+   "label": "Spitze"
+  },
+  {
+   "key": "leather",
+   "label": "Leder"
+  },
+  {
+   "key": "suede",
+   "label": "Wildleder"
+  },
+  {
+   "key": "faux_leather",
+   "label": "Kunstleder"
+  },
+  {
+   "key": "shearling",
+   "label": "Lammfell"
+  },
+  {
+   "key": "fur",
+   "label": "Pelz"
+  },
+  {
+   "key": "down",
+   "label": "Daunen"
+  },
+  {
+   "key": "metal",
+   "label": "Metall"
+  },
+  {
+   "key": "plastic_rubber",
+   "label": "Kunststoff/Gummi"
+  },
+  {
+   "key": "other",
+   "label": "Andere Materialien"
+  }
+ ],
+ "patterns": [
+  {
+   "key": "solid",
+   "label": "Unifarben"
+  },
+  {
+   "key": "striped",
+   "label": "Gestreift"
+  },
+  {
+   "key": "graphic",
+   "label": "Grafisch"
+  },
+  {
+   "key": "dotted",
+   "label": "Gepunktet"
+  },
+  {
+   "key": "animal",
+   "label": "Animalmuster"
+  },
+  {
+   "key": "floral",
+   "label": "Blumenmuster"
+  },
+  {
+   "key": "tropical",
+   "label": "Tropisch"
+  },
+  {
+   "key": "paisley",
+   "label": "Paisley"
+  },
+  {
+   "key": "argyle",
+   "label": "Argyle"
+  },
+  {
+   "key": "camouflage",
+   "label": "Camouflage"
+  },
+  {
+   "key": "colorblock",
+   "label": "Colorblocking"
+  },
+  {
+   "key": "allover_print",
+   "label": "Allover-Print"
+  },
+  {
+   "key": "checkerboard",
+   "label": "Schachbrettmuster"
+  },
+  {
+   "key": "plaid",
+   "label": "Kariert"
+  },
+  {
+   "key": "gingham",
+   "label": "Vichy-Karo"
+  },
+  {
+   "key": "houndstooth",
+   "label": "Hahnentritt"
+  },
+  {
+   "key": "herringbone",
+   "label": "Fischgrätmuster"
+  },
+  {
+   "key": "chevron",
+   "label": "Chevron-Muster"
+  },
+  {
+   "key": "tweed",
+   "label": "Tweed"
+  },
+  {
+   "key": "abstract",
+   "label": "Abstrakt"
+  },
+  {
+   "key": "tie_dye",
+   "label": "Tie-Dye"
+  },
+  {
+   "key": "geometric",
+   "label": "Geometrisch"
+  },
+  {
+   "key": "lace",
+   "label": "Spitze"
+  },
+  {
+   "key": "cable_knit",
+   "label": "Zopfmuster"
+  },
+  {
+   "key": "rib_knit",
+   "label": "Rippstrick"
+  },
+  {
+   "key": "other",
+   "label": "Andere Muster"
+  }
+ ],
+ "styles": [
+  {
+   "key": "comfy",
+   "label": "Bequem"
+  },
+  {
+   "key": "casual",
+   "label": "Lässig"
+  },
+  {
+   "key": "business_casual",
+   "label": "Business Casual"
+  },
+  {
+   "key": "formal",
+   "label": "Formell"
+  },
+  {
+   "key": "modern",
+   "label": "Modern"
+  },
+  {
+   "key": "classic",
+   "label": "Klassisch"
+  },
+  {
+   "key": "minimal",
+   "label": "Minimalistisch"
+  },
+  {
+   "key": "boho",
+   "label": "Boho"
+  },
+  {
+   "key": "luxury",
+   "label": "Luxus"
+  },
+  {
+   "key": "sporty",
+   "label": "Sportlich"
+  },
+  {
+   "key": "athleisure",
+   "label": "Athleisure"
+  },
+  {
+   "key": "trendy",
+   "label": "Trendig"
+  },
+  {
+   "key": "kidcore",
+   "label": "Kidcore"
+  },
+  {
+   "key": "artsy",
+   "label": "Künstlerisch"
+  },
+  {
+   "key": "festive",
+   "label": "Festlich"
+  },
+  {
+   "key": "feminine",
+   "label": "Feminin"
+  },
+  {
+   "key": "street",
+   "label": "Street"
+  },
+  {
+   "key": "other",
+   "label": "Sonstiges"
+  }
+ ],
+ "seasons": [
+  {
+   "key": "spring",
+   "label": "Frühling"
+  },
+  {
+   "key": "summer",
+   "label": "Sommer"
+  },
+  {
+   "key": "autumn",
+   "label": "Herbst"
+  },
+  {
+   "key": "winter",
+   "label": "Winter"
+  }
+ ],
+ "collars": [
+  {
+   "key": "classic_collar",
+   "label": "Klassischer Kragen"
+  },
+  {
+   "key": "button_down",
+   "label": "Button-down"
+  },
+  {
+   "key": "stand_collar",
+   "label": "Stehkragen"
+  },
+  {
+   "key": "lapel_collar",
+   "label": "Reverskragen"
+  },
+  {
+   "key": "no_collar",
+   "label": "ohne Kragen"
+  },
+  {
+   "key": "crew_neck",
+   "label": "Rundhals"
+  },
+  {
+   "key": "v_neck",
+   "label": "V-Ausschnitt"
+  },
+  {
+   "key": "placket",
+   "label": "Knopfleiste"
+  },
+  {
+   "key": "polo_collar",
+   "label": "Polokragen"
+  },
+  {
+   "key": "turtleneck",
+   "label": "Rollkragen"
+  },
+  {
+   "key": "hood",
+   "label": "Kapuze"
+  }
+ ],
+ "closures": [
+  {
+   "key": "buttons",
+   "label": "Knöpfe"
+  },
+  {
+   "key": "zipper",
+   "label": "Reißverschluss"
+  },
+  {
+   "key": "snaps",
+   "label": "Druckknöpfe"
+  },
+  {
+   "key": "laces",
+   "label": "Schnürung"
+  },
+  {
+   "key": "velcro",
+   "label": "Klett"
+  },
+  {
+   "key": "buckle",
+   "label": "Schnalle"
+  },
+  {
+   "key": "none",
+   "label": "ohne"
+  }
+ ],
+ "straps": [
+  {
+   "key": "handles",
+   "label": "Henkel"
+  },
+  {
+   "key": "shoulder_strap",
+   "label": "Schultergurt"
+  },
+  {
+   "key": "crossbody_strap",
+   "label": "Umhängegurt"
+  },
+  {
+   "key": "backpack_straps",
+   "label": "Rucksackgurte"
+  },
+  {
+   "key": "chain",
+   "label": "Kette"
+  },
+  {
+   "key": "none",
+   "label": "ohne"
+  }
+ ],
+ "occasions": [
+  {
+   "key": "everyday",
+   "label": "Alltag"
+  },
+  {
+   "key": "office",
+   "label": "Büro"
+  },
+  {
+   "key": "date",
+   "label": "Date"
+  },
+  {
+   "key": "formal",
+   "label": "Formell"
+  },
+  {
+   "key": "vacation",
+   "label": "Urlaub"
+  },
+  {
+   "key": "loungewear",
+   "label": "Loungewear"
+  },
+  {
+   "key": "party",
+   "label": "Party"
+  },
+  {
+   "key": "sport",
+   "label": "Sport"
+  },
+  {
+   "key": "special_occasion",
+   "label": "Besonderer Anlass"
+  },
+  {
+   "key": "campus",
+   "label": "Campus"
+  },
+  {
+   "key": "beach",
+   "label": "Strand"
+  },
+  {
+   "key": "cafe",
+   "label": "Café"
+  },
+  {
+   "key": "other",
+   "label": "Sonstiges"
+  }
+ ]
+}
