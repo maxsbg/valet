@@ -115,7 +115,7 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
     setBusy(true); setError(null);
     try {
       const a = await analyzeStored(img.path);
-      const row = { category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending };
+      const row = { category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending, name: f.name };
       await updateItem(itemId, reanalysisChange(f, row, a));
       onSaved('Neu analysiert.');
     } catch (e) {

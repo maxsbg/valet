@@ -6,8 +6,9 @@ import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../c
 import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
 import { fieldsFor, STRAPS } from '../fields';
 import { keysOf, toKey, type KeyList } from '../keys';
-import { setField, setCategory, mergeAnalysis, type EditForm } from '../edit';
-import { PROFILE_SCHEMA, CONFIDENCE_SCHEMA, aiMeta, checkProfile, checkConfidence, clearInactive, readProfile, type Profile, type Confidence } from './profile';
+import { setField, setCategory, mergeAnalysis, fitOpen, suggestFitFromName, type EditForm } from '../edit';
+import { fitFromName } from '../fitName';
+import { PROFILE_FIELDS, PROFILE_SCHEMA, CONFIDENCE_SCHEMA, aiMeta, checkProfile, checkConfidence, clearInactive, readProfile, type Profile, type Confidence, type Ctx } from './profile';
 
 /**
  * JSON-Schema für „Structured Outputs“ (OpenAI-kompatibel, strict):
@@ -202,14 +203,25 @@ export function applyAnalysis(form: EditForm, a: Analysis, now: string = new Dat
   put('closure', a.closure, f.closure == null, a.closure != null);
   put('strap', a.strap, f.strap == null, a.strap != null);
   const fitEmpty = f.fit.width == null && f.fit.length == null && f.fit.rise == null;
+  const fitWasOpen = fitOpen(form);
   put('fit', a.fit, fitEmpty, a.fit.width != null || a.fit.length != null || a.fit.rise != null);
+  // Shop-Begriffe im Namen haben Vorrang vor der Schätzung aus dem Foto (nur bei offener Passform)
+  f = suggestFitFromName(f, fitWasOpen);
   put('layers', a.layers, f.layers.length === 0, a.layers.length > 0);
   put('warmth', a.warmth, f.warmth == null, a.warmth != null);
   put('rain', a.rain, f.rain == null, a.rain != null);
   return {
     ...f, aiPending: [...new Set([...f.aiPending, ...marked])],
-    profile: a.profile, confidence: a.confidence, aiMeta: aiMeta(a.model, now),
+    profile: legFromName(a.profile, f.name, { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) }),
+    confidence: a.confidence, aiMeta: aiMeta(a.model, now),
   };
+}
+
+const LEG_FIELD = PROFILE_FIELDS.find((x) => x.key === 'leg');
+/** Beinverlauf aus dem Namen („Straight Leg“, „Tapered“) ersetzt die KI-Schätzung, nur bei Hose/Shorts */
+export function legFromName(p: Profile, name: string | null | undefined, ctx: Ctx): Profile {
+  const leg = fitFromName(name).leg;
+  return leg && LEG_FIELD?.applies(ctx) ? { ...p, leg } : p;
 }
 
 // ---------- Stapellauf: nur das Profil eines gespeicherten Teils (Spec 8) ----------
@@ -219,6 +231,8 @@ export type ProfilePatchRow = {
   /** items.materials (jsonb, [{ name, pct? }]); reine Namen werden auch gelesen */
   materials: readonly (string | MaterialPart)[] | null;
   analysis: Record<string, unknown> | null; ai_pending: string[] | null;
+  /** items.name: Beinverlauf aus dem Namen hat Vorrang (legFromName) */
+  name?: string | null;
 };
 
 /**
@@ -234,6 +248,6 @@ export function profilePatch(
   const materials = toMaterialParts((row.materials ?? []).map((m) => (typeof m === 'string' ? { name: m } : m))).map((m) => m.name);
   const ctx = { category: row.category || null, sub: row.subcategory || null, pattern: toKey(PATTERNS, row.pattern), materials };
   // a.profile kann aus einer anderen Quelle stammen → Werte noch einmal prüfen
-  const profile = clearInactive(readProfile(a.profile), ctx);
+  const profile = legFromName(clearInactive(readProfile(a.profile), ctx), row.name, ctx);
   return { analysis: mergeAnalysis(row.analysis, profile, checkConfidence(a.confidence), aiMeta(a.model ?? null, now)) };
 }

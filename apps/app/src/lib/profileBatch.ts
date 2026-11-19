@@ -42,7 +42,7 @@ function countCall() {
 async function loadRows(wardrobeId: string): Promise<Row[]> {
   const out: Row[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from('items').select('id,category,subcategory,pattern,materials,analysis,ai_pending')
+    const { data, error } = await supabase.from('items').select('id,name,category,subcategory,pattern,materials,analysis,ai_pending')
       .eq('wardrobe_id', wardrobeId).order('id').range(from, from + 999);
     if (error) throw error;
     out.push(...((data ?? []) as Row[]));
