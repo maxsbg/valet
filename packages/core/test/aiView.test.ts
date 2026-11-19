@@ -73,7 +73,7 @@ test('Neu analysieren: nur Geändertes, leere Felder gefüllt, Profil ersetzt, f
   assert.equal('name' in c, false);
   const an = c.analysis as Record<string, unknown>;
   assert.equal(an.vdesc, 'alt');
-  assert.deepEqual(an.meta, { v: 2, prompt: '2.0', model: 'gemini', at: '2026-11-19T12:00:00Z' });
+  assert.deepEqual(an.meta, { v: 2, prompt: '2.0', model: 'gemini', at: '2026-11-19T12:00:00Z', source: 'image' });
   assert.equal((an.profile as Record<string, unknown>).surface, 'fine_knit');
   // ohne Namen scheitert der normale Weg → nur das Profil
   const g = reanalysisChange(toEditForm({ ...row, name: '' }), { ...row, materials: [] }, a, '2026-11-19T12:00:00Z');

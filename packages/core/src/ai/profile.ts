@@ -119,8 +119,10 @@ export type Confidence = Record<ConfidenceGroup, number | null>;
 export const emptyProfile = (): Profile =>
   Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, f.kind === 'list' ? [] : null])) as unknown as Profile;
 /** Herkunft der letzten Analyse (items.analysis.meta) */
-export type AiMeta = { v: 2; prompt: string; model: string | null; at: string };
-export const aiMeta = (model: string | null, at: string): AiMeta => ({ v: 2, prompt: PROFILE_PROMPT_VERSION, model, at });
+/** Was in die Bildanalyse einging: nur das Bild oder Bild + Angaben von Shopseite, Screenshot bzw. Etikett (Kontext im Prompt) */
+export type AnalysisSource = 'image' | 'image+page' | 'image+screenshot' | 'image+label';
+export type AiMeta = { v: 2; prompt: string; model: string | null; at: string; source: AnalysisSource };
+export const aiMeta = (model: string | null, at: string, source: AnalysisSource = 'image'): AiMeta => ({ v: 2, prompt: PROFILE_PROMPT_VERSION, model, at, source });
 
 export const emptyConfidence = (): Confidence => Object.fromEntries(CONFIDENCE_GROUPS.map((g) => [g, null])) as Confidence;
 

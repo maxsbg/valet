@@ -2,9 +2,7 @@
 // Gleicher Durchreicher wie „Teil erkennen“ (Edge Function `ki`), gleiche festen Listen.
 
 import { MATERIALS, CARE, type Care, type CareGroup, type MaterialPart } from '../attributes';
-import { setField, type EditForm } from '../edit';
-import { fieldsFor, matchSize } from '../fields';
-import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, categoryDescription, checkAnalysis, applyAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
+import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, categoryDescription, checkAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
 import { toKey } from '../keys';
 
 export type InfoKind = 'label' | 'shop' | 'order';
@@ -20,6 +18,7 @@ const CARE_PROPS: Record<string, JsonSchema> = Object.fromEntries(CARE.map((g) =
 // Steckbrief-Felder wie bei „Teil erkennen“, aber Kategorie darf fehlen (z. B. beim Etikett) und Material mit Prozent
 const { materials: _materials, category: _category, ...ITEM } = ANALYZE_ITEM_PROPS;
 const PROPS: Record<string, JsonSchema> = {
+  kind: { type: ['string', 'null'], enum: ['label', 'shop', 'order', null], description: 'Art des Bildes: label = Etikett/Pflegeetikett, shop = Produktseite eines Shops, order = Bestellbestätigung/Rechnung; null bei reinem Seitentext' },
   category: { type: ['string', 'null'], enum: [...CATEGORY_PATHS, null], description: categoryDescription('Nur wenn aus Text oder Bild klar erkennbar: Kategorie/Unterkategorie/Typ.') },
   ...ITEM,
   shop: text('Name des Shops oder Händlers'),
@@ -53,6 +52,8 @@ Stehen mehrere Artikel darauf, nimm nur den ersten bzw. den hervorgehobenen.`;
 // ---------- Antwort prüfen ----------
 
 export type Info = {
+  /** Art laut KI (Etikett, Shop, Bestellung); null = unbekannt */
+  kind: InfoKind | null;
   item: Analysis;
   shop: string | null;
   price: number | null;
@@ -83,8 +84,9 @@ export function checkInfo(raw: unknown): Info {
     const v = p[g.key];
     if (typeof v === 'string' && g.options.some((o) => o.id === v)) care[g.key as CareGroup] = { v, src: 'etikett' };
   }
+  const kind = r.kind === 'label' || r.kind === 'shop' || r.kind === 'order' ? r.kind : null;
   return {
-    item, care,
+    kind, item, care,
     shop: str(r.shop, 40), price: money(r.price), listPrice: money(r.list_price), purchaseDate: date(r.purchase_date),
     size: str(r.size, 12), articleNo: str(r.article_no, 40),
   };
@@ -92,40 +94,8 @@ export function checkInfo(raw: unknown): Info {
 
 // ---------- Ins Formular übernehmen ----------
 
-const eur = (n: number) => n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** Wie applyAnalysis: nur leere oder unbestätigte Felder; Wunschteile bekommen den Preis als „Preis“ (= Listenpreis). */
-export function applyInfo(form: EditForm, info: Info): EditForm {
-  let f = applyAnalysis(form, info.item);
-  const open = new Set(form.aiPending);
-  const marked: string[] = [];
-  const put = <K extends keyof EditForm>(k: K, v: EditForm[K], empty: boolean) => {
-    if (!(empty || open.has(k))) return;
-    f = setField(f, k, v);
-    marked.push(k);
-  };
-  if (info.shop) put('shop', info.shop, !f.shop.trim());
-  if (info.articleNo) put('articleNo', info.articleNo, !f.articleNo.trim());
-  if (info.purchaseDate && !f.isWish) put('purchaseDate', info.purchaseDate, !f.purchaseDate);
-  // Größe nur als Wert aus der Liste der Größen-Art (wie alle Listenfelder, kein freier Text)
-  const hit = matchSize(fieldsFor(f.category, f.subcategory).size, info.size, f.category, f.subcategory);
-  if (hit && (!f.size || open.has('size'))) {
-    f = setField(setField(f, 'sizeSystem', hit.system), 'size', hit.size);
-    marked.push('size');
-  }
-  if (f.isWish) {
-    const p = info.price ?? info.listPrice;
-    if (p != null) put('listPrice', eur(p), !f.listPrice.trim());
-  } else {
-    if (info.price != null) put('price', eur(info.price), !f.price.trim());
-    if (info.listPrice != null) put('listPrice', eur(info.listPrice), !f.listPrice.trim());
-  }
-  const care: Care = { ...f.care };
-  let careNew = false;
-  for (const [g, v] of Object.entries(info.care)) if (!care[g as CareGroup]) { care[g as CareGroup] = v; careNew = true; }
-  if (careNew) put('care', care, true);
-  return { ...f, aiPending: [...new Set([...f.aiPending, ...marked])] };
-}
+// applyInfo liegt in merge.ts (Rangfolge der Quellen, mergeSources)
+export { applyInfo } from './merge';
 
 // ---------- Produktseite (per Link) ----------
 

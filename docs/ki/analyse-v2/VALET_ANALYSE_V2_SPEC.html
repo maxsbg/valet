@@ -265,9 +265,10 @@ Die Foto-Farbwerte, die beim Hochladen schon in <code>item_images.colors</code> 
 
 <h3>6.4 Übernahme ins Formular</h3>
 <ul>
-  <li>Neue Formularfelder: <code>profile: Profile</code>, <code>confidence: Confidence</code>, <code>aiMeta: Meta | null</code> (<code>Meta = { v: 2; prompt: string; model: string | null; at: string }</code>).</li>
+  <li>Neue Formularfelder: <code>profile: Profile</code>, <code>confidence: Confidence</code>, <code>aiMeta: Meta | null</code> (<code>Meta = { v: 2; prompt: string; model: string | null; at: string; source: 'image' | 'image+page' | 'image+screenshot' | 'image+label' }</code>, <code>source</code> seit 19.11.2026, siehe 6.7).</li>
   <li><code>applyAnalysis</code> füllt den Steckbrief wie bisher (nur leere oder offene Felder, Markierung in <code>aiPending</code>) und ersetzt danach <b>immer</b> <code>profile</code>, <code>confidence</code> und <code>aiMeta</code> komplett. Profil-Felder kommen nicht in <code>aiPending</code>.</li>
   <li><code>aiMeta</code> bleibt <code>null</code>, wenn in dieser Sitzung keine Analyse lief. Dann bleibt das gespeicherte <code>meta</code> unverändert.</li>
+  <li><b>Info ersetzt nie das Profil (19.11.2026):</b> <code>applyInfo</code> (Shopseite, Screenshot, Etikett, Bestellung) füllt nur Steckbrief, Kauf, Größe und Pflege. <code>profile</code>, <code>confidence</code> und <code>aiMeta</code> bleiben unverändert – sie kommen allein aus der Bildanalyse. (Vorher überschrieb <code>applyInfo</code> → <code>applyAnalysis</code> das Bild-Profil mit dem leeren Profil der Seitenauswertung.)</li>
 </ul>
 <h3>6.5 Kategoriewechsel</h3>
 <p>Wie im Steckbrief („versteckte Werte bleiben gespeichert“, Spec 8a) bleiben Profil-Werte beim Kategoriewechsel <b>gespeichert</b>, werden aber nicht mehr angezeigt oder ausgewertet. Oberfläche, Steckbrief und <code>matchTraits</code> lesen dafür ausschließlich <code>activeProfile(profile, ctx)</code>. Wechselt der Nutzer zurück, sind die Werte wieder da.</p>
@@ -284,7 +285,19 @@ Die Foto-Farbwerte, die beim Hochladen schon in <code>item_images.colors</code> 
   <li><b>Laden:</b> <code>EditRow</code> bekommt <code>analysis: Record&lt;string, unknown&gt; | null</code>. Die Abfrage in <code>lib/item.ts</code> nutzt schon <code>select('*')</code>. <code>toEditForm</code> liest <code>profile</code>/<code>confidence</code> (fehlt → <code>emptyProfile()</code>) und merkt sich das ganze Objekt als <code>EditForm.analysisBase</code>.</li>
   <li><b>Schreiben:</b> Der Speicher-Datensatz (<code>base</code> in <code>edit.ts</code>) bekommt <code>analysis: mergeAnalysis(f.analysisBase, f.profile, f.confidence, f.aiMeta)</code>. Die Funktion übernimmt alle Altschlüssel und ersetzt <code>profile</code> und <code>confidence</code>; <code>meta</code> nur, wenn <code>aiMeta</code> gesetzt ist.</li>
   <li><b>Neues Teil:</b> <code>analysisBase = {}</code>.</li>
+  <li><b>Quelle:</b> <code>meta.source</code> sagt, was in die Bildanalyse einging: <code>image</code> (nur das Bild), <code>image+page</code> (Text der Produktseite per Link), <code>image+screenshot</code> (Screenshot eines Shops oder einer Bestellung), <code>image+label</code> (Etikett). Ältere Einträge ohne <code>source</code> gelten als <code>image</code>.</li>
   <li>Gleichzeitiges Bearbeiten desselben Teils ist bei zwei Nutzern selten. Es gilt wie bei allen anderen Feldern: Wer zuletzt speichert, gewinnt. Deshalb ist keine RPC und keine Migration nötig.</li>
+</ol>
+
+<h3>6.7 Weitere Infos vor der Analyse und Rangfolge der Quellen (19.11.2026)</h3>
+<ol>
+  <li><b>Ablauf „Neues Teil“:</b> Foto → Freistellen → „Passt das so?“ → <b>„Hast du noch weitere Infos?“</b> mit <i>Link einfügen</i> · <i>Screenshot oder Etikett</i> · <i>Weiter ohne</i> → Formular. Beim Start über einen Link (Produktseite schon geladen) entfällt der Schritt. Ohne Foto gibt es keinen Schritt und keine Bildanalyse.</li>
+  <li><b>Reihenfolge:</b> Erst die Info auslesen (<code>readPage</code> für den Seitentext, <code>readInfo</code> für Screenshot/Etikett; die KI erkennt die Art selbst, Feld <code>kind</code>), sofort ins Formular übernehmen, dann <b>eine</b> Bildanalyse. Die ausgelesenen Fakten gehen als Kontext mit (<code>infoContext</code>, als <code>text</code> an die Edge Function, die ihn hinter den Prompt hängt): Name, Kategorie, Farben, Muster, Material mit Prozent, Passform (Begriffe aus Name und Beschreibung, genannte Stufen), Beschreibung der Seite gekürzt auf 1500 Zeichen. Überschrift „Angaben des Shops, verlässlicher als das Foto:“ bzw. „Angaben vom Etikett, verlässlicher als das Foto:“.</li>
+  <li><b>Rangfolge</b> (reine Funktion <code>mergeSources</code> in <code>packages/core/src/ai/merge.ts</code>), gilt für die Steckbrief-Felder:
+    <b>Nutzer (bestätigt) &gt; Etikett &gt; Shopseite/Screenshot &gt; Begriffe im Namen (<code>fitFromName</code>) &gt; Bildschätzung.</b>
+    Bestätigt = gesetzt und nicht in <code>aiPending</code>. Die Quellen werden von unten nach oben angewendet; jede darf leere und unbestätigte Felder füllen, auch die, die eine rangniedrigere Quelle gerade vorgeschlagen hat. Die Passform zählt je Stufe: Begriffe im Namen ersetzen nur Stufen, die Shop oder Etikett nicht selbst nennen. Kauf, Größe und Pflege kommen nur aus den Infos (Etikett vor Shop).</li>
+  <li><b>Profil</b> (<code>profile</code>, <code>confidence</code>, <code>aiMeta</code>) kommt immer aus der Bildanalyse; ohne Bild bleibt es, wie es ist. Der Beinverlauf aus dem Namen („Straight Leg“, „Tapered“) ersetzt <code>profile.leg</code>.</li>
+  <li><b>„Neu analysieren“</b> (bestehende Teile): Die bestätigten Steckbrief-Werte gehen als Kontext mit (<code>confirmedContext</code>: Name, Kategorie, Farben, Muster, Material, Passform), damit das Profil zu ihnen passt. Der Stapellauf „Profile ergänzen“ schickt keinen Kontext.</li>
 </ol>
 
 <h2>7. Prompt 2.0</h2>
@@ -416,6 +429,8 @@ export function profilePatch(
       <li><b>Bunt-Kontrast:</b> „Bunt“ allein hat Kontrast fest 4, wie die übrigen festen Werte (gemischt, Helligkeit 3, Sättigung 5).</li>
     </ul>
     Damit ist Schritt 2 (Farbmerkmale) abgeschlossen.</li>
+  <li><b>Weitere Infos vor der Analyse (19.11.2026):</b> Beim neuen Teil fragt die App nach dem Foto „Hast du noch weitere Infos?“ (Link · Screenshot oder Etikett · Weiter ohne; entfällt beim Start über einen Link). Erst wird die Info ausgelesen, dann läuft eine Bildanalyse mit ihr als Kontext; <code>meta.source</code> hält fest, was einging (6.7).</li>
+  <li><b>Rangfolge der Quellen (19.11.2026):</b> Nutzer (bestätigt) &gt; Etikett &gt; Shopseite/Screenshot &gt; Begriffe im Namen &gt; Bildschätzung, für den Steckbrief. Das Profil kommt immer aus der Bildanalyse; eine ausgelesene Info ersetzt es nie (6.4, 6.7).</li>
 </ol>
 </main>
 </body>

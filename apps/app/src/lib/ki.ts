@@ -37,10 +37,11 @@ async function shrink(file: Blob, max = 2000): Promise<Blob> {
 /** Antwort der Edge Function: geprüft wird in core, `model` = tatsächlich genutztes Modell */
 type Answer = { data: unknown; model: string | null };
 
-async function ask(image: Blob, prompt: string, schema: unknown, opts: { temperature?: number } = {}): Promise<Answer> {
+async function ask(image: Blob, prompt: string, schema: unknown, opts: { temperature?: number; text?: string } = {}): Promise<Answer> {
   const data = await toBase64(image);
+  const { text, ...rest } = opts;
   const { data: res, error } = await supabase.functions.invoke('ki', {
-    body: { image: { data, mimeType: image.type || 'image/jpeg' }, prompt, schema, ...opts },
+    body: { image: { data, mimeType: image.type || 'image/jpeg' }, prompt, schema, ...rest, ...(text ? { text } : {}) },
   });
   if (error) throw error;
   return { data: res?.data, model: typeof res?.model === 'string' ? res.model : null };
@@ -51,20 +52,24 @@ export async function readInfo(file: Blob, kind: InfoKind | null): Promise<Info>
   return checkInfo((await ask(await shrink(file), readInfoPrompt(kind), READ_INFO_SCHEMA)).data);
 }
 
-/** Teil auf dem Bild erkennen. Wirft bei Fehler; „rate_limited“ = Gratis-Kontingent gerade erschöpft. */
-export async function analyzePicture(image: Blob): Promise<Analysis> {
+/**
+ * Teil auf dem Bild erkennen. `context` = Angaben aus Shopseite/Screenshot/Etikett (infoContext), die die Edge Function
+ * hinter den Prompt hängt. Wirft bei Fehler; „rate_limited“ = Gratis-Kontingent gerade erschöpft.
+ */
+export async function analyzePicture(image: Blob, context = ''): Promise<Analysis> {
   // Temperatur 0: gleiches Bild → möglichst gleiches Profil (Spec 6.3)
-  const { data, model } = await ask(image, ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, { temperature: 0 });
+  const { data, model } = await ask(image, ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, { temperature: 0, text: context.slice(0, 20000) });
   return checkAnalysis(data, model);
 }
 
 /**
  * Gespeichertes Teil neu erkennen (Spec 8): Bild aus dem Storage über den Pfad (freigestelltes Hauptbild Seite A,
- * sonst Original). Wirft bei Fehler; kiError(e) liefert den Code („rate_limited“ …).
+ * sonst Original). `context` geht als Text hinter den Prompt. Wirft bei Fehler; kiError(e) liefert den Code („rate_limited“ …).
  */
-export async function analyzeStored(imagePath: string): Promise<Analysis> {
+export async function analyzeStored(imagePath: string, context = ''): Promise<Analysis> {
+  // context: bestätigte Steckbrief-Werte (confirmedContext), damit das Profil zu ihnen passt
   const { data: res, error } = await supabase.functions.invoke('ki', {
-    body: { imagePath, prompt: ANALYZE_ITEM_PROMPT, schema: ANALYZE_ITEM_SCHEMA, temperature: 0 },
+    body: { imagePath, prompt: ANALYZE_ITEM_PROMPT, schema: ANALYZE_ITEM_SCHEMA, temperature: 0, ...(context ? { text: context.slice(0, 20000) } : {}) },
   });
   if (error) throw error;
   if (!res?.data || typeof res.data !== 'object') throw new Error('Ungültige Antwort der KI');
