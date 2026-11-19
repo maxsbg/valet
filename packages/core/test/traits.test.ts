@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { STYLES } from '../src/attributes';
 import { emptyProfile } from '../src/ai/profile';
 import {
-  COLOR_TRAIT_OVERRIDES, STYLE_FORMALITY, colorCheck, colorTrait, colorTraits, hexToOklch, matchTraits, paletteKeys, type MatchItem,
+  COLOR_TRAIT_OVERRIDES, STYLE_FORMALITY, WEAR_NEUTRALS, isWearNeutral, colorCheck, colorTrait, colorTraits, hexToOklch, matchTraits, paletteKeys, type MatchItem,
 } from '../src/traits';
 
 const near = (a: number, b: number, eps: number, msg: string) => assert.ok(Math.abs(a - b) <= eps, `${msg}: ${a} ≠ ${b}`);
@@ -55,6 +55,38 @@ test('Overrides: nur temperature; Olivgrün wäre sonst kühl, Pink/Rosa/Magenta
   for (const k of ['pink', 'rose', 'magenta']) { const t = colorTrait(k)!; assert.ok((t.h < 115 || t.h >= 330) && t.override, k); }
   assert.equal(colorTrait('dusty_rose')!.temperature, 'warm');
   assert.equal(colorTrait('dusty_rose')!.override, false);
+  // Burgund bekommt bewusst keinen Override und bleibt rechnerisch warm (19.11.2026)
+  assert.equal(COLOR_TRAIT_OVERRIDES.burgundy, undefined);
+  assert.equal(colorTrait('burgundy')!.temperature, 'warm');
+  assert.equal(colorTrait('burgundy')!.override, false);
+});
+
+test('Mode-Neutrale: genau die 13 Farben, Temperatur bleibt berechnet', () => {
+  assert.deepEqual([...WEAR_NEUTRALS].sort(),
+    ['beige', 'black', 'brown', 'camel', 'dark_grey', 'ivory', 'khaki', 'light_grey', 'navy', 'olive', 'silver', 'taupe', 'white']);
+  for (const k of paletteKeys()) {
+    if (k === 'multicolor') continue;
+    assert.equal(colorTrait(k)!.wearNeutral, WEAR_NEUTRALS.includes(k), k);
+  }
+  // rechnerisch farbige Mode-Neutrale behalten ihre Temperatur
+  assert.equal(colorTrait('navy')!.temperature, 'cool');
+  assert.equal(colorTrait('camel')!.temperature, 'warm');
+  assert.equal(colorTrait('olive')!.temperature, 'warm');
+  assert.equal(colorTrait('red')!.wearNeutral, false);
+  assert.equal(colorTrait('burgundy')!.wearNeutral, false);
+  assert.equal(isWearNeutral('Marineblau'), true);
+  assert.equal(isWearNeutral('multicolor'), false);
+  assert.equal(isWearNeutral('gibtsnicht'), false);
+});
+
+test('colorTraits: allWearNeutral', () => {
+  assert.equal(colorTraits(['camel', 'navy'])!.allWearNeutral, true);
+  assert.equal(colorTraits(['camel', 'navy'])!.temperature, 'mixed'); // Temperatur unverändert
+  assert.equal(colorTraits(['black', 'white', 'olive'])!.allWearNeutral, true);
+  assert.equal(colorTraits(['navy', 'red'])!.allWearNeutral, false);
+  assert.equal(colorTraits(['burgundy'])!.allWearNeutral, false);
+  assert.equal(colorTraits(['multicolor'])!.allWearNeutral, false);
+  assert.equal(colorTraits(['multicolor', 'black'])!.allWearNeutral, false);
 });
 
 test('colorTrait: Bunt und Unbekanntes → null; jede andere Palettenfarbe hat Werte 1–5', () => {
@@ -75,13 +107,14 @@ test('colorTraits: Fälle aus Spec 13', () => {
   assert.equal(colorTraits(['black', 'dark_grey', 'white'])!.distribution, 'neutral_contrast');
   assert.equal(colorTraits(['navy', 'blue'])!.distribution, 'tonal');
   const navy = colorTraits(['navy'])!;
-  assert.deepEqual(navy, { temperature: 'cool', lightness: 1, chroma: 2, contrast: 1, distribution: 'solid' });
+  assert.deepEqual(navy, { temperature: 'cool', lightness: 1, chroma: 2, contrast: 1, distribution: 'solid', allWearNeutral: true });
   assert.equal(colorTraits(['camel', 'navy'])!.temperature, 'mixed');
   assert.equal(colorTraits([]), null);
   assert.equal(colorTraits(null), null);
   const bunt = colorTraits(['multicolor'])!;
   assert.equal(bunt.temperature, 'mixed'); assert.equal(bunt.distribution, 'multicolor');
   assert.equal(bunt.lightness, 3); assert.equal(bunt.chroma, 5);
+  assert.equal(bunt.contrast, 4); // Bunt allein: fester Kontrast 4
 });
 
 test('colorTraits: Gewichtung nach Rang, Prüfreihenfolge, Neutrale ignoriert', () => {
@@ -162,8 +195,16 @@ test('colorCheck: Rang 1 farbig und Foto-Farbton > 60° daneben → true', () =>
   assert.equal(colorCheck(['red'], null), false);
   // Neutrale Foto-Farben zählen nicht: grauer Schatten mit großem Anteil, Stoff rot
   assert.equal(colorCheck(['red'], [{ h: '#777777', s: 0.6 }, { h: '#c0392b', s: 0.4 }]), false);
-  // nur neutrale Foto-Farben → keine Aussage
-  assert.equal(colorCheck(['red'], [{ h: '#222222', s: 1 }]), false);
+  // nur neutrale Foto-Farben: Rang 1 farbig mit Sättigung ≥ 3 → prüfen (KI „Rot“, Foto grau/schwarz)
+  assert.equal(colorCheck(['red'], [{ h: '#222222', s: 1 }]), true);
+  assert.equal(colorCheck(['camel'], [{ h: '#777777', s: 0.6 }, { h: '#f0f0f0', s: 0.4 }]), true); // Chroma 3
+  // … aber nicht bei schwach gesättigtem Rang 1 (Marineblau, Rosa: Sättigung 2)
+  assert.equal(colorTrait('navy')!.chroma, 2);
+  assert.equal(colorCheck(['navy'], [{ h: '#222222', s: 1 }]), false);
+  assert.equal(colorCheck(['rose'], [{ h: '#f0f0f0', s: 1 }]), false);
+  // neutrale Foto-Farben ohne farbigen Rang 1 → weiter kein Hinweis
+  assert.equal(colorCheck(['black'], [{ h: '#222222', s: 1 }]), false);
+  assert.equal(colorCheck(['multicolor'], [{ h: '#222222', s: 1 }]), false);
   // über 0°/360° hinweg: Magenta (353°) gegen Rot (≈ 29°) liegt unter 60°
   assert.equal(colorCheck(['magenta'], [{ h: '#c0392b', s: 1 }]), false);
   // Grenze genau: Farbton weniger als 60° entfernt (Gelb 93° vs. Orange 55°) → false

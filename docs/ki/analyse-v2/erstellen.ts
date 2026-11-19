@@ -1,5 +1,5 @@
 // Erstellt docs/ki/analyse-v2/farb-merkmale.html: alle Palettenfarben mit deutschem Namen, Farbfeld,
-// warm/kühl/neutral, Helligkeit 1–5 und Sättigung 1–5 (berechnet in packages/core/src/traits.ts, Spec 5.1).
+// warm/kühl/neutral, Mode-Neutral, Helligkeit 1–5 und Sättigung 1–5 (berechnet in packages/core/src/traits.ts, Spec 5.1).
 // Eigenständige HTML-Datei für Max zum Prüfen. Korrekturen kommen in COLOR_TRAIT_OVERRIDES.
 // Aufruf im Repo-Hauptordner:  pnpm farbmerkmale
 
@@ -11,6 +11,7 @@ import { COLOR_TRAIT_OVERRIDES, MULTICOLOR_TRAIT, colorTrait, paletteKeys } from
 
 const TEMP: Record<string, string> = { warm: 'warm', cool: 'kühl', neutral: 'neutral', mixed: 'gemischt' };
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const wear = (on: boolean) => (on ? '<span class="tag wear">ja</span>' : '<span class="no">–</span>');
 const dots = (n: number) => `<span class="dots" title="${n} von 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}<b>${n}</b></span>`;
 const mains = new Set(COLORS.map((c) => c.key));
 
@@ -24,8 +25,8 @@ const rows = paletteKeys().map((key) => {
   const cls = mains.has(key) ? 'main' : 'nuance';
   if (key === MULTICOLOR) {
     return `<tr class="${cls}"><td class="sw"><span style="background:conic-gradient(${MULTICOLOR_STOPS.join(',')},${MULTICOLOR_STOPS[0]})"></span></td>
-      <td class="name">${name}<small>${key}</small></td><td><span class="tag mixed">${TEMP[MULTICOLOR_TRAIT.temperature]}</span></td>
-      <td>${dots(MULTICOLOR_TRAIT.lightness)}</td><td>${dots(MULTICOLOR_TRAIT.chroma)}</td><td class="raw">fest vorgegeben</td><td></td></tr>`;
+      <td class="name">${name}<small>${key}</small></td><td><span class="tag mixed">${TEMP[MULTICOLOR_TRAIT.temperature]}</span></td><td>${wear(false)}</td>
+      <td>${dots(MULTICOLOR_TRAIT.lightness)}</td><td>${dots(MULTICOLOR_TRAIT.chroma)}</td><td class="raw">fest vorgegeben (allein Kontrast ${MULTICOLOR_TRAIT.contrast})</td><td></td></tr>`;
   }
   const t = colorTrait(key)!;
   const notes: string[] = [];
@@ -35,7 +36,7 @@ const rows = paletteKeys().map((key) => {
   if (!t.neutral && H_LIM.some((x) => Math.abs(t.h - x) < 8)) notes.push('Farbton nahe der Grenze warm/kühl');
   const raw = `L ${t.L.toFixed(2)} · C ${t.C.toFixed(3)}${t.neutral ? '' : ` · h ${Math.round(t.h)}°`}`;
   return `<tr class="${cls}"><td class="sw"><span style="background:${colorHex(key)}"></span></td>
-    <td class="name">${name}<small>${key}</small></td><td><span class="tag ${t.temperature}">${TEMP[t.temperature]}</span></td>
+    <td class="name">${name}<small>${key}</small></td><td><span class="tag ${t.temperature}">${TEMP[t.temperature]}</span></td><td>${wear(t.wearNeutral)}</td>
     <td>${dots(t.lightness)}</td><td>${dots(t.chroma)}</td><td class="raw">${raw}</td><td class="note">${notes.join('<br>')}</td></tr>`;
 }).join('\n');
 
@@ -50,7 +51,7 @@ const html = `<!DOCTYPE html>
   h1 { font-size: 26px; margin: 0 0 6px; }
   p { margin: 0 0 12px; color: var(--soft); }
   .wrap { overflow-x: auto; background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-top: 16px; }
-  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; }
   th { text-align: left; font-size: 12px; font-weight: 600; color: var(--soft); padding: 10px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; }
   td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tr.main td { border-top: 2px solid var(--line); }
@@ -60,6 +61,7 @@ const html = `<!DOCTYPE html>
   .name small { display: block; font-weight: 400; color: var(--soft); font-size: 11px; }
   .tag { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
   .tag.warm { background: #fde3cf; color: #8a3b0c; } .tag.cool { background: #d9e7f7; color: #1f3f6e; }
+  .tag.wear { background: #efe6da; color: #5a4632; } .no { color: #c9bcb0; }
   .tag.neutral { background: #ece9e6; color: #555; } .tag.mixed { background: linear-gradient(90deg,#fde3cf,#d9e7f7); color: #444; }
   .dots { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
   .dots i { width: 9px; height: 9px; border-radius: 50%; background: #ece4dc; }
@@ -76,10 +78,12 @@ const html = `<!DOCTYPE html>
   <li><b>Neutral</b>: Sättigung (Chroma) unter 0,035. Sonst <b>warm</b> bei Farbton unter 115° oder ab 330°, sonst <b>kühl</b>.</li>
   <li><b>Helligkeit</b>: L unter 0,35 → 1 · 0,50 → 2 · 0,65 → 3 · 0,80 → 4 · sonst 5.</li>
   <li><b>Sättigung</b>: C unter 0,035 → 1 · 0,075 → 2 · 0,11 → 3 · 0,145 → 4 · sonst 5.</li>
-  <li>Von Hand gesetzt (vorbelegt): Olivgrün → warm; Pink, Rosa, Magenta → kühl. Rechts stehen Hinweise, wo ein Wert knapp an einer Grenze liegt.</li>
+  <li>Von Hand gesetzt (bestätigt 19.11.2026): Olivgrün → warm; Pink, Rosa, Magenta → kühl. Burgunderrot bleibt rechnerisch warm. Rechts stehen Hinweise, wo ein Wert knapp an einer Grenze liegt.</li>
+  <li><b>Mode-Neutral</b> (19.11.2026): Farben, die sich wie Neutrale kombinieren lassen (Beige, Camel, Khaki, Braun, Olivgrün, Marineblau, Elfenbein, Taupe, Weiß, Hell-/Dunkelgrau, Schwarz, Silber). Die Wirkung warm/kühl bleibt berechnet; im späteren Matching lösen diese Farben aber keinen Temperatur-Konflikt aus.</li>
+  <li><b>Bunt</b> allein: fest gemischt, Helligkeit 3, Sättigung 5, Kontrast 4.</li>
 </ul>
 <div class="wrap"><table>
-<thead><tr><th></th><th>Farbe</th><th>Wirkung</th><th>Helligkeit</th><th>Sättigung</th><th>Messwerte</th><th>Hinweis</th></tr></thead>
+<thead><tr><th></th><th>Farbe</th><th>Wirkung</th><th>Mode-Neutral</th><th>Helligkeit</th><th>Sättigung</th><th>Messwerte</th><th>Hinweis</th></tr></thead>
 <tbody>
 ${rows}
 </tbody></table></div>

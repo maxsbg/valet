@@ -32,14 +32,23 @@ export function hexToOklch(hex: string | null | undefined): Oklch | null {
 // ---------- Eine Palettenfarbe ----------
 
 export type Temperature = 'warm' | 'cool' | 'neutral';
-export type ColorTrait = Oklch & { neutral: boolean; temperature: Temperature; lightness: number; chroma: number; override: boolean };
+export type ColorTrait = Oklch & {
+  neutral: boolean;
+  temperature: Temperature;
+  lightness: number;
+  chroma: number;
+  override: boolean;
+  /** Mode-Neutrale (siehe WEAR_NEUTRALS) */
+  wearNeutral: boolean;
+};
 
 /** Neutral unter dieser Buntheit (OKLCH-Chroma) */
 export const NEUTRAL_CHROMA = 0.035;
 
 /**
- * Korrekturen nach Augenmaß (nur temperature). Weitere Fälle trägt Max nach Prüfung von farb-merkmale.html ein.
+ * Korrekturen nach Augenmaß (nur temperature), von Max am 19.11.2026 anhand von farb-merkmale.html bestätigt.
  * olive: h ≈ 121° knapp über der Grenze, wirkt warm. pink/rose/magenta: Blaustich, nach Farbtypenlehre kühl (Altrosa bleibt warm).
+ * Bewusst KEIN Override für burgundy: bleibt rechnerisch warm.
  */
 export const COLOR_TRAIT_OVERRIDES: Readonly<Record<string, { temperature: Temperature }>> = {
   olive: { temperature: 'warm' },
@@ -47,6 +56,19 @@ export const COLOR_TRAIT_OVERRIDES: Readonly<Record<string, { temperature: Tempe
   rose: { temperature: 'cool' },
   magenta: { temperature: 'cool' },
 };
+
+/**
+ * Mode-Neutrale (entschieden 19.11.2026): Farben, die sich in der Kleidung wie Neutrale kombinieren lassen,
+ * auch wenn sie rechnerisch farbig sind (Beige, Camel, Khaki, Braun, Olivgrün, Marineblau). Die Temperatur
+ * bleibt trotzdem unverändert berechnet. Im späteren Matching sollen wearNeutral-Farben KEINE Temperatur-Konflikte
+ * auslösen (z. B. Camel zu Marineblau ist kein warm/kühl-Bruch).
+ */
+export const WEAR_NEUTRALS: readonly string[] = [
+  'beige', 'camel', 'khaki', 'brown', 'olive', 'navy', 'ivory', 'taupe', 'white', 'light_grey', 'dark_grey', 'black', 'silver',
+];
+const WEAR_NEUTRAL_SET = new Set(WEAR_NEUTRALS);
+/** true, wenn die Farbe (Key oder Label) eine Mode-Neutrale ist; Bunt und Unbekanntes → false */
+export const isWearNeutral = (color: string): boolean => { const k = toColorKeys([color])[0]; return !!k && WEAR_NEUTRAL_SET.has(k); };
 
 const step = (v: number, limits: readonly number[]) => { let i = 0; while (i < limits.length && v >= limits[i]!) i++; return i + 1; };
 /** L < 0,35 → 1 · < 0,50 → 2 · < 0,65 → 3 · < 0,80 → 4 · sonst 5 */
@@ -61,11 +83,11 @@ export function colorTrait(key: string): ColorTrait | null {
   if (!o) return null;
   const neutral = o.C < NEUTRAL_CHROMA;
   const ov = neutral ? undefined : COLOR_TRAIT_OVERRIDES[key];
-  return { ...o, neutral, temperature: neutral ? 'neutral' : ov?.temperature ?? tempOfHue(o.h), lightness: lightnessStep(o.L), chroma: chromaStep(o.C), override: !!ov };
+  return { ...o, neutral, temperature: neutral ? 'neutral' : ov?.temperature ?? tempOfHue(o.h), lightness: lightnessStep(o.L), chroma: chromaStep(o.C), override: !!ov, wearNeutral: WEAR_NEUTRAL_SET.has(key) };
 }
 
-/** „Bunt“ (mixed) zählt als Helligkeit 3, Chroma 5 */
-export const MULTICOLOR_TRAIT = { temperature: 'mixed', lightness: 3, chroma: 5 } as const;
+/** „Bunt“ (mixed) zählt als Helligkeit 3, Chroma 5; allein (nur „Bunt“) Kontrast 4 (entschieden 19.11.2026) */
+export const MULTICOLOR_TRAIT = { temperature: 'mixed', lightness: 3, chroma: 5, contrast: 4 } as const;
 
 // ---------- Farbwirkung eines Teils ----------
 
@@ -75,6 +97,8 @@ export type ColorTraits = {
   chroma: number;
   contrast: number;
   distribution: 'solid' | 'tonal' | 'neutral_contrast' | 'multicolor';
+  /** Alle Farben des Teils sind Mode-Neutrale (WEAR_NEUTRALS); Bunt → false */
+  allWearNeutral: boolean;
 };
 
 const WEIGHTS: Readonly<Record<number, readonly number[]>> = { 1: [1], 2: [0.7, 0.3], 3: [0.6, 0.3, 0.1] };
@@ -98,9 +122,10 @@ export function colorTraits(colors: readonly string[] | null | undefined): Color
   });
   const temperature = warm && cool ? 'mixed' : warm ? 'warm' : cool ? 'cool' : 'neutral';
 
-  // Kontrast: größtes ΔL zwischen zwei messbaren Farben („Bunt“ hat keinen Wert); eine Farbe → 1
+  // Kontrast: größtes ΔL zwischen zwei messbaren Farben („Bunt“ hat keinen Wert); eine Farbe → 1; nur „Bunt“ → fest 4
   const Ls = traits.filter((t): t is ColorTrait => !!t).map((t) => t.L);
-  const contrast = Ls.length < 2 ? 1 : contrastStep(Math.max(...Ls) - Math.min(...Ls));
+  const onlyMulticolor = keys.length === 1 && keys[0] === MULTICOLOR;
+  const contrast = onlyMulticolor ? MULTICOLOR_TRAIT.contrast : Ls.length < 2 ? 1 : contrastStep(Math.max(...Ls) - Math.min(...Ls));
 
   let distribution: ColorTraits['distribution'];
   if (keys.includes(MULTICOLOR)) distribution = 'multicolor';
@@ -114,7 +139,8 @@ export function colorTraits(colors: readonly string[] | null | undefined): Color
     }
     distribution = tonal ? 'tonal' : 'multicolor';
   }
-  return { temperature, lightness: Math.round(lightness), chroma: Math.round(chroma), contrast, distribution };
+  const allWearNeutral = traits.every((t) => !!t && t.wearNeutral);
+  return { temperature, lightness: Math.round(lightness), chroma: Math.round(chroma), contrast, distribution, allWearNeutral };
 }
 
 // ---------- Matching-Merkmale ----------
@@ -205,9 +231,14 @@ export const COLOR_CHECK_DEG = 60;
 
 const hueDiff = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
 
+/** Ab dieser Sättigungsstufe von Rang 1 meldet ein rein neutrales Foto „Farbe prüfen“ */
+export const COLOR_CHECK_MIN_CHROMA = 3;
+
 /**
- * true = „Farbe prüfen“ zeigen: Rang 1 ist farbig und der vorherrschende farbige Foto-Farbton
- * (größter Anteil unter den nicht neutralen Foto-Farben) weicht um mehr als 60° ab. Ändert nie Werte.
+ * true = „Farbe prüfen“ zeigen. Rang 1 muss farbig sein, dann:
+ * a) der vorherrschende farbige Foto-Farbton (größter Anteil unter den nicht neutralen Foto-Farben) weicht um mehr als 60° ab, oder
+ * b) das Foto hat nur neutrale Farben (mindestens eine gültige) und Rang 1 hat Sättigung ≥ 3 (z. B. KI „Rot“, Foto grau).
+ * Neutrale Foto-Farben ohne farbigen Rang 1 → kein Hinweis. Ändert nie Werte.
  */
 export function colorCheck(colors: readonly string[] | null | undefined, photoColors: readonly PhotoColor[] | null | undefined): boolean {
   const first = toColorKeys(colors ?? [])[0];
@@ -215,13 +246,16 @@ export function colorCheck(colors: readonly string[] | null | undefined, photoCo
   const t = colorTrait(first);
   if (!t || t.neutral) return false;
   let best: { h: number; s: number } | null = null;
+  let neutralSeen = false;
   for (const pc of Array.isArray(photoColors) ? photoColors : []) {
     const o = hexToOklch(pc?.h);
     const s = typeof pc?.s === 'number' && pc.s > 0 ? pc.s : 0;
-    if (!o || o.C < NEUTRAL_CHROMA || !s) continue;
+    if (!o || !s) continue;
+    if (o.C < NEUTRAL_CHROMA) { neutralSeen = true; continue; }
     if (!best || s > best.s) best = { h: o.h, s };
   }
-  return !!best && hueDiff(t.h, best.h) > COLOR_CHECK_DEG;
+  if (!best) return neutralSeen && t.chroma >= COLOR_CHECK_MIN_CHROMA;
+  return hueDiff(t.h, best.h) > COLOR_CHECK_DEG;
 }
 
 /** Alle Palettenfarben (Haupt- und Nuancen) in Palettenreihenfolge, für farb-merkmale.html */

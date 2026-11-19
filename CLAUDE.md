@@ -20,7 +20,7 @@ Zuerst Web-App, später iOS-App aus derselben Codebasis.
 - KI-Felder alle englisch (`category` als Pfad `top/shirt/long_sleeve_shirt`, `colors`, `materials`, `brand`, `price`, `list_price`, `purchase_date`, `size`, `article_no`, `material_parts` mit `pct`, `care` …), Enum-Werte = Keys, Beschreibungen nennen die Labels.
 - Interne Formen ebenfalls englisch (20.11.2026): `layoutKind`/`tileKind` = `coat`, `jacket`, `sweater`, `top`, `sport`, `dress`, `pants`, `shorts`, `skirt`, `shoe`, `bag`, `headwear`, `accessory`; Schein-Art `multicolor` statt `bunt`.
 - Stand: App liest alte und neue Werte und schreibt Keys. Migration 0014 am 19.11.2026 angewendet (alle Spalten nur noch Keys); Sicherung der alten Werte in `items_keys_backup_0014` / `outfits_keys_backup_0014`, Rückweg am Ende von `0014_englische_keys.sql`.
-- **KI-Analyse v2 (19.11.2026):** verbindliche Spec `docs/ki/analyse-v2/VALET_ANALYSE_V2_SPEC.html` (Entscheidungen in Abschnitt 14). Schritt 1 (Feldtabelle `packages/core/src/ai/profile.ts`) fertig; als Nächstes Schritt 2 (Farbmerkmale) und 3 (Speichern).
+- **KI-Analyse v2 (19.11.2026):** verbindliche Spec `docs/ki/analyse-v2/VALET_ANALYSE_V2_SPEC.html` (Entscheidungen in Abschnitt 14). Schritt 1 (Feldtabelle `packages/core/src/ai/profile.ts`) und Schritt 2 (Farbmerkmale `packages/core/src/traits.ts`, Tabelle `farb-merkmale.html` über `pnpm farbmerkmale`; Overrides, Mode-Neutrale `wearNeutral`, Farbprüfung von Max am 19.11.2026 entschieden) fertig; als Nächstes Schritt 3 (Speichern).
 
 ## Aufbau (pnpm-Monorepo)
 - `apps/app` – Expo SDK 58, Expo Router, react-native-web. Seiten in `src/app`, Rest in `src/components`, `src/lib`. Siehe `apps/app/AGENTS.md` (Expo-Regeln).
