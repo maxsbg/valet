@@ -7,6 +7,7 @@ import { OutfitBoard } from '@/components/OutfitBoard';
 import { Header, Chip, Empty, PageEnd } from '@/components/ui';
 import { ItemPicture } from '@/components/ItemPicture';
 import { Invite } from '@/components/Invite';
+import { ProfileBatch } from '@/components/ProfileBatch';
 import { useSession } from '@/lib/session';
 import { usePersisted } from '@/lib/usePersisted';
 import { useTheme, space, radius, DISPLAY, type Theme } from '@/lib/theme';
@@ -261,6 +262,7 @@ export default function Statistik() {
           <Text style={[s.h2, { color: t.ink }]}>Schrank teilen</Text>
           {wardrobe && <Invite />}
 
+          <Text style={[s.h2, { color: t.ink }]}>Werkzeuge</Text>
           {/* Übergang vom alten Valet: Bilder zuordnen */}
           <Pressable onPress={() => router.push('/bilder-zuordnen')} accessibilityRole="button"
             style={({ pressed }) => [s.panel, { borderColor: t.hairline, backgroundColor: t.surface, gap: 4, marginTop: space.sm, opacity: pressed ? 0.8 : 1 }]}>
@@ -269,6 +271,7 @@ export default function Statistik() {
               {withoutPicture ? `${withoutPicture} Teile haben noch kein Bild. ` : ''}Mehrere Fotos wählen, freistellen und den Teilen zuordnen.
             </Text>
           </Pressable>
+          <ProfileBatch />
         </View>
         <PageEnd />
       </Page>

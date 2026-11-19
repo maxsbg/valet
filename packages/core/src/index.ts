@@ -25,3 +25,4 @@ export * from './ai/analyzeItem';
 export * from './ai/readInfo';
 export * from './ai/profile';
 export * from './traits';
+export * from './ai/view';

@@ -58,6 +58,29 @@ export async function analyzePicture(image: Blob): Promise<Analysis> {
   return checkAnalysis(data, model);
 }
 
+/**
+ * Gespeichertes Teil neu erkennen (Spec 8): Bild aus dem Storage über den Pfad (freigestelltes Hauptbild Seite A,
+ * sonst Original). Wirft bei Fehler; kiError(e) liefert den Code („rate_limited“ …).
+ */
+export async function analyzeStored(imagePath: string): Promise<Analysis> {
+  const { data: res, error } = await supabase.functions.invoke('ki', {
+    body: { imagePath, prompt: ANALYZE_ITEM_PROMPT, schema: ANALYZE_ITEM_SCHEMA, temperature: 0 },
+  });
+  if (error) throw error;
+  if (!res?.data || typeof res.data !== 'object') throw new Error('Ungültige Antwort der KI');
+  return checkAnalysis(res.data, typeof res?.model === 'string' ? res.model : null);
+}
+
+/** Fehlercode der Edge Function („rate_limited“, HTTP-Status 404 …) aus einem Fehler lesen */
+export async function kiError(e: unknown): Promise<{ code: string; status: number | null }> {
+  const ctx = (e as { context?: Response } | null)?.context;
+  const status = typeof ctx?.status === 'number' ? ctx.status : null;
+  let code = '';
+  try { code = String((await ctx?.clone().json())?.error ?? ''); } catch { /* egal */ }
+  if (!code && status === 429) code = 'rate_limited';
+  return { code, status };
+}
+
 /** Text einer Produktseite auslesen (Beschreibung, Material, Pflege, Preis …) – ohne Bild */
 export async function readPage(text: string, facts: PageFacts): Promise<Info> {
   const { data: res, error } = await supabase.functions.invoke('ki', {

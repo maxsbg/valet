@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, LAYERS, RAIN, SEASONS, WARMTH, collarLabel, closureLabel, colorLabel, materialLabel, patternLabel, strapLabel, styleLabel, careList, categoryLast, discountPct, fitScalesOf, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
+  CARE, SEASONS, colorLabel, materialLabel, careList, categoryLast, discountPct, fitWords, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
   shortDate, shortUrl, sizeText, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -11,7 +11,7 @@ import { personKey, type Person, type Tile } from '@/lib/wardrobe';
 import type { Outfit } from '@/lib/outfits';
 import { OutfitCard } from '@/components/OutfitCard';
 import { ItemPicture } from '@/components/ItemPicture';
-import { ColorDot, EditCard, ValueCapsule, ValueCircle, ValueScale } from '@/components/edit/fields';
+import { ColorDot, EditCard, ValueCapsule, ValueCircle } from '@/components/edit/fields';
 import { SEASON_ICON } from '@valet/ui';
 import { Capsule, Hint, Monogram, Wrap } from './parts';
 import { Icon } from '@/components/Icon';
@@ -66,22 +66,16 @@ function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
 }
 
 /**
- * Steckbrief (Spec 4): Aussehen, Tragen, Details, Pflege. Kategorie nur die letzte Stufe; Skalen statt Kapseln;
- * Pflege als Symbol-Kreise, geschätzte grau mit Stern; Wendbar: Farben je Seite.
+ * Steckbrief (Spec 4, verschlankt 19.11.2026, KI-Analyse v2 Spec 14): nur Kategorie, Saison, Farben, Material, Größe,
+ * Passform (Begriffe statt Skalen, fitWords) und Pflege. Muster, Stil, Kragen, Verschluss, Trägerart, Lagen und Wetter
+ * stehen im Blatt „KI-Analyse“ (Zeile am Ende). Bearbeiten zeigt weiter alle Felder.
  */
-export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void }) {
+export function SteckbriefView({ f, onCare, onEdit, onAnalysis }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void; onAnalysis?: () => void }) {
   const t = useTheme();
-  const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x) => <ValueCapsule key={x} label={x} />);
+  const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x, i) => <ValueCapsule key={`${i}-${x}`} label={x} />);
   const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={colorLabel(c)}><ColorDot name={c} onFill /></ValueCircle>);
-  /** gespeicherter Key → deutsches Label (leer bleibt leer) */
-  const lbl = (fn: (k: string) => string) => (k: string | null | undefined) => (k ? fn(k) : null);
   const fx = fieldsFor(f.category, f.subcategory);
   const rev = fx.reversible && f.reversible;
-  const scales = fitScalesOf(f.category);
-  const fit = scales.filter((sc) => f.fit[sc.key] != null).map((sc) => (
-    <ValueScale key={sc.key} caption={sc.label} steps={sc.steps.length} on={(i) => i === f.fit[sc.key]} a11y={`${sc.label} ${sc.steps[f.fit[sc.key]!]}`} />
-  ));
-  const fitWord = scales.filter((sc) => f.fit[sc.key] != null).map((sc) => sc.steps[f.fit[sc.key]!]).join(', ');
   const care = careList(f.care);
   const estimated = care.some((c) => c.src === 'geschaetzt');
   const aussehen: [string, React.ReactNode[]][] = [
@@ -89,34 +83,14 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
     ['Saison', SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)],
     [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
     ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
-    [rev ? 'Muster Seite A' : 'Muster', fx.pattern ? caps([lbl(patternLabel)(f.pattern)]) : []],
-    ...(rev && fx.pattern ? [['Muster Seite B', caps([lbl(patternLabel)(f.patternB)])] as [string, React.ReactNode[]]] : []),
     ['Material', caps(f.materials.map((m) => materialLabel(m.name)))],
     ['Größe', fx.size ? caps([sizeText(f.sizeSystem, f.size), fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
-  ];
-  const tragen: [string, React.ReactNode[]][] = [
-    ['Passform', fit.length ? [...fit, <Text key="w" style={{ fontSize: 13, color: t.inkMuted }}>{fitWord}</Text>] : []],
-    ['Lagen', !fx.layers ? [] : [
-      ...(f.layers.length ? [<ValueScale key="l" steps={LAYERS.length} on={(i) => f.layers.includes(i)} a11y={`Lagen: ${f.layers.map((i) => LAYERS[i]).join(', ')}`} />] : []),
-      ...(f.standalone ? [<Text key="a" style={{ fontSize: 13, color: t.inkMuted }}>auch allein tragbar</Text>] : []),
-    ]],
-    ['Wetter', !fx.weather ? [] : [
-      ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <Icon name="thermo" size="inline" color={c} />} />] : []),
-      ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <Icon name="drop" size="inline" color={c} />} />] : []),
-    ]],
-  ];
-  const details: [string, React.ReactNode[]][] = [
-    ['Stil', caps(f.styles.map(styleLabel))],
-    [fx.neckline?.label ?? 'Kragen', fx.neckline ? caps([lbl(collarLabel)(f.collar)]) : []],
-    ['Verschluss', fx.closure ? caps([lbl(closureLabel)(f.closure)]) : []],
-    ['Trägerart', fx.strap ? caps([lbl(strapLabel)(f.strap)]) : []],
+    ['Passform', caps(fitWords(f))],
   ];
   const has = (rows: [string, React.ReactNode[]][]) => rows.some(([, v]) => v.length > 0);
   return (
     <>
       {has(aussehen) && <EditCard title="Aussehen" rows><Rows rows={aussehen} /></EditCard>}
-      {has(tragen) && <EditCard title="Tragen" rows><Rows rows={tragen} /></EditCard>}
-      {has(details) && <EditCard title="Details" rows><Rows rows={details} /></EditCard>}
       {fx.care && <EditCard title="Pflege" rows={care.length > 0}>
         {care.length ? (
           <View style={{ paddingBottom: 12 }}>
@@ -149,6 +123,14 @@ export function SteckbriefView({ f, onCare, onEdit }: { f: EditForm; onCare: (g:
           </View>
         )}
       </EditCard>}
+      {onAnalysis && (
+        <Pressable accessibilityRole="button" accessibilityLabel="KI-Analyse öffnen" onPress={onAnalysis}
+          style={({ pressed }) => [s.plainRow, { backgroundColor: t.surface, borderColor: t.hairline, minHeight: 52, opacity: pressed ? 0.7 : 1 }]}>
+          <Icon name="sparkle" size="row" color={t.accent} />
+          <Text style={{ flex: 1, fontSize: 16, color: t.ink }}>KI-Analyse</Text>
+          <Icon name="chevron" size="inline" color={t.inkMuted} />
+        </Pressable>
+      )}
     </>
   );
 }
