@@ -289,6 +289,11 @@ export function scoreOutfit(items: readonly OutfitItem[], ctx: DayContext, cfg: 
   let statement = 1 - 0.6 * Math.max(0, stm - cfg.maxStatements) - 0.4 * Math.max(0, loud - cfg.maxLoudPatterns);
   if (stm > cfg.maxStatements) notes.push(`${stm} Statement-Teile`);
   if (loud > cfg.maxLoudPatterns) notes.push(`${loud} laute Muster`);
+  // Vielseitigkeit 1–2 („sehr/eher speziell“, z. B. goldene Jacke): bei Alltags-Anlässen Abzug, bei Party/Date/Besonderer Anlass/Formell nicht
+  if (!cfg.specialOccasions.includes(ctx.occasion)) {
+    const special = items.filter((i) => { const v = Number(i.profile?.versatility); return Number.isFinite(v) && v > 0 && v <= cfg.specialMax; });
+    if (special.length) { statement -= 0.35 * special.length; notes.push(`${special.length === 1 ? 'Spezielles Teil' : `${special.length} spezielle Teile`} für ${ctx.occasion === 'everyday' ? 'den Alltag' : 'diesen Anlass'}`); }
+  }
   statement = clamp(statement);
 
   const occ = cfg.occasionFormality[ctx.occasion];
