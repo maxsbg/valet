@@ -141,7 +141,7 @@ export const patternLabel = (key: string | null | undefined): string => label(PA
 export const STYLES: KeyList = KEY_LISTS.styles;
 export const styleLabel = (key: string | null | undefined): string => label(STYLES, key);
 /** Alte Stile → neue Liste („Schick“ wird je Teil entschieden, Vorgabe Klassisch) */
-export const LEGACY_STYLES: Readonly<Record<string, string>> = { Casual: 'Lässig', Streetwear: 'Street', Business: 'Business Casual', Sport: 'Sportlich', Schick: 'Klassisch' };
+export const LEGACY_STYLES: Readonly<Record<string, string>> = { 'Lässig': 'Casual', Streetwear: 'Street', Business: 'Business Casual', Sport: 'Sportlich', Schick: 'Klassisch' };
 /** Stile lesen: Key, Label oder alter Stil → Key */
 export const toStyleKeys = (values: unknown): string[] => toKeys(STYLES, values, LEGACY_STYLES);
 
