@@ -65,3 +65,12 @@ test('Würfeln liefert vollständige Outfits', () => {
   assert.ok(outfits.length >= 1);
   for (const o of outfits) for (const s of ['bottom', 'base', 'mid', 'outer', 'shoes'] as const) assert.ok(o.slots[s], s);
 });
+
+test('Spezielle Teile (Vielseitigkeit 1–2) nur im Alltag abgewertet', () => {
+  const gold = it({ id: 'g', category: 'outerwear', subcategory: 'blouson', colors: ['gold'], profile: { versatility: 1 } });
+  const jeans = it({ id: 'j', category: 'pants', subcategory: 'jeans', colors: ['black'] });
+  const alltag = scoreOutfit([gold, jeans], day({ occasion: 'everyday' }));
+  const party = scoreOutfit([gold, jeans], day({ occasion: 'party' }));
+  assert.ok(alltag.parts.statement < party.parts.statement);
+  assert.ok(alltag.notes.some((n) => n.startsWith('Spezielles Teil')));
+});

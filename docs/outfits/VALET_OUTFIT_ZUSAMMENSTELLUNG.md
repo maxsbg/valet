@@ -97,6 +97,7 @@ Jedes Kriterium 0–1, mal Gewicht, normiert auf 0–100. Je Slot zufällig aus 
   - Navy bleibt Mode-Neutrale; zu anderen Blautönen gilt es als Blau (gleiche Familie).
   - **Navy + Schwarz ist okay** (verschiedene Familien, kein „fast gleich“; Schalter `navyBlackNearSame` aus).
 - **Auffälligkeit und Muster (20):** höchstens ein Statement-Teil; höchstens ein lautes Muster, dezent zu laut ist okay.
+  - **Spezielle Teile (Max, 21.11.2026):** Vielseitigkeit 1–2 („sehr/eher speziell“, z. B. goldene Jacke) bekommen bei Alltag, Campus, Büro, Café usw. Abzug, bei Party, Date, Besonderer Anlass und Formell nicht. „Festlich“ kommt bewusst nicht in die Formalität (Formalität = Dresscode-Stufe).
 - **Formalität (10):** je enger die Bereiche und je näher an der Mitte des Anlasses, desto besser.
 - **Proportion (10):** weit oben + weit unten leichter Abzug; Schuhgewicht passend zur Hosenweite. (Max hat dazu noch einen Punkt.)
 - **Oberfläche (5):** vorläufig: höchstens ein glänzendes Teil, Mischung glatt/strukturiert leichter Bonus – **noch genauer durchgehen**.

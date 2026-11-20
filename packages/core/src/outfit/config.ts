@@ -38,6 +38,9 @@ export type OutfitConfig = {
   /** Statement-Teile und laute Muster */
   maxStatements: number;
   maxLoudPatterns: number;
+  /** Spezielle Teile (Vielseitigkeit ≤ specialMax) bei Alltags-Anlässen abwerten (Max, 21.11.2026) */
+  specialMax: number;
+  specialOccasions: readonly OccasionKey[];
   /** Auswahl: zufällig aus den besten k je Slot */
   topK: number;
   /** Vielfalt: Tage */
@@ -68,6 +71,8 @@ export const DEFAULT_OUTFIT_CONFIG: OutfitConfig = {
   navyBlackNearSame: false,
   maxStatements: 1,
   maxLoudPatterns: 1,
+  specialMax: 2,
+  specialOccasions: ['party', 'date', 'special_occasion', 'formal'],
   topK: 4,
   recentDays: 7,
   idleDays: 30,
