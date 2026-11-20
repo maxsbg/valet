@@ -8,7 +8,7 @@ import {
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
-  PROFILE_FIELDS, SCALE_WORDS,
+  PROFILE_FIELDS, profileLabel,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -117,14 +117,14 @@ export function ItemEditor(p: Props) {
   const setProfile = (key: string, value: unknown) => set('profile', { ...f.profile, [key]: value } as EditForm['profile']);
   const profileRow = (field: (typeof PROFILE_FIELDS)[number], last: boolean): React.ReactNode => {
     const value = f.profile[field.key as keyof EditForm['profile']] as unknown;
-    const scaleLabels = SCALE_WORDS[field.key as keyof typeof SCALE_WORDS] ?? [];
+    const scaleLabels = field.kind === 'scale' || field.kind === 'range' ? [1, 2, 3, 4, 5].map((n) => profileLabel(field.key, n)).filter(Boolean) : [];
     let values: React.ReactNode[] = [];
     if (field.kind === 'scale') {
       const n = typeof value === 'number' ? value : null;
-      values = n == null ? [] : [<ValueCapsule key="v" label={scaleLabels[n - 1] ?? String(n)} />];
+      values = n == null ? [] : [<ValueCapsule key="v" label={profileLabel(field.key, n) || String(n)} />];
     } else if (field.kind === 'range') {
       const range = Array.isArray(value) ? value as readonly [number, number] : null;
-      values = range ? [<ValueCapsule key="v" label={range[0] === range[1] ? (scaleLabels[range[0] - 1] ?? String(range[0])) : `${scaleLabels[range[0] - 1] ?? range[0]} bis ${scaleLabels[range[1] - 1] ?? range[1]}`} />] : [];
+      values = range ? [<ValueCapsule key="v" label={range[0] === range[1] ? (profileLabel(field.key, range[0]) || String(range[0])) : `${profileLabel(field.key, range[0]) || range[0]} bis ${profileLabel(field.key, range[1]) || range[1]}`} />] : [];
     } else if (field.kind === 'enum') {
       const selected = typeof value === 'string' ? field.values.find((x) => x.key === value) : null;
       values = selected ? [<ValueCapsule key="v" label={selected.label} />] : [];
@@ -132,14 +132,14 @@ export function ItemEditor(p: Props) {
       values = (Array.isArray(value) ? value : []).map((key) => <ValueCapsule key={String(key)} label={field.values.find((x) => x.key === key)?.label ?? String(key)} />);
     }
     return <SimpleEditRow key={field.key} label={field.label} last={last} values={values}>
-      {field.kind === 'scale' && <Wrap>{scaleLabels.map((label, i) => <Capsule key={i} label={label} selected={value === i + 1} onPress={() => setProfile(field.key, value === i + 1 ? null : i + 1)} />)}</Wrap>}
+      {field.kind === 'scale' && <Wrap>{[1, 2, 3, 4, 5].map((n, i) => profileLabel(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={value === i + 1} onPress={() => setProfile(field.key, value === i + 1 ? null : i + 1)} />)}</Wrap>}
       {field.kind === 'range' && (() => {
         const range = Array.isArray(value) ? value as readonly [number, number] : null;
         return <View style={{ gap: 8 }}>
           <FieldLabel>Von</FieldLabel>
-          <Wrap>{scaleLabels.map((label, i) => <Capsule key={i} label={label} selected={(range?.[0] ?? 3) === i + 1} onPress={() => { const lo = i + 1; setProfile(field.key, [lo, Math.max(lo, range?.[1] ?? lo)]); }} />)}</Wrap>
+          <Wrap>{[1, 2, 3, 4, 5].map((n) => profileLabel(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[0] === i + 1} onPress={() => { const lo = i + 1; setProfile(field.key, [lo, Math.max(lo, range?.[1] ?? lo)]); }} />)}</Wrap>
           <FieldLabel>Bis</FieldLabel>
-          <Wrap>{scaleLabels.map((label, i) => <Capsule key={i} label={label} selected={(range?.[1] ?? 3) === i + 1} onPress={() => { const hi = i + 1; setProfile(field.key, [Math.min(range?.[0] ?? hi, hi), hi]); }} />)}</Wrap>
+          <Wrap>{[1, 2, 3, 4, 5].map((n) => profileLabel(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[1] === i + 1} onPress={() => { const hi = i + 1; setProfile(field.key, [Math.min(range?.[0] ?? hi, hi), hi]); }} />)}</Wrap>
         </View>;
       })()}
       {field.kind === 'enum' && <Wrap>{field.values.map((option) => <Capsule key={option.key} label={option.label} selected={value === option.key} onPress={() => setProfile(field.key, value === option.key ? null : option.key)} />)}</Wrap>}
