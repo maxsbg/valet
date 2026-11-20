@@ -7,6 +7,7 @@ import { itemTile, tile } from '@valet/ui';
 import { ItemPicture, RATIO, tileHeight } from './ItemPicture';
 import { Glass, Mono, Num, Price, WaitRing } from './tile/TileBadge';
 import { TileIcon } from './tile/TileIcons';
+import { useSettings } from '@/lib/settings';
 
 // Schrank-Kachel – verbindlich: docs/design/kachel/VALET_KACHEL_SPEC.md + valet-kachel-referenz.html.
 // Kein Text auf der Kachel (außer Monogramm und Zahlen), weiß auch im dunklen Modus, alle Maße aus den Tokens.
@@ -76,6 +77,8 @@ export type TileItem = {
   createdAt?: string | null;
   /** Wunschliste: Kategorie (Grail, Watchlist, Next Cop, Someday, Gift) – Plakette oben links */
   wishTag?: WishTag | null;
+  /** Produktlink; null = fehlt → kleiner roter Punkt oben mittig (abschaltbar im Profil). undefined = unbekannt, kein Punkt */
+  link?: string | null;
 };
 
 type Props = {
@@ -107,6 +110,7 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
   const photoInset = squarePhoto ? Math.round(width * 0.1) : T.photoInset;
   const photoShape = squarePhoto ? { kind: item.size ?? item.kind ?? item.category, width, height: h } : undefined;
   const glow = glowFor(item.colors, item.hex);
+  const { linkDot } = useSettings();
   const tr = topRightFor(item.reversible, item.qty, !!item.setId);
   // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)
   const price = item.isWish ? priceLabel(item.price) : null;
@@ -148,6 +152,9 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
           </View>
         )}
       </Animated.View>
+
+      {/* oben mittig: Link fehlt (Max, 20.11.2026; im Profil abschaltbar) */}
+      {linkDot && !item.isWish && item.link === null && <View style={s.dot} accessibilityLabel="Link fehlt" />}
 
       {/* oben links: Status bzw. bei Wunschteilen die Kategorie (bzw. vorläufig Auswahl im Baukasten) */}
       {selected ? (
@@ -258,6 +265,7 @@ const s = StyleSheet.create({
   hidden: { opacity: 0 },
   edge: { ...StyleSheet.absoluteFill, borderRadius: T.radius, boxShadow: `inset 0 0 0 ${T.edgeWidth}px ${T.edge}` },
   tl: { position: 'absolute', top: B.inset, left: B.inset },
+  dot: { position: 'absolute', top: B.inset + 2, left: '50%', marginLeft: -3.5, width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#D93A2B' },
   // alignItems flex-end: Anzahl-Kapsel (gleich breit wie die Plakette) sitzt mittig unter der Eck-Plakette
   tr: { position: 'absolute', top: B.inset, right: B.inset, flexDirection: 'column', alignItems: 'flex-end', gap: B.stackGap },
   trRow: { flexDirection: 'row', alignItems: 'center' },

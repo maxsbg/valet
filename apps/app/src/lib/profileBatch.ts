@@ -1,8 +1,11 @@
-// Stapellauf „Profile ergänzen“ (KI-Analyse v2, Spec 8): ergänzt das Profil aller Teile ohne meta.v ≥ 2.
+// Stapellauf „Profile ergänzen“ (KI-Analyse v2, Spec 8): analysiert alle Teile ohne meta.v ≥ 2.
+// Seit 20.11.2026 (Max): wie „Neu analysieren“ – Profil plus leere Felder (Wärme, Regen, Saison …) als KI-Vorschlag,
+// danach analysis.review = offen → einzeln prüfen unter /ki-pruefen (Übernehmen / Überspringen).
 // Läuft modulweit (nicht in der Seite), damit er beim Tab-Wechsel weiterläuft. Höchstens BATCH_PER_MIN je Minute
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
-import { hasProfile, profileFilled, BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
+import { hasProfile, profileFilled, BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchChange, batchErrorKind, confirmedContext, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, reviewKey, reviewOpen, toEditForm, type EditForm, type EditRow, type ProfilePatchRow } from '@valet/core';
+import { loadItem } from './item';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -95,10 +98,22 @@ const save = async (id: string, change: Record<string, unknown>) => {
 };
 
 /** Offene und übersprungene Teile zählen (ohne Lauf) */
-export async function countBatch(wardrobeId: string): Promise<{ pending: number; skipped: number }> {
+export async function countBatch(wardrobeId: string): Promise<{ pending: number; skipped: number; review: number }> {
   const rows = await loadRows(wardrobeId);
-  return { pending: rows.filter((r) => batchPending(r.analysis)).length, skipped: rows.filter((r) => batchSkipped(r.analysis)).length };
+  return { pending: rows.filter((r) => batchPending(r.analysis)).length, skipped: rows.filter((r) => batchSkipped(r.analysis)).length, review: rows.filter((r) => reviewOpen(r.analysis)).length };
 }
+
+/** IDs der Teile mit offenem KI-Ergebnis, in Prüf-Reihenfolge (übersprungene hinten) */
+export async function reviewQueue(wardrobeId: string): Promise<string[]> {
+  const rows = await loadRows(wardrobeId);
+  return rows.filter((r) => reviewOpen(r.analysis)).sort((a, b) => reviewKey(a.analysis).localeCompare(reviewKey(b.analysis))).map((r) => r.id);
+}
+
+/** Formular eines Teils frisch aus der Datenbank */
+export async function loadForm(id: string): Promise<EditForm | null> {
+  try { return toEditForm((await loadItem(id)).item as unknown as EditRow); } catch { return null; }
+}
+const rowOf = (f: EditForm): ProfilePatchRow => ({ category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending, name: f.name });
 
 export async function startBatch(wardrobeId: string) {
   if (state.phase === 'running' || state.phase === 'loading') return;
@@ -134,7 +149,9 @@ export async function startBatch(wardrobeId: string) {
       let a: Awaited<ReturnType<typeof analyzeStored>>;
       let counted = false;
       try {
-        a = await analyzeStored(path);
+        // bestätigte Werte als Kontext, damit das Profil zu ihnen passt (wie „Neu analysieren“)
+        const before = await loadForm(r.id);
+        a = await analyzeStored(path, before ? confirmedContext(before) : '');
         countCall(); counted = true;
         // ohne Mode-Profil zählt die Antwort nicht als Ergänzung (sonst stünde ein leeres Profil als „analysiert“ da)
         if (!profileFilled(a)) throw new Error('empty_answer');
@@ -165,10 +182,10 @@ export async function startBatch(wardrobeId: string) {
       pausedOn = null; rejectedRun = 0;
       try {
         // frisch lesen: wurde das Teil während des Laufs bearbeitet oder neu analysiert, gilt dessen Stand
-        const now = await loadRow(r.id);
-        if (!now) continue; // inzwischen gelöscht
-        if (!batchPending(now.analysis)) continue; // inzwischen anders analysiert – nicht als „ergänzt“ zählen
-        await save(r.id, profilePatch(now, a));
+        if (!(await loadRow(r.id))) continue; // inzwischen gelöscht
+        const fresh = toEditForm((await loadItem(r.id)).item as unknown as EditRow);
+        if (!batchPending(fresh.analysisBase)) continue; // inzwischen anders analysiert – nicht als „ergänzt“ zählen
+        await save(r.id, batchChange(fresh, rowOf(fresh), a));
         set({ done: state.done + 1 });
       } catch (e) {
         console.warn('Profile ergänzen: Speichern', e);

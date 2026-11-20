@@ -4,7 +4,7 @@
 import { fitScalesOf } from '../categories';
 import { LAYERS, RAIN, WARMTH, collarLabel, closureLabel, patternLabel, styleLabel } from '../attributes';
 import { fieldsFor, layersOf, strapLabel } from '../fields';
-import { editChange, type EditForm } from '../edit';
+import { confirmAllAi, editChange, type EditForm } from '../edit';
 import { profileFieldsFor, activeProfile, profileLabel, type Ctx, type Group, type ProfileKey } from './profile';
 import { applyAnalysis, profilePatch, type Analysis, type ProfilePatchRow } from './analyzeItem';
 
@@ -197,4 +197,41 @@ export function kiMessage(code: string, status: number | null): string {
   if (status == null) return 'Keine Verbindung zur KI. Bitte Netz prüfen und noch einmal versuchen.';
   if (status >= 400 && status < 500) return 'Die Anfrage an die KI war ungültig. Bitte noch einmal versuchen.';
   return 'Die KI ist gerade nicht erreichbar. Bitte später noch einmal.';
+}
+
+// ---------- Ergebnisse prüfen (Stapellauf, Max 20.11.2026) ----------
+// Der Stapellauf schreibt Profil und leere Felder als KI-Vorschläge und setzt analysis.review = { state: 'open', at }.
+// Max geht die Ergebnisse einzeln durch: „Übernehmen“ bestätigt alle Vorschläge (review done), „Überspringen“
+// schiebt das Teil ans Ende (skippedAt). Die Analyse läuft unabhängig davon weiter.
+
+export type Review = { state: 'open' | 'done'; at: string; skippedAt?: string | null };
+
+export function reviewOf(analysis: unknown): Review | null {
+  const r = isObj(analysis) ? analysis.review : null;
+  if (!isObj(r) || (r.state !== 'open' && r.state !== 'done') || typeof r.at !== 'string') return null;
+  return { state: r.state, at: r.at, skippedAt: typeof r.skippedAt === 'string' ? r.skippedAt : null };
+}
+export const reviewOpen = (analysis: unknown): boolean => reviewOf(analysis)?.state === 'open';
+export const withReview = (analysis: unknown, review: Review): Record<string, unknown> => ({ ...(isObj(analysis) ? analysis : {}), review });
+/** Reihenfolge der Prüfliste: ältestes Ergebnis zuerst, übersprungene hinten (nach dem Überspringen) */
+export const reviewKey = (analysis: unknown): string => { const r = reviewOf(analysis); return r ? (r.skippedAt ? '1' + r.skippedAt : '0' + r.at) : '2'; };
+
+/** Stapellauf: wie „Neu analysieren“ (leere/offene Felder als Vorschlag, Profil ersetzt) + zur Prüfung vormerken */
+export function batchChange(form: EditForm, row: ProfilePatchRow, a: Analysis, now: string = new Date().toISOString()): Record<string, unknown> {
+  const c = reanalysisChange(form, row, a, now);
+  return { ...c, analysis: withReview(c.analysis, { state: 'open', at: now }) };
+}
+
+/** „Übernehmen“: alle KI-Vorschläge bestätigen, Prüfung erledigt */
+export function acceptReviewChange(form: EditForm, now: string = new Date().toISOString()): Record<string, unknown> {
+  const done: Review = { state: 'done', at: now };
+  const r = editChange(confirmAllAi(form));
+  if ('error' in r) return { ai_pending: [], analysis: withReview(form.analysisBase, done) };
+  return { ...r.change, analysis: withReview(r.change.analysis ?? form.analysisBase, done) };
+}
+
+/** „Überspringen“: ans Ende der Prüfliste */
+export function skipReviewChange(analysis: unknown, now: string = new Date().toISOString()): Record<string, unknown> {
+  const r = reviewOf(analysis);
+  return { analysis: withReview(analysis, { state: 'open', at: r?.at ?? now, skippedAt: now }) };
 }

@@ -134,3 +134,14 @@ test('Einstellungsfehler der KI pausieren, 4xx bekommt einen eigenen Satz', () =
   assert.match(kiMessage('config_error', 503), /eingerichtet/);
   assert.match(kiMessage('', 400), /ungültig/);
 });
+
+import { reviewKey, reviewOpen, skipReviewChange, withReview } from '../src/ai/view';
+test('KI-Ergebnisse prüfen: offen, Reihenfolge, Überspringen ans Ende', () => {
+  const a = withReview({ profile: {} }, { state: 'open', at: '2026-11-20T10:00:00Z' });
+  const b = withReview({}, { state: 'open', at: '2026-11-20T11:00:00Z' });
+  assert.ok(reviewOpen(a) && !reviewOpen({}) && !reviewOpen(withReview({}, { state: 'done', at: 'x' })));
+  assert.ok(reviewKey(a) < reviewKey(b));
+  const skipped = skipReviewChange(a, '2026-11-20T12:00:00Z').analysis;
+  assert.ok(reviewOpen(skipped) && reviewKey(b) < reviewKey(skipped));
+  assert.deepEqual((skipped as { profile: unknown }).profile, {});
+});
