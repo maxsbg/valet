@@ -247,7 +247,7 @@ export function ItemEditor(p: Props) {
             <Hint>Die Zahl ist die Reihenfolge nach Anteil, 1 = Hauptmaterial.</Hint>
             {f.materials.map((part) => <TextField key={part.name} label={`${materialLabel(part.name)} · Anteil in %`} value={part.pct == null ? '' : String(part.pct)}
               onChange={(v) => set('materials', f.materials.map((m) => m.name !== part.name ? m : { ...m, pct: v.trim() ? Math.max(1, Math.min(100, Math.round(Number(v.replace(',', '.')) || 1))) : null }))}
-              placeholder="optional" keyboardType="number-pad" inputMode="numeric" />)}
+              placeholder="optional" keyboardType="decimal-pad" inputMode="decimal" />)}
           </SimpleEditRow>
         ),
         !!fx.size && ((last) => (
