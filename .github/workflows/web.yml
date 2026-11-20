@@ -33,7 +33,7 @@ jobs:
       - name: Live-App aktualisieren und Vorschau behalten
         if: github.ref == 'refs/heads/main'
         run: |
-          PAGES_DIR="$GITHUB_WORKSPACE/pages"
+          PAGES_DIR="$GITHUB_WORKSPACE"
           test "$(git -C "$PAGES_DIR" rev-parse --show-toplevel)" = "$PAGES_DIR"
           test -f "$GITHUB_WORKSPACE/apps/app/dist/index.html"
           rsync -a --delete --exclude='/preview/' "$GITHUB_WORKSPACE/apps/app/dist/" "$PAGES_DIR/"
