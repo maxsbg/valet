@@ -86,36 +86,35 @@ const WEAK = 6;
 export function analysisSections(f: EditForm): AnalysisSection[] {
   const fx = fieldsFor(f.category, f.subcategory);
   const rev = fx.reversible && f.reversible;
-  const row = (label: string, value: string | null | undefined): AnalysisRow[] => (value ? [{ label, value }] : []);
+  const ctx = profileCtx(f);
+  const p = activeProfile(f.profile, ctx) as Record<string, unknown>;
+  const shown = (label: string, value: string | null | undefined): AnalysisRow =>
+    ({ label, value: value || 'Noch nicht angegeben' });
   const details: AnalysisRow[] = [
-    ...(fx.pattern ? row(rev ? 'Muster Seite A' : 'Muster', f.pattern ? patternLabel(f.pattern) : '') : []),
-    ...(fx.pattern && rev ? row('Muster Seite B', f.patternB ? patternLabel(f.patternB) : '') : []),
-    ...row('Stil', f.styles.map(styleLabel).filter(Boolean).join(', ')),
-    ...(fx.neckline ? row(fx.neckline.label, f.collar ? collarLabel(f.collar) : '') : []),
-    ...(fx.closure ? row('Verschluss', f.closure ? closureLabel(f.closure) : '') : []),
-    ...(fx.strap ? row('Trägerart', f.strap ? strapLabel(f.strap) : '') : []),
+    ...(fx.pattern ? [shown(rev ? 'Muster Seite A' : 'Muster', f.pattern ? patternLabel(f.pattern) : '')] : []),
+    ...(fx.pattern && rev ? [shown('Muster Seite B', f.patternB ? patternLabel(f.patternB) : '')] : []),
+    shown('Stil', f.styles.map(styleLabel).filter(Boolean).join(', ')),
+    ...(fx.neckline ? [shown(fx.neckline.label, f.collar ? collarLabel(f.collar) : '')] : []),
+    ...(fx.closure ? [shown('Verschluss', f.closure ? closureLabel(f.closure) : '')] : []),
+    ...(fx.strap ? [shown('Trägerart', f.strap ? strapLabel(f.strap) : '')] : []),
   ];
   const wear: AnalysisRow[] = [
-    // „ · “, weil Lagen-Namen selbst Kommas enthalten („Mitte, zu“)
-    ...(fx.layers ? row('Lagen', [...f.layers].sort().map((i) => LAYERS[i]).filter(Boolean).join(' · ')) : []),
-    ...(fx.layers && f.standalone ? row('Allein tragbar', 'ja') : []),
-    ...(fx.weather ? row('Wärme', f.warmth != null ? WARMTH[f.warmth] : '') : []),
-    ...(fx.weather ? row('Regen', f.rain != null ? RAIN[f.rain] : '') : []),
+    ...(fx.layers ? [shown('Lagen', [...f.layers].sort().map((i) => LAYERS[i]).filter(Boolean).join(' · '))] : []),
+    ...(fx.layers ? [shown('Allein tragbar', f.standalone ? 'Ja' : 'Nein')] : []),
+    ...(fx.weather ? [shown('Wärme', f.warmth != null ? WARMTH[f.warmth] : '')] : []),
+    ...(fx.weather ? [shown('Regen', f.rain != null ? RAIN[f.rain] : '')] : []),
   ];
   const out: AnalysisSection[] = [
     { key: 'details', title: 'Details', rows: details, weak: false },
     { key: 'wear', title: 'Tragen', rows: wear, weak: false },
   ];
-  if (hasProfile(f.analysisBase) || f.aiMeta) {
-    const p = activeProfile(f.profile, profileCtx(f)) as Record<string, unknown>;
-    for (const g of ['shape', 'surface', 'style'] as const) {
-      const rows = PROFILE_FIELDS.filter((x) => x.group === g && x.key in p)
-        .flatMap((x) => row(ROW_LABEL[x.key as ProfileKey] ?? x.label, profileLabel(x.key, p[x.key as ProfileKey])));
-      const c = f.confidence[g];
-      out.push({ key: g, title: SECTION_TITLE[g], rows, weak: c != null && c < WEAK });
-    }
+  for (const g of ['shape', 'surface', 'style'] as const) {
+    const rows = PROFILE_FIELDS.filter((x) => x.group === g && x.applies(ctx))
+      .map((x) => shown(ROW_LABEL[x.key as ProfileKey] ?? x.label, profileLabel(x.key, p[x.key as ProfileKey])));
+    const confidence = f.confidence[g];
+    out.push({ key: g, title: SECTION_TITLE[g], rows, weak: confidence != null && confidence < WEAK });
   }
-  return out.filter((s) => s.rows.length > 0);
+  return out.filter((section) => section.rows.length > 0);
 }
 
 // ---------- Einzel-Nachanalyse („Neu analysieren“) ----------
