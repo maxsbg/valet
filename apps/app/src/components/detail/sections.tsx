@@ -59,10 +59,6 @@ export function ReadRow({ label, values, last }: { label: string; values: React.
   );
 }
 
-function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
-  const shown = rows.filter(([, v]) => v.length > 0);
-  return <>{shown.map(([l, v], i) => <ReadRow key={l} label={l} values={v} last={i === shown.length - 1} />)}</>;
-}
 
 /**
  * Steckbrief (Spec 4, verschlankt 19.11.2026, KI-Analyse v2 Spec 14): nur Kategorie, Saison, Farben, Material, Größe,
