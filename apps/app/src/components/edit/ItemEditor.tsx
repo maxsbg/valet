@@ -270,7 +270,7 @@ export function ItemEditor(p: Props) {
         scales.length > 0 && ((last) => (
           <SimpleEditRow label="Passform" open={!!open.fit} onToggle={() => toggle('fit')} ai={ai('fit')} last={last}
             values={scales.filter((sc) => f.fit[sc.key] != null).map((sc) => (
-              <ValueScale key={sc.key} caption={sc.label} steps={sc.steps.length} on={(i) => i === f.fit[sc.key]} a11y={`${sc.label} ${sc.steps[f.fit[sc.key]!]}`} />
+              <ValueCapsule key={sc.key} label={sc.steps[f.fit[sc.key]!] ?? ''} />
             ))}>
             <FitPicker scales={scales} fit={f.fit} onPick={(k, i) => onForm(pickFit(f, k, i))} />
           </SimpleEditRow>

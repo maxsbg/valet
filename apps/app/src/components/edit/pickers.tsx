@@ -82,17 +82,18 @@ export function Scale({ caption, value, steps, on, onPick, lo, hi, labels, icon,
   );
 }
 
-/** Passform: Skalen je Kategorie (Stufen-Index) */
+/** Passform: je Skala die Begriffe der Kategorie als Kapseln (Slim · Regular · …); erneut tippen hebt auf */
 export function FitPicker({ scales, fit, onPick }: { scales: readonly FitScale[]; fit: Record<FitScale['key'], number | null>; onPick: (k: FitScale['key'], i: number) => void }) {
   return (
     <View style={{ gap: 14 }}>
-      {scales.map((sc) => {
-        const v = fit[sc.key];
-        return (
-          <Scale key={sc.key} caption={sc.label} value={v == null ? '–' : sc.steps[v]!} steps={sc.steps.length} on={(i) => v === i}
-            onPick={(i) => onPick(sc.key, i)} lo={sc.steps[0]} hi={sc.steps[sc.steps.length - 1]} a11y={(i) => `${sc.label}: ${sc.steps[i]}`} />
-        );
-      })}
+      {scales.map((sc) => (
+        <View key={sc.key} style={{ gap: 8 }}>
+          <FieldLabel>{sc.label}</FieldLabel>
+          <Wrap>{sc.steps.map((step, i) => (
+            <Capsule key={sc.keys[i]} label={step} selected={fit[sc.key] === i} a11y={`${sc.label}: ${step}`} onPress={() => onPick(sc.key, i)} />
+          ))}</Wrap>
+        </View>
+      ))}
     </View>
   );
 }
