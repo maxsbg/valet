@@ -22,23 +22,33 @@ test('Passform: Schulter nur, wenn nicht natürlich; Leeres entfällt', () => {
   assert.deepEqual(fitWords(form({ category: 'shoe', profile: p })), []);
 });
 
-test('Blatt: Details/Tragen aus dem Steckbrief, Profil nur mit meta.v 2', () => {
+test('Blatt: Details/Tragen plus dieselben anwendbaren Profilfelder wie im Editor', () => {
   const base = form({ category: 'top', subcategory: 'sweater', pattern: 'solid', styles: ['classic'], layers: [1, 0], warmth: 2,
     profile: { ...emptyProfile(), sheen: 1, surface: 'fine_knit', formality: [2, 4], leg: 'tapered', silhouette: 'straight' },
     confidence: { category: 10, color: 9, material: 7, surface: 5, shape: 9, style: 8 } });
-  const noProfile = analysisSections(base);
-  assert.deepEqual(noProfile.map((s) => s.title), ['Details', 'Tragen']);
+  const noProfile = analysisSections({ ...base, profile: emptyProfile() });
+  assert.deepEqual(noProfile.map((s) => s.title), ['Details', 'Tragen', 'Form', 'Oberfläche', 'Wirkung']);
   assert.ok(noProfile[0]!.rows.some((r) => r.label === 'Stil' && r.value === 'Klassisch'));
   assert.deepEqual(noProfile[1]!.rows.find((r) => r.label === 'Lagen')?.value, 'Unterlage · Mitte, zu');
+  const emptySurface = noProfile.find((s) => s.key === 'surface')!;
+  assert.ok(emptySurface.rows.some((r) => r.label === 'Glanz' && r.value === 'Noch nicht angegeben'));
+  assert.ok(!emptySurface.rows.some((r) => r.label === 'Mustergröße'));
 
   const s = analysisSections({ ...base, analysisBase: { meta: META } });
   assert.deepEqual(s.map((x) => x.title), ['Details', 'Tragen', 'Form', 'Oberfläche', 'Wirkung']);
   const surface = s.find((x) => x.key === 'surface')!;
   assert.equal(surface.weak, true);
-  assert.deepEqual(surface.rows, [{ label: 'Glanz', value: 'matt' }, { label: 'Stoffbild', value: 'Feinstrick' }]);
+  assert.deepEqual(surface.rows, [
+    { label: 'Glanz', value: 'matt' }, { label: 'Struktur', value: 'Noch nicht angegeben' },
+    { label: 'Optisches Gewicht', value: 'Noch nicht angegeben' }, { label: 'Stoffbild', value: 'Feinstrick' },
+    { label: 'Transparenz', value: 'Noch nicht angegeben' },
+  ]);
   // Beinverlauf gilt nicht für Oberteile → nie angezeigt
   assert.ok(!s.find((x) => x.key === 'shape')!.rows.some((r) => r.label === 'Beinverlauf'));
-  assert.deepEqual(s.find((x) => x.key === 'style')!.rows, [{ label: 'Formalität', value: 'Casual bis Business' }]);
+  assert.deepEqual(s.find((x) => x.key === 'style')!.rows, [
+    { label: 'Auffälligkeit', value: 'Noch nicht angegeben' }, { label: 'Vielseitigkeit', value: 'Noch nicht angegeben' },
+    { label: 'Formalität', value: 'Casual bis Business' }, { label: 'Eindruck', value: 'Noch nicht angegeben' },
+  ]);
   assert.ok(s.find((x) => x.key === 'shape')!.rows.some((r) => r.label === 'Silhouette'));
 });
 

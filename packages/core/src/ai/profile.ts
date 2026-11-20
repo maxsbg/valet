@@ -101,6 +101,10 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
     hint: 'höchstens 2 Begriffe, nur wenn sie klar zutreffen' },
 ];
 
+/** Profilfelder, die im aktuellen Kategorie- und Steckbrief-Kontext gelten. */
+export const profileFieldsFor = (ctx: Ctx, group?: Group): readonly ProfileField[] =>
+  PROFILE_FIELDS.filter((field) => field.applies(ctx) && (group == null || field.group === group));
+
 // ---------- Typen ----------
 
 export type Range = readonly [number, number];

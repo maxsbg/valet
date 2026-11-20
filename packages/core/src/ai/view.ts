@@ -5,7 +5,7 @@ import { fitScalesOf } from '../categories';
 import { LAYERS, RAIN, WARMTH, collarLabel, closureLabel, patternLabel, styleLabel } from '../attributes';
 import { fieldsFor, strapLabel } from '../fields';
 import { editChange, type EditForm } from '../edit';
-import { PROFILE_FIELDS, activeProfile, profileLabel, type Ctx, type Group, type ProfileKey } from './profile';
+import { profileFieldsFor, activeProfile, profileLabel, type Ctx, type Group, type ProfileKey } from './profile';
 import { applyAnalysis, profilePatch, type Analysis, type ProfilePatchRow } from './analyzeItem';
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -79,9 +79,7 @@ const ROW_LABEL: Partial<Record<ProfileKey, string>> = { silhouette: 'Silhouette
 const WEAK = 6;
 
 /**
- * Abschnitte des Blatts: „Details“ und „Tragen“ (aus dem Steckbrief, Spec 14: Muster, Stil, Kragen/Ausschnitt, Verschluss,
- * Trägerart, Lagen, Wetter) und – nur mit Profil v2 – „Form“, „Oberfläche“, „Wirkung“ (nur activeProfile).
- * Leere Zeilen und Abschnitte entfallen.
+ * Abschnitte des Blatts; Profilfelder werden wie im Editor anhand desselben Kontexts ausgewählt und auch leer gezeigt.
  */
 export function analysisSections(f: EditForm): AnalysisSection[] {
   const fx = fieldsFor(f.category, f.subcategory);
@@ -108,14 +106,11 @@ export function analysisSections(f: EditForm): AnalysisSection[] {
     { key: 'details', title: 'Details', rows: details, weak: false },
     { key: 'wear', title: 'Tragen', rows: wear, weak: false },
   ];
-  if (hasProfile(f.analysisBase)) {
-    for (const g of ['shape', 'surface', 'style'] as const) {
-      const rows = PROFILE_FIELDS.filter((x) => x.group === g && x.applies(ctx))
-        .map((x) => ({ label: ROW_LABEL[x.key as ProfileKey] ?? x.label, value: profileLabel(x.key, p[x.key as ProfileKey]) }))
-        .filter((row) => row.value !== '');
-      const confidence = f.confidence[g];
-      out.push({ key: g, title: SECTION_TITLE[g], rows, weak: confidence != null && confidence < WEAK });
-    }
+  for (const g of ['shape', 'surface', 'style'] as const) {
+    const rows = profileFieldsFor(ctx, g)
+      .map((x) => ({ label: ROW_LABEL[x.key as ProfileKey] ?? x.label, value: profileLabel(x.key, p[x.key as ProfileKey]) || 'Noch nicht angegeben' }));
+    const confidence = f.confidence[g];
+    out.push({ key: g, title: SECTION_TITLE[g], rows, weak: confidence != null && confidence < WEAK });
   }
   return out.filter((section) => section.rows.length > 0);
 }

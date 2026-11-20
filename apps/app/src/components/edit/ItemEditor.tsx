@@ -8,7 +8,7 @@ import {
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
-  PROFILE_FIELDS, profileLabel, scaleWord,
+  PROFILE_FIELDS, profileFieldsFor, profileLabel, scaleWord,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -152,7 +152,7 @@ export function ItemEditor(p: Props) {
     </SimpleEditRow>;
   };
   const profileCard = (group: 'shape' | 'surface' | 'style', title: string) => {
-    const fields = PROFILE_FIELDS.filter((field) => field.group === group && field.applies(profileContext));
+    const fields = profileFieldsFor(profileContext, group);
     return card(title, fields.map((field) => (last) => profileRow(field, last)));
   };
 
