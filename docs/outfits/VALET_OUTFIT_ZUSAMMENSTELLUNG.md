@@ -70,7 +70,14 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
 
 - Quelle vorerst **Open-Meteo** (kostenlos, ohne Schlüssel/Karte) hinter einer eigenen austauschbaren Schnittstelle (z. B. `WeatherProvider` → einheitliches Tageswetter: gefühlte Temperatur, Regenstufe). 
 - **Vermerk:** in der iOS-App später **WeatherKit** als weitere Quelle anschließen, ohne die Logik zu ändern.
-- Regenstufe aus den Stundenwerten des Tages festlegen – Grenzen noch mit Max abstimmen.
+- **Anlass zuerst (20.11.2026):** Der Anlass wird vor dem Generieren angegeben (vorbelegt, damit es ein Tipp bleibt). Er bestimmt Formalität und Zeitraum.
+- **Zeitraum je Anlass:** Vorgabe je Anlass (z. B. Büro/Campus tagsüber, Party abends bis ca. 3 Uhr, Folgetag mitlesen), bei Bedarf von–bis selbst ändern. Genaue Vorgaben je Anlass noch festlegen.
+- **Schalter „Regen berücksichtigen“** (Standard an): aus z. B. bei Auto/Taxi oder wenn man drinnen bleibt.
+- **Regenstufe = schlimmste Stunde im Zeitraum** nach Regenmenge (mm/h, einheitlicher als der Wettercode):
+  - Niesel: unter 0,5 mm/h
+  - Regen: 0,5 bis 4 mm/h
+  - Starkregen: ab 4 mm/h oder Gewitter
+- **Wahrscheinlichkeit:** Stunde zählt ab 50 % voll (harte Filter); 30–49 % nur als weicher Abzug für „schlecht“ regenfeste Teile, damit knappe Fälle nicht durchrutschen.
 
 ### Vielfalt
 
@@ -78,4 +85,4 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
 
 ## Nächster Schritt
 
-Regen-Grenzen festlegen, dann Schritt 4 (weiche Bewertung) gemeinsam mit Max durchgehen.
+Zeitraum-Vorgaben je Anlass festlegen, dann Schritt 4 (weiche Bewertung) gemeinsam mit Max durchgehen.
