@@ -5,7 +5,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleShee
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
-  layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
+  layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank, parsePct, setMaterialPct, materialPctSum, materialOrderOff, sortMaterialsByPct,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
   PROFILE_FIELDS, profileFieldsFor, profileLabel, scaleWord,
@@ -248,8 +248,14 @@ export function ItemEditor(p: Props) {
             })}</Wrap>
             <Hint>Die Zahl ist die Reihenfolge nach Anteil, 1 = Hauptmaterial.</Hint>
             {f.materials.map((part) => <TextField key={part.name} label={`${materialLabel(part.name)} · Anteil in %`} value={part.pct == null ? '' : String(part.pct)}
-              onChange={(v) => set('materials', f.materials.map((m) => m.name !== part.name ? m : { ...m, pct: v.trim() ? Math.max(1, Math.min(100, Math.round(Number(v.replace(',', '.')) || 1))) : null }))}
+              onChange={(v) => set('materials', setMaterialPct(f.materials, part.name, parsePct(v)))}
               placeholder="optional" keyboardType="decimal-pad" inputMode="decimal" />)}
+            {materialPctSum(f.materials) > 100 && <Hint accent>Zusammen {materialPctSum(f.materials)} %, höchstens 100 % möglich.</Hint>}
+            {materialOrderOff(f.materials) && (
+              <Text accessibilityRole="button" onPress={() => set('materials', sortMaterialsByPct(f.materials))} style={{ fontSize: 12, lineHeight: 16, color: t.accent }}>
+                Reihenfolge passt nicht zu den Anteilen · Nach Anteil sortieren
+              </Text>
+            )}
           </SimpleEditRow>
         ),
         !!fx.size && ((last) => (
