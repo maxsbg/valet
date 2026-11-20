@@ -27,6 +27,7 @@ function Gate() {
       <Stack.Screen name="bearbeiten/[id]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="neu" options={{ presentation: 'modal' }} />
       <Stack.Screen name="bilder-zuordnen" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="bilder-migration" options={{ presentation: 'modal' }} />
       <Stack.Screen name="outfit/[id]" />
       <Stack.Screen name="outfit-bauen" options={{ presentation: 'modal' }} />
     </Stack>}
