@@ -20,7 +20,7 @@ export const profileCtx = (f: Pick<EditForm, 'category' | 'subcategory' | 'patte
 
 /**
  * Kapseln der Zeile „Passform“: Form (silhouette bzw. leg bei Hose/Shorts), Weite, Länge, Bund, Schulter (nur ≠ „natural“).
- * Leere Werte entfallen; nur Profil-Felder, die für die Kategorie gelten. Beispiel Jeans: Zulaufend · Normal · Lang · Hoch.
+ * Leere Werte entfallen; nur Profil-Felder, die für die Kategorie gelten. Beispiel Jeans: Tapered · Normal · Lang · Hoch.
  */
 export function fitWords(f: Pick<EditForm, 'category' | 'subcategory' | 'pattern' | 'materials' | 'fit' | 'profile'>): string[] {
   const p = activeProfile(f.profile, profileCtx(f));
@@ -28,7 +28,7 @@ export function fitWords(f: Pick<EditForm, 'category' | 'subcategory' | 'pattern
   const form = legs ? profileLabel('leg', p.leg) : profileLabel('silhouette', p.silhouette);
   const set = fitScalesOf(f.category).filter((sc) => f.fit[sc.key] != null);
   const words = set.map((sc) => sc.steps[f.fit[sc.key]!] ?? '');
-  // Spec 14.2 („Zulaufend · Normal · Lang · Hoch“): je Stufe nur das Wort, ohne Bezeichnung (Max, 20.11.2026)
+  // Spec 14.2 („Tapered · Normal · Lang · Hoch“): je Stufe nur das Wort, ohne Bezeichnung (Max, 20.11.2026)
   const scales = words.map((w) => cap(w));
   const shoulder = p.shoulder && p.shoulder !== 'natural' ? profileLabel('shoulder', p.shoulder) : '';
   return [form, ...scales, shoulder].filter(Boolean);

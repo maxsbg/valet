@@ -10,15 +10,15 @@ import {
 const META = { v: 2, prompt: '2.0', model: 'gemini-3.5-flash-lite', at: '2026-11-19T11:00:00Z' };
 const form = (p: Partial<EditForm> = {}): EditForm => ({ ...emptyEditForm({ ownerId: 'max' }), name: 'Teil', ...p });
 
-test('Passform: Jeans „Zulaufend · Normal · Lang · Hoch“', () => {
+test('Passform: Jeans „Tapered · Normal · Lang · Hoch“', () => {
   const f = form({ category: 'pants', subcategory: 'jeans', fit: { width: 2, length: 4, rise: 2 }, profile: { ...emptyProfile(), leg: 'tapered', silhouette: 'boxy' } });
-  assert.deepEqual(fitWords(f), ['Zulaufend', 'Normal', 'Lang', 'Hoch']);
+  assert.deepEqual(fitWords(f), ['Tapered', 'Normal', 'Lang', 'Hoch']);
 });
 
 test('Passform: Schulter nur, wenn nicht natürlich; Leeres entfällt', () => {
   const p = { ...emptyProfile(), silhouette: 'boxy', shoulder: 'natural' };
-  assert.deepEqual(fitWords(form({ category: 'top', subcategory: 'sweater', fit: { width: 3, length: null, rise: null }, profile: p })), ['Kastig', 'Eher weit']);
-  assert.deepEqual(fitWords(form({ category: 'top', subcategory: 'sweater', profile: { ...p, shoulder: 'dropped' } })), ['Kastig', 'Überschnitten']);
+  assert.deepEqual(fitWords(form({ category: 'top', subcategory: 'sweater', fit: { width: 3, length: null, rise: null }, profile: p })), ['Boxy', 'Eher weit']);
+  assert.deepEqual(fitWords(form({ category: 'top', subcategory: 'sweater', profile: { ...p, shoulder: 'dropped' } })), ['Boxy', 'Dropped']);
   assert.deepEqual(fitWords(form({ category: 'shoe', profile: p })), []);
 });
 

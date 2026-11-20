@@ -26,7 +26,7 @@ const TOPS: Rule[] = [
   r(/sweat\w*.*(reißverschluss|reissverschluss)|sweatjacke|zip-sweat/, 'Oberbekleidung', 'Sweatjacke'),
   r(/strickjacke|cardigan|knit jacket/, 'Oberbekleidung', 'Strickjacke'),
   r(/hemdjacke|overshirt/, 'Oberbekleidung', 'Hemdjacke'),
-  r(/hoodie|kapuzenpullover/, 'Oberteil', 'Kapuzenpullover'),
+  r(/hoodie|kapuzenpullover/, 'Oberteil', 'Hoodie'),
   r(/sweatshirt|crewneck/, 'Oberteil', 'Sweatshirt'),
   r(/polo/, 'Oberteil', 'Polohemd'),
   r(/pullover|sweater|strickpulli/, 'Oberteil', 'Pullover'),

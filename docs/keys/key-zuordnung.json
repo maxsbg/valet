@@ -289,7 +289,7 @@
     },
     {
      "key": "hoodie",
-     "label": "Kapuzenpullover",
+     "label": "Hoodie",
      "types": []
     },
     {
@@ -1637,7 +1637,7 @@
   },
   {
    "key": "graphic",
-   "label": "Grafisch"
+   "label": "Graphic Print"
   },
   {
    "key": "dotted",
@@ -1739,7 +1739,7 @@
   },
   {
    "key": "casual",
-   "label": "Lässig"
+   "label": "Casual"
   },
   {
    "key": "business_casual",
