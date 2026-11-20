@@ -8,9 +8,9 @@ export function parseAmount(v: unknown, decimals = 2): number | null {
   const body = sign ? s.slice(1) : s;
   let normalized: string;
   if (body.includes(',')) {
-    const parts = body.split(',');
-    if (parts.length !== 2 || !/^\d+(?:\.\d{3})*$/.test(parts[0]) || !/^\d+$/.test(parts[1])) return null;
-    normalized = `${parts[0].replace(/\./g, '')}.${parts[1]}`;
+    const [integer, fraction, ...extra] = body.split(',');
+    if (integer == null || fraction == null || extra.length > 0 || !/^\d+(?:\.\d{3})*$/.test(integer) || !/^\d+$/.test(fraction)) return null;
+    normalized = `${integer.replace(/\./g, '')}.${fraction}`;
   } else if (/^\d{1,3}(?:\.\d{3})+$/.test(body)) {
     normalized = body.replace(/\./g, '');
   } else if (/^\d+\.\d+$/.test(body) || /^\d+$/.test(body)) {
