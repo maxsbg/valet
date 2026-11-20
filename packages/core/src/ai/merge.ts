@@ -121,7 +121,7 @@ function applyFacts(form: EditForm, a: Analysis, from: Origin): EditForm {
   put('colors', a.colors, f.colors.length === 0, a.colors.length > 0);
   put('pattern', a.pattern, f.pattern == null, a.pattern != null);
   put('materials', a.materials, f.materials.length === 0, a.materials.length > 0);
-  put('styles', a.styles, f.styles.length === 0, a.styles.length > 0);
+  // Stil wird nicht mehr vorgeschlagen und nicht angezeigt (Max, 21.11.2026); gespeicherte Werte bleiben (Ersatz-Formalität ohne Profil)
   put('seasons', a.seasons, f.seasons.length === 0, a.seasons.length > 0);
   put('collar', a.collar, f.collar == null, a.collar != null);
   put('closure', a.closure, f.closure == null, a.closure != null);

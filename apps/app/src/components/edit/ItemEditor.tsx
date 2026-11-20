@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
+  CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank, parsePct, setMaterialPct, materialPctSum, materialOrderOff, sortMaterialsByPct,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
@@ -293,11 +293,7 @@ export function ItemEditor(p: Props) {
       ])}
 
       {card('Details', [
-        (last) => (
-          <SimpleEditRow label="Stil" open={!!open.style} onToggle={() => toggle('style')} ai={ai('styles')} last={last} values={capsules(f.styles.map(styleLabel))}>
-            <Wrap>{STYLES.map((x) => <Capsule key={x.key} label={x.label} selected={f.styles.includes(x.key)} onPress={() => set('styles', toggleIn(f.styles, x.key))} />)}</Wrap>
-          </SimpleEditRow>
-        ),
+        // Stil entfällt (Max, 21.11.2026): für die Outfit-Logik zählt die Formalität aus dem KI-Profil
         !!fx.neckline && textRow('collar', fx.neckline!.label, fx.neckline!.options),
         fx.closure && textRow('closure', 'Verschluss', CLOSURES),
         fx.strap && textRow('strap', 'Trägerart', STRAPS),
