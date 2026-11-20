@@ -17,7 +17,8 @@ test('Felder je Kategorie (Spec 8a)', () => {
   assert.equal(fieldsFor('headwear', 'beanie_cap').size, 'letters');
   assert.equal(fieldsFor('pants', 'jeans').size, 'pants');
   assert.ok(fieldsFor('top', 't_shirt').layers && fieldsFor('outerwear', 'blouson').layers);
-  assert.ok(!fieldsFor('dress', null).layers);
+  assert.ok(fieldsFor('dress', null).layers); // Kleider haben Lagen seit 20.11.2026
+  assert.ok(!fieldsFor('pants', null).layers);
 });
 
 test('Ausschnitt oder Kragen nach Unterkategorie', () => {
@@ -150,4 +151,32 @@ test('Größe in der Ansicht mit Einheit', () => {
   assert.equal(sizeText('watch', '40 mm'), 'Gehäuse-Ø 40 mm');
   assert.equal(sizeText('letters', 'M'), 'M');
   assert.equal(sizeText(null, null), null);
+});
+
+import { defaultLayers, layersOf } from '../src/fields';
+import { setCategory } from '../src/edit';
+
+test('Lagen-Vorgabe je Unterkategorie (Max, 20.11.2026)', () => {
+  assert.deepEqual(defaultLayers('top', 't_shirt'), [0]);
+  assert.deepEqual(defaultLayers('top', 'shirt'), [0, 1, 2]);
+  assert.deepEqual(defaultLayers('top', 'hoodie'), [1]);
+  assert.deepEqual(defaultLayers('outerwear', 'coat'), [3]);
+  assert.deepEqual(defaultLayers('outerwear', 'blazer'), [2]);
+  assert.deepEqual(defaultLayers('outerwear', 'vest', 'puffer_vest'), [3]);
+  assert.deepEqual(defaultLayers('outerwear', 'vest', 'suit_vest'), [1]);
+  assert.deepEqual(defaultLayers('dress', 'slip_dress'), [0]);
+  assert.deepEqual(defaultLayers('pants', 'jeans'), []);
+  assert.deepEqual(layersOf({ category: 'top', subcategory: 'sweater', layers: [] }), [1]);
+  assert.deepEqual(layersOf({ category: 'top', subcategory: 'sweater', layers: [0, 1] }), [0, 1]);
+});
+
+test('Lagen in Bearbeiten: Vorgabe beim Laden und beim Kategoriewechsel, eigene Wahl bleibt', async () => {
+  const { toEditForm, emptyEditForm, setField } = await import('../src/edit');
+  assert.deepEqual(toEditForm({ name: 'X', category: 'top', subcategory: 'hoodie', layers: null }).layers, [1]);
+  assert.deepEqual(toEditForm({ name: 'X', category: 'top', subcategory: 'hoodie', layers: [0, 1] }).layers, [0, 1]);
+  const tee = setCategory({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] }, { category: 'top', subcategory: 't_shirt', type: null });
+  assert.deepEqual(tee.layers, [0]);
+  assert.deepEqual(setCategory(tee, { category: 'outerwear', subcategory: 'coat', type: null }).layers, [3]);
+  const own = setField(tee, 'layers', [0, 2]);
+  assert.deepEqual(setCategory(own, { category: 'top', subcategory: 'shirt', type: null }).layers, [0, 2]);
 });

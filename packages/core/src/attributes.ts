@@ -178,7 +178,13 @@ export function sizeSystemOf(size: string | null | undefined): SizeSystem | null
 
 // ---------- Tragen ----------
 
-export const LAYERS = ['Unterlage', 'Mitte, zu', 'Mitte, offen', 'Außen'] as const;
+/**
+ * Lagen von innen nach außen, gespeichert als Index in items.layers (Max, 20.11.2026: neue Namen, Kapseln statt Skala,
+ * „Allein tragbar“ entfällt – Basis und Mittellage gelten als allein tragbar). Vorgabe je Unterkategorie: defaultLayers (fields.ts).
+ */
+export const LAYERS = ['Basis', 'Mittellage', 'Offen darüber', 'Außen'] as const;
+/** Beispiele je Lage für die Auswahl in Bearbeiten */
+export const LAYER_HINTS = ['T-Shirt, Top, Hemd allein', 'Pullover, Hoodie, Hemd zu', 'Overshirt, Cardigan, Blazer', 'Jacke, Mantel'] as const;
 /** Alte Lage (basis / zu / offen) → Stufe */
 export const LEGACY_LAYERS: Readonly<Record<string, number>> = { basis: 0, zu: 1, offen: 2 };
 export const WARMTH = ['sehr leicht', 'leicht', 'mittel', 'warm'] as const;

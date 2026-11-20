@@ -3,7 +3,7 @@
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
 import { CATEGORY_TREE, FIT_KEYS, isValidPath, type CategoryPath } from '../categories';
-import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
+import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
 import { STRAPS } from '../fields';
 import { keysOf, toKey, type KeyList } from '../keys';
 import { mergeAnalysis } from '../edit';
@@ -66,7 +66,6 @@ export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   width: fitWord('width', 'Passform Weite; nur Oberteil, Hose, Shorts. Oberteil: slim, regular, relaxed, oversized. Hose: skinny, slim, regular, relaxed, wide. Shorts: slim, regular, relaxed, wide'),
   length: fitWord('length', 'Länge; Oberteil: cropped, regular, longline (deutlich verlängert). Hose: cropped (Knöchel frei), regular, long. Shorts: short, mid, long (bis Knie). Kleid/Rock: mini, above_knee, knee, midi, maxi'),
   rise: fitWord('rise', 'Bundhöhe low, regular, high; nur Hose, Shorts, Rock'),
-  layers: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} = ${l}`).join('; ')}; nur Oberteil und Oberbekleidung` },
   warmth: level(3, `Wärme: ${WARMTH.map((w, i) => `${i} ${w}`).join(', ')}`),
   rain: level(2, `Regentauglich: ${RAIN.map((r, i) => `${i} ${r}`).join(', ')}`),
   profile: { ...PROFILE_SCHEMA, description: 'Mode-Profil des Teils (Analyse v2): streng nach den Ankern, nur das Teil selbst' },
@@ -162,7 +161,8 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
     closure: pickStr(r.closure, CLOSURES),
     strap: pickStr(r.strap, STRAPS),
     fit: { width: pickWord(r.width, FIT_KEYS.width), length: pickWord(r.length, FIT_KEYS.length), rise: pickWord(r.rise, FIT_KEYS.rise) },
-    layers: Array.isArray(r.layers) ? [...new Set(r.layers.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
+    // Lagen schätzt die KI nicht mehr – Vorgabe je Unterkategorie (defaultLayers), Max 20.11.2026
+    layers: [],
     warmth: pickLevel(r.warmth, 3),
     rain: pickLevel(r.rain, 2),
     // nur Werte prüfen; nach Kategorie bereinigt wird erst mit dem endgültigen Pfad (mergeSources, profilePatch)

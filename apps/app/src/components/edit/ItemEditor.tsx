@@ -277,11 +277,8 @@ export function ItemEditor(p: Props) {
         )),
         fx.layers && ((last) => (
           <SimpleEditRow label="Lagen" open={!!open.layers} onToggle={() => toggle('layers')} ai={ai('layers')} last={last}
-            values={[
-              ...(f.layers.length ? [<ValueScale key="l" steps={LAYERS.length} on={(i) => f.layers.includes(i)} a11y={`Lagen: ${f.layers.map((i) => LAYERS[i]).join(', ')}`} />] : []),
-              ...(f.standalone ? [<ValueCapsule key="s" label="allein" />] : []),
-            ]}>
-            <LayersPicker layers={f.layers} standalone={f.standalone} onToggle={(i) => set('layers', toggleIn(f.layers, i))} onStandalone={() => set('standalone', !f.standalone)} />
+            values={capsules([...f.layers].sort().map((i) => LAYERS[i]!).filter(Boolean))}>
+            <LayersPicker layers={f.layers} onToggle={(i) => set('layers', toggleIn(f.layers, i))} />
           </SimpleEditRow>
         )),
         fx.weather && ((last) => (

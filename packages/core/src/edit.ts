@@ -6,7 +6,7 @@ import { fitFromName, nameFitFor } from './fitName';
 import { COLLAR_LIST, CLOSURES, MAX_COLORS, ONE_SIZE, PATTERNS, colorLabel, materialLabel, migrateSeasons, styleLabel, toColorKeys, toMaterialParts, toStyleKeys, type Care, type MaterialPart } from './attributes';
 import { toKey } from './keys';
 import { normalizeCategory } from './import/categorize';
-import { capSize, fieldsFor, kindHasLetters, sizeSystemOn, STRAPS, type SizeSystemAny } from './fields';
+import { capSize, defaultLayers, fieldsFor, kindHasLetters, sizeSystemOn, STRAPS, type SizeSystemAny } from './fields';
 import { equalSplit, formatPrice, parseAmount, splitGap } from './money';
 import { isWishTag, type WishTag } from './tile';
 import { checkConfidence, emptyConfidence, readProfile, type AiMeta, type Confidence, type Profile } from './ai/profile';
@@ -80,7 +80,8 @@ export function toEditForm(r: EditRow): EditForm {
     materials: toMaterialParts(r.materials), sizeSystem: sizeSystemOn(sizeKind, r.size_system, r.size), size: sizeKind === 'cap' ? capSize(r.size) ?? (r.size || null) : r.size || null,
     collarSize: r.collar_size ?? null,
     fit: { width: r.fit_width ?? null, length: r.fit_length ?? null, rise: r.fit_rise ?? null },
-    layers: r.layers ?? [], standalone: !!r.standalone, warmth: r.warmth ?? null, rain: r.rain ?? null,
+    // ohne eigene Lagen die Vorgabe der Unterkategorie (Max, 20.11.2026)
+    layers: r.layers?.length ? [...r.layers] : defaultLayers(path.category, path.subcategory, path.type), standalone: !!r.standalone, warmth: r.warmth ?? null, rain: r.rain ?? null,
     styles: toStyleKeys(r.styles), collar: toKey(COLLAR_LIST, r.collar), closure: toKey(CLOSURES, r.closure), strap: toKey(STRAPS, r.strap), care: r.care ?? {},
     reversible: !!r.reversible, notes: r.notes ?? '',
     price: eur(r.price_paid), listPrice: eur(r.list_price), gift: !!r.is_gift, giftFrom: r.gift_from ?? '', giftValue: eur(r.gift_value),
@@ -183,6 +184,9 @@ export function setCategory(f: EditForm, p: { category: string | null; subcatego
   // Stufen über ihren Begriff in die Skala der neuen Kategorie umrechnen (Oberteil Relaxed → Hose Relaxed);
   // ohne Gegenstück (Länge Cropped ↔ Mini–Maxi) wird die Stufe leer
   if (f.category !== p.category) next = { ...next, fit: convertFit(f.category, p.category, next.fit) };
+  // Lagen folgen der Vorgabe, solange sie nicht selbst geändert wurden (leer oder gleich der alten Vorgabe)
+  const same = (a: readonly number[], b: readonly number[]) => a.length === b.length && [...a].sort().every((x, i) => x === [...b].sort()[i]);
+  if (!f.layers.length || same(f.layers, defaultLayers(f.category, f.subcategory, f.type))) next = { ...next, layers: defaultLayers(p.category, p.subcategory, p.type) };
   if (before === after) return dropHidden(suggestFitFromName(next));
   // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose, Handschuh, Mütze …): bleibt stehen (Max, 15.11.2026).
   // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.

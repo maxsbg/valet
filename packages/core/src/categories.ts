@@ -6,6 +6,7 @@
 // die deutschen Labels stehen in docs/keys/key-zuordnung.json. `other` = „Sonstiges“, eindeutig innerhalb der Elternebene.
 
 import { KEY_LISTS, label, toKey, type KeyCategoryNode, type KeyList } from './keys';
+import { layersOf } from './fields';
 
 export type CategoryNode = KeyCategoryNode;
 
@@ -212,12 +213,13 @@ const OUTER_FIRST: Record<string, number> = {
 
 /**
  * Sortiert Set-Teile von oben nach unten am Körper; bei gleicher Stelle außen vor innen.
- * „Außen“ kommt aus den Lagen des Teils (0 Unterlage … 3 Außen), sonst aus der Unterkategorie.
+ * „Außen“ kommt aus den Lagen des Teils (0 Basis … 3 Außen; ohne eigene die Vorgabe der Unterkategorie), sonst aus OUTER_FIRST.
  */
 export function setOrder<T extends { category: string | null; subcategory?: string | null; layers?: readonly number[] | null }>(items: readonly T[]): T[] {
   const body = (i: T) => BODY_ORDER[i.category ?? ''] ?? 6;
   const outer = (a: T, b: T) => {
-    if (a.layers?.length && b.layers?.length) return Math.max(...b.layers) - Math.max(...a.layers);
+    const la = layersOf(a), lb = layersOf(b);
+    if (la.length && lb.length) return Math.max(...lb) - Math.max(...la);
     return (OUTER_FIRST[a.subcategory ?? ''] ?? 9) - (OUTER_FIRST[b.subcategory ?? ''] ?? 9);
   };
   return items.map((it, k) => ({ it, k })).sort((a, b) => body(a.it) - body(b.it) || outer(a.it, b.it) || a.k - b.k).map((x) => x.it);

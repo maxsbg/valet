@@ -21,7 +21,7 @@ const CARE_PROPS: Record<string, JsonSchema> = Object.fromEntries(CARE.map((g) =
 // Steckbrief-Felder wie bei „Teil erkennen“ (gleiche Keys), aber zum Ablesen statt Schätzen: eigene Beschreibungen,
 // Kategorie und Name dürfen fehlen, Material mit Prozent. Ohne Profil, Konfidenz, Stil, Lagen und Wetter – das sind
 // Schätzungen aus dem Foto, die eine Info nicht liefern soll (Spec 6.7: Profil nur aus dem Bild).
-const { materials: _m, category: _c, name: _n, profile: _p, confidence: _cf, styles: _s, layers: _l, warmth: _w, rain: _r, ...ITEM } = ANALYZE_ITEM_PROPS;
+const { materials: _m, category: _c, name: _n, profile: _p, confidence: _cf, styles: _s, warmth: _w, rain: _r, ...ITEM } = ANALYZE_ITEM_PROPS;
 /** Labels einer Liste aus der Beschreibung von „Teil erkennen“ übernehmen, Anweisung ersetzen */
 const read = (key: string, intro: string): JsonSchema => {
   const base = ITEM[key]!;

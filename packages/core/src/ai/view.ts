@@ -3,7 +3,7 @@
 
 import { fitScalesOf } from '../categories';
 import { LAYERS, RAIN, WARMTH, collarLabel, closureLabel, patternLabel, styleLabel } from '../attributes';
-import { fieldsFor, strapLabel } from '../fields';
+import { fieldsFor, layersOf, strapLabel } from '../fields';
 import { editChange, type EditForm } from '../edit';
 import { profileFieldsFor, activeProfile, profileLabel, type Ctx, type Group, type ProfileKey } from './profile';
 import { applyAnalysis, profilePatch, type Analysis, type ProfilePatchRow } from './analyzeItem';
@@ -97,8 +97,7 @@ export function analysisSections(f: EditForm): AnalysisSection[] {
     ...(fx.strap ? [shown('Trägerart', f.strap ? strapLabel(f.strap) : '')] : []),
   ];
   const wear: AnalysisRow[] = [
-    ...(fx.layers ? [shown('Lagen', [...f.layers].sort().map((i) => LAYERS[i]).filter(Boolean).join(' · '))] : []),
-    ...(fx.layers ? [shown('Allein tragbar', f.standalone ? 'Ja' : 'Nein')] : []),
+    ...(fx.layers ? [shown('Lagen', layersOf(f).sort().map((i) => LAYERS[i]).filter(Boolean).join(' · '))] : []),
     ...(fx.weather ? [shown('Wärme', f.warmth != null ? WARMTH[f.warmth] : '')] : []),
     ...(fx.weather ? [shown('Regen', f.rain != null ? RAIN[f.rain] : '')] : []),
   ];
