@@ -183,6 +183,30 @@ export async function webpBlob(file: Blob, maxEdge = Infinity, q = 0.9): Promise
   return toWebp(canvas, maxEdge, q);
 }
 
+type WasmWebpEncoder = (data: ImageData, options?: { quality: number }) => Promise<ArrayBuffer>;
+let wasmWebpEncoder: Promise<WasmWebpEncoder> | null = null;
+
+/** Lädt die beiden jSquash-WASM-Varianten als Metro-Assets und initialisiert libwebp einmalig. */
+function loadWasmWebpEncoder(): Promise<WasmWebpEncoder> {
+  if (!wasmWebpEncoder) {
+    wasmWebpEncoder = (async () => {
+      // Metro muss beide Varianten als Assets bündeln; libwebp wählt SIMD zur Laufzeit selbst.
+      const regularWasm = require('@jsquash/webp/codec/enc/webp_enc.wasm');
+      const simdWasm = require('@jsquash/webp/codec/enc/webp_enc_simd.wasm');
+      const assetUrl = (asset: unknown) => typeof asset === 'string' ? asset : (asset as { uri: string }).uri;
+      const { default: encode, init } = await import('@jsquash/webp/encode.js');
+      await init({
+        locateFile: (path: string) => assetUrl(path.endsWith('_simd.wasm') ? simdWasm : regularWasm),
+      });
+      return encode;
+    })().catch((error) => {
+      wasmWebpEncoder = null;
+      throw error;
+    });
+  }
+  return wasmWebpEncoder;
+}
+
 /** Verkleinert (falls nötig) und speichert immer als WebP. Bei fehlendem Browser-Encoder nutzt libwebp/WASM. */
 async function toWebp(src: HTMLCanvasElement, maxEdge: number, q: number): Promise<Blob> {
   let c = src;
@@ -200,7 +224,7 @@ async function toWebp(src: HTMLCanvasElement, maxEdge: number, q: number): Promi
   try {
     const ctx = c.getContext('2d', { willReadFrequently: true });
     if (!ctx) throw new Error('Canvas-Kontext nicht verfügbar');
-    const { encode } = await import('@jsquash/webp');
+    const encode = await loadWasmWebpEncoder();
     const encoded = await encode(ctx.getImageData(0, 0, c.width, c.height), { quality: Math.round(q * 100) });
     const result = new Blob([encoded], { type: 'image/webp' });
     if (result.type !== 'image/webp' || result.size < 16) throw new Error('Encoder lieferte keine gültige WebP-Datei');
