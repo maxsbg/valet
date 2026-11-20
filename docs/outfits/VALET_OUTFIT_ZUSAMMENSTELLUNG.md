@@ -72,7 +72,12 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
 - **Vermerk:** in der iOS-App später **WeatherKit** als weitere Quelle anschließen, ohne die Logik zu ändern.
 - **Anlass zuerst (20.11.2026):** Der Anlass wird vor dem Generieren angegeben (vorbelegt, damit es ein Tipp bleibt). Er bestimmt Formalität und Zeitraum.
 - **Vorbelegung des Anlasses (20.11.2026, Max):** Mischung aus Kalender und Gewohnheit. Reihenfolge: (1) Termin im Kalender an dem Tag → passender Anlass + Zeitraum (später, iOS/Apple Kalender); (2) sonst gelernt aus den Wochentagen (häufigster Anlass geplanter/getragener Outfits an diesem Wochentag, ggf. Tageszeit); (3) ohne genug Daten „Alltag“. Start mit (2), Kalender folgt.
-- **Zeitraum je Anlass:** Vorgabe je Anlass (z. B. Büro/Campus tagsüber, Party abends bis ca. 3 Uhr, Folgetag mitlesen), bei Bedarf von–bis selbst ändern. Genaue Vorgaben je Anlass noch festlegen.
+- **Zeitraum je Anlass (entschieden 20.11.2026, Max):** Vorgabe je Anlass, bei Bedarf von–bis selbst ändern:
+  - `everyday` Alltag 8–20 · `campus` Campus 8–19 · `office` Büro 7–19 · `cafe` Café 10–19
+  - `date` Date 18–24 · `party` Party 20–3 (Folgetag mitlesen) · `formal` Formell 16–24 · `special_occasion` Besonderer Anlass 12–24
+  - `sport` Sport 17–21 (Hin- und Rückweg) · `vacation` Urlaub 9–22 · `beach` Strand 10–19 · `other` Sonstiges 8–22
+  - `loungewear` Loungewear: drinnen, Schalter „Regen berücksichtigen“ standardmäßig aus
+- **Sport drinnen/draußen (20.11.2026, Max):** kein eigener Schalter. Temperatur zählt immer (Hin- und Rückweg). Der Schalter „Regen berücksichtigen“ deckt „drinnen“ ab: bei Sport standardmäßig an (Training draußen), für Halle/Gym aus. Bewusste Lücke: Hallensport bei Regen verlangt dann keine regenfeste Außenlage.
 - **Schalter „Regen berücksichtigen“** (Standard an): aus z. B. bei Auto/Taxi oder wenn man drinnen bleibt.
 - **Regenstufe = schlimmste Stunde im Zeitraum** nach Regenmenge (mm/h, einheitlicher als der Wettercode):
   - Niesel: unter 0,5 mm/h
@@ -86,4 +91,4 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
 
 ## Nächster Schritt
 
-Zeitraum-Vorgaben je Anlass festlegen, dann Schritt 4 (weiche Bewertung) gemeinsam mit Max durchgehen.
+Schritt 4 (weiche Bewertung) gemeinsam mit Max durchgehen.
