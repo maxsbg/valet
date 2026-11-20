@@ -122,7 +122,7 @@ export function ItemEditor(p: Props) {
       const n = typeof value === 'number' ? value : null;
       values = n == null ? [] : [<ValueCapsule key="v" label={profileLabel(field.key, n) || String(n)} />];
     } else if (field.kind === 'range') {
-      const range = Array.isArray(value) ? value as readonly [number, number] : null;
+      const range = Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number' ? [value[0], value[1]] as const : null;
       values = range ? [<ValueCapsule key="v" label={range[0] === range[1] ? (profileLabel(field.key, range[0]) || String(range[0])) : `${profileLabel(field.key, range[0]) || range[0]} bis ${profileLabel(field.key, range[1]) || range[1]}`} />] : [];
     } else if (field.kind === 'enum') {
       const selected = typeof value === 'string' ? field.values.find((x) => x.key === value) : null;
