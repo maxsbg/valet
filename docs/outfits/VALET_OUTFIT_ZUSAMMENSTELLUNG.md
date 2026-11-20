@@ -71,6 +71,7 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
 - Quelle vorerst **Open-Meteo** (kostenlos, ohne Schlüssel/Karte) hinter einer eigenen austauschbaren Schnittstelle (z. B. `WeatherProvider` → einheitliches Tageswetter: gefühlte Temperatur, Regenstufe). 
 - **Vermerk:** in der iOS-App später **WeatherKit** als weitere Quelle anschließen, ohne die Logik zu ändern.
 - **Anlass zuerst (20.11.2026):** Der Anlass wird vor dem Generieren angegeben (vorbelegt, damit es ein Tipp bleibt). Er bestimmt Formalität und Zeitraum.
+- **Vorbelegung des Anlasses (20.11.2026, Max):** Mischung aus Kalender und Gewohnheit. Reihenfolge: (1) Termin im Kalender an dem Tag → passender Anlass + Zeitraum (später, iOS/Apple Kalender); (2) sonst gelernt aus den Wochentagen (häufigster Anlass geplanter/getragener Outfits an diesem Wochentag, ggf. Tageszeit); (3) ohne genug Daten „Alltag“. Start mit (2), Kalender folgt.
 - **Zeitraum je Anlass:** Vorgabe je Anlass (z. B. Büro/Campus tagsüber, Party abends bis ca. 3 Uhr, Folgetag mitlesen), bei Bedarf von–bis selbst ändern. Genaue Vorgaben je Anlass noch festlegen.
 - **Schalter „Regen berücksichtigen“** (Standard an): aus z. B. bei Auto/Taxi oder wenn man drinnen bleibt.
 - **Regenstufe = schlimmste Stunde im Zeitraum** nach Regenmenge (mm/h, einheitlicher als der Wettercode):
