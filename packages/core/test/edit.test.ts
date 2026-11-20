@@ -253,10 +253,11 @@ test('Speichern: mergeAnalysis behält Altdaten, ersetzt profile/confidence, met
   assert.equal((a2.meta as { v: number }).v, 2);
   assert.equal((a2.meta as { model: string }).model, 'gemini-3.5-flash-lite');
   assert.equal((a2.profile as { leg: string }).leg, 'tapered');
-  // Neues Teil: nur profile/confidence/meta
+  // Neues Teil: profile/confidence/meta + Herkunft der vorgeschlagenen Werte (src)
   const n = editChange(applyAnalysis({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] }, jeansAnalysis(), NOW), { isNew: true });
   assert.ok('change' in n);
-  assert.deepEqual(Object.keys(n.change.analysis as object).sort(), ['confidence', 'meta', 'profile']);
+  assert.deepEqual(Object.keys(n.change.analysis as object).sort(), ['confidence', 'meta', 'profile', 'src']);
+  assert.equal((n.change.analysis as { src: Record<string, string> }).src.colors, 'image');
 });
 
 test('Stapellauf: profilePatch läuft ohne Name, ersetzt das Profil, behält Altschlüssel, löscht meta.failed', () => {

@@ -1,12 +1,13 @@
 // KI „Teil erkennen“: Prompt, Antwort-Schema und Prüfung der Antwort.
-// Die Edge Function `ki` ist nur ein Durchreicher zu einem OpenAI-kompatiblen Anbieter (Standard Mistral) (Bild + Prompt + Schema);
+// Die Edge Function `ki` ist nur ein Durchreicher zu Gemini (OpenAI-kompatible Schnittstelle; Bild + Prompt + Schema);
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
-import { CATEGORY_TREE, isValidPath, fitScalesOf, type CategoryPath } from '../categories';
+import { CATEGORY_TREE, isValidPath, type CategoryPath } from '../categories';
 import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
-import { fieldsFor, STRAPS } from '../fields';
+import { STRAPS } from '../fields';
 import { keysOf, toKey, type KeyList } from '../keys';
 import { mergeAnalysis } from '../edit';
+import { normalizeCategory } from '../import/categorize';
 import { legFromName } from './merge';
 import { PROFILE_SCHEMA, CONFIDENCE_SCHEMA, aiMeta, checkProfile, checkConfidence, clearInactive, readProfile, type Profile, type Confidence } from './profile';
 
@@ -50,8 +51,8 @@ const level = (max: number, description: string): JsonSchema => ({ type: ['integ
 export const categoryDescription = (intro: string) => `${intro} Pfad aus Keys, getrennt mit „${SEP}“. Labels: ${CATEGORY_PATH_LABELS}`;
 
 export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
-  category: { type: 'string', enum: [...CATEGORY_PATHS], description: categoryDescription('So genau wie sicher erkennbar: Kategorie/Unterkategorie/Typ. Typ weglassen, wenn unsicher.') },
-  name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe und ohne Marke, z. B. „Oxford-Hemd“' },
+  category: { type: 'string', enum: [...CATEGORY_PATHS], description: categoryDescription('Immer angeben, mindestens die Oberkategorie; so genau wie sicher erkennbar: Kategorie/Unterkategorie/Typ. Typ bzw. Unterkategorie weglassen, wenn unsicher.') },
+  name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe, Marke und Passform-Begriffe (Slim, Oversized …), z. B. „Oxford-Hemd“' },
   brand: { type: ['string', 'null'], description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
   colors: list(COLOR_LIST, `1 bis ${MAX_COLORS} Farben, nach Flächenanteil sortiert. Nuance statt Hauptfarbe, wenn eindeutig (z. B. navy). multicolor nur bei mehr als drei Farben.`),
   pattern: str(PATTERNS, 'Muster des Stoffs'),
@@ -64,7 +65,7 @@ export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   width: level(4, 'Passform Weite 0 schmal … 2 normal … 4 weit; nur Oberteil, Hose, Shorts'),
   length: level(4, 'Länge 0 kurz … 4 lang (bei Kleid/Rock: 0 Mini, 1 über Knie, 2 Knie, 3 Midi, 4 Maxi)'),
   rise: level(2, 'Bundhöhe 0 tief, 1 normal, 2 hoch; nur Hose, Shorts, Rock'),
-  layers: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} ${l}`).join(', ')}; nur Oberteil und Oberbekleidung` },
+  layers: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} = ${l}`).join('; ')}; nur Oberteil und Oberbekleidung` },
   warmth: level(3, `Wärme: ${WARMTH.map((w, i) => `${i} ${w}`).join(', ')}`),
   rain: level(2, `Regentauglich: ${RAIN.map((r, i) => `${i} ${r}`).join(', ')}`),
   profile: { ...PROFILE_SCHEMA, description: 'Mode-Profil des Teils (Analyse v2): streng nach den Ankern, nur das Teil selbst' },
@@ -108,7 +109,7 @@ export type Analysis = {
   layers: number[];
   warmth: number | null;
   rain: number | null;
-  /** KI-Profil (v2), bereits nach Kategorie bereinigt */
+  /** KI-Profil (v2), Werte geprüft; nach Kategorie bereinigt wird erst beim Zusammenführen (endgültiger Pfad) */
   profile: Profile;
   confidence: Confidence;
   /** tatsächlich genutztes Modell (Antwort der Edge Function) */
@@ -125,26 +126,26 @@ const text = (v: unknown, max = 80): string | null => (typeof v === 'string' && 
 
 /** Kategorie-Pfad „top/shirt/long_sleeve_shirt“ → Pfad aus Keys; ungültig → ohne Kategorie */
 export function parsePath(v: unknown): CategoryPath {
-  const [category = null, subcategory = null, type = null] = typeof v === 'string' ? v.split(SEP) : [];
+  // leere Teile („top//“) gelten als nicht angegeben, nie als leerer Text
+  const [category = null, subcategory = null, type = null] = typeof v === 'string' ? v.split(SEP).map((x) => x.trim() || null) : [];
   const p = { category, subcategory, type };
   return isValidPath(p) ? p : { category: null, subcategory: null, type: null };
 }
 
 /**
- * Rohantwort der KI → saubere Werte. Ungültiges wird verworfen statt abgelehnt,
- * Felder, die es für die erkannte Kategorie nicht gibt, bleiben leer (fieldsFor / fitScalesOf).
+ * Rohantwort der KI → saubere Werte. Ungültiges wird verworfen statt abgelehnt. Ob ein Feld zur Kategorie passt,
+ * entscheidet erst das Zusammenführen mit dem endgültigen Pfad (mergeSources: Stufen je Kategorie, dropHidden).
  */
 export function checkAnalysis(raw: unknown, model: string | null = null): Analysis {
   const r: Raw = raw && typeof raw === 'object' ? (raw as Raw) : {};
   const path = parsePath(r.category);
-  const f = fieldsFor(path.category, path.subcategory);
-  const scales = new Set(fitScalesOf(path.category).map((s) => s.key));
-  const neck = f.neckline?.options ?? [];
+  // Steckbrief-Fakten nur nach Werten prüfen, nicht nach dem erkannten Pfad: gefiltert wird mit dem endgültigen Pfad
+  // beim Zusammenführen (Stufen in applyFacts, übrige Felder in dropHidden) – sonst ginge z. B. die Bundhöhe verloren,
+  // wenn die KI einer feststehenden Kategorie widerspricht.
   let colors = pickList(r.colors, COLOR_LIST, MAX_COLORS);
   if (colors.includes(MULTICOLOR)) colors = [MULTICOLOR];
-  const pattern = f.pattern ? pickStr(r.pattern, PATTERNS) : null;
+  const pattern = pickStr(r.pattern, PATTERNS);
   const materials = pickList(r.materials, MATERIALS, 3);
-  const ctx = { category: path.category, sub: path.subcategory, pattern, materials };
   return {
     path,
     name: text(r.name),
@@ -154,27 +155,36 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
     materials: materials.map((name) => ({ name })),
     styles: pickList(r.styles, STYLES, 3),
     seasons: keysOf(SEASONS).filter((s) => pickList(r.seasons, SEASONS).includes(s)),
-    collar: pickStr(r.collar, neck),
-    closure: f.closure ? pickStr(r.closure, CLOSURES) : null,
-    strap: f.strap ? pickStr(r.strap, STRAPS) : null,
-    fit: {
-      width: scales.has('width') ? pickLevel(r.width, 4) : null,
-      length: scales.has('length') ? pickLevel(r.length, 4) : null,
-      rise: scales.has('rise') ? pickLevel(r.rise, 2) : null,
-    },
-    layers: f.layers && Array.isArray(r.layers) ? [...new Set(r.layers.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
-    warmth: f.weather ? pickLevel(r.warmth, 3) : null,
-    rain: f.weather ? pickLevel(r.rain, 2) : null,
-    profile: clearInactive(checkProfile(r.profile), ctx),
+    collar: pickStr(r.collar, NECK_LIST),
+    closure: pickStr(r.closure, CLOSURES),
+    strap: pickStr(r.strap, STRAPS),
+    fit: { width: pickLevel(r.width, 4), length: pickLevel(r.length, 4), rise: pickLevel(r.rise, 2) },
+    layers: Array.isArray(r.layers) ? [...new Set(r.layers.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
+    warmth: pickLevel(r.warmth, 3),
+    rain: pickLevel(r.rain, 2),
+    // nur Werte prüfen; nach Kategorie bereinigt wird erst mit dem endgültigen Pfad (mergeSources, profilePatch)
+    profile: checkProfile(r.profile),
     confidence: checkConfidence(r.confidence),
     model: typeof model === 'string' && model.trim() ? model.trim().slice(0, 80) : null,
   };
 }
 
+/**
+ * Taugt die geprüfte Antwort als Analyse? Leere oder kaputte Antworten (kein Objekt, weder Kategorie noch Farbe noch
+ * irgendein Profilwert) gelten als Fehlschlag – sonst stünde ein leeres Profil als „analysiert“ (meta.v = 2) da.
+ */
+export function analysisUsable(a: Analysis): boolean {
+  return !!(a.path.category || a.colors.length) || profileFilled(a);
+}
+/** Hat die Antwort ein Mode-Profil? Ohne gilt das Teil nicht als „analysiert“ (kein meta.v = 2; Stapellauf: Fehlversuch) */
+export const profileFilled = (a: Pick<Analysis, 'profile'>): boolean =>
+  Object.values(a.profile).some((v) => (Array.isArray(v) ? v.length > 0 : v != null));
+
 // ---------- Ins Formular übernehmen ----------
 
 // applyAnalysis und legFromName liegen in merge.ts (Rangfolge der Quellen, mergeSources)
 export { applyAnalysis, legFromName } from './merge';
+import { nameTrusted } from './merge';
 
 // ---------- Stapellauf: nur das Profil eines gespeicherten Teils (Spec 8) ----------
 
@@ -198,8 +208,12 @@ export function profilePatch(
   now: string = new Date().toISOString(),
 ): { analysis: Record<string, unknown> } {
   const materials = toMaterialParts((row.materials ?? []).map((m) => (typeof m === 'string' ? { name: m } : m))).map((m) => m.name);
-  const ctx = { category: row.category || null, sub: row.subcategory || null, pattern: toKey(PATTERNS, row.pattern), materials };
+  // Kategorie tolerant lesen wie in toEditForm (Altwerte „Hose“ → pants)
+  const path = normalizeCategory({ category: row.category || null, subcategory: row.subcategory, name: row.name });
+  const ctx = { category: path.category, sub: path.subcategory, pattern: toKey(PATTERNS, row.pattern), materials };
   // a.profile kann aus einer anderen Quelle stammen → Werte noch einmal prüfen
-  const profile = legFromName(clearInactive(readProfile(a.profile), ctx), row.name, ctx);
+  // Beinverlauf aus dem Namen nur, wenn der Name nicht selbst eine offene Bildschätzung ist
+  const trusted = nameTrusted({ aiPending: row.ai_pending ?? [], analysisBase: row.analysis ?? {} });
+  const profile = legFromName(clearInactive(readProfile(a.profile), ctx), trusted ? row.name : null, ctx);
   return { analysis: mergeAnalysis(row.analysis, profile, checkConfidence(a.confidence), aiMeta(a.model ?? null, now)) };
 }

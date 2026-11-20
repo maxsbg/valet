@@ -1,8 +1,8 @@
 // Blätter der Detailseite: Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4), KI-Analyse (Analyse v2, Spec 14)
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import { CARE, analysisNote, analysisSections, careLabel, colorCheck, confirmedContext, hasProfile, reanalysisChange, type CareGroup, type CareValue, type EditForm } from '@valet/core';
-import { analysisImage, updateItem } from '@/lib/item';
+import { CARE, kiMessage, analysisNote, analysisSections, careLabel, colorCheck, confirmedContext, hasProfile, profileFilled, reanalysisChange, toEditForm, type CareGroup, type CareValue, type EditForm, type EditRow } from '@valet/core';
+import { analysisImage, loadItem, updateItem } from '@/lib/item';
 import { analyzeStored, kiError } from '@/lib/ki';
 import { Icon } from '@/components/Icon';
 import { useTheme } from '@/lib/theme';
@@ -98,12 +98,14 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
 }) {
   const t = useTheme();
   const [img, setImg] = useState<{ path: string; colors: { h: string; s: number }[] } | null | undefined>(undefined);
+  const [imgError, setImgError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const runId = useRef(0);
   useEffect(() => {
-    if (!open) return;
-    setError(null);
-    analysisImage(itemId).then(setImg).catch(() => setImg(null));
+    if (!open) { runId.current++; setBusy(false); return; } // Schließen verwirft eine laufende Analyse
+    setError(null); setImgError(false);
+    analysisImage(itemId).then(setImg).catch(() => { setImg(null); setImgError(true); });
   }, [open, itemId]);
   const sections = analysisSections(f);
   const profiled = hasProfile(f.analysisBase);
@@ -111,16 +113,26 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
   const checkColor = profiled && !!img && colorCheck(f.colors, img.colors);
 
   async function run() {
-    if (!img) { setError('Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
+    if (!img) { setError(imgError ? 'Bild konnte nicht geladen werden – bitte Verbindung prüfen und erneut öffnen.' : 'Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
+    const n = ++runId.current;
     setBusy(true); setError(null);
     try {
-      const a = await analyzeStored(img.path, confirmedContext(f));
-      const row = { category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending, name: f.name };
-      await updateItem(itemId, reanalysisChange(f, row, a));
+      let a: Awaited<ReturnType<typeof analyzeStored>>;
+      try { a = await analyzeStored(img.path, confirmedContext(f)); } catch (e) {
+        if (n !== runId.current) return;
+        const { code, status } = await kiError(e);
+        setError(kiMessage(code, status));
+        return;
+      }
+      if (n !== runId.current) return; // Blatt inzwischen geschlossen: Ergebnis verwerfen
+      if (!profileFilled(a)) { setError(kiMessage('empty_answer', null)); return; }
+      try {
+        // frisch lesen: wurde das Teil während der Analyse bearbeitet (z. B. „Alle übernehmen“), gilt dessen Stand
+        const fresh = toEditForm((await loadItem(itemId)).item as unknown as EditRow);
+        const row = { category: fresh.category, subcategory: fresh.subcategory, pattern: fresh.pattern, materials: fresh.materials, analysis: fresh.analysisBase, ai_pending: fresh.aiPending, name: fresh.name };
+        await updateItem(itemId, reanalysisChange(fresh, row, a));
+      } catch { setError('Speichern fehlgeschlagen. Bitte noch einmal versuchen.'); return; }
       onSaved('Neu analysiert.');
-    } catch (e) {
-      const { code } = await kiError(e);
-      setError(code === 'rate_limited' ? 'Das Gratis-Kontingent ist gerade erschöpft. Bitte später noch einmal.' : 'Analyse fehlgeschlagen: ' + (code || (e as Error).message));
     } finally { setBusy(false); }
   }
 
@@ -144,7 +156,7 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
         {!profiled && <Hint>Noch kein KI-Profil für dieses Teil.</Hint>}
         {!!note && <Hint>{note}</Hint>}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Capsule label={busy ? 'Analysiere …' : 'Neu analysieren'} selected onPress={busy || img === undefined ? undefined : run}
+          <Capsule label={busy ? 'Analysiere …' : img === undefined ? 'Lade Bild …' : 'Neu analysieren'} selected={img !== undefined} onPress={busy || img === undefined ? undefined : run}
             icon={(c) => <Icon name="sparkle" size="chip" color={c} />} />
           {busy && <ActivityIndicator color={t.accent} />}
         </View>

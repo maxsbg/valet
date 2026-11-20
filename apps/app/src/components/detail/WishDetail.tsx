@@ -37,7 +37,7 @@ export function WishDetail({ id }: { id: string }) {
   const bottom = useBottomInset();
   const { width: W } = useWindowDimensions();
   const col = Math.min(W - 32, 520);
-  const { wardrobe, patch } = useSession();
+  const { wardrobe, patch, reload } = useSession();
   const { me, person } = useTilePeople();
   const toast = useToast(bottom + TOOLBAR_SPACE);
   const [d, setD] = useState<ItemDetail | null>(null);
@@ -172,7 +172,7 @@ export function WishDetail({ id }: { id: string }) {
       {canExport && mainPic && (
         <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Bild teilen" name={`${fileName(it.name)}.png`} make={() => itemPng(mainPic)} />
       )}
-      <AnalysisSheet open={analysis} itemId={id} f={f} onClose={() => setAnalysis(false)} onSaved={(m) => { setAnalysis(false); load(); toast.show(m); }} />
+      <AnalysisSheet open={analysis} itemId={id} f={f} onClose={() => setAnalysis(false)} onSaved={(m) => { setAnalysis(false); load(); reload(); toast.show(m); }} />
       {toast.node}
     </View>
   );

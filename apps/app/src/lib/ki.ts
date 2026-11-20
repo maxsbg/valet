@@ -1,5 +1,5 @@
 // KI über die Edge Function `ki` (Durchreicher zu Gemini). Prompt, Schema und Prüfung kommen aus @valet/core.
-import { ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, checkAnalysis, checkInfo, readInfoPrompt, readPagePrompt, type PageFacts, type Analysis, type Info, type InfoKind } from '@valet/core';
+import { ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, analysisUsable, pagePriceInEuro, checkAnalysis, checkInfo, readInfoPrompt, readPagePrompt, type PageFacts, type Analysis, type Info, type InfoKind } from '@valet/core';
 import { supabase } from './supabase';
 
 /** Blob → Base64 ohne data:-Präfix */
@@ -34,6 +34,15 @@ async function shrink(file: Blob, max = 2000): Promise<Blob> {
   }
 }
 
+/** Leere oder kaputte Antwort der KI (kein Objekt, nichts Brauchbares) – zählt als Fehlschlag, nie als „analysiert“ */
+const EMPTY = 'empty_answer';
+function usable(data: unknown, model: string | null): Analysis {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(EMPTY);
+  const a = checkAnalysis(data, model);
+  if (!analysisUsable(a)) throw new Error(EMPTY);
+  return a;
+}
+
 /** Antwort der Edge Function: geprüft wird in core, `model` = tatsächlich genutztes Modell */
 type Answer = { data: unknown; model: string | null };
 
@@ -48,8 +57,8 @@ async function ask(image: Blob, prompt: string, schema: unknown, opts: { tempera
 }
 
 /** Etikett, Shop-Screenshot oder Bestellbestätigung auslesen */
-export async function readInfo(file: Blob, kind: InfoKind | null): Promise<Info> {
-  return checkInfo((await ask(await shrink(file), readInfoPrompt(kind), READ_INFO_SCHEMA)).data);
+export async function readInfo(file: Blob, kind: InfoKind | null, hint = ''): Promise<Info> {
+  return checkInfo((await ask(await shrink(file), readInfoPrompt(kind, hint), READ_INFO_SCHEMA)).data);
 }
 
 /**
@@ -59,7 +68,7 @@ export async function readInfo(file: Blob, kind: InfoKind | null): Promise<Info>
 export async function analyzePicture(image: Blob, context = ''): Promise<Analysis> {
   // Temperatur 0: gleiches Bild → möglichst gleiches Profil (Spec 6.3)
   const { data, model } = await ask(image, ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, { temperature: 0, text: context.slice(0, 20000) });
-  return checkAnalysis(data, model);
+  return usable(data, model);
 }
 
 /**
@@ -72,12 +81,12 @@ export async function analyzeStored(imagePath: string, context = ''): Promise<An
     body: { imagePath, prompt: ANALYZE_ITEM_PROMPT, schema: ANALYZE_ITEM_SCHEMA, temperature: 0, ...(context ? { text: context.slice(0, 20000) } : {}) },
   });
   if (error) throw error;
-  if (!res?.data || typeof res.data !== 'object') throw new Error('Ungültige Antwort der KI');
-  return checkAnalysis(res.data, typeof res?.model === 'string' ? res.model : null);
+  return usable(res?.data, typeof res?.model === 'string' ? res.model : null);
 }
 
-/** Fehlercode der Edge Function („rate_limited“, HTTP-Status 404 …) aus einem Fehler lesen */
+/** Fehlercode der Edge Function („rate_limited“, „empty_answer“, HTTP-Status 404 …) aus einem Fehler lesen; ohne Status = Netzfehler */
 export async function kiError(e: unknown): Promise<{ code: string; status: number | null }> {
+  if (e instanceof Error && e.message === EMPTY) return { code: EMPTY, status: null };
   const ctx = (e as { context?: Response } | null)?.context;
   const status = typeof ctx?.status === 'number' ? ctx.status : null;
   let code = '';
@@ -92,5 +101,5 @@ export async function readPage(text: string, facts: PageFacts): Promise<Info> {
     body: { text: text.slice(0, 20000), prompt: readPagePrompt(facts), schema: READ_INFO_SCHEMA },
   });
   if (error) throw error;
-  return checkInfo(res?.data);
+  return pagePriceInEuro(checkInfo(res?.data), facts);
 }

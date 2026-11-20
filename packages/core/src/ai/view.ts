@@ -26,7 +26,10 @@ export function fitWords(f: Pick<EditForm, 'category' | 'subcategory' | 'pattern
   const p = activeProfile(f.profile, profileCtx(f));
   const legs = f.category === 'pants' || f.category === 'shorts';
   const form = legs ? profileLabel('leg', p.leg) : profileLabel('silhouette', p.silhouette);
-  const scales = fitScalesOf(f.category).map((sc) => (f.fit[sc.key] != null ? cap(sc.steps[f.fit[sc.key]!] ?? '') : ''));
+  const set = fitScalesOf(f.category).filter((sc) => f.fit[sc.key] != null);
+  const words = set.map((sc) => sc.steps[f.fit[sc.key]!] ?? '');
+  // Spec 14.2 („Zulaufend · Normal · Lang · Hoch“): je Stufe nur das Wort, ohne Bezeichnung (Max, 20.11.2026)
+  const scales = words.map((w) => cap(w));
   const shoulder = p.shoulder && p.shoulder !== 'natural' ? profileLabel('shoulder', p.shoulder) : '';
   return [form, ...scales, shoulder].filter(Boolean);
 }
@@ -53,11 +56,20 @@ export function storedMeta(analysis: unknown): StoredMeta | null {
 /** Hat das Teil schon ein Profil der Analyse v2? */
 export const hasProfile = (analysis: unknown): boolean => (storedMeta(analysis)?.v ?? 0) >= 2;
 
+/** Zeitstempel → Tag in Ortszeit „20.11.2026“ (23:30Z ist in Deutschland schon der nächste Tag); ungültig → '' */
+function localDay(at: string | null): string {
+  if (!at) return '';
+  const t = new Date(at);
+  if (Number.isNaN(t.getTime())) return '';
+  const two = (n: number) => String(n).padStart(2, '0');
+  return `${two(t.getDate())}.${two(t.getMonth() + 1)}.${t.getFullYear()}`;
+}
+
 /** „Analysiert am 19.11.2026 mit gemini-3.5-flash-lite“; ohne Profil '' */
 export function analysisNote(analysis: unknown): string {
   const m = storedMeta(analysis);
   if (!m || m.v < 2) return '';
-  const d = m.at && /^\d{4}-\d{2}-\d{2}/.test(m.at) ? `${m.at.slice(8, 10)}.${m.at.slice(5, 7)}.${m.at.slice(0, 4)}` : '';
+  const d = localDay(m.at);
   return ['Analysiert', d && `am ${d}`, m.model && `mit ${m.model}`].filter(Boolean).join(' ');
 }
 
@@ -84,6 +96,7 @@ export function analysisSections(f: EditForm): AnalysisSection[] {
     ...(fx.strap ? row('Trägerart', f.strap ? strapLabel(f.strap) : '') : []),
   ];
   const wear: AnalysisRow[] = [
+    // „ · “, weil Lagen-Namen selbst Kommas enthalten („Mitte, zu“)
     ...(fx.layers ? row('Lagen', [...f.layers].sort().map((i) => LAYERS[i]).filter(Boolean).join(' · ')) : []),
     ...(fx.layers && f.standalone ? row('Allein tragbar', 'ja') : []),
     ...(fx.weather ? row('Wärme', f.warmth != null ? WARMTH[f.warmth] : '') : []),
@@ -123,6 +136,9 @@ export function reanalysisChange(form: EditForm, row: ProfilePatchRow, a: Analys
 
 // ---------- Stapellauf „Profile ergänzen“ (Spec 8) ----------
 
+/** Ab so vielen „model_rejected“ hintereinander liegt es eher am Anbieter als an den Teilen → Lauf anhalten */
+export const BATCH_MAX_REJECTED_RUN = 3;
+
 /** Höchstens 6 Aufrufe je Minute und 100 je Tag (Gratis-Kontingent; ≥ 30 % bleiben für die normale Nutzung) */
 export const BATCH_PER_MIN = 6;
 export const BATCH_PER_DAY = 100;
@@ -152,6 +168,37 @@ export function failedPatch(analysis: Record<string, unknown> | null | undefined
 export const batchUsed = (stored: { day: string; n: number } | null | undefined, today: string): number =>
   stored && stored.day === today && typeof stored.n === 'number' ? stored.n : 0;
 
-/** „x Teile ergänzt, z übersprungen“ */
-export const batchSummary = (done: number, skipped: number): string =>
-  `${done} ${done === 1 ? 'Teil' : 'Teile'} ergänzt, ${skipped} übersprungen`;
+/** „x Teile ergänzt, y fehlgeschlagen, z übersprungen“ (fehlgeschlagen = wird beim nächsten Start erneut versucht) */
+export const batchSummary = (done: number, failed: number, skipped: number): string =>
+  [`${done} ${done === 1 ? 'Teil' : 'Teile'} ergänzt`, failed ? `${failed} fehlgeschlagen` : '', `${skipped} übersprungen`].filter(Boolean).join(', ');
+
+/**
+ * Fehler im Stapellauf einordnen: `pause` = vorübergehend (Kontingent, Überlast, Zeitüberschreitung, kein Netz,
+ * abgelaufene Anmeldung) – Lauf anhalten, kein Fehlversuch; `fail` = am Teil selbst (Bild fehlt, 404/413, `model_rejected` 422, ungültige/leere Antwort) – Fehlversuch zählen.
+ */
+export function batchErrorKind(code: string, status: number | null): 'pause' | 'fail' {
+  if (code === 'rate_limited' || status === 429) return 'pause';
+  if (status === 401 || status === 403) return 'pause'; // Sitzung abgelaufen: nicht dem Teil anlasten
+  if (status == null && !code) return 'pause';
+  if (code === 'config_error') return 'pause';
+  if (status != null && status >= 500 && status !== 501) return 'pause';
+  return 'fail';
+}
+
+/**
+ * Verständlicher Satz zu einem Fehler der KI (Code/Status aus kiError), für Blatt, Formular und „Infos auslesen“.
+ * Nie rohe englische Codes zeigen.
+ */
+export function kiMessage(code: string, status: number | null): string {
+  if (code === 'rate_limited' || status === 429) return 'Das Gratis-Kontingent der KI ist gerade erschöpft. Bitte später noch einmal.';
+  if (code === 'empty_answer') return 'Die KI hat nichts Brauchbares geliefert. Bitte noch einmal versuchen.';
+  if (code === 'not_member') return 'Die KI steht erst zur Verfügung, wenn du einem Schrank beigetreten bist.';
+  if (status === 401 || status === 403) return 'Anmeldung abgelaufen. Bitte neu laden und noch einmal versuchen.';
+  if (status === 404) return 'Das Bild wurde nicht gefunden.';
+  if (code === 'model_rejected' || status === 422) return 'Die KI konnte das nicht auswerten. Ein anderes Foto bzw. ein anderer Link hilft oft.';
+  if (status === 413) return 'Das Bild bzw. der Text ist zu groß oder hat ein unbekanntes Format.';
+  if (code === 'config_error') return 'Die KI ist gerade falsch eingerichtet (Schlüssel oder Modell). Bitte Bescheid geben.';
+  if (status == null) return 'Keine Verbindung zur KI. Bitte Netz prüfen und noch einmal versuchen.';
+  if (status >= 400 && status < 500) return 'Die Anfrage an die KI war ungültig. Bitte noch einmal versuchen.';
+  return 'Die KI ist gerade nicht erreichbar. Bitte später noch einmal.';
+}

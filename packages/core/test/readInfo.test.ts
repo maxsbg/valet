@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { READ_INFO_SCHEMA, checkInfo, applyInfo, readInfoPrompt } from '../src/ai/readInfo';
+import { READ_INFO_SCHEMA, checkInfo, applyInfo, infoHint, infoUsable, pagePriceInEuro, readInfoPrompt, readPagePrompt } from '../src/ai/readInfo';
 import { emptyEditForm, setField } from '../src/edit';
 import { CATEGORY_PATHS } from '../src/ai/analyzeItem';
 
@@ -55,4 +55,46 @@ test('Leitsatz: alle Feldnamen der KI-Schemas sind englisch', () => {
   const all = names(READ_INFO_SCHEMA);
   for (const n of ['brand', 'price', 'list_price', 'purchase_date', 'size', 'article_no', 'material_parts', 'pct', 'care', 'category', 'colors']) assert.ok(all.includes(n), n);
   for (const n of ['marke', 'preis', 'listenpreis', 'kaufdatum', 'groesse', 'artikelnummer', 'materialAnteile', 'prozent', 'pflege']) assert.ok(!all.includes(n), n);
+});
+
+test('READ_INFO_SCHEMA: ablesen statt schätzen – ohne Profil, Konfidenz, Stil, Lagen, Wetter; Name darf fehlen', () => {
+  const p = READ_INFO_SCHEMA.properties!;
+  for (const k of ['profile', 'confidence', 'styles', 'layers', 'warmth', 'rain']) assert.ok(!(k in p), k);
+  assert.deepEqual(p.name!.type, ['string', 'null']);
+  assert.match(p.colors!.description!, /^Nur die genannte Farbangabe/);
+  assert.match(p.colors!.description!, /navy = /);
+  assert.ok(JSON.stringify(READ_INFO_SCHEMA).length < 28000);
+});
+
+test('checkInfo: kein Profil aus Infos, nur echte Kalendertage', () => {
+  const i = checkInfo({ kind: 'shop', profile: { sheen_min: 3 }, styles: ['casual'], purchase_date: '2026-02-30' });
+  assert.deepEqual(i.item.styles, []);
+  assert.equal(i.item.profile.sheen, null);
+  assert.equal(i.purchaseDate, null);
+  assert.equal(checkInfo({ purchase_date: '2024-02-29' }).purchaseDate, '2024-02-29');
+});
+
+test('Leere Info erkennen, Seiten-Prompt bleibt unter der Grenze der Edge Function', () => {
+  assert.equal(infoUsable(checkInfo({})), false);
+  assert.equal(infoUsable(checkInfo({ size: 'M' })), true);
+  const big = 'x'.repeat(5000);
+  const p = readPagePrompt({ name: big, brand: big, price: 1, currency: big, sku: big, color: big, material: big, description: big, shop: big });
+  assert.ok(p.length < 4000, String(p.length));
+});
+
+test('Etikett ohne übernehmbare Angaben gilt als leer; Einheitsgröße wird erkannt', () => {
+  assert.equal(infoUsable(checkInfo({ kind: 'label', category: 'top/shirt', colors: ['red'] })), false);
+  assert.equal(infoUsable(checkInfo({ kind: 'shop', category: 'top/shirt' })), true);
+  assert.equal(infoUsable(checkInfo({ category: 'top/shirt' }), 'label'), false);
+  assert.equal(checkInfo({ size: 'Einheitsgröße' }).size, 'One Size');
+  assert.equal(checkInfo({ size: 'W32 / L34 (Regular)' }).size, 'W32 / L34 (Regular)');
+});
+
+test('Bestellung mit mehreren Artikeln: Hinweis auf das gesuchte Teil im Prompt; Preise nur in Euro', () => {
+  assert.match(readInfoPrompt('order', infoHint({ name: 'Oxford-Hemd', brand: 'COS', colors: ['white'] })), /Gesucht ist dieses Teil: Oxford-Hemd · COS · Weiß/);
+  assert.match(readInfoPrompt(null), /den ersten bzw\. den hervorgehobenen/);
+  const i = checkInfo({ price: 59, list_price: 79 });
+  assert.equal(pagePriceInEuro(i, { currency: 'USD' }).price, null);
+  assert.equal(pagePriceInEuro(i, { currency: 'EUR' }).price, 59);
+  assert.equal(pagePriceInEuro(i, {}).price, 59);
 });

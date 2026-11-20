@@ -2,7 +2,7 @@
 // Läuft modulweit (nicht in der Seite), damit er beim Tab-Wechsel weiterläuft. Höchstens BATCH_PER_MIN je Minute
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
-import { BATCH_PER_DAY, BATCH_PER_MIN, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
+import { profileFilled, BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -11,8 +11,10 @@ export type BatchState = {
   phase: 'idle' | 'loading' | 'running' | 'paused' | 'done' | 'error';
   /** offen beim Start dieses Laufs */
   total: number; done: number; failed: number;
-  /** Teile ohne Profil, die nach 3 Fehlversuchen übersprungen werden */
+  /** Teile ohne Profil, die nach 3 Fehlversuchen übersprungen werden (failed = in diesem Lauf fehlgeschlagen, wird erneut versucht) */
   skipped: number;
+  /** in diesem Lauf schon angefasst (für „x von total“, auch übersprungene/inzwischen erledigte) */
+  processed: number;
   message: string;
 };
 
@@ -21,8 +23,10 @@ type Row = ProfilePatchRow & { id: string };
 const KEY = 'valet-profile-batch';
 const GAP_MS = Math.ceil(60000 / BATCH_PER_MIN);
 
-let state: BatchState = { phase: 'idle', total: 0, done: 0, failed: 0, skipped: 0, message: '' };
+let state: BatchState = { phase: 'idle', total: 0, done: 0, failed: 0, skipped: 0, processed: 0, message: '' };
 let stopFlag = false;
+/** Teil, an dem der Lauf zuletzt wegen eines vorübergehenden Fehlers pausierte (zweimal hintereinander → Fehlversuch) */
+let pausedOn: string | null = null;
 const subs = new Set<() => void>();
 const set = (p: Partial<BatchState>) => { state = { ...state, ...p }; subs.forEach((f) => f()); };
 
@@ -66,6 +70,13 @@ async function loadPaths(ids: string[]): Promise<Map<string, string>> {
   return new Map([...best].map(([k, v]) => [k, v.path]));
 }
 
+/** Ein Teil frisch laden (vor dem Speichern); gelöscht → null */
+async function loadRow(id: string): Promise<Row | null> {
+  const { data, error } = await supabase.from('items').select('id,name,category,subcategory,pattern,materials,analysis,ai_pending').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return (data as Row | null) ?? null;
+}
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const save = async (id: string, change: Record<string, unknown>) => {
   const r = await supabase.from('items').update(change).eq('id', id);
@@ -81,22 +92,27 @@ export async function countBatch(wardrobeId: string): Promise<{ pending: number;
 export async function startBatch(wardrobeId: string) {
   if (state.phase === 'running' || state.phase === 'loading') return;
   stopFlag = false;
-  set({ phase: 'loading', done: 0, failed: 0, message: '' });
+  set({ phase: 'loading', done: 0, failed: 0, processed: 0, message: '' });
   try {
     const rows = await loadRows(wardrobeId);
     const todo = rows.filter((r) => batchPending(r.analysis));
     const skipped = rows.filter((r) => batchSkipped(r.analysis)).length;
     set({ total: todo.length, skipped });
-    if (!todo.length) { set({ phase: 'done', message: skipped ? batchSummary(0, skipped) : 'Alle Teile haben ein Profil.' }); return; }
+    if (!todo.length) { set({ phase: 'done', message: skipped ? batchSummary(0, 0, skipped) : 'Alle Teile haben ein Profil.' }); return; }
     const paths = await loadPaths(todo.map((r) => r.id));
     set({ phase: 'running' });
     let last = 0;
+    let rejectedRun = 0;
     for (const r of todo) {
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       const path = paths.get(r.id);
-      if (!path) { // kein Bild: kein Aufruf, nur vermerken
-        await save(r.id, failedPatch(r.analysis)).catch(() => {});
-        set({ failed: state.failed + 1 });
+      if (path && usedToday() >= BATCH_PER_DAY) { set({ phase: 'paused', message: `Tagesgrenze erreicht (${BATCH_PER_DAY}). Morgen geht es weiter.` }); return; }
+      set({ processed: state.processed + 1 });
+      if (!path) { // kein Bild: kein Aufruf, nur vermerken (frisch gelesen, falls inzwischen analysiert)
+        const now = await loadRow(r.id).catch(() => null);
+        const patch = now && batchPending(now.analysis) ? failedPatch(now.analysis) : null;
+        if (patch) await save(r.id, patch).catch(() => {});
+        if (patch) { if (batchSkipped(patch.analysis)) set({ skipped: state.skipped + 1 }); else set({ failed: state.failed + 1 }); }
         continue;
       }
       if (usedToday() >= BATCH_PER_DAY) { set({ phase: 'paused', message: `Tagesgrenze erreicht (${BATCH_PER_DAY}). Morgen geht es weiter.` }); return; }
@@ -104,21 +120,55 @@ export async function startBatch(wardrobeId: string) {
       if (gap > 0) await wait(gap);
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       last = Date.now();
-      countCall();
+      let a: Awaited<ReturnType<typeof analyzeStored>>;
+      let counted = false;
       try {
-        const a = await analyzeStored(path);
-        await save(r.id, profilePatch(r, a));
+        a = await analyzeStored(path);
+        countCall(); counted = true;
+        // ohne Mode-Profil zählt die Antwort nicht als Ergänzung (sonst stünde ein leeres Profil als „analysiert“ da)
+        if (!profileFilled(a)) throw new Error('empty_answer');
+      } catch (e) {
+        const { code, status } = await kiError(e);
+        if (!counted && (status != null || code)) countCall(); // Anfrage kam an (zählt fürs Kontingent)
+        const kind = batchErrorKind(code, status);
+        const global = code === 'rate_limited' || status === 429 || code === 'config_error' || status === 401 || status === 403 || (status == null && !code);
+        // scheitert dasselbe Teil nach „Weiter“ erneut vorübergehend, liegt es wohl am Teil → Fehlversuch statt Endlos-Pause
+        if (kind === 'pause' && (global || pausedOn !== r.id)) {
+          if (!global) pausedOn = r.id;
+          set({ phase: 'paused', message: `${kiMessage(code, status)} Später „Weiter“ tippen.` });
+          return;
+        }
+        pausedOn = null;
+        const now = await loadRow(r.id).catch(() => null);
+        const patch = failedPatch((now ?? r).analysis);
+        await save(r.id, patch).catch(() => {});
+        // dritter Fehlversuch: ab jetzt übersprungen (nicht „wird erneut versucht“)
+        if (batchSkipped(patch.analysis)) set({ skipped: state.skipped + 1 }); else set({ failed: state.failed + 1 });
+        rejectedRun = code === 'model_rejected' ? rejectedRun + 1 : 0;
+        if (rejectedRun >= BATCH_MAX_REJECTED_RUN) {
+          set({ phase: 'paused', message: `${BATCH_MAX_REJECTED_RUN} Teile hintereinander abgelehnt – vermutlich ein Problem bei der KI. Später „Weiter“ tippen.` });
+          return;
+        }
+        continue;
+      }
+      pausedOn = null; rejectedRun = 0;
+      try {
+        // frisch lesen: wurde das Teil während des Laufs bearbeitet oder neu analysiert, gilt dessen Stand
+        const now = await loadRow(r.id);
+        if (!now) continue; // inzwischen gelöscht
+        if (!batchPending(now.analysis)) continue; // inzwischen anders analysiert – nicht als „ergänzt“ zählen
+        await save(r.id, profilePatch(now, a));
         set({ done: state.done + 1 });
       } catch (e) {
-        const { code } = await kiError(e);
-        if (code === 'rate_limited') { set({ phase: 'paused', message: 'Gratis-Kontingent gerade erschöpft. Später „Weiter“ tippen.' }); return; }
-        await save(r.id, failedPatch(r.analysis)).catch(() => {});
-        set({ failed: state.failed + 1 });
+        console.warn('Profile ergänzen: Speichern', e);
+        set({ phase: 'paused', message: 'Speichern fehlgeschlagen – bitte Verbindung prüfen und „Weiter“ tippen.' });
+        return;
       }
     }
-    set({ phase: 'done', message: batchSummary(state.done, state.failed + state.skipped) });
+    set({ phase: 'done', message: batchSummary(state.done, state.failed, state.skipped) });
   } catch (e) {
-    set({ phase: 'error', message: 'Fehler: ' + (e as Error).message });
+    console.warn('Profile ergänzen', e);
+    set({ phase: 'paused', message: 'Teile konnten nicht geladen werden – bitte Verbindung prüfen und „Weiter“ tippen.' });
   }
 }
 

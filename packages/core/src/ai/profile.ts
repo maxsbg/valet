@@ -3,6 +3,7 @@
 // Leitsatz (19.11.2026): englische Keys, deutsche Labels nur in der Oberfläche.
 
 import type { JsonSchema } from './analyzeItem';
+import { fieldsFor } from '../fields';
 
 export const PROFILE_PROMPT_VERSION = '2.0';
 
@@ -33,8 +34,10 @@ const shoe = is(['shoe']);
 const bag = is(['bag']);
 const notJewelry: Applies = (c) => c.category !== 'jewelry';
 const structured: Applies = (c) => clothing(c) || shoe(c) || bag(c);
-const patterned: Applies = (c) => c.pattern != null && c.pattern !== 'solid';
-const denim: Applies = (c) => c.materials.includes('denim');
+/** gemustert und die Kategorie hat überhaupt ein Musterfeld (Altmuster an einem Schuh zählt nicht) */
+const patterned: Applies = (c) => c.pattern != null && c.pattern !== 'solid' && fieldsFor(c.category, c.sub).pattern;
+/** Denim oder Jeans (auch wenn das Etikett „Baumwolle“ sagt – Jeans haben immer eine Waschung, Max 20.11.2026) */
+const denim: Applies = (c) => c.materials.includes('denim') || c.sub === 'jeans';
 const metal: Applies = (c) =>
   ['outerwear', 'shoe', 'bag', 'jewelry'].includes(c.category ?? '') || (c.category === 'accessory' && c.sub === 'belt');
 
@@ -49,12 +52,12 @@ export const PATTERN_SCALES = o('fine Fein · medium Mittel · large Groß');
 export const DENIM_WASHES = o('raw Raw · dark Dunkel · mid Mittel · light Hell · black Schwarz · distressed Used');
 export const METAL_TONES = o('none Keiner · silver Silber · gold Gold · rose_gold Roségold · black Schwarz · mixed Gemischt');
 export const SILHOUETTES = o('straight Gerade · fitted Tailliert · a_line A-Linie · boxy Kastig · cocoon Kokon');
-export const SHOULDERS = o('natural Natürlich · structured Gepolstert · dropped Überschnitten · raglan Raglan · sleeveless Ärmellos · off_shoulder Schulterfrei');
+export const SHOULDERS = o('natural Natürlich · structured Gepolstert · dropped Überschnitten · raglan Raglan · sleeveless Ärmellos/Träger · off_shoulder Schulterfrei');
 export const LEGS = o('straight Gerade · tapered Zulaufend · flared Ausgestellt · barrel Bogen');
 export const TOES = o('round Rund · almond Mandel · pointed Spitz · square Eckig · open Offen');
 export const SHAFTS = o('low Halbschuh · ankle Knöchel · mid Wade · high Knie und höher');
 export const SOLES = o('slim Schmal · regular Normal · chunky Klobig · platform Plateau');
-export const HEELS = o('none Kein Absatz · low Niedrig · mid Mittel · high Hoch');
+export const HEELS = o('none Keiner · low unter 3 cm · mid 3–7 cm · high über 7 cm');
 export const BAG_SIZES = o('mini Mini · small Klein · medium Mittel · large Groß');
 export const EFFECTS = o('clean Clean · rugged Robust · soft Weich · sharp Streng · playful Verspielt · bold Markant');
 
@@ -82,7 +85,7 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
     hint: 'sichtbare Oberfläche, nicht die Faser' },
   { key: 'opacity', kind: 'enum', label: 'Transparenz', group: 'surface', applies: clothing, only: 'Kleidung', values: OPACITIES, hint: 'wie blickdicht der Stoff ist' },
   { key: 'pattern_scale', kind: 'enum', label: 'Mustergröße', group: 'surface', applies: patterned, only: 'gemusterte Teile (nicht Unifarben)', values: PATTERN_SCALES, hint: 'Größe des Musters' },
-  { key: 'denim_wash', kind: 'enum', label: 'Waschung', group: 'surface', applies: denim, only: 'Teile aus Denim', values: DENIM_WASHES, hint: 'Waschung des Denims' },
+  { key: 'denim_wash', kind: 'enum', label: 'Waschung', group: 'surface', applies: denim, only: 'Teile aus Denim und Jeans', values: DENIM_WASHES, hint: 'Waschung des Denims' },
   { key: 'metal_tone', kind: 'enum', label: 'Metallton', group: 'surface', applies: metal, only: 'Oberbekleidung, Schuhe, Taschen, Gürtel, Schmuck', values: METAL_TONES,
     hint: 'Farbe sichtbarer Metallteile (Reißverschluss, Schnalle, Beschläge, Schmuck)' },
   { key: 'silhouette', kind: 'enum', label: 'Form', group: 'shape', applies: shapeCats, only: 'Oberbekleidung, Oberteil, Kleid, Rock', values: SILHOUETTES,

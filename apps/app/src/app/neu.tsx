@@ -7,8 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { editChange, emptyEditForm, infoContext, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
-import { analyzePicture, readInfo, readPage } from '@/lib/ki';
+import { dropImageSuggestions, editChange, emptyEditForm, infoContext, infoUsable, kiMessage, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
+import { analyzePicture, kiError, readInfo, readPage } from '@/lib/ki';
 import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
 import { useTheme, DISPLAY, space, radius, tile } from '@/lib/theme';
@@ -23,6 +23,8 @@ import { itemTile } from '@valet/ui';
 type Step = 'start' | 'web' | 'work' | 'review' | 'more' | 'form';
 /** Ausgelesene Infos (Seite, Screenshot, Etikett) + Beschreibungstext der Seite – Kontext für die Bildanalyse */
 type Extra = { infos: SourceInfo[]; description: string | null };
+/** Fehler beim Laden einer Produktseite (kein KI-Fehler) – eigene Meldung */
+const pageError = (message: string) => Object.assign(new Error(message), { page: true });
 const MAROON = '#722638';
 
 /**
@@ -62,6 +64,10 @@ export default function Neu() {
   const pageDesc = useRef<string | null>(null);
   // Schritt „Hast du noch weitere Infos?“
   const [moreLink, setMoreLink] = useState('');
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const earlySave = useRef(false);
+  /** zuletzt gelesene Infos: bleiben beim Fotowechsel Kontext der neuen Bildanalyse (Werte stehen schon im Formular) */
+  const lastExtra = useRef<Extra | null>(null);
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
 
@@ -115,6 +121,8 @@ export default function Neu() {
         pageInfo.current = readPage(page.text, page.facts);
         pageDesc.current = page.facts.description ?? null;
         pageInfo.current.catch(() => {}); // Fehler erst beim Formular melden
+      } else if (!page.blocked) {
+        toast.show('Auf der Seite steht zu wenig Text – Angaben wie Material und Pflege bitte selbst ergänzen.');
       }
       setWeb({ url, page, error: page.blocked ? 'Der Shop lässt die Seite nicht von außen laden.' : !page.images.length ? 'Auf der Seite wurden keine Bilder gefunden.' : undefined });
     } catch (e) {
@@ -159,8 +167,10 @@ export default function Neu() {
     if (!url) return toast.show('Kein Link gefunden');
     toForm(picture, {
       link: url,
-      read: loadProduct(url).then(async (page): Promise<Extra> => {
-        if (page.text.length <= 200) throw new Error('Auf der Seite steht zu wenig Text.');
+      // Fehler beim Laden der Seite eigens kennzeichnen (sonst sähe der Nutzer „Keine Verbindung zur KI“)
+      read: loadProduct(url).catch((e) => { throw pageError(productError(e)); }).then(async (page): Promise<Extra> => {
+        if (page.blocked) throw pageError('Der Shop lässt die Seite nicht von außen laden.');
+        if (page.text.length <= 200) throw pageError('Auf der Seite steht zu wenig Text.');
         return { infos: [{ from: 'page', info: await readPage(page.text, page.facts) }], description: page.facts.description ?? null };
       }),
     });
@@ -185,29 +195,52 @@ export default function Neu() {
     const page = pageInfo.current;
     const read: Promise<Extra> | null = more?.read
       ?? (page ? page.then((info) => ({ infos: [{ from: 'page' as const, info }], description: pageDesc.current })) : null);
+    const kept = !read ? lastExtra.current : null;
     if (!p && !read) return;
     const n = run.current;
+    earlySave.current = false;
+    setAiBusy(read ? 'KI liest die Infos aus … Vorschläge erscheinen gleich in den Feldern.' : 'KI analysiert das Foto … Vorschläge erscheinen gleich in den Feldern.');
     (async () => {
-      let extra: Extra = { infos: [], description: null };
+      let extra: Extra = kept ?? { infos: [], description: null };
       const errors: unknown[] = [];
-      if (read) { try { extra = await read; } catch (e) { errors.push(e); } }
+      let readFailed = false, imageFailed = false;
+      if (read) { try { extra = await read; } catch (e) { errors.push(e); readFailed = true; } }
       if (n !== run.current) return;
-      if (extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
+      if (p) setAiBusy('KI analysiert das Foto … Vorschläge erscheinen gleich in den Feldern.');
+      // leere Infos (nichts Lesbares) nicht übernehmen und nicht als Kontext zählen
+      if (extra.infos.length && !extra.infos.some((x) => infoUsable(x.info, x.from))) toast.show('Auf dem Bild bzw. der Seite war nichts Lesbares – weiter nur mit dem Foto.');
+      extra = { ...extra, infos: extra.infos.filter((x) => infoUsable(x.info, x.from)) };
+      if (read) lastExtra.current = extra;
+      // neu gelesene Infos übernehmen; behaltene (Fotowechsel) stehen schon im Formular und gehen nur als Kontext mit
+      if (read && extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
       if (p) {
         try {
           const a = await analyzePicture(p.main, infoContext(extra.infos, extra.description));
           if (n !== run.current) return;
-          setF((cur) => cur && mergeSources(cur, { image: a, infos: extra.infos }));
-        } catch (e) { errors.push(e); }
+          // Infos sind schon übernommen (mit Herkunft); nur noch das Bild – so dreht es keine Eingaben des Nutzers zurück
+          // Passform-Stufen und Größe der Infos noch einmal (late): im ersten Schritt fehlte evtl. die Kategorie
+          setF((cur) => cur && mergeSources(cur, { image: a, late: extra.infos }));
+        } catch (e) { errors.push(e); imageFailed = true; }
       }
+      if (n === run.current) setAiBusy(null);
       if (n !== run.current || !errors.length) return;
-      const busy = errors.some((e) => String((e as Error)?.message ?? e).includes('429'));
-      toast.show(busy ? 'KI gerade ausgelastet – bitte selbst ausfüllen' : 'KI-Erkennung nicht vollständig verfügbar');
+      const first = errors[0] as { page?: boolean; message?: string };
+      if (first?.page) return toast.show(`${first.message} Weiter nur mit dem Foto.`);
+      const { code, status } = await kiError(first);
+      // welcher Schritt scheiterte? Infos (Link/Screenshot/Etikett) oder die Fotoanalyse
+      const step = readFailed && !imageFailed ? 'Infos konnten nicht gelesen werden – Vorschläge nur aus dem Foto. '
+        : imageFailed && !readFailed && extra.infos.length ? 'Fotoanalyse fehlgeschlagen – Vorschläge nur aus den Infos. ' : '';
+      toast.show(`${step}${kiMessage(code, status)} Felder bitte selbst prüfen.`);
     })();
   }
 
   async function save() {
     if (!f || !wardrobe) return;
+    // KI läuft noch: erst hinweisen; zweites Tippen speichert ohne die ausstehenden Vorschläge
+    if (aiBusy && !earlySave.current) {
+      earlySave.current = true;
+      return toast.show('Die KI ist gleich fertig. Nochmal „Fertig“ tippen, um ohne ihre Vorschläge zu speichern.');
+    }
     const r = editChange(f, { isNew: true });
     if ('error' in r) return toast.show(r.error);
     // Leere Angaben weglassen → Standardwerte der Datenbank
@@ -227,10 +260,10 @@ export default function Neu() {
 
   if (step === 'form' && f) return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
+      <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
         wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
-        onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
-        saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }} onError={(m) => toast.show(m)}
+        onPic={(side, p) => { if (side === 'b') return setPicB(p); setPicture(p); if (!p) { run.current++; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); } }} hex={picture?.colors[0]?.h ?? null}
+        saving={saving} aiBusy={aiBusy} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); setStep('start'); }} onError={(m) => toast.show(m)}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: null, setId: null }} />
       {toast.node}
     </View>

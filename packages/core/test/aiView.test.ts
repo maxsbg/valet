@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyEditForm, toEditForm, type EditForm } from '../src/edit';
-import { checkAnalysis } from '../src/ai/analyzeItem';
+import { analysisUsable, checkAnalysis } from '../src/ai/analyzeItem';
 import { emptyProfile } from '../src/ai/profile';
 import {
-  analysisNote, analysisSections, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, fitWords, hasProfile, reanalysisChange, storedMeta,
+  analysisNote, analysisSections, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, fitWords, hasProfile, reanalysisChange, storedMeta,
 } from '../src/ai/view';
 
 const META = { v: 2, prompt: '2.0', model: 'gemini-3.5-flash-lite', at: '2026-11-19T11:00:00Z' };
@@ -59,7 +59,8 @@ test('Stapellauf: offen, übersprungen, Fehlversuche, Tageszähler', () => {
   assert.equal(batchSkipped(a), true);
   assert.equal(batchUsed({ day: '2026-11-18', n: 40 }, '2026-11-19'), 0);
   assert.equal(batchUsed({ day: '2026-11-19', n: 40 }, '2026-11-19'), 40);
-  assert.equal(batchSummary(1, 0), '1 Teil ergänzt, 0 übersprungen');
+  assert.equal(batchSummary(1, 0, 0), '1 Teil ergänzt, 0 übersprungen');
+  assert.equal(batchSummary(3, 2, 1), '3 Teile ergänzt, 2 fehlgeschlagen, 1 übersprungen');
 });
 
 test('Neu analysieren: nur Geändertes, leere Felder gefüllt, Profil ersetzt, failed weg', () => {
@@ -78,4 +79,48 @@ test('Neu analysieren: nur Geändertes, leere Felder gefüllt, Profil ersetzt, f
   // ohne Namen scheitert der normale Weg → nur das Profil
   const g = reanalysisChange(toEditForm({ ...row, name: '' }), { ...row, materials: [] }, a, '2026-11-19T12:00:00Z');
   assert.deepEqual(Object.keys(g), ['analysis']);
+});
+
+test('Prüfung 20.11.2026: Passform nur Wörter (wie Spec), Datum in Ortszeit, Fehlerarten im Stapellauf', () => {
+  const jeans = { ...emptyEditForm({ ownerId: 'max' }), category: 'pants', subcategory: 'jeans', fit: { width: 2, length: 2, rise: 1 } };
+  assert.deepEqual(fitWords(jeans), ['Normal', 'Normal', 'Normal']);
+  assert.deepEqual(fitWords({ ...jeans, fit: { width: 2, length: 4, rise: 2 } }), ['Normal', 'Lang', 'Hoch']);
+  const at = new Date(2026, 10, 20, 0, 30).toISOString(); // 00:30 Ortszeit
+  assert.match(analysisNote({ meta: { v: 2, model: 'm', at } }), /am 20\.11\.2026/);
+  assert.equal(batchErrorKind('rate_limited', 429), 'pause');
+  assert.equal(batchErrorKind('', null), 'pause'); // kein Netz
+  assert.equal(batchErrorKind('AI request failed', 502), 'pause');
+  assert.equal(batchErrorKind('', 404), 'fail');
+  assert.equal(batchErrorKind('empty_answer', null), 'fail');
+  assert.equal(batchErrorKind('model_rejected', 422), 'fail');
+});
+
+test('Leere KI-Antwort taugt nicht als Analyse', () => {
+  assert.equal(analysisUsable(checkAnalysis({})), false);
+  assert.equal(analysisUsable(checkAnalysis('Quatsch')), false);
+  assert.equal(analysisUsable(checkAnalysis({ colors: ['navy'] })), true);
+  assert.equal(analysisUsable(checkAnalysis({ profile: { sheen: 2 } })), true);
+});
+
+test('Blatt: Altmuster an einem Schuh zeigt keine Musterzeilen', () => {
+  const shoe = { ...emptyEditForm({ ownerId: 'max' }), category: 'shoe', subcategory: 'sneaker', pattern: 'striped',
+    profile: { ...emptyProfile(), pattern_contrast: 4, pattern_scale: 'fine', sheen: 1 }, analysisBase: { meta: { v: 2 } } };
+  const rows = analysisSections(shoe).flatMap((s) => s.rows.map((r) => r.label));
+  assert.ok(!rows.includes('Musterkontrast') && !rows.includes('Mustergröße'));
+  assert.ok(rows.includes('Glanz'));
+});
+
+test('Fehlertexte der KI auf Deutsch, abgelaufene Anmeldung pausiert den Stapellauf', () => {
+  assert.equal(batchErrorKind('', 401), 'pause');
+  assert.equal(batchErrorKind('', 403), 'pause');
+  for (const [c, s] of [['rate_limited', 429], ['empty_answer', null], ['', 404], ['', 413], ['AI request failed', 502], ['', null], ['', 401]] as const) {
+    const m = kiMessage(c, s);
+    assert.ok(m && !/AI request|bucket|rate_limited|empty_answer/.test(m), m);
+  }
+});
+
+test('Einstellungsfehler der KI pausieren, 4xx bekommt einen eigenen Satz', () => {
+  assert.equal(batchErrorKind('config_error', 503), 'pause');
+  assert.match(kiMessage('config_error', 503), /eingerichtet/);
+  assert.match(kiMessage('', 400), /ungültig/);
 });

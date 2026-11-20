@@ -1,13 +1,13 @@
 // Bearbeiten-Seite (VALET_DETAILSEITE_SPEC.md, Abschnitte 7 und 7a) – gemeinsam für „Bearbeiten“ und „Neues Teil prüfen“.
 // Kopf X · Titel · Haken, Bild-Kachel, KI-Hinweis, Name, Marke, Reiter Steckbrief · Kauf (Wunschteil: Steckbrief · Wunsch).
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
-  applyInfo, shopFromLink, tileKind,
+  applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -37,7 +37,8 @@ const WISH_LABEL: Record<WishTag, string> = { nextcop: 'Next Cop', grail: 'Grail
 type Props = {
   title: string;
   form: EditForm;
-  onForm: (f: EditForm) => void;
+  /** neuer Stand oder Rechnung auf dem aktuellsten Stand (für Ergebnisse, die erst später ankommen) */
+  onForm: (f: EditForm | ((cur: EditForm) => EditForm)) => void;
   persons: Person[];
   meId: string | null;
   wishlists: Wishlist[];
@@ -46,6 +47,8 @@ type Props = {
   onPic: (side: Side, p: Picture | null) => void;
   hex: string | null;
   saving: boolean;
+  /** KI liest bzw. analysiert noch (Neues Teil): Hinweis zeigen, Vorschläge kommen gleich */
+  aiBusy?: string | null;
   onCancel: () => void;
   onSave: () => void;
   onDelete?: () => void;
@@ -251,7 +254,7 @@ export function ItemEditor(p: Props) {
                 <Icon name={c.v as SymbolName} size="button" color={c.src === 'geschaetzt' ? t.inkMuted : t.onFill} />
               </ValueCircle>;
             })}>
-            <CarePicker care={f.care} onChange={(c) => set('care', c)} />
+            <CarePicker care={f.care} onChange={(c) => onForm(setCare(f, c))} />
           </EditRow>
         )),
       ])}
@@ -330,7 +333,7 @@ export function ItemEditor(p: Props) {
               </View>
             )}
             <Pair>
-              <DateField label="Kaufdatum" value={f.purchaseDate} onChange={(v) => set('purchaseDate', v)} optional />
+              <DateField label="Kaufdatum" value={f.purchaseDate} onChange={(v) => set('purchaseDate', v)} optional extra={ai('purchaseDate') ? <KiBadge /> : null} />
               <TextField label="Shop" value={f.shop} onChange={(v) => set('shop', v)} placeholder="z. B. zalando.de" extra={ai('shop') ? <KiBadge /> : null} />
             </Pair>
           </>
@@ -407,10 +410,21 @@ export function ItemEditor(p: Props) {
           <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={f.reversible} kind={tileKind(f.category, f.subcategory, f.type, f.fit.length)}
             hex={p.hex} colors={f.colors} colorsB={f.colorsB} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto}
             loadStored={p.loadStored} onError={p.onError} />
+          {!!p.aiBusy && (
+            <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline, alignItems: 'center' }]}>
+              <ActivityIndicator color={t.accent} />
+              <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.ink }}>{p.aiBusy}</Text>
+            </View>
+          )}
           {f.aiPending.length > 0 && (
             <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
               <KiBadge />
-              <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.ink }}>Felder mit „KI“ hat die KI aus dem Foto vorausgefüllt. Die Markierung verschwindet, sobald du den Wert änderst oder bestätigst.</Text>
+              <View style={{ flex: 1, gap: 10 }}>
+                <Text style={{ fontSize: 14, lineHeight: 19, color: t.ink }}>Felder mit „KI“ hat die KI vorausgefüllt (aus Foto, Shop, Etikett oder Name). Prüfe sie und übernimm sie – erst dann gelten sie als bestätigt und eine neue Analyse ändert sie nicht mehr. Ändern bestätigt einen Wert ebenfalls.</Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <Capsule label="Alle übernehmen" selected onPress={() => onForm(confirmAllAi(f))} icon={(c) => <Icon name="check" size="chip" color={c} />} />
+                </View>
+              </View>
             </View>
           )}
           <TextField label="Name" value={f.name} onChange={(v) => onForm(setName(f, v))} placeholder="z. B. Relaxed Flannel Shirt" extra={ai('name') ? <KiBadge /> : null} />
@@ -424,7 +438,7 @@ export function ItemEditor(p: Props) {
           )}
         </View>
       </Page>
-      <InfoSheet open={info} onClose={() => setInfo(false)} onResult={(r) => onForm(applyInfo(f, r))} />
+      <InfoSheet open={info} hint={infoHint(f)} onClose={() => setInfo(false)} onResult={(r) => onForm((cur) => applyInfo(cur, r))} />
     </KeyboardAvoidingView>
   );
 }

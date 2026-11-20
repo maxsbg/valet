@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
 
     if (!supabaseUrl || !supabaseAnonKey || !modelToken) {
       console.error("Missing required environment variables");
-      return jsonResponse({ error: "Server configuration error" }, 500);
+      return jsonResponse({ error: "config_error" }, 503);
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -162,6 +162,16 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
+
+    // Nur Mitglieder eines Schranks dürfen das gemeinsame Gratis-Kontingent nutzen (Registrierung ist offen).
+    // RLS members_read: eigene Mitgliedschaften sind lesbar.
+    const { data: membership, error: memberError } = await supabase
+      .from("wardrobe_members").select("wardrobe_id").eq("user_id", user.id).limit(1);
+    if (memberError) {
+      console.error("membership check failed", memberError.message);
+      return jsonResponse({ error: "storage_unavailable" }, 503);
+    }
+    if (!membership?.length) return jsonResponse({ error: "not_member" }, 403);
 
     // 3. Request-Body validieren
     let payload: RequestPayload;
@@ -200,13 +210,18 @@ Deno.serve(async (req: Request) => {
         .from(storageBucket)
         .download(imagePath!);
       if (storageError || !fileBlob) {
-        return jsonResponse(
-          { error: `Failed to download image from bucket '${storageBucket}'`, details: storageError?.message },
-          404
-        );
+        console.warn("storage download failed", storageError?.message);
+        // nur echtes „nicht gefunden“ als 404 (Fehlversuch am Teil); sonst vorübergehend → 503 (Stapellauf pausiert)
+        const status = (storageError as { statusCode?: string | number } | null)?.statusCode;
+        const missing = !storageError || String(status) === "404" || /not.?found/i.test(storageError.message ?? "");
+        return jsonResponse({ error: missing ? "image_not_found" : "storage_unavailable" }, missing ? 404 : 503);
+      }
+      mimeType = fileBlob.type || "image/jpeg";
+      // gleiche Grenzen wie für mitgeschickte Bilder (Base64 ist ~4/3 der Bytes)
+      if (!IMAGE_TYPES.includes(mimeType) || fileBlob.size * 4 / 3 > MAX_IMAGE_B64) {
+        return jsonResponse({ error: "unsupported or too large image" }, 413);
       }
       base64Image = encodeBase64(await fileBlob.arrayBuffer());
-      mimeType = fileBlob.type || "image/jpeg";
     }
 
     // 5. Modell-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
@@ -217,19 +232,42 @@ Deno.serve(async (req: Request) => {
     const useForced = !!forced && MODEL_NAME.test(forced) && evalUsers().includes(user.id);
     const models = useForced ? [forced] : [model, ...(preset === GEMINI ? GEMINI_FALLBACK.filter((m) => m !== model) : [model])];
     let lastError = "";
+    let limited = 0;
+    let rejected = 0; // Anbieter lehnt dieses Bild/diese Anfrage ab (400/422 …, leere oder kaputte Antwort)
+    let config = 0; // Einstellungsfehler (Schlüssel ungültig 401/403, Modell unbekannt 404) – nicht dem Teil anlasten
+    let attempted = 0;
+    let mainConfig = false; // das Hauptmodell selbst meldet Schlüssel-/Modellfehler
     const started = Date.now();
     for (const m of models) {
       if (Date.now() - started > TOTAL_MS - CALL_MS) break;
+      attempted++;
       try {
         const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema, temperature });
         return jsonResponse({ data, model: m }, 200);
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
         console.warn(`${m}: model call error`, lastError);
-        if (lastError.includes("(429)")) return jsonResponse({ error: "rate_limited" }, 429);
+        // Gratisgrenzen gelten je Modell → nächstes Modell probieren; „rate_limited“ erst, wenn alle begrenzt sind
+        if (lastError.includes("(429)")) limited++;
+        // Google meldet einen ungültigen Schlüssel oft als 400 („API_KEY_INVALID“) – ebenfalls Einstellungsfehler
+        else if (/\((401|403|404)\)/.test(lastError) || /API_KEY_INVALID|API key not valid|API key expired/i.test(lastError)) { config++; if (attempted === 1) mainConfig = true; }
+        else if (/\((4\d\d)\)/.test(lastError) || err instanceof SyntaxError || lastError.startsWith("No text response")) rejected++;
       }
     }
-    return jsonResponse({ error: "AI request failed", details: lastError }, 502);
+    // gezählt wird gegen die tatsächlich versuchten Modelle (die Zeitgrenze kann die Schleife früher beenden)
+    // Kontingent hat Vorrang: liefert nur ein Ersatzmodell 401/403/404, bleibt es „rate_limited“
+    if (limited > 0 && limited + config === attempted) return jsonResponse({ error: "rate_limited" }, 429);
+    // config_error nur, wenn kein Modell überlastet war (sonst ist „nicht erreichbar“ die ehrlichere Meldung)
+    // config_error nur, wenn das Hauptmodell selbst so antwortet (404 eines Ersatzmodells steht nur im Log)
+    if (mainConfig && config + rejected === attempted) {
+      console.error("ki: provider configuration error (key/model)", lastError);
+      return jsonResponse({ error: "config_error" }, 503);
+    }
+    // Liegt es an der Anfrage selbst (nicht an Überlast), soll der Stapellauf das Teil als Fehlversuch zählen statt zu pausieren
+    // nur, wenn kein Modell am Kontingent hing (gemischt → lieber pausieren als dem Teil einen Fehlversuch anrechnen)
+    if (rejected > 0 && limited === 0 && rejected === attempted && attempted === models.length) return jsonResponse({ error: "model_rejected" }, 422);
+    // Fehlertext des Anbieters nur ins Log, nicht an die App
+    return jsonResponse({ error: "AI request failed" }, 502);
   } catch (err) {
     console.error("Unexpected error in ki:", err);
     return jsonResponse({ error: "Internal server error" }, 500);

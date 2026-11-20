@@ -15,7 +15,7 @@ test('Pfad: gültig übernommen, ungültig verworfen', () => {
   assert.deepEqual(parsePath(42), { category: null, subcategory: null, type: null });
 });
 
-test('Prüfung: Unsinn fliegt raus, unpassende Felder bleiben leer', () => {
+test('Prüfung: Unsinn fliegt raus; unpassende Felder fallen beim Zusammenführen mit dem endgültigen Pfad weg', () => {
   const a = checkAnalysis({
     category: 'pants/jeans', name: ' Straight Jeans ', colors: ['blue', 'Lila-Glitzer', 'blue'], pattern: 'solid',
     materials: ['denim', 'elastane'], collar: 'button_down', width: 2, length: 9, rise: 1, layers: [0], warmth: 2, strap: 'chain',
@@ -24,11 +24,15 @@ test('Prüfung: Unsinn fliegt raus, unpassende Felder bleiben leer', () => {
   assert.equal(a.name, 'Straight Jeans');
   assert.deepEqual(a.colors, ['blue']);
   assert.deepEqual(a.materials, [{ name: 'denim' }, { name: 'elastane' }]);
-  assert.equal(a.collar, null); // Hose hat keinen Kragen
-  assert.equal(a.strap, null);
-  assert.deepEqual(a.fit, { width: 2, length: null, rise: 1 });
-  assert.deepEqual(a.layers, []);
-  assert.equal(a.warmth, 2);
+  assert.deepEqual(a.fit, { width: 2, length: null, rise: 1 }); // Länge 9 ungültig
+  // checkAnalysis prüft nur Werte; im Formular (Hose) gibt es keinen Kragen, keine Trägerart, keine Lagen
+  const f = applyAnalysis({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] }, a);
+  assert.equal(f.collar, null);
+  assert.equal(f.strap, null);
+  assert.deepEqual(f.fit, { width: 2, length: null, rise: 1 });
+  assert.deepEqual(f.layers, []);
+  assert.equal(f.warmth, 2);
+  for (const k of ['collar', 'strap', 'layers']) assert.ok(!f.aiPending.includes(k), k);
   assert.deepEqual(checkAnalysis({ colors: ['red', 'multicolor'] }).colors, ['multicolor']);
   assert.deepEqual(checkAnalysis(null).path, { category: null, subcategory: null, type: null });
 });

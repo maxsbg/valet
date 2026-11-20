@@ -46,7 +46,7 @@ function ClosetDetail({ id }: { id: string }) {
   const bottom = useBottomInset();
   const { width: W } = useWindowDimensions();
   const col = Math.min(W - 32, 520);
-  const { wardrobe, patch, setToday, reloadOutfits } = useSession();
+  const { wardrobe, patch, setToday, reloadOutfits, reload } = useSession();
   const { me, person, todayBy } = useTilePeople();
   const toast = useToast(bottom + TOOLBAR_SPACE);
   const [d, setD] = useState<ItemDetail | null>(null);
@@ -223,7 +223,7 @@ function ClosetDetail({ id }: { id: string }) {
       {canExport && mainPic && (
         <ExportSheet open={exporting} onClose={() => setExporting(false)} title="Bild teilen" name={`${fileName(it.name)}.png`} make={() => itemPng(mainPic)} />
       )}
-      <AnalysisSheet open={analysis} itemId={id} f={f} onClose={() => setAnalysis(false)} onSaved={(m) => { setAnalysis(false); load(); toast.show(m); }} />
+      <AnalysisSheet open={analysis} itemId={id} f={f} onClose={() => setAnalysis(false)} onSaved={(m) => { setAnalysis(false); load(); reload(); toast.show(m); /* Kachel, Schein, Form im Schrank nachziehen */ }} />
       {toast.node}
     </View>
   );
