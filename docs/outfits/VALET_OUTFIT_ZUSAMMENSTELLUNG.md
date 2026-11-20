@@ -89,6 +89,30 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
 
 „Lange nicht getragen“ leicht bevorzugen (Schritt 6); zusätzlich ein Modus „nur lange nicht Getragenes“ (Max: ja).
 
+## Weiche Bewertung (Schritt 4, Stand 20.11.2026, Max)
+
+Jedes Kriterium 0–1, mal Gewicht, normiert auf 0–100. Je Slot zufällig aus den besten k (Standard 4). Teile ohne KI-Profil bekommen neutrale bzw. geschätzte Werte. Alle Zahlen in `packages/core/src/outfit/config.ts` (`DEFAULT_OUTFIT_CONFIG`), Logik in `compose.ts`.
+
+- **Farbe (35):** höchstens 2 Akzentfarben (Mode-Neutrale zählen nicht); Wada-Bonus (2 Farben einer Kombination +0,15, 3+ +0,3); **zwei kräftige Farben (Sättigung ≥ 4) aus verschiedenen Familien ohne Wada-Bezug = Abzug** (ersetzt die verworfene Warm/kühl-Regel, Max 20.11.2026); „fast gleich“ = gleiche Familie bzw. Gruppe (Grau-Achse, Beige-Gruppe), andere Farbe, kaum Helligkeitsunterschied → Abzug.
+  - Navy bleibt Mode-Neutrale; zu anderen Blautönen gilt es als Blau (gleiche Familie).
+  - **Navy + Schwarz ist okay** (verschiedene Familien, kein „fast gleich“; Schalter `navyBlackNearSame` aus).
+- **Auffälligkeit und Muster (20):** höchstens ein Statement-Teil; höchstens ein lautes Muster, dezent zu laut ist okay.
+- **Formalität (10):** je enger die Bereiche und je näher an der Mitte des Anlasses, desto besser.
+- **Proportion (10):** weit oben + weit unten leichter Abzug; Schuhgewicht passend zur Hosenweite. (Max hat dazu noch einen Punkt.)
+- **Oberfläche (5):** vorläufig: höchstens ein glänzendes Teil, Mischung glatt/strukturiert leichter Bonus – **noch genauer durchgehen**.
+- **Metallton (5):** Gold und Silber gemischt leichter Abzug.
+- **Vielfalt (15):** kürzlich getragen Abzug, lange nicht getragen Bonus; Niesel bzw. Regen 30–49 %: nicht regenfeste Außenlage/Schuhe Abzug; später Duell-Vorlieben.
+
+### Prüfseite
+
+`pnpm outfitpruefung <schrank-abzug.json> [ziel.html]` erzeugt eine eigenständige Seite (nicht in der App, nicht im Repo, weil private Daten): Temperatur, Anlass, Monat, Regen, Schalter, Farbregel und Gewichte einstellen, 20 Outfits würfeln, je Outfit Punkte pro Kriterium und Abzüge. Der Abzug kommt per SQL aus Supabase (Teile mit Profil, Wärme, Regen, Vorschaubild, zuletzt getragen).
+
+**Befund 20.11.2026:** Von 122 Teilen haben erst 8 ein KI-Profil und 9 Wärme/Regen – die übrigen laufen mit Schätzungen. Vor dem Feintuning „Profile ergänzen“ (Statistik → Werkzeuge) laufen lassen. Viele Teile haben keine Wintersaison eingetragen (56 fallen im November raus).
+
+## Stilprofil (Zukunft, Vermerk 20.11.2026, Max)
+
+Das hier ist das **neutrale Grundprofil**. Später ein persönliches Stilprofil (z. B. laut/leise): es ändert nur Gewichte und Grenzen in `OutfitConfig` (z. B. „laut“: zwei Statement-Teile erlaubt, weniger Muster-Abzug, kräftige Farben ohne Abzug), nicht die Regeln. Lernen aus: Angaben im Profil, von Hand gebauten Outfits, Outfit-Duellen. Mit Max noch besprechen.
+
 ## Nächster Schritt
 
-Schritt 4 (weiche Bewertung) gemeinsam mit Max durchgehen.
+Oberfläche (E) und Max' Punkt zur Proportion (D) besprechen, Profile ergänzen, dann Gewichte an der Prüfseite feinjustieren.
