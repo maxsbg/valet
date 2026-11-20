@@ -76,6 +76,7 @@ test('Speichern: Pflicht Name, Kategorie-Pfad gültig, Zahlen geprüft', () => {
   assert.deepEqual(editChange(base({ name: ' ' })), { error: 'Bitte einen Namen eingeben.' });
   assert.deepEqual(editChange(base({ category: 'top', subcategory: 'jeans' })), { error: 'Kategorie ist unvollständig.' });
   assert.deepEqual(editChange(base({ price: 'abc' })), { error: 'Bezahlt ist keine gültige Zahl.' });
+  assert.equal((editChange(base({ price: '1.200' })) as { change: { price_paid: number } }).change.price_paid, 1200);
 });
 
 test('Speichern: Spiegel, Passform nur passend zur Kategorie, Farben B nur bei Wendbar', () => {
