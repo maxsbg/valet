@@ -12,8 +12,8 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
 /** Bedingungen des Profils für das Formular (gespeicherte Keys) */
-export const profileCtx = (f: Pick<EditForm, 'category' | 'subcategory' | 'pattern' | 'materials'>): Ctx => ({
-  category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name),
+export const profileCtx = (f: Pick<EditForm, 'category' | 'subcategory' | 'type' | 'pattern' | 'materials'>): Ctx => ({
+  category: f.category, sub: f.subcategory, type: f.type, pattern: f.pattern, materials: f.materials.map((m) => m.name),
 });
 
 // ---------- Passform als Begriffe (Spec 14.2) ----------
@@ -22,7 +22,7 @@ export const profileCtx = (f: Pick<EditForm, 'category' | 'subcategory' | 'patte
  * Kapseln der Zeile „Passform“: Form (silhouette bzw. leg bei Hose/Shorts), Weite, Länge, Bund, Schulter (nur ≠ „natural“).
  * Leere Werte entfallen; nur Profil-Felder, die für die Kategorie gelten. Beispiel Jeans: Tapered · Normal · Lang · Hoch.
  */
-export function fitWords(f: Pick<EditForm, 'category' | 'subcategory' | 'pattern' | 'materials' | 'fit' | 'profile'>): string[] {
+export function fitWords(f: Pick<EditForm, 'category' | 'subcategory' | 'type' | 'pattern' | 'materials' | 'fit' | 'profile'>): string[] {
   const p = activeProfile(f.profile, profileCtx(f));
   const legs = f.category === 'pants' || f.category === 'shorts';
   const form = legs ? profileLabel('leg', p.leg) : profileLabel('silhouette', p.silhouette);

@@ -145,3 +145,22 @@ test('KI-Ergebnisse prüfen: offen, Reihenfolge, Überspringen ans Ende', () => 
   assert.ok(reviewOpen(skipped) && reviewKey(b) < reviewKey(skipped));
   assert.deepEqual((skipped as { profile: unknown }).profile, {});
 });
+
+import { profileFieldsFor } from '../src/ai/profile';
+test('Schafthöhe nur bei Schuhen mit Fersenteil (Max, 21.11.2026)', () => {
+  const has = (sub: string) => profileFieldsFor({ category: 'shoe', sub, pattern: null, materials: [] }).some((f) => f.key === 'shaft');
+  assert.ok(has('sneaker') && has('boot') && !has('dress_shoe')); // Halbschuh: aus der Unterkategorie abgeleitet
+  assert.ok(!has('slide') && !has('sandal') && !has('clog') && !has('house_shoe'));
+});
+
+import { impliedShaft, shaftOf } from '../src/ai/profile';
+test('Schafthöhe aus dem Typ (Max, 21.11.2026)', () => {
+  const field = (sub: string, type: string | null) => profileFieldsFor({ category: 'shoe', sub, type, pattern: null, materials: [] }).some((f) => f.key === 'shaft');
+  assert.equal(impliedShaft({ category: 'shoe', sub: 'sneaker', type: 'mid_top_sneaker' }), 'ankle');
+  assert.equal(impliedShaft({ category: 'shoe', sub: 'boot', type: 'knee_boot' }), 'high');
+  assert.equal(impliedShaft({ category: 'shoe', sub: 'dress_shoe', type: null }), 'low');
+  assert.ok(!field('sneaker', 'low_top_sneaker') && !field('dress_shoe', 'loafer') && !field('boot', 'chelsea_boot'));
+  assert.ok(field('sneaker', 'chunky_sneaker') && field('sports_shoe', 'basketball_shoe') && field('sneaker', null) && field('high_heel', 'pump'));
+  assert.equal(shaftOf({ category: 'shoe', sub: 'slide', type: 'mule' }, 'low'), null);
+  assert.equal(shaftOf({ category: 'shoe', sub: 'sneaker', type: 'chunky_sneaker' }, 'ankle'), 'ankle');
+});
