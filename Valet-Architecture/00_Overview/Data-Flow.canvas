@@ -1,0 +1,101 @@
+{
+  "nodes": [
+    {
+      "id": "image",
+      "type": "file",
+      "file": "01_Modules/Modules.md",
+      "x": 30,
+      "y": 100,
+      "width": 360,
+      "height": 500,
+      "color": "2"
+    },
+    {
+      "id": "ai",
+      "type": "file",
+      "file": "03_Functions/Function-Catalog.md",
+      "x": 470,
+      "y": 100,
+      "width": 480,
+      "height": 600,
+      "color": "4"
+    },
+    {
+      "id": "edge",
+      "type": "file",
+      "file": "05_Interfaces/Interfaces.md",
+      "x": 1040,
+      "y": 100,
+      "width": 420,
+      "height": 450,
+      "color": "5"
+    },
+    {
+      "id": "db",
+      "type": "file",
+      "file": "04_Data_Models/Data-Model.md",
+      "x": 1550,
+      "y": 100,
+      "width": 400,
+      "height": 500,
+      "color": "3"
+    },
+    {
+      "id": "views",
+      "type": "file",
+      "file": "07_Business_Logic/Rules.md",
+      "x": 1040,
+      "y": 650,
+      "width": 420,
+      "height": 220,
+      "color": "6"
+    }
+  ],
+  "edges": [
+    {
+      "id": "s1",
+      "fromNode": "image",
+      "toNode": "ai",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "BILD / INPUT",
+      "color": "2"
+    },
+    {
+      "id": "s2",
+      "fromNode": "ai",
+      "toNode": "edge",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "CALLS KI / PRODUKT",
+      "color": "4"
+    },
+    {
+      "id": "s3",
+      "fromNode": "edge",
+      "toNode": "db",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "STRUCTURED RESULT",
+      "color": "5"
+    },
+    {
+      "id": "s4",
+      "fromNode": "ai",
+      "toNode": "db",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "WRITES ITEM.ANALYSIS",
+      "color": "4"
+    },
+    {
+      "id": "s5",
+      "fromNode": "db",
+      "toNode": "views",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "READS / DERIVES",
+      "color": "3"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "nodes": [
+    {
+      "id": "auth",
+      "type": "file",
+      "file": "08_User_Roles/Roles.md",
+      "x": 40,
+      "y": 80,
+      "width": 300,
+      "height": 240,
+      "color": "2"
+    },
+    {
+      "id": "app",
+      "type": "file",
+      "file": "01_Modules/Modules.md",
+      "x": 430,
+      "y": 80,
+      "width": 380,
+      "height": 550,
+      "color": "1"
+    },
+    {
+      "id": "api",
+      "type": "file",
+      "file": "05_Interfaces/Interfaces.md",
+      "x": 930,
+      "y": 80,
+      "width": 400,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "data",
+      "type": "file",
+      "file": "04_Data_Models/Data-Model.md",
+      "x": 1450,
+      "y": 80,
+      "width": 400,
+      "height": 500,
+      "color": "3"
+    },
+    {
+      "id": "rel",
+      "type": "file",
+      "file": "06_Relationships/Relationship-Register.md",
+      "x": 930,
+      "y": 600,
+      "width": 450,
+      "height": 300,
+      "color": "4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "d1",
+      "fromNode": "auth",
+      "toNode": "app",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "AUTHORIZES",
+      "color": "2"
+    },
+    {
+      "id": "d2",
+      "fromNode": "app",
+      "toNode": "api",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "CALLS / USES",
+      "color": "5"
+    },
+    {
+      "id": "d3",
+      "fromNode": "app",
+      "toNode": "data",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "READS / WRITES",
+      "color": "3"
+    },
+    {
+      "id": "d4",
+      "fromNode": "app",
+      "toNode": "rel",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "DOCUMENTED BY",
+      "color": "4"
+    },
+    {
+      "id": "d5",
+      "fromNode": "api",
+      "toNode": "data",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "PROVIDES DATA TO",
+      "color": "5"
+    }
+  ]
+}

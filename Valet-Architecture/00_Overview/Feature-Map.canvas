@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": "m",
+      "type": "file",
+      "file": "01_Modules/Modules.md",
+      "x": 40,
+      "y": 80,
+      "width": 380,
+      "height": 600,
+      "color": "2"
+    },
+    {
+      "id": "f",
+      "type": "file",
+      "file": "03_Functions/Function-Catalog.md",
+      "x": 520,
+      "y": 80,
+      "width": 560,
+      "height": 650,
+      "color": "4"
+    },
+    {
+      "id": "r",
+      "type": "file",
+      "file": "02_Sections/Routes.md",
+      "x": 1180,
+      "y": 80,
+      "width": 420,
+      "height": 500,
+      "color": "3"
+    }
+  ],
+  "edges": [
+    {
+      "id": "m1",
+      "fromNode": "m",
+      "toNode": "f",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "CONTAINS FUN",
+      "color": "4"
+    },
+    {
+      "id": "m2",
+      "fromNode": "m",
+      "toNode": "r",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "HAS SECTIONS",
+      "color": "2"
+    },
+    {
+      "id": "m3",
+      "fromNode": "r",
+      "toNode": "f",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "IMPLEMENTS",
+      "color": "3"
+    }
+  ]
+}
