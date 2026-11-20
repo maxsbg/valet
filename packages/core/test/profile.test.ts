@@ -152,3 +152,9 @@ test('Labels nach Spec 3.2 (Absatz, Schulter)', () => {
   assert.equal(profileLabel('heel', 'none'), 'Keiner');
   assert.equal(profileLabel('shoulder', 'sleeveless'), 'Ärmellos/Träger');
 });
+
+test('Waschung auch bei Jeans ohne Material Denim (Max, 20.11.2026)', () => {
+  const p = { ...emptyProfile(), denim_wash: 'dark' };
+  assert.equal(clearInactive(p, { category: 'pants', sub: 'jeans', pattern: null, materials: ['cotton'] }).denim_wash, 'dark');
+  assert.equal(clearInactive(p, { category: 'pants', sub: 'chinos', pattern: null, materials: ['cotton'] }).denim_wash, null);
+});

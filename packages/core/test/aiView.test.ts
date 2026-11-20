@@ -81,9 +81,9 @@ test('Neu analysieren: nur Geändertes, leere Felder gefüllt, Profil ersetzt, f
   assert.deepEqual(Object.keys(g), ['analysis']);
 });
 
-test('Prüfung 20.11.2026: Passform-Wörter eindeutig, Datum in Ortszeit, Fehlerarten im Stapellauf', () => {
+test('Prüfung 20.11.2026: Passform nur Wörter (wie Spec), Datum in Ortszeit, Fehlerarten im Stapellauf', () => {
   const jeans = { ...emptyEditForm({ ownerId: 'max' }), category: 'pants', subcategory: 'jeans', fit: { width: 2, length: 2, rise: 1 } };
-  assert.deepEqual(fitWords(jeans), ['Weite normal', 'Länge normal', 'Bund normal']);
+  assert.deepEqual(fitWords(jeans), ['Normal', 'Normal', 'Normal']);
   assert.deepEqual(fitWords({ ...jeans, fit: { width: 2, length: 4, rise: 2 } }), ['Normal', 'Lang', 'Hoch']);
   const at = new Date(2026, 10, 20, 0, 30).toISOString(); // 00:30 Ortszeit
   assert.match(analysisNote({ meta: { v: 2, model: 'm', at } }), /am 20\.11\.2026/);

@@ -36,7 +36,8 @@ const notJewelry: Applies = (c) => c.category !== 'jewelry';
 const structured: Applies = (c) => clothing(c) || shoe(c) || bag(c);
 /** gemustert und die Kategorie hat überhaupt ein Musterfeld (Altmuster an einem Schuh zählt nicht) */
 const patterned: Applies = (c) => c.pattern != null && c.pattern !== 'solid' && fieldsFor(c.category, c.sub).pattern;
-const denim: Applies = (c) => c.materials.includes('denim');
+/** Denim oder Jeans (auch wenn das Etikett „Baumwolle“ sagt – Jeans haben immer eine Waschung, Max 20.11.2026) */
+const denim: Applies = (c) => c.materials.includes('denim') || c.sub === 'jeans';
 const metal: Applies = (c) =>
   ['outerwear', 'shoe', 'bag', 'jewelry'].includes(c.category ?? '') || (c.category === 'accessory' && c.sub === 'belt');
 
@@ -84,7 +85,7 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
     hint: 'sichtbare Oberfläche, nicht die Faser' },
   { key: 'opacity', kind: 'enum', label: 'Transparenz', group: 'surface', applies: clothing, only: 'Kleidung', values: OPACITIES, hint: 'wie blickdicht der Stoff ist' },
   { key: 'pattern_scale', kind: 'enum', label: 'Mustergröße', group: 'surface', applies: patterned, only: 'gemusterte Teile (nicht Unifarben)', values: PATTERN_SCALES, hint: 'Größe des Musters' },
-  { key: 'denim_wash', kind: 'enum', label: 'Waschung', group: 'surface', applies: denim, only: 'Teile aus Denim', values: DENIM_WASHES, hint: 'Waschung des Denims' },
+  { key: 'denim_wash', kind: 'enum', label: 'Waschung', group: 'surface', applies: denim, only: 'Teile aus Denim und Jeans', values: DENIM_WASHES, hint: 'Waschung des Denims' },
   { key: 'metal_tone', kind: 'enum', label: 'Metallton', group: 'surface', applies: metal, only: 'Oberbekleidung, Schuhe, Taschen, Gürtel, Schmuck', values: METAL_TONES,
     hint: 'Farbe sichtbarer Metallteile (Reißverschluss, Schnalle, Beschläge, Schmuck)' },
   { key: 'silhouette', kind: 'enum', label: 'Form', group: 'shape', applies: shapeCats, only: 'Oberbekleidung, Oberteil, Kleid, Rock', values: SILHOUETTES,
