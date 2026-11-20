@@ -10,14 +10,14 @@ import {
 const META = { v: 2, prompt: '2.0', model: 'gemini-3.5-flash-lite', at: '2026-11-19T11:00:00Z' };
 const form = (p: Partial<EditForm> = {}): EditForm => ({ ...emptyEditForm({ ownerId: 'max' }), name: 'Teil', ...p });
 
-test('Passform: Jeans „Tapered · Normal · Lang · Hoch“', () => {
-  const f = form({ category: 'pants', subcategory: 'jeans', fit: { width: 2, length: 4, rise: 2 }, profile: { ...emptyProfile(), leg: 'tapered', silhouette: 'boxy' } });
-  assert.deepEqual(fitWords(f), ['Tapered', 'Normal', 'Lang', 'Hoch']);
+test('Passform: Jeans „Tapered · Regular · Long · Hoch“', () => {
+  const f = form({ category: 'pants', subcategory: 'jeans', fit: { width: 2, length: 2, rise: 2 }, profile: { ...emptyProfile(), leg: 'tapered', silhouette: 'boxy' } });
+  assert.deepEqual(fitWords(f), ['Tapered', 'Regular', 'Long', 'Hoch']);
 });
 
 test('Passform: Schulter nur, wenn nicht natürlich; Leeres entfällt', () => {
   const p = { ...emptyProfile(), silhouette: 'boxy', shoulder: 'natural' };
-  assert.deepEqual(fitWords(form({ category: 'top', subcategory: 'sweater', fit: { width: 3, length: null, rise: null }, profile: p })), ['Boxy', 'Eher weit']);
+  assert.deepEqual(fitWords(form({ category: 'top', subcategory: 'sweater', fit: { width: 3, length: null, rise: null }, profile: p })), ['Boxy', 'Oversized']);
   assert.deepEqual(fitWords(form({ category: 'top', subcategory: 'sweater', profile: { ...p, shoulder: 'dropped' } })), ['Boxy', 'Dropped']);
   assert.deepEqual(fitWords(form({ category: 'shoe', profile: p })), []);
 });
@@ -92,9 +92,9 @@ test('Neu analysieren: nur Geändertes, leere Felder gefüllt, Profil ersetzt, f
 });
 
 test('Prüfung 20.11.2026: Passform nur Wörter (wie Spec), Datum in Ortszeit, Fehlerarten im Stapellauf', () => {
-  const jeans = { ...emptyEditForm({ ownerId: 'max' }), category: 'pants', subcategory: 'jeans', fit: { width: 2, length: 2, rise: 1 } };
-  assert.deepEqual(fitWords(jeans), ['Normal', 'Normal', 'Normal']);
-  assert.deepEqual(fitWords({ ...jeans, fit: { width: 2, length: 4, rise: 2 } }), ['Normal', 'Lang', 'Hoch']);
+  const jeans = { ...emptyEditForm({ ownerId: 'max' }), category: 'pants', subcategory: 'jeans', fit: { width: 2, length: 1, rise: 1 } };
+  assert.deepEqual(fitWords(jeans), ['Regular', 'Regular', 'Normal']);
+  assert.deepEqual(fitWords({ ...jeans, fit: { width: 2, length: 2, rise: 2 } }), ['Regular', 'Long', 'Hoch']);
   const at = new Date(2026, 10, 20, 0, 30).toISOString(); // 00:30 Ortszeit
   assert.match(analysisNote({ meta: { v: 2, model: 'm', at } }), /am 20\.11\.2026/);
   assert.equal(batchErrorKind('rate_limited', 429), 'pause');
