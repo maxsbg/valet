@@ -64,7 +64,7 @@ type Props = {
   set?: { draft: SetDraft; onChange: (d: SetDraft) => void; items: Tile[]; currentId: string | null; setId: string | null };
 };
 
-function SimpleEditRow({ label, values, ai, last, children }: { label: string; values: React.ReactNode[]; ai?: boolean; last?: boolean; children?: React.ReactNode }) {
+function SimpleEditRow({ label, values, ai, last, children }: { label: string; values: React.ReactNode[]; ai?: boolean; last?: boolean; open?: boolean; onToggle?: () => void; children?: React.ReactNode }) {
   const t = useTheme();
   return <View style={{ paddingVertical: 10, borderBottomWidth: last ? 0 : 1, borderBottomColor: t.hairline, gap: 8 }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Text style={{ flex: 1, fontSize: 15, color: t.inkMuted }}>{label}</Text>{ai && <KiBadge />}</View>
