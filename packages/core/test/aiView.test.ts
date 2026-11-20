@@ -145,3 +145,10 @@ test('KI-Ergebnisse prüfen: offen, Reihenfolge, Überspringen ans Ende', () => 
   assert.ok(reviewOpen(skipped) && reviewKey(b) < reviewKey(skipped));
   assert.deepEqual((skipped as { profile: unknown }).profile, {});
 });
+
+import { profileFieldsFor } from '../src/ai/profile';
+test('Schafthöhe nur bei Schuhen mit Fersenteil (Max, 21.11.2026)', () => {
+  const has = (sub: string) => profileFieldsFor({ category: 'shoe', sub, pattern: null, materials: [] }).some((f) => f.key === 'shaft');
+  assert.ok(has('sneaker') && has('boot') && has('dress_shoe'));
+  assert.ok(!has('slide') && !has('sandal') && !has('clog') && !has('house_shoe'));
+});

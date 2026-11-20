@@ -31,6 +31,9 @@ const upper = is(UPPER);
 const shapeCats = is([...UPPER, 'skirt']);
 const legCats = is(['pants', 'shorts']);
 const shoe = is(['shoe']);
+/** Schafthöhe nur bei Schuhen mit Fersenteil – nicht bei Sandalen, Pantoletten (auch Mules), Clogs, Hausschuhen (Max, 21.11.2026) */
+const NO_SHAFT = ['sandal', 'slide', 'clog', 'house_shoe'];
+const shafted: Applies = (c) => shoe(c) && !NO_SHAFT.includes(c.sub ?? '');
 const bag = is(['bag']);
 const notJewelry: Applies = (c) => c.category !== 'jewelry';
 const structured: Applies = (c) => clothing(c) || shoe(c) || bag(c);
@@ -93,7 +96,7 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
   { key: 'shoulder', kind: 'enum', label: 'Schulter', group: 'shape', applies: upper, only: 'Oberbekleidung, Oberteil, Kleid', values: SHOULDERS, hint: 'Schulterpartie' },
   { key: 'leg', kind: 'enum', label: 'Beinverlauf', group: 'shape', applies: legCats, only: 'Hose, Shorts', values: LEGS, hint: 'Verlauf vom Knie zum Saum, nicht die Weite' },
   { key: 'toe', kind: 'enum', label: 'Schuhspitze', group: 'shape', applies: shoe, only: 'Schuhe', values: TOES, hint: 'Form der Schuhspitze' },
-  { key: 'shaft', kind: 'enum', label: 'Schafthöhe', group: 'shape', applies: shoe, only: 'Schuhe', values: SHAFTS, hint: 'Höhe des Schafts' },
+  { key: 'shaft', kind: 'enum', label: 'Schafthöhe', group: 'shape', applies: shafted, only: 'Schuhe außer Sandalen, Pantoletten, Clogs, Hausschuhen', values: SHAFTS, hint: 'Höhe des Schafts' },
   { key: 'sole', kind: 'enum', label: 'Sohle', group: 'shape', applies: shoe, only: 'Schuhe', values: SOLES, hint: 'Dicke und Form der Sohle' },
   { key: 'heel', kind: 'enum', label: 'Absatz', group: 'shape', applies: shoe, only: 'Schuhe', values: HEELS, hint: 'none kein Absatz · low unter 3 cm · mid 3–7 cm · high über 7 cm' },
   { key: 'bag_size', kind: 'enum', label: 'Taschengröße', group: 'shape', applies: bag, only: 'Taschen', values: BAG_SIZES, hint: 'Größe der Tasche' },
