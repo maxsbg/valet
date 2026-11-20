@@ -440,3 +440,34 @@ test('Foto gewechselt: Vorschläge aus dem alten Foto fallen weg, Shop-Werte und
   assert.equal(f.brand, 'COS'); assert.deepEqual(f.colors, []); assert.equal(f.collar, null); assert.equal(f.category, null);
   assert.equal(f.aiMeta, null); assert.equal(f.profile.sheen, null);
 });
+
+// ---------- Prüfung 20.11.2026, Runde 8 ----------
+
+test('Fotowechsel: Pflege und Kategorie-Ebenen aus Shop/Etikett bleiben, nur Bild-Anteile fallen weg', () => {
+  const shop = applyInfo(blank(), checkInfo({ kind: 'shop', category: 'top', care: { wash: 'w30' } }), 'page');
+  const img = applyAnalysis(shop, checkAnalysis({ category: 'top/shirt/long_sleeve_shirt', colors: ['white'], profile: { sheen: 1 } }), NOW);
+  const f = dropImageSuggestions(img);
+  assert.equal(f.care.wash?.v, 'w30'); assert.ok(f.aiPending.includes('care'));
+  assert.deepEqual([f.category, f.subcategory, f.type], ['top', null, null]);
+  assert.deepEqual(f.colors, []);
+});
+
+test('Speichern ohne Änderung schreibt analysis nicht – auch bei Teilen ohne Profil oder mit offenen Vorschlägen', () => {
+  const none = toEditForm({ name: 'Hemd', category: 'top', subcategory: 'shirt', analysis: null, owner_ids: [], is_wish: false } as unknown as EditRow);
+  const r1 = editChange(setField(none, 'notes', 'x'));
+  assert.ok('change' in r1 && !('analysis' in r1.change));
+  const legacy = toEditForm({ name: 'Hemd', category: 'top', subcategory: 'shirt', analysis: { vdesc: 'alt' }, owner_ids: [], is_wish: false } as unknown as EditRow);
+  const r2 = editChange(setField(legacy, 'notes', 'x'));
+  assert.ok('change' in r2 && !('analysis' in r2.change));
+  // v2-Teil mit offenen Vorschlägen: gespeichert, neu geladen, unverändert gespeichert → keine analysis
+  const img = applyAnalysis(setField(blank(), 'name', 'Hemd'), checkAnalysis({ category: 'top/shirt', colors: ['white'], profile: { sheen: 2 } }), NOW);
+  const n = editChange(img, { isNew: true });
+  assert.ok('change' in n);
+  const loaded = toEditForm({ ...n.change, owner_ids: [], is_wish: false } as unknown as EditRow);
+  const r3 = editChange(setField(loaded, 'notes', 'x'));
+  assert.ok('change' in r3 && !('analysis' in r3.change));
+});
+
+test('Leere Pfad-Teile der KI gelten als nicht angegeben', () => {
+  assert.deepEqual(checkAnalysis({ category: 'top//' }).path, { category: 'top', subcategory: null, type: null });
+});

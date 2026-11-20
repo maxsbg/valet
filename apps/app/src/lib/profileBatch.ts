@@ -104,9 +104,10 @@ export async function startBatch(wardrobeId: string) {
     let last = 0;
     let rejectedRun = 0;
     for (const r of todo) {
-      set({ processed: state.processed + 1 });
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       const path = paths.get(r.id);
+      if (path && usedToday() >= BATCH_PER_DAY) { set({ phase: 'paused', message: `Tagesgrenze erreicht (${BATCH_PER_DAY}). Morgen geht es weiter.` }); return; }
+      set({ processed: state.processed + 1 });
       if (!path) { // kein Bild: kein Aufruf, nur vermerken (frisch gelesen, falls inzwischen analysiert)
         const now = await loadRow(r.id).catch(() => null);
         const patch = now && batchPending(now.analysis) ? failedPatch(now.analysis) : null;

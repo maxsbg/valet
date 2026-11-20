@@ -126,7 +126,8 @@ const text = (v: unknown, max = 80): string | null => (typeof v === 'string' && 
 
 /** Kategorie-Pfad „top/shirt/long_sleeve_shirt“ → Pfad aus Keys; ungültig → ohne Kategorie */
 export function parsePath(v: unknown): CategoryPath {
-  const [category = null, subcategory = null, type = null] = typeof v === 'string' ? v.split(SEP) : [];
+  // leere Teile („top//“) gelten als nicht angegeben, nie als leerer Text
+  const [category = null, subcategory = null, type = null] = typeof v === 'string' ? v.split(SEP).map((x) => x.trim() || null) : [];
   const p = { category, subcategory, type };
   return isValidPath(p) ? p : { category: null, subcategory: null, type: null };
 }

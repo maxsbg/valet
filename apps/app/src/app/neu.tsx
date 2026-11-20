@@ -66,6 +66,8 @@ export default function Neu() {
   const [moreLink, setMoreLink] = useState('');
   const [aiBusy, setAiBusy] = useState<string | null>(null);
   const earlySave = useRef(false);
+  /** zuletzt gelesene Infos: bleiben beim Fotowechsel Kontext der neuen Bildanalyse (Werte stehen schon im Formular) */
+  const lastExtra = useRef<Extra | null>(null);
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
 
@@ -193,12 +195,13 @@ export default function Neu() {
     const page = pageInfo.current;
     const read: Promise<Extra> | null = more?.read
       ?? (page ? page.then((info) => ({ infos: [{ from: 'page' as const, info }], description: pageDesc.current })) : null);
+    const kept = !read ? lastExtra.current : null;
     if (!p && !read) return;
     const n = run.current;
     earlySave.current = false;
     setAiBusy(read ? 'KI liest die Infos aus … Vorschläge erscheinen gleich in den Feldern.' : 'KI analysiert das Foto … Vorschläge erscheinen gleich in den Feldern.');
     (async () => {
-      let extra: Extra = { infos: [], description: null };
+      let extra: Extra = kept ?? { infos: [], description: null };
       const errors: unknown[] = [];
       let readFailed = false, imageFailed = false;
       if (read) { try { extra = await read; } catch (e) { errors.push(e); readFailed = true; } }
@@ -207,7 +210,9 @@ export default function Neu() {
       // leere Infos (nichts Lesbares) nicht übernehmen und nicht als Kontext zählen
       if (extra.infos.length && !extra.infos.some((x) => infoUsable(x.info, x.from))) toast.show('Auf dem Bild bzw. der Seite war nichts Lesbares – weiter nur mit dem Foto.');
       extra = { ...extra, infos: extra.infos.filter((x) => infoUsable(x.info, x.from)) };
-      if (extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
+      if (read) lastExtra.current = extra;
+      // neu gelesene Infos übernehmen; behaltene (Fotowechsel) stehen schon im Formular und gehen nur als Kontext mit
+      if (read && extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
       if (p) {
         try {
           const a = await analyzePicture(p.main, infoContext(extra.infos, extra.description));
@@ -257,7 +262,7 @@ export default function Neu() {
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
         wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
-        onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
+        onPic={(side, p) => { if (side === 'b') return setPicB(p); setPicture(p); if (!p) { run.current++; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); } }} hex={picture?.colors[0]?.h ?? null}
         saving={saving} aiBusy={aiBusy} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); setStep('start'); }} onError={(m) => toast.show(m)}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: null, setId: null }} />
       {toast.node}

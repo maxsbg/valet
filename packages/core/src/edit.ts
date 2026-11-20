@@ -270,8 +270,27 @@ export function dropImageSuggestions(f: EditForm): EditForm {
       if (fit.width == null && fit.length == null && fit.rise == null) drop.push('fit');
       continue;
     }
+    if (k === 'care' || k.startsWith('care.')) {
+      // Pflege je Gruppe: nur Gruppen aus dem Bild leeren (Shop/Etikett bleiben)
+      const care = { ...out.care };
+      const groups = k === 'care' ? Object.keys(care) : [k.slice(5)];
+      let left = false;
+      for (const g of groups) { if (originOf(origins, `care.${g}`) === 'image') delete care[g as keyof Care]; else left = true; }
+      out = { ...out, care };
+      if (!left) drop.push(k);
+      continue;
+    }
+    if (k === 'category') {
+      // je Ebene: Kategorie, Unterkategorie, Typ nach ihrer eigenen Herkunft
+      const catO = originOf(origins, 'category');
+      const subO = origins['category.sub'] ?? catO;
+      const typeO = origins['category.type'] ?? subO;
+      if (catO === 'image') { out = { ...out, category: null, subcategory: null, type: null }; drop.push(k); continue; }
+      if (subO === 'image') out = { ...out, subcategory: null, type: null };
+      else if (typeO === 'image') out = { ...out, type: null };
+      continue;
+    }
     if (originOf(origins, k) !== 'image' || k.includes('.')) continue;
-    if (k === 'category') { out = { ...out, category: null, subcategory: null, type: null }; drop.push(k); continue; }
     if (k in blank) { (out as unknown as Record<string, unknown>)[k] = (blank as unknown as Record<string, unknown>)[k]; drop.push(k); }
   }
   return { ...out, aiPending: out.aiPending.filter((k) => !drop.includes(k)) };
@@ -374,6 +393,25 @@ const isErr = (x: unknown): x is { error: string } => !!x && typeof x === 'objec
  * damit Suche, Kachel-Schein und Statistik weiterlaufen. Felder, die zur Kategorie nicht passen, werden geleert.
  * today: für „Preis beim Merken“ bei neuen Wunschteilen.
  */
+/**
+ * Hat sich an items.analysis wirklich etwas geändert? Reihenfolge der Schlüssel zählt nicht; ein leeres Profil bzw.
+ * leere Konfidenz gilt wie ein fehlendes (sonst würde jedes Speichern eines Teils ohne Profil analysis schreiben und ein
+ * inzwischen vom Stapellauf ergänztes Profil löschen).
+ */
+function sameAnalysis(next: Record<string, unknown>, base: Record<string, unknown>): boolean {
+  const empty = (v: unknown) => v == null || (isObj(v) && Object.values(v).every((x) => x == null || (Array.isArray(x) && x.length === 0)));
+  const norm = (o: Record<string, unknown>): unknown => {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(o).sort()) {
+      const v = o[k];
+      if ((k === 'profile' || k === 'confidence' || k === 'src') && empty(v)) continue;
+      out[k] = isObj(v) ? norm(v) : v;
+    }
+    return out;
+  };
+  return JSON.stringify(norm(next)) === JSON.stringify(norm(isObj(base) ? base : {}));
+}
+
 export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditResult {
   if (!f.name.trim()) return { error: 'Bitte einen Namen eingeben.' };
   if (!isValidPath({ category: f.category, subcategory: f.subcategory, type: f.type })) return { error: 'Kategorie ist unvollständig.' };
@@ -401,7 +439,7 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
     // Stapellauf inzwischen ergänzt hat (Stand beim Öffnen)
     ...(() => {
       const next = mergeAnalysis(withPendingSrc(f), f.profile, f.confidence, f.aiMeta);
-      return opts.isNew || JSON.stringify(next) !== JSON.stringify(f.analysisBase) ? { analysis: next } : {};
+      return opts.isNew || !sameAnalysis(next, f.analysisBase) ? { analysis: next } : {};
     })(),
     // Spiegel der alten Felder (deutsches Label wie bisher)
     color: f.colors.map(colorLabel).join('/'), material: f.materials[0] ? materialLabel(f.materials[0].name) : '', style: f.styles[0] ? styleLabel(f.styles[0]) : '',
