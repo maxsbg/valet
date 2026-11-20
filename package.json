@@ -6,7 +6,8 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "symbole": "tsx docs/design/symbole/erstellen.ts",
-    "farbmerkmale": "tsx docs/ki/analyse-v2/erstellen.ts"
+    "farbmerkmale": "tsx docs/ki/analyse-v2/erstellen.ts",
+    "outfitpruefung": "tsx docs/outfits/pruefung/erstellen.mts"
   },
   "devDependencies": {
     "tsx": "4"

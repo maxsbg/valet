@@ -134,6 +134,33 @@
 </li></ul>
 <h3>Vielfalt</h3>
 <p>„Lange nicht getragen“ leicht bevorzugen (Schritt 6); zusätzlich ein Modus „nur lange nicht Getragenes“ (Max: ja).</p>
+<h2>Weiche Bewertung (Schritt 4, Stand 20.11.2026, Max)</h2>
+<p>Jedes Kriterium 0–1, mal Gewicht, normiert auf 0–100. Je Slot zufällig aus den besten k (Standard 4). Teile ohne KI-Profil bekommen neutrale bzw. geschätzte Werte. Alle Zahlen in <code>packages/core/src/outfit/config.ts</code> (<code>DEFAULT_OUTFIT_CONFIG</code>), Logik in <code>compose.ts</code>.</p>
+<ul>
+<li><b>Farbe (35):</b> höchstens 2 Akzentfarben (Mode-Neutrale zählen nicht); Wada-Bonus (2 Farben einer Kombination +0,15, 3+ +0,3); <b>zwei kräftige Farben (Sättigung ≥ 4) aus verschiedenen Familien ohne Wada-Bezug = Abzug</b> (ersetzt die verworfene Warm/kühl-Regel, Max 20.11.2026); „fast gleich“ = gleiche Familie bzw. Gruppe (Grau-Achse, Beige-Gruppe), andere Farbe, kaum Helligkeitsunterschied → Abzug.
+<ul>
+<li>Navy bleibt Mode-Neutrale; zu anderen Blautönen gilt es als Blau (gleiche Familie).
+</li>
+<li><b>Navy + Schwarz ist okay</b> (verschiedene Familien, kein „fast gleich“; Schalter <code>navyBlackNearSame</code> aus).
+</li></ul>
+</li>
+<li><b>Auffälligkeit und Muster (20):</b> höchstens ein Statement-Teil; höchstens ein lautes Muster, dezent zu laut ist okay.
+</li>
+<li><b>Formalität (10):</b> je enger die Bereiche und je näher an der Mitte des Anlasses, desto besser.
+</li>
+<li><b>Proportion (10):</b> weit oben + weit unten leichter Abzug; Schuhgewicht passend zur Hosenweite. (Max hat dazu noch einen Punkt.)
+</li>
+<li><b>Oberfläche (5):</b> vorläufig: höchstens ein glänzendes Teil, Mischung glatt/strukturiert leichter Bonus – <b>noch genauer durchgehen</b>.
+</li>
+<li><b>Metallton (5):</b> Gold und Silber gemischt leichter Abzug.
+</li>
+<li><b>Vielfalt (15):</b> kürzlich getragen Abzug, lange nicht getragen Bonus; Niesel bzw. Regen 30–49 %: nicht regenfeste Außenlage/Schuhe Abzug; später Duell-Vorlieben.
+</li></ul>
+<h3>Prüfseite</h3>
+<p><code>pnpm outfitpruefung &lt;schrank-abzug.json&gt; [ziel.html]</code> erzeugt eine eigenständige Seite (nicht in der App, nicht im Repo, weil private Daten): Temperatur, Anlass, Monat, Regen, Schalter, Farbregel und Gewichte einstellen, 20 Outfits würfeln, je Outfit Punkte pro Kriterium und Abzüge. Der Abzug kommt per SQL aus Supabase (Teile mit Profil, Wärme, Regen, Vorschaubild, zuletzt getragen).</p>
+<p><b>Befund 20.11.2026:</b> Von 122 Teilen haben erst 8 ein KI-Profil und 9 Wärme/Regen – die übrigen laufen mit Schätzungen. Vor dem Feintuning „Profile ergänzen“ (Statistik → Werkzeuge) laufen lassen. Viele Teile haben keine Wintersaison eingetragen (56 fallen im November raus).</p>
+<h2>Stilprofil (Zukunft, Vermerk 20.11.2026, Max)</h2>
+<p>Das hier ist das <b>neutrale Grundprofil</b>. Später ein persönliches Stilprofil (z. B. laut/leise): es ändert nur Gewichte und Grenzen in <code>OutfitConfig</code> (z. B. „laut“: zwei Statement-Teile erlaubt, weniger Muster-Abzug, kräftige Farben ohne Abzug), nicht die Regeln. Lernen aus: Angaben im Profil, von Hand gebauten Outfits, Outfit-Duellen. Mit Max noch besprechen.</p>
 <h2>Nächster Schritt</h2>
-<p>Schritt 4 (weiche Bewertung) gemeinsam mit Max durchgehen.</p>
+<p>Oberfläche (E) und Max' Punkt zur Proportion (D) besprechen, Profile ergänzen, dann Gewichte an der Prüfseite feinjustieren.</p>
 <p style="margin-top:32px;color:#722638;text-align:center">valet</p></body></html>
