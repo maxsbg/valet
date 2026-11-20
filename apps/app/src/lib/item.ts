@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { imageUrl, todayLocal } from './wardrobe';
-import { storedPicture, type Picture } from './cutout';
+import { storedPicture, type Picture, webpBlob } from './cutout';
 import { migrateSeasons, normalizeCategory, normalizeOccasions, type ItemStatus, type StatusInfo } from '@valet/core';
 
 export type ItemRow = {
@@ -149,17 +149,21 @@ export async function createItem(wardrobeId: string, data: NewItem | Record<stri
   return id;
 }
 
-const ext = (b: Blob) => (b.type === 'image/png' ? 'png' : b.type === 'image/jpeg' ? 'jpg' : 'webp');
+const ext = (_b: Blob) => 'webp';
 
 /** Speichert Bild + Vorschaubild einer Seite. Neuer Dateiname bei jedem Speichern, damit der Browser-Zwischenspeicher nie ein altes Bild zeigt. */
 export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 'b', p: Picture, legacyId: string | null = null) {
+  // Auch ältere/gespiegelte Picture-Blobs vor dem Upload normalisieren – Storage bekommt ausschließlich WebP.
+  const main = p.main.type === 'image/webp' ? p.main : await webpBlob(p.main, 1200, p.kind === 'original' ? 0.88 : 0.9);
+  const thumb = p.thumb.type === 'image/webp' ? p.thumb : await webpBlob(p.thumb, 400, 0.85);
+  if (main.type !== 'image/webp' || thumb.type !== 'image/webp') throw new Error('Bilder müssen vor dem Upload in WebP umgewandelt werden.');
   const stamp = Date.now().toString(36);
   const base = `${wardrobeId}/${itemId}/${side}-${stamp}`;
-  const mainPath = `${base}.${ext(p.main)}`;
-  const thumbPath = `${base}-thumb.${ext(p.thumb)}`;
+  const mainPath = `${base}.${ext(main)}`;
+  const thumbPath = `${base}-thumb.${ext(thumb)}`;
   const bucket = supabase.storage.from('items');
-  const opts = (b: Blob) => ({ contentType: b.type, cacheControl: '31536000', upsert: false });
-  const [m, t] = await Promise.all([bucket.upload(mainPath, p.main, opts(p.main)), bucket.upload(thumbPath, p.thumb, opts(p.thumb))]);
+  const opts = (b: Blob) => ({ contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+  const [m, t] = await Promise.all([bucket.upload(mainPath, main, opts(main)), bucket.upload(thumbPath, thumb, opts(thumb))]);
   const upErr = m.error ?? t.error;
   if (upErr) {
     await bucket.remove([mainPath, thumbPath]);
@@ -175,6 +179,66 @@ export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 
   if (r.error) { await bucket.remove([mainPath, thumbPath]); throw r.error; }
   const stale = (old.data ?? []).map((x) => x.storage_path as string);
   if (stale.length) await bucket.remove(stale); // aufräumen, Fehler egal
+}
+
+
+export type ImageMigrationProgress = { total: number; done: number; migrated: number; skipped: number; cleanupPending: number; currentPath: string | null };
+export type ImageMigrationResult = ImageMigrationProgress & { failed: { path: string; error: string }[] };
+
+/**
+ * Migriert erreichbare item_images-Einträge auf WebP. Erst nach Upload + Formatprüfung
+ * wird der DB-Pfad geändert; erst nach erfolgreichem DB-Update wird die alte Datei gelöscht.
+ * RLS/Storage-Policies begrenzen die Migration auf Bilder, die der angemeldete Nutzer bearbeiten darf.
+ */
+export async function migrateItemImagesToWebp(onProgress?: (p: ImageMigrationProgress) => void): Promise<ImageMigrationResult> {
+  const query = await supabase.from('item_images').select('id,storage_path').order('created_at', { ascending: true });
+  if (query.error) throw query.error;
+  const rows = (query.data ?? []) as { id: string; storage_path: string }[];
+  const bucket = supabase.storage.from('items');
+  const result: ImageMigrationResult = { total: rows.length, done: 0, migrated: 0, skipped: 0, cleanupPending: 0, currentPath: null, failed: [] };
+  const converted = new Map<string, string>();
+
+  for (const row of rows) {
+    const oldPath = row.storage_path;
+    result.currentPath = oldPath;
+    try {
+      if (/\.webp$/i.test(oldPath)) {
+        result.skipped++;
+      } else if (converted.has(oldPath)) {
+        const nextPath = converted.get(oldPath)!;
+        const update = await supabase.from('item_images').update({ storage_path: nextPath }).eq('id', row.id).eq('storage_path', oldPath).select('id').maybeSingle();
+        if (update.error || !update.data) throw update.error ?? new Error('Datenbankeintrag wurde zwischenzeitlich geändert.');
+        result.migrated++;
+      } else {
+        const nextPath = oldPath.replace(/\.(png|jpe?g)$/i, '.webp');
+        if (nextPath === oldPath) throw new Error('Unbekannte Dateiendung – wird nicht automatisch konvertiert.');
+        const source = await bucket.download(oldPath);
+        if (source.error || !source.data) throw source.error ?? new Error('Quelldatei fehlt.');
+        const webp = await webpBlob(source.data, Infinity, 0.9);
+        if (webp.type !== 'image/webp') throw new Error('Encoder lieferte kein WebP.');
+        const upload = await bucket.upload(nextPath, webp, { contentType: 'image/webp', cacheControl: '31536000', upsert: true });
+        if (upload.error) throw upload.error;
+        const verify = await bucket.download(nextPath);
+        if (verify.error || !verify.data) throw verify.error ?? new Error('Hochgeladene WebP-Datei ist nicht lesbar.');
+        const header = new Uint8Array(await verify.data.slice(0, 12).arrayBuffer());
+        const signature = String.fromCharCode(...header);
+        if (signature.slice(0, 4) !== 'RIFF' || signature.slice(8, 12) !== 'WEBP') throw new Error('Datei-Prüfung fehlgeschlagen: kein gültiger WebP-Header.');
+        const update = await supabase.from('item_images').update({ storage_path: nextPath }).eq('id', row.id).eq('storage_path', oldPath).select('id').maybeSingle();
+        if (update.error || !update.data) throw update.error ?? new Error('Datenbankeintrag wurde zwischenzeitlich geändert.');
+        converted.set(oldPath, nextPath);
+        const cleanup = await bucket.remove([oldPath]);
+        if (cleanup.error) result.cleanupPending++;
+        result.migrated++;
+      }
+    } catch (error) {
+      result.failed.push({ path: oldPath, error: error instanceof Error ? error.message : String(error) });
+    }
+    result.done++;
+    onProgress?.({ total: result.total, done: result.done, migrated: result.migrated, skipped: result.skipped, cleanupPending: result.cleanupPending, currentPath: result.currentPath });
+  }
+  result.currentPath = null;
+  onProgress?.({ total: result.total, done: result.done, migrated: result.migrated, skipped: result.skipped, cleanupPending: result.cleanupPending, currentPath: null });
+  return result;
 }
 
 
