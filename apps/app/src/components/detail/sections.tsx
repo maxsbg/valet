@@ -11,9 +11,8 @@ import { personKey, type Person, type Tile } from '@/lib/wardrobe';
 import type { Outfit } from '@/lib/outfits';
 import { OutfitCard } from '@/components/OutfitCard';
 import { ItemPicture } from '@/components/ItemPicture';
-import { ColorDot, EditCard, ValueCapsule, ValueCircle } from '@/components/edit/fields';
-import { SEASON_ICON } from '@valet/ui';
-import { Capsule, Hint, Monogram, Wrap } from './parts';
+import { EditCard } from '@/components/edit/fields';
+import { Capsule, Monogram, Wrap } from './parts';
 import { Icon } from '@/components/Icon';
 import type { SymbolName } from '@valet/ui';
 
@@ -91,6 +90,7 @@ export function SteckbriefView({ f, onCare, onEdit, onAnalysis }: { f: EditForm;
       <Text style={{ fontSize: 13, color: t.inkMuted }}>{label}</Text>
       <Text style={{ fontSize: 16, lineHeight: 22, color: t.ink }}>{value}</Text>
     </View>)}
+    {care.filter((c) => c.src === 'geschaetzt').map((c) => <Text key={c.group} onPress={() => onCare(c.group)} style={{ paddingVertical: 5, fontSize: 14, color: t.accent }}>Pflege-Schätzung prüfen: {CARE.find((x) => x.key === c.group)?.label ?? c.group}</Text>)}
     {fx.care && !careText && <View style={{ paddingVertical: 9, gap: 6 }}><Text style={{ fontSize: 13, color: t.inkMuted }}>Pflege</Text><Text style={{ fontSize: 16, color: t.inkMuted }}>Noch leer</Text><Text onPress={onEdit} style={{ fontSize: 15, color: t.accent }}>Pflegehinweise bearbeiten</Text></View>}
     {onAnalysis && <Pressable accessibilityRole="button" accessibilityLabel="KI-Analyse öffnen" onPress={onAnalysis} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 16, color: t.ink }}>KI-Analyse</Text><Icon name="chevron" size="inline" color={t.inkMuted} /></Pressable>}
   </View>;
