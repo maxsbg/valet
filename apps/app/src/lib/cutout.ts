@@ -75,7 +75,8 @@ export async function cutout(file: Blob, onStep: (text: string, p?: number) => v
   const r = await R.cutout(file, 'alt2', (step, p) => onStep(step.replace(/ …$/, '') + ' …', p));
   onStep('Bild wird vorbereitet …', 1);
   const main = await toWebp(r.canvas, MAIN_EDGE, 0.9);
-  const thumb = r.thumb ?? await toWebp(r.canvas, THUMB_EDGE, 0.85);
+  // Worker-Thumbs können PNG sein; immer aus dem Canvas als echtes WebP encodieren.
+  const thumb = await toWebp(r.canvas, THUMB_EDGE, 0.85);
   return { kind: 'cutout', main, thumb, preview: URL.createObjectURL(main), colors: mainColors(r.canvas), source: 'model' };
 }
 
@@ -143,16 +144,6 @@ async function mirrorBlob(b: Blob, q: number): Promise<Blob> {
   c.width = src.width; c.height = src.height;
   const x = c.getContext('2d')!;
   x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(src, 0, 0);
-  if (b.type === 'image/png') {
-    const png = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/png'));
-    if (!png) throw new Error('Bild konnte nicht gespiegelt werden.');
-    return png;
-  }
-  if (b.type === 'image/jpeg') {
-    const jpg = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/jpeg', q));
-    if (!jpg) throw new Error('Bild konnte nicht gespiegelt werden.');
-    return jpg;
-  }
   return toWebp(c, Infinity, q);
 }
 
@@ -186,7 +177,13 @@ async function fileToCanvas(file: Blob, maxEdge: number): Promise<HTMLCanvasElem
   finally { URL.revokeObjectURL(url); }
 }
 
-/** Verkleinert (falls nötig) und speichert als WebP; Safari ohne WebP-Encoder → PNG (Freigestelltes) */
+/** Blob (auch alte PNG/JPEG) in ein echtes WebP umwandeln; für die Bestandsmigration exportiert. */
+export async function webpBlob(file: Blob, maxEdge = Infinity, q = 0.9): Promise<Blob> {
+  const canvas = await fileToCanvas(file, maxEdge);
+  return toWebp(canvas, maxEdge, q);
+}
+
+/** Verkleinert (falls nötig) und speichert immer als WebP. Bei fehlendem Browser-Encoder nutzt libwebp/WASM. */
 async function toWebp(src: HTMLCanvasElement, maxEdge: number, q: number): Promise<Blob> {
   let c = src;
   const k = Math.min(1, maxEdge / Math.max(src.width, src.height));
@@ -198,9 +195,20 @@ async function toWebp(src: HTMLCanvasElement, maxEdge: number, q: number): Promi
   const blob = (type: string) => new Promise<Blob | null>((r) => c.toBlob(r, type, q));
   const webp = await blob('image/webp');
   if (webp && webp.type === 'image/webp') return webp;
-  const png = await blob('image/png');
-  if (!png) throw new Error('Bild konnte nicht gespeichert werden.');
-  return png;
+
+  // Safari-Versionen ohne Canvas-WebP-Encoder: libwebp als WASM wird erst bei Bedarf geladen.
+  try {
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (!ctx) throw new Error('Canvas-Kontext nicht verfügbar');
+    const { encode } = await import('@jsquash/webp');
+    const encoded = await encode(ctx.getImageData(0, 0, c.width, c.height), { quality: Math.round(q * 100) });
+    const result = new Blob([encoded], { type: 'image/webp' });
+    if (result.type !== 'image/webp' || result.size < 16) throw new Error('Encoder lieferte keine gültige WebP-Datei');
+    return result;
+  } catch (error) {
+    throw new Error('WebP-Konvertierung fehlgeschlagen. Bitte App aktualisieren oder erneut versuchen. ' +
+      (error instanceof Error ? error.message : String(error)));
+  }
 }
 
 /**
