@@ -35,7 +35,7 @@ jobs:
         run: |
           PAGES_DIR="$RUNNER_TEMP/gh-pages"
           test -f "$GITHUB_WORKSPACE/apps/app/dist/index.html"
-          rsync -a --delete --exclude='/preview/' "$GITHUB_WORKSPACE/apps/app/dist/" "$PAGES_DIR/"
+          rsync -a --delete --exclude='/preview/' --exclude='/.git/' "$GITHUB_WORKSPACE/apps/app/dist/" "$PAGES_DIR/"
           touch "$PAGES_DIR/.nojekyll"
           git -C "$PAGES_DIR" add -A
           if ! git -C "$PAGES_DIR" diff --cached --quiet; then
