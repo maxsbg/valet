@@ -32,7 +32,8 @@ export function InfoSheet({ open, onClose, onResult, hint = '' }: { open: boolea
       // ausdrücklich gewählte Art gilt für die Rangfolge (z. B. Etikett: nur Material, Größe, Pflege …)
       .then((info) => {
         if (n !== run.current) return;
-        if (!infoUsable(info, kind === 'label' ? 'label' : null)) { setMessage(kind === 'label' ? 'Auf dem Etikett war nichts Passendes zu finden (Marke, Material, Größe, Pflege).' : 'Auf dem Bild war nichts Lesbares zu finden.'); setState('error'); return; }
+        // gleiche Quelle wie beim Übernehmen: ausdrücklich gewählte Art vor der Art, die die KI erkannt hat
+        if (!infoUsable({ ...info, kind: kind ?? info.kind })) { setMessage(kind === 'label' ? 'Auf dem Etikett war nichts Passendes zu finden (Marke, Material, Größe, Pflege).' : 'Auf dem Bild war nichts Lesbares zu finden.'); setState('error'); return; }
         onResult(kind ? { ...info, kind } : info); close();
       })
       .catch(async (e) => {
@@ -41,7 +42,7 @@ export function InfoSheet({ open, onClose, onResult, hint = '' }: { open: boolea
       });
   };
   return (
-    <Sheet open={open} onClose={close} title="Infos auslesen" head={<SheetHead title="Infos auslesen" onCancel={close} onDone={close} />}>
+    <Sheet open={open} onClose={close} title="Infos auslesen" head={<SheetHead title="Infos auslesen" onCancel={close} onDone={state === 'busy' ? undefined : close} />}>
       <View style={{ gap: 14, paddingTop: 14 }}>
         <Text style={{ fontSize: 14, lineHeight: 19, color: t.inkMuted }}>
           Lade ein Bild hoch, und die KI liest die Angaben daraus ab. Was sie findet, landet als Vorschlag im Steckbrief und im Kauf.

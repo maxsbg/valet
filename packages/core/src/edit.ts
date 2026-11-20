@@ -235,6 +235,48 @@ export function setName(f: EditForm, name: string): EditForm {
   return suggestFitFromName(setField(f, 'name', name), fitOpen(f));
 }
 
+/**
+ * Pflege ändern: bestätigt nur die geänderten Gruppen. Einzeln vorgeschlagene Gruppen (aiPending „care.dry“) bleiben
+ * offen, wenn sie nicht angefasst wurden; war die ganze Pflege offen („care“), werden die übrigen Gruppen einzeln offen.
+ */
+export function setCare(f: EditForm, care: Care): EditForm {
+  const groups = new Set([...Object.keys(f.care), ...Object.keys(care)]);
+  const changed = [...groups].filter((g) => JSON.stringify(f.care[g as keyof Care]) !== JSON.stringify(care[g as keyof Care]));
+  const wholeOpen = f.aiPending.includes('care');
+  const keep = f.aiPending.filter((k) => k !== 'care' && !changed.some((g) => k === `care.${g}`));
+  const split = wholeOpen ? Object.keys(care).filter((g) => !changed.includes(g)).map((g) => `care.${g}`) : [];
+  const aiPending = [...new Set([...keep, ...split])];
+  // Herkunft der noch offenen Gruppen behalten (bei „care“ offen galt sie für alle Gruppen)
+  const src = isObj(f.analysisBase.src) ? { ...f.analysisBase.src } : null;
+  if (src && wholeOpen) for (const g of split) if (!(g in src)) src[g] = src.care ?? 'image';
+  return { ...f, care, aiPending, ...(src ? { analysisBase: { ...f.analysisBase, src } } : {}) };
+}
+
+/**
+ * Foto gewechselt (Neues Teil): offene Vorschläge, die aus dem alten Foto stammen (Herkunft „image“), leeren – sonst
+ * sähen sie wie Vorschläge zum neuen Foto aus. Vorschläge aus Shop/Etikett/Name und alles Bestätigte bleiben.
+ * Profil und meta des alten Fotos fallen ebenfalls weg (das neue Foto wird neu analysiert).
+ */
+export function dropImageSuggestions(f: EditForm): EditForm {
+  const origins = originsOf(f);
+  const blank = emptyEditForm();
+  let out: EditForm = { ...f, profile: blank.profile, confidence: blank.confidence, aiMeta: null };
+  const drop: string[] = [];
+  for (const k of f.aiPending) {
+    if (k === 'fit') {
+      const fit = { ...out.fit };
+      for (const st of ['width', 'length', 'rise'] as const) if (originOf(origins, `fit.${st}`) === 'image') fit[st] = null;
+      out = { ...out, fit };
+      if (fit.width == null && fit.length == null && fit.rise == null) drop.push('fit');
+      continue;
+    }
+    if (originOf(origins, k) !== 'image' || k.includes('.')) continue;
+    if (k === 'category') { out = { ...out, category: null, subcategory: null, type: null }; drop.push(k); continue; }
+    if (k in blank) { (out as unknown as Record<string, unknown>)[k] = (blank as unknown as Record<string, unknown>)[k]; drop.push(k); }
+  }
+  return { ...out, aiPending: out.aiPending.filter((k) => !drop.includes(k)) };
+}
+
 /** KI-Vorschlag bestätigen (Wert bleibt) */
 export const confirmAi = (f: EditForm, k: string): EditForm => ({ ...f, aiPending: f.aiPending.filter((x) => x !== k) });
 /** Alle KI-Vorschläge übernehmen (Knopf „Alle übernehmen“): danach gelten sie als bestätigt (Spec 7, Detailseite) */
@@ -355,7 +397,12 @@ export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditRes
     reversible: f.reversible, notes: f.notes.trim(),
     shop: f.shop.trim(), link: f.link.trim(), article_no: f.articleNo.trim(),
     ai_pending: f.aiPending,
-    analysis: mergeAnalysis(withPendingSrc(f), f.profile, f.confidence, f.aiMeta),
+    // analysis nur schreiben, wenn sich Profil/meta/src geändert haben – sonst löschte Speichern ein Profil, das der
+    // Stapellauf inzwischen ergänzt hat (Stand beim Öffnen)
+    ...(() => {
+      const next = mergeAnalysis(withPendingSrc(f), f.profile, f.confidence, f.aiMeta);
+      return opts.isNew || JSON.stringify(next) !== JSON.stringify(f.analysisBase) ? { analysis: next } : {};
+    })(),
     // Spiegel der alten Felder (deutsches Label wie bisher)
     color: f.colors.map(colorLabel).join('/'), material: f.materials[0] ? materialLabel(f.materials[0].name) : '', style: f.styles[0] ? styleLabel(f.styles[0]) : '',
   };

@@ -83,7 +83,7 @@ export function SteckbriefView({ f, onCare, onEdit, onAnalysis }: { f: EditForm;
     ['Saison', SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)],
     [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
     ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
-    ['Material', caps(f.materials.map((m) => materialLabel(m.name)))],
+    ['Material', caps(f.materials.map((m) => (m.pct != null ? `${materialLabel(m.name)} ${m.pct} %` : materialLabel(m.name))))],
     ['Größe', fx.size ? caps([sizeText(f.sizeSystem, f.size), fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
     ['Passform', caps(fitWords(f))],
   ];

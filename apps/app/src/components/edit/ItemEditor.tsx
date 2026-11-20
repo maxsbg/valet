@@ -7,7 +7,7 @@ import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
-  applyInfo, confirmAllAi, infoHint, shopFromLink, tileKind,
+  applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -254,7 +254,7 @@ export function ItemEditor(p: Props) {
                 <Icon name={c.v as SymbolName} size="button" color={c.src === 'geschaetzt' ? t.inkMuted : t.onFill} />
               </ValueCircle>;
             })}>
-            <CarePicker care={f.care} onChange={(c) => set('care', c)} />
+            <CarePicker care={f.care} onChange={(c) => onForm(setCare(f, c))} />
           </EditRow>
         )),
       ])}

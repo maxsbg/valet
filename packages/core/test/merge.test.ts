@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkAnalysis, profileFilled } from '../src/ai/analyzeItem';
-import { checkInfo } from '../src/ai/readInfo';
+import { checkInfo, infoUsable } from '../src/ai/readInfo';
 import { mergeSources, applyAnalysis, applyInfo, infoContext, confirmedContext, analysisSource, infoSource, DESCRIPTION_MAX, type SourceInfo } from '../src/ai/merge';
-import { confirmAi, confirmAllAi, editChange, emptyEditForm, setCategory, setField, setName } from '../src/edit';
+import { confirmAi, confirmAllAi, dropImageSuggestions, editChange, emptyEditForm, setCare, setCategory, setField, setName, toEditForm, type EditRow } from '../src/edit';
 
 const NOW = '2026-11-19T11:00:00.000Z';
 const blank = () => ({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] as string[] });
@@ -405,4 +405,38 @@ test('Pflege: gleicher Wert aus ranghöherer Quelle stuft die Herkunft hoch', ()
   assert.equal((l.analysisBase.src as Record<string, string>)['care.wash'], 'label');
   const p = applyInfo(l, checkInfo({ kind: 'shop', care: { wash: 'w40' } }), 'page');
   assert.equal(p.care.wash?.v, 'w30');
+});
+
+// ---------- Prüfung 20.11.2026, Runde 7 ----------
+
+test('Infos mit gewählter Art prüfen: Shop-Angaben sind brauchbar, auch wenn die KI „Etikett“ meint', () => {
+  const i = checkInfo({ kind: 'label', name: 'Oxford Shirt', colors: ['white'], price: 49.95, category: 'top/shirt' });
+  assert.equal(infoUsable(i), false);
+  assert.equal(infoUsable({ ...i, kind: 'shop' }), true);
+});
+
+test('Bearbeiten speichert analysis nur, wenn sich daran etwas geändert hat', () => {
+  const img = confirmAllAi(applyAnalysis(setField(blank(), 'name', 'Hemd'), checkAnalysis({ category: 'top/shirt', colors: ['white'], profile: { sheen: 2 } }), NOW));
+  const n = editChange(img, { isNew: true });
+  assert.ok('change' in n && 'analysis' in n.change);
+  // gespeichert und neu geladen → nur Notiz geändert: analysis bleibt unangetastet
+  const loaded = toEditForm({ ...n.change, owner_ids: [], is_wish: false } as unknown as EditRow);
+  const r = editChange(setField(loaded, 'notes', 'neu'));
+  assert.ok('change' in r && !('analysis' in r.change), JSON.stringify('change' in r ? r.change.analysis : null));
+});
+
+test('Pflege ändern bestätigt nur die geänderte Gruppe', () => {
+  const lab = applyInfo(blank(), checkInfo({ kind: 'label', care: { dry: 'nodry', iron: 'iron1' } }));
+  assert.ok(lab.aiPending.includes('care'));
+  const f = setCare(lab, { ...lab.care, dry: { v: 'drylow', src: 'hand' } });
+  assert.ok(!f.aiPending.includes('care'));
+  assert.ok(f.aiPending.includes('care.iron')); assert.ok(!f.aiPending.includes('care.dry'));
+});
+
+test('Foto gewechselt: Vorschläge aus dem alten Foto fallen weg, Shop-Werte und Bestätigtes bleiben', () => {
+  const shop = applyInfo(blank(), checkInfo({ kind: 'shop', brand: 'COS' }));
+  const img = applyAnalysis(setField(shop, 'notes', 'x'), checkAnalysis({ category: 'top/shirt', colors: ['white'], collar: 'button_down', profile: { sheen: 1 } }), NOW);
+  const f = dropImageSuggestions(img);
+  assert.equal(f.brand, 'COS'); assert.deepEqual(f.colors, []); assert.equal(f.collar, null); assert.equal(f.category, null);
+  assert.equal(f.aiMeta, null); assert.equal(f.profile.sheen, null);
 });

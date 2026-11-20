@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@/components/ui';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ItemEditor } from '@/components/edit/ItemEditor';
-import { editChange, emptyEditForm, infoContext, infoUsable, kiMessage, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
+import { dropImageSuggestions, editChange, emptyEditForm, infoContext, infoUsable, kiMessage, infoSource, largestImages, mergeSources, setField, shopFromLink, sizeLabel, type EditForm, type Info, type PixelSize, type SourceInfo } from '@valet/core';
 import { analyzePicture, kiError, readInfo, readPage } from '@/lib/ki';
 import { fetchImage, findUrl, loadProduct, productError, type ProductPage } from '@/lib/produkt';
 import { useSession } from '@/lib/session';
@@ -200,7 +200,8 @@ export default function Neu() {
     (async () => {
       let extra: Extra = { infos: [], description: null };
       const errors: unknown[] = [];
-      if (read) { try { extra = await read; } catch (e) { errors.push(e); } }
+      let readFailed = false, imageFailed = false;
+      if (read) { try { extra = await read; } catch (e) { errors.push(e); readFailed = true; } }
       if (n !== run.current) return;
       if (p) setAiBusy('KI analysiert das Foto … Vorschläge erscheinen gleich in den Feldern.');
       // leere Infos (nichts Lesbares) nicht übernehmen und nicht als Kontext zählen
@@ -214,14 +215,17 @@ export default function Neu() {
           // Infos sind schon übernommen (mit Herkunft); nur noch das Bild – so dreht es keine Eingaben des Nutzers zurück
           // Passform-Stufen und Größe der Infos noch einmal (late): im ersten Schritt fehlte evtl. die Kategorie
           setF((cur) => cur && mergeSources(cur, { image: a, late: extra.infos }));
-        } catch (e) { errors.push(e); }
+        } catch (e) { errors.push(e); imageFailed = true; }
       }
       if (n === run.current) setAiBusy(null);
       if (n !== run.current || !errors.length) return;
       const first = errors[0] as { page?: boolean; message?: string };
       if (first?.page) return toast.show(`${first.message} Weiter nur mit dem Foto.`);
       const { code, status } = await kiError(first);
-      toast.show(`${kiMessage(code, status)} Felder bitte selbst prüfen.`);
+      // welcher Schritt scheiterte? Infos (Link/Screenshot/Etikett) oder die Fotoanalyse
+      const step = readFailed && !imageFailed ? 'Infos konnten nicht gelesen werden – Vorschläge nur aus dem Foto. '
+        : imageFailed && !readFailed && extra.infos.length ? 'Fotoanalyse fehlgeschlagen – Vorschläge nur aus den Infos. ' : '';
+      toast.show(`${step}${kiMessage(code, status)} Felder bitte selbst prüfen.`);
     })();
   }
 
@@ -254,7 +258,7 @@ export default function Neu() {
       <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
         wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
         onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
-        saving={saving} aiBusy={aiBusy} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setAiBusy(null); setStep('start'); }} onError={(m) => toast.show(m)}
+        saving={saving} aiBusy={aiBusy} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); setStep('start'); }} onError={(m) => toast.show(m)}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: null, setId: null }} />
       {toast.node}
     </View>

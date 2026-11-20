@@ -249,7 +249,8 @@ Deno.serve(async (req: Request) => {
         console.warn(`${m}: model call error`, lastError);
         // Gratisgrenzen gelten je Modell → nächstes Modell probieren; „rate_limited“ erst, wenn alle begrenzt sind
         if (lastError.includes("(429)")) limited++;
-        else if (/\((401|403|404)\)/.test(lastError)) { config++; if (attempted === 1) mainConfig = true; }
+        // Google meldet einen ungültigen Schlüssel oft als 400 („API_KEY_INVALID“) – ebenfalls Einstellungsfehler
+        else if (/\((401|403|404)\)/.test(lastError) || /API_KEY_INVALID|API key not valid|API key expired/i.test(lastError)) { config++; if (attempted === 1) mainConfig = true; }
         else if (/\((4\d\d)\)/.test(lastError) || err instanceof SyntaxError || lastError.startsWith("No text response")) rejected++;
       }
     }

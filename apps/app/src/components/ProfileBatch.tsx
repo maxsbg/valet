@@ -19,7 +19,7 @@ export function ProfileBatch() {
   if (!wardrobe) return null;
   const left = Math.max(0, BATCH_PER_DAY - usedToday());
   const status = running
-    ? (b.phase === 'loading' ? 'Teile werden geladen …' : `${b.done + b.failed} von ${b.total} · ${b.done} ergänzt${b.failed ? ` · ${b.failed} fehlgeschlagen` : ''}`)
+    ? (b.phase === 'loading' ? 'Teile werden geladen …' : `${b.processed} von ${b.total} · ${b.done} ergänzt${b.failed ? ` · ${b.failed} fehlgeschlagen` : ''}`)
     : b.message || (count ? (count.pending ? `${count.pending} ${count.pending === 1 ? 'Teil' : 'Teile'} ohne KI-Profil.` : 'Alle Teile haben ein KI-Profil.') + (count.skipped ? ` ${count.skipped} übersprungen (3 Fehlversuche).` : '') : '');
   const canStart = !running && (count?.pending ?? 1) > 0 && left > 0;
   return (

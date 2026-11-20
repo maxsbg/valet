@@ -13,6 +13,8 @@ export type BatchState = {
   total: number; done: number; failed: number;
   /** Teile ohne Profil, die nach 3 Fehlversuchen übersprungen werden (failed = in diesem Lauf fehlgeschlagen, wird erneut versucht) */
   skipped: number;
+  /** in diesem Lauf schon angefasst (für „x von total“, auch übersprungene/inzwischen erledigte) */
+  processed: number;
   message: string;
 };
 
@@ -21,7 +23,7 @@ type Row = ProfilePatchRow & { id: string };
 const KEY = 'valet-profile-batch';
 const GAP_MS = Math.ceil(60000 / BATCH_PER_MIN);
 
-let state: BatchState = { phase: 'idle', total: 0, done: 0, failed: 0, skipped: 0, message: '' };
+let state: BatchState = { phase: 'idle', total: 0, done: 0, failed: 0, skipped: 0, processed: 0, message: '' };
 let stopFlag = false;
 /** Teil, an dem der Lauf zuletzt wegen eines vorübergehenden Fehlers pausierte (zweimal hintereinander → Fehlversuch) */
 let pausedOn: string | null = null;
@@ -90,7 +92,7 @@ export async function countBatch(wardrobeId: string): Promise<{ pending: number;
 export async function startBatch(wardrobeId: string) {
   if (state.phase === 'running' || state.phase === 'loading') return;
   stopFlag = false;
-  set({ phase: 'loading', done: 0, failed: 0, message: '' });
+  set({ phase: 'loading', done: 0, failed: 0, processed: 0, message: '' });
   try {
     const rows = await loadRows(wardrobeId);
     const todo = rows.filter((r) => batchPending(r.analysis));
@@ -102,13 +104,14 @@ export async function startBatch(wardrobeId: string) {
     let last = 0;
     let rejectedRun = 0;
     for (const r of todo) {
+      set({ processed: state.processed + 1 });
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       const path = paths.get(r.id);
       if (!path) { // kein Bild: kein Aufruf, nur vermerken (frisch gelesen, falls inzwischen analysiert)
         const now = await loadRow(r.id).catch(() => null);
         const patch = now && batchPending(now.analysis) ? failedPatch(now.analysis) : null;
         if (patch) await save(r.id, patch).catch(() => {});
-        if (patch && batchSkipped(patch.analysis)) set({ skipped: state.skipped + 1 }); else set({ failed: state.failed + 1 });
+        if (patch) { if (batchSkipped(patch.analysis)) set({ skipped: state.skipped + 1 }); else set({ failed: state.failed + 1 }); }
         continue;
       }
       if (usedToday() >= BATCH_PER_DAY) { set({ phase: 'paused', message: `Tagesgrenze erreicht (${BATCH_PER_DAY}). Morgen geht es weiter.` }); return; }
