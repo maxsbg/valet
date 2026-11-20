@@ -8,6 +8,7 @@ import {
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
+  PROFILE_FIELDS, profileFieldsFor, profileLabel, scaleWord,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -20,7 +21,7 @@ import { Page, STICKY } from '@/components/Page';
 import { Capsule, DateField, FieldLabel, HeadButton, Hint, IconCircle, Monogram, TextField, Wrap } from '@/components/detail/parts';
 import { SEASON_ICON } from '@valet/ui';
 import {
-  ColorDot, EditCard, EditRow, KiBadge, NotesField, Pair, PlainRow, RankBadge, Segmented, Stepper, SymbolSwitch, ValueCapsule, ValueCircle, ValueScale,
+  ColorDot, EditCard, KiBadge, NotesField, Pair, PlainRow, RankBadge, Segmented, Stepper, SymbolSwitch, ValueCapsule, ValueCircle, ValueScale,
 } from './fields';
 import { CarePicker, ColorPicker, FitPicker, LayersPicker, SizePicker, WeatherPicker } from './pickers';
 import { EditImage } from './EditImage';
@@ -64,6 +65,14 @@ type Props = {
   set?: { draft: SetDraft; onChange: (d: SetDraft) => void; items: Tile[]; currentId: string | null; setId: string | null };
 };
 
+function SimpleEditRow({ label, values, ai, last, children }: { label: string; values: React.ReactNode[]; ai?: boolean; last?: boolean; open?: boolean; onToggle?: () => void; children?: React.ReactNode }) {
+  const t = useTheme();
+  return <View style={{ paddingVertical: 10, borderBottomWidth: last ? 0 : 1, borderBottomColor: t.hairline, gap: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Text style={{ flex: 1, fontSize: 15, color: t.inkMuted }}>{label}</Text>{ai && <KiBadge />}</View>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>{values.length ? values : <Text style={{ fontSize: 15, color: t.inkMuted }}>Noch nicht angegeben</Text>}</View>
+    {children}
+  </View>;
+}
 export function ItemEditor(p: Props) {
   const { form: f, onForm } = p;
   const t = useTheme();
@@ -103,6 +112,50 @@ export function ItemEditor(p: Props) {
   };
   const capsules = (list: readonly string[]) => list.map((x) => <ValueCapsule key={x} label={x} />);
 
+  // KI-Profil: vorhandene Analysewerte werden in denselben groben Bereichen wie auf der Detailseite bearbeitbar.
+  const profileContext = { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
+  const setProfile = (key: string, value: unknown) => set('profile', { ...f.profile, [key]: value } as EditForm['profile']);
+  const profileRow = (field: (typeof PROFILE_FIELDS)[number], last: boolean): React.ReactNode => {
+    const value = f.profile[field.key as keyof EditForm['profile']] as unknown;
+    let values: React.ReactNode[] = [];
+    if (field.kind === 'scale') {
+      const n = typeof value === 'number' ? value : null;
+      values = n == null ? [] : [<ValueCapsule key="v" label={profileLabel(field.key, n) || String(n)} />];
+    } else if (field.kind === 'range') {
+      const range = Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number' ? [value[0], value[1]] as const : null;
+      values = range ? [<ValueCapsule key="v" label={range[0] === range[1] ? (profileLabel(field.key, range[0]) || String(range[0])) : `${profileLabel(field.key, range[0]) || range[0]} bis ${profileLabel(field.key, range[1]) || range[1]}`} />] : [];
+    } else if (field.kind === 'enum') {
+      const selected = typeof value === 'string' ? field.values.find((x) => x.key === value) : null;
+      values = selected ? [<ValueCapsule key="v" label={selected.label} />] : [];
+    } else {
+      values = (Array.isArray(value) ? value : []).map((key) => <ValueCapsule key={String(key)} label={field.values.find((x) => x.key === key)?.label ?? String(key)} />);
+    }
+    return <SimpleEditRow key={field.key} label={field.label} last={last} values={values}>
+      {field.kind === 'scale' && <Wrap>{[1, 2, 3, 4, 5].map((n) => scaleWord(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={value === i + 1} onPress={() => setProfile(field.key, value === i + 1 ? null : i + 1)} />)}</Wrap>}
+      {field.kind === 'range' && (() => {
+        const range = Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number'
+          ? ([value[0], value[1]] as const)
+          : null;
+        return <View style={{ gap: 8 }}>
+          <FieldLabel>Von</FieldLabel>
+          <Wrap>{[1, 2, 3, 4, 5].map((n) => scaleWord(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[0] === i + 1} onPress={() => { const lo = i + 1; setProfile(field.key, [lo, Math.max(lo, range?.[1] ?? lo)]); }} />)}</Wrap>
+          <FieldLabel>Bis</FieldLabel>
+          <Wrap>{[1, 2, 3, 4, 5].map((n) => scaleWord(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[1] === i + 1} onPress={() => { const hi = i + 1; setProfile(field.key, [Math.min(range?.[0] ?? hi, hi), hi]); }} />)}</Wrap>
+        </View>;
+      })()}
+      {field.kind === 'enum' && <Wrap>{field.values.map((option) => <Capsule key={option.key} label={option.label} selected={value === option.key} onPress={() => setProfile(field.key, value === option.key ? null : option.key)} />)}</Wrap>}
+      {field.kind === 'list' && <Wrap>{field.values.map((option) => <Capsule key={option.key} label={option.label} selected={Array.isArray(value) && value.includes(option.key)} onPress={() => {
+        const current = Array.isArray(value) ? value as string[] : [];
+        if (!current.includes(option.key) && current.length >= field.max) return;
+        setProfile(field.key, toggleIn(current, option.key));
+      }} />)}</Wrap>}
+    </SimpleEditRow>;
+  };
+  const profileCard = (group: 'shape' | 'surface' | 'style', title: string) => {
+    const fields = profileFieldsFor(profileContext, group);
+    return card(title, fields.map((field) => (last) => profileRow(field, last)));
+  };
+
   // ---------- Steckbrief ----------
   const scales = fitScalesOf(f.category);
   const subs = subListOf(f.category);
@@ -116,24 +169,24 @@ export function ItemEditor(p: Props) {
     const key = side === 'a' ? 'colors' : 'colorsB';
     const pick: ColorPick = { colors: list, ...colorUi[side] };
     return (
-      <EditRow key={key} label={fieldsFor(f.category, f.subcategory).reversible && f.reversible ? (side === 'a' ? 'Farben Seite A' : 'Farben Seite B') : 'Farben'} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last}
+      <SimpleEditRow key={key} label={fieldsFor(f.category, f.subcategory).reversible && f.reversible ? (side === 'a' ? 'Farben Seite A' : 'Farben Seite B') : 'Farben'} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last}
         values={list.map((c) => <ValueCircle key={c} a11y={colorLabel(c)}><ColorDot name={c} onFill /></ValueCircle>)}>
         <ColorPicker pick={pick} onChange={(n) => { setColorUi((u) => ({ ...u, [side]: { open: n.open, full: n.full } })); set(key, n.colors); }} />
-      </EditRow>
+      </SimpleEditRow>
     );
   };
   type Row = ((last: boolean) => React.ReactNode) | null | false;
   /** Sichtbare Zeilen einer Karte; die letzte ohne Trennlinie. Keine Zeile → Karte entfällt (Spec 8a) */
   const card = (title: string, rows: Row[], extra?: React.ReactNode) => {
     const shown = rows.filter((r): r is (last: boolean) => React.ReactNode => !!r);
-    return shown.length ? <EditCard title={title} rows>{shown.map((r, i) => <View key={i}>{r(i === shown.length - 1)}</View>)}{extra}</EditCard> : null;
+    return shown.length ? <View style={{ gap: 0 }}><Text style={{ fontSize: 18, fontWeight: '600', color: t.ink, paddingTop: 10, paddingBottom: 4 }}>{title}</Text>{shown.map((r, i) => <View key={i}>{r(i === shown.length - 1)}</View>)}{extra}</View> : null;
   };
   const textRow = (key: 'pattern' | 'patternB' | 'collar' | 'closure' | 'strap', label: string, opts: KeyList): Row => (last) => {
     const v = f[key];
     return (
-      <EditRow label={label} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last} values={v ? [<ValueCapsule key={v} label={keyLabel(opts, v)} />] : []}>
+      <SimpleEditRow label={label} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last} values={v ? [<ValueCapsule key={v} label={keyLabel(opts, v)} />] : []}>
         <Wrap>{opts.map((o) => <Capsule key={o.key} label={o.label} selected={v === o.key} onPress={() => set(key, pickOne(v, o.key))} />)}</Wrap>
-      </EditRow>
+      </SimpleEditRow>
     );
   };
   const fx = fieldsFor(f.category, f.subcategory);
@@ -144,7 +197,7 @@ export function ItemEditor(p: Props) {
     <>
       {card('Aussehen', [
         (last) => (
-          <EditRow label="Kategorie" open={!!open.cat} onToggle={() => toggle('cat')} ai={ai('category')} last={last}
+          <SimpleEditRow label="Kategorie" open={!!open.cat} onToggle={() => toggle('cat')} ai={ai('category')} last={last}
             values={f.category ? [<ValueCapsule key="c" label={categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })} />] : []}>
             <FieldLabel>Kategorie</FieldLabel>
             <Wrap>{CATEGORY_LIST.map((c) => <Capsule key={c.key} label={c.label} selected={f.category === c.key} onPress={() => pickCat('category', c.key)} />)}</Wrap>
@@ -156,14 +209,14 @@ export function ItemEditor(p: Props) {
               <FieldLabel>Typ</FieldLabel>
               <Wrap>{types.map((c) => <Capsule key={c.key} label={c.label} selected={f.type === c.key} onPress={() => pickCat('type', c.key)} />)}</Wrap>
             </>}
-          </EditRow>
+          </SimpleEditRow>
         ),
         (last) => (
-          <EditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')} last={last}
+          <SimpleEditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')} last={last}
             values={SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)}>
             <Wrap>{SEASONS.map((x) => <Capsule key={x.key} label={x.label} selected={f.seasons.includes(x.key)} onPress={() => set('seasons', toggleIn(f.seasons, x.key))}
               icon={(c) => <Icon name={SEASON_ICON[x.key]!} size="chip" color={c} />} />)}</Wrap>
-          </EditRow>
+          </SimpleEditRow>
         ),
         (last) => colorRow('a', last),
         fx.reversible && ((last) => (
@@ -186,67 +239,74 @@ export function ItemEditor(p: Props) {
         fx.pattern && textRow('pattern', reversible ? 'Muster Seite A' : 'Muster', PATTERNS),
         fx.pattern && reversible && textRow('patternB', 'Muster Seite B', PATTERNS),
         (last) => (
-          <EditRow label="Material" open={!!open.material} onToggle={() => toggle('material')} ai={ai('materials')} last={last}
-            values={capsules(f.materials.map((m) => materialLabel(m.name)))}>
+          <SimpleEditRow label="Material" open={!!open.material} onToggle={() => toggle('material')} ai={ai('materials')} last={last}
+            values={capsules(f.materials.map((m) => m.pct != null ? `${materialLabel(m.name)} ${m.pct} %` : materialLabel(m.name)))}>
             <Wrap>{MATERIALS.map((m) => {
               const r = materialRank(f.materials, m.key);
               return <Capsule key={m.key} label={m.label} selected={r > 0} a11y={r ? `${m.label}, Rang ${r}` : m.label} leading={r ? <RankBadge n={r} /> : undefined}
                 onPress={() => set('materials', toggleMaterial(f.materials, m.key))} />;
             })}</Wrap>
             <Hint>Die Zahl ist die Reihenfolge nach Anteil, 1 = Hauptmaterial.</Hint>
-          </EditRow>
+            {f.materials.map((part) => <TextField key={part.name} label={`${materialLabel(part.name)} · Anteil in %`} value={part.pct == null ? '' : String(part.pct)}
+              onChange={(v) => set('materials', f.materials.map((m) => m.name !== part.name ? m : { ...m, pct: v.trim() ? Math.max(1, Math.min(100, Math.round(Number(v.replace(',', '.')) || 1))) : null }))}
+              placeholder="optional" keyboardType="decimal-pad" inputMode="decimal" />)}
+          </SimpleEditRow>
         ),
         !!fx.size && ((last) => (
-          <EditRow label="Größe" open={!!open.size} onToggle={() => toggle('size')} ai={ai('size')} last={last} values={capsules(sizeValues)}>
+          <SimpleEditRow label="Größe" open={!!open.size} onToggle={() => toggle('size')} ai={ai('size')} last={last} values={capsules(sizeValues)}>
             <SizePicker kind={fx.size!} category={f.category} sub={f.subcategory} system={f.sizeSystem} size={f.size} collarSize={f.collarSize}
               onSystem={(sys) => onForm(pickSizeSystem(f, sys))} onSize={(sys, v) => onForm(pickSize(f, sys, v))} onCollar={(v) => set('collarSize', v)} />
-          </EditRow>
+          </SimpleEditRow>
         )),
       ])}
 
       {card('Tragen', [
         scales.length > 0 && ((last) => (
-          <EditRow label="Passform" open={!!open.fit} onToggle={() => toggle('fit')} ai={ai('fit')} last={last}
+          <SimpleEditRow label="Passform" open={!!open.fit} onToggle={() => toggle('fit')} ai={ai('fit')} last={last}
             values={scales.filter((sc) => f.fit[sc.key] != null).map((sc) => (
               <ValueScale key={sc.key} caption={sc.label} steps={sc.steps.length} on={(i) => i === f.fit[sc.key]} a11y={`${sc.label} ${sc.steps[f.fit[sc.key]!]}`} />
             ))}>
             <FitPicker scales={scales} fit={f.fit} onPick={(k, i) => onForm(pickFit(f, k, i))} />
-          </EditRow>
+          </SimpleEditRow>
         )),
         fx.layers && ((last) => (
-          <EditRow label="Lagen" open={!!open.layers} onToggle={() => toggle('layers')} ai={ai('layers')} last={last}
+          <SimpleEditRow label="Lagen" open={!!open.layers} onToggle={() => toggle('layers')} ai={ai('layers')} last={last}
             values={[
               ...(f.layers.length ? [<ValueScale key="l" steps={LAYERS.length} on={(i) => f.layers.includes(i)} a11y={`Lagen: ${f.layers.map((i) => LAYERS[i]).join(', ')}`} />] : []),
               ...(f.standalone ? [<ValueCapsule key="s" label="allein" />] : []),
             ]}>
             <LayersPicker layers={f.layers} standalone={f.standalone} onToggle={(i) => set('layers', toggleIn(f.layers, i))} onStandalone={() => set('standalone', !f.standalone)} />
-          </EditRow>
+          </SimpleEditRow>
         )),
         fx.weather && ((last) => (
-          <EditRow label="Wetter" open={!!open.weather} onToggle={() => toggle('weather')} ai={ai('warmth') || ai('rain')} last={last}
+          <SimpleEditRow label="Wetter" open={!!open.weather} onToggle={() => toggle('weather')} ai={ai('warmth') || ai('rain')} last={last}
             values={[
               ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <Icon name="thermo" size="inline" color={c} />} />] : []),
               ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <Icon name="drop" size="inline" color={c} />} />] : []),
             ]}>
             <WeatherPicker warmth={f.warmth} rain={f.rain} onWarmth={(v) => set('warmth', v)} onRain={(v) => set('rain', v)} />
-          </EditRow>
+          </SimpleEditRow>
         )),
       ])}
 
       {card('Details', [
         (last) => (
-          <EditRow label="Stil" open={!!open.style} onToggle={() => toggle('style')} ai={ai('styles')} last={last} values={capsules(f.styles.map(styleLabel))}>
+          <SimpleEditRow label="Stil" open={!!open.style} onToggle={() => toggle('style')} ai={ai('styles')} last={last} values={capsules(f.styles.map(styleLabel))}>
             <Wrap>{STYLES.map((x) => <Capsule key={x.key} label={x.label} selected={f.styles.includes(x.key)} onPress={() => set('styles', toggleIn(f.styles, x.key))} />)}</Wrap>
-          </EditRow>
+          </SimpleEditRow>
         ),
         !!fx.neckline && textRow('collar', fx.neckline!.label, fx.neckline!.options),
         fx.closure && textRow('closure', 'Verschluss', CLOSURES),
         fx.strap && textRow('strap', 'Trägerart', STRAPS),
       ])}
 
+      {profileCard('shape', 'Form')}
+      {profileCard('surface', 'Oberfläche')}
+      {profileCard('style', 'Wirkung')}
+
       {card('Pflege', [
         fx.care && ((last) => (
-          <EditRow label="Pflegehinweise" open={!!open.care} onToggle={() => toggle('care')} ai={ai('care')} last={last}
+          <SimpleEditRow label="Pflegehinweise" open={!!open.care} onToggle={() => toggle('care')} ai={ai('care')} last={last}
             values={careList(f.care).map((c) => {
               const g = CARE.find((x) => x.key === c.group)!;
               const o = g.options.find((x) => x.id === c.v);
@@ -255,13 +315,14 @@ export function ItemEditor(p: Props) {
               </ValueCircle>;
             })}>
             <CarePicker care={f.care} onChange={(c) => onForm(setCare(f, c))} />
-          </EditRow>
+          </SimpleEditRow>
         )),
       ])}
 
-      <EditCard title="Notizen">
+      <View style={{ gap: 8 }}>
+        <Text style={{ fontSize: 18, fontWeight: '600', color: t.ink, paddingTop: 10 }}>Notizen</Text>
         <NotesField value={f.notes} onChange={(v) => set('notes', v)} />
-      </EditCard>
+      </View>
     </>
   );
 

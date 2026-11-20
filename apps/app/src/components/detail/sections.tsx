@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, SEASONS, colorLabel, materialLabel, careList, categoryLast, discountPct, fitWords, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
+  CARE, SEASONS, analysisSections, colorLabel, materialLabel, careList, categoryLast, discountPct, fitWords, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
   shortDate, shortUrl, sizeText, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -11,9 +11,8 @@ import { personKey, type Person, type Tile } from '@/lib/wardrobe';
 import type { Outfit } from '@/lib/outfits';
 import { OutfitCard } from '@/components/OutfitCard';
 import { ItemPicture } from '@/components/ItemPicture';
-import { ColorDot, EditCard, ValueCapsule, ValueCircle } from '@/components/edit/fields';
-import { SEASON_ICON } from '@valet/ui';
-import { Capsule, Hint, Monogram, Wrap } from './parts';
+import { EditCard } from '@/components/edit/fields';
+import { Capsule, Monogram, Wrap } from './parts';
 import { Icon } from '@/components/Icon';
 import type { SymbolName } from '@valet/ui';
 
@@ -60,81 +59,46 @@ export function ReadRow({ label, values, last }: { label: string; values: React.
   );
 }
 
-function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
-  const shown = rows.filter(([, v]) => v.length > 0);
-  return <>{shown.map(([l, v], i) => <ReadRow key={l} label={l} values={v} last={i === shown.length - 1} />)}</>;
-}
 
 /**
- * Steckbrief (Spec 4, verschlankt 19.11.2026, KI-Analyse v2 Spec 14): nur Kategorie, Saison, Farben, Material, Größe,
- * Passform (Begriffe statt Skalen, fitWords) und Pflege. Muster, Stil, Kragen, Verschluss, Trägerart, Lagen und Wetter
- * stehen im Blatt „KI-Analyse“ (Zeile am Ende). Bearbeiten zeigt weiter alle Felder.
+ * Steckbrief: vollständige, schlichte Bezeichner-Wert-Liste. Neben den Grundangaben werden auch Details,
+ * Trageeigenschaften und vorhandene KI-Profilwerte angezeigt. Bearbeiten bleibt als einfache Inline-Liste bedienbar.
  */
 export function SteckbriefView({ f, onCare, onEdit, onAnalysis }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void; onAnalysis?: () => void }) {
   const t = useTheme();
-  const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x, i) => <ValueCapsule key={`${i}-${x}`} label={x} />);
-  const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={colorLabel(c)}><ColorDot name={c} onFill /></ValueCircle>);
   const fx = fieldsFor(f.category, f.subcategory);
   const rev = fx.reversible && f.reversible;
   const care = careList(f.care);
-  const estimated = care.some((c) => c.src === 'geschaetzt');
-  const aussehen: [string, React.ReactNode[]][] = [
-    ['Kategorie', caps([categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })])],
-    ['Saison', SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)],
-    [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
-    ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
-    ['Material', caps(f.materials.map((m) => (m.pct != null ? `${materialLabel(m.name)} ${m.pct} %` : materialLabel(m.name))))],
-    ['Größe', fx.size ? caps([sizeText(f.sizeSystem, f.size), fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
-    ['Passform', caps(fitWords(f))],
+  const rows: [string, string][] = [
+    ['Kategorie', categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })],
+    ['Saison', SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => x.label).join(', ')],
+    [rev ? 'Farben Seite A' : 'Farben', f.colors.map(colorLabel).join(', ')],
+    ...(rev ? [['Farben Seite B', f.colorsB.map(colorLabel).join(', ')] as [string, string]] : []),
+    ['Material', f.materials.map((m) => m.pct != null ? materialLabel(m.name) + ' ' + m.pct + ' %' : materialLabel(m.name)).join(', ')],
+    ['Größe', [fx.size ? sizeText(f.sizeSystem, f.size) : '', fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? 'Kragen ' + f.collarSize : ''].filter(Boolean).join(', ')],
+    ['Passform', fitWords(f).join(', ')],
+    ...(fx.reversible ? [['Wendbar', f.reversible ? 'Ja' : 'Nein'] as [string, string]] : []),
   ];
-  const has = (rows: [string, React.ReactNode[]][]) => rows.some(([, v]) => v.length > 0);
-  return (
-    <>
-      {has(aussehen) && <EditCard title="Aussehen" rows><Rows rows={aussehen} /></EditCard>}
-      {fx.care && <EditCard title="Pflege" rows={care.length > 0}>
-        {care.length ? (
-          <View style={{ paddingBottom: 12 }}>
-            <View style={[s.row, { justifyContent: 'flex-start' }]}>
-              <Wrap gap={6}>
-                {care.map((c) => {
-                  const g = CARE.find((x) => x.key === c.group)!;
-                  const o = g.options.find((x) => x.id === c.v);
-                  const est = c.src === 'geschaetzt';
-                  const circle = (
-                    <ValueCircle a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={est}>
-                      <Icon name={c.v as SymbolName} size="button" color={est ? t.inkMuted : t.onFill} />
-                    </ValueCircle>
-                  );
-                  return est
-                    ? <Pressable key={c.group} accessibilityRole="button" accessibilityHint="Schätzung prüfen" onPress={() => onCare(c.group)}>{circle}</Pressable>
-                    : <View key={c.group}>{circle}</View>;
-                })}
-              </Wrap>
-            </View>
-            {estimated && <Hint>geschätzt aus Material</Hint>}
-          </View>
-        ) : (
-          <View style={{ gap: 10 }}>
-            <Text style={{ fontSize: 15, color: t.inkMuted }}>noch leer</Text>
-            <Wrap>
-              <Capsule label="Etikett" icon={(c) => <Icon name="label" size="chip" color={c} />} onPress={onEdit} />
-              <Capsule label="Selbst wählen" onPress={onEdit} />
-            </Wrap>
-          </View>
-        )}
-      </EditCard>}
-      {onAnalysis && (
-        <Pressable accessibilityRole="button" accessibilityLabel="KI-Analyse öffnen" onPress={onAnalysis}
-          style={({ pressed }) => [s.plainRow, { backgroundColor: t.surface, borderColor: t.hairline, minHeight: 52, opacity: pressed ? 0.7 : 1 }]}>
-          <Icon name="sparkle" size="row" color={t.accent} />
-          <Text style={{ flex: 1, fontSize: 16, color: t.ink }}>KI-Analyse</Text>
-          <Icon name="chevron" size="inline" color={t.inkMuted} />
-        </Pressable>
-      )}
-    </>
-  );
+  const careText = care.map((c) => { const group = CARE.find((x) => x.key === c.group); const option = group?.options.find((x) => x.id === c.v); return (group?.label ?? c.group) + ': ' + (option?.short ?? c.v) + (c.src === 'geschaetzt' ? ' (geschätzt)' : ''); }).join(', ');
+  const shown = [...rows, ...(fx.care ? [['Pflege', careText] as [string, string]] : [])].filter(([, value]) => !!value);
+  const extraSections = analysisSections(f);
+  return <View style={{ gap: 0 }}>
+    {shown.map(([label, value], i) => <View key={label} style={{ minHeight: 42, paddingVertical: 9, borderBottomWidth: i < shown.length - 1 || !!onAnalysis ? 1 : 0, borderBottomColor: t.hairline, gap: 3 }}>
+      <Text style={{ fontSize: 13, color: t.inkMuted }}>{label}</Text>
+      <Text style={{ fontSize: 16, lineHeight: 22, color: t.ink }}>{value}</Text>
+    </View>)}
+    {extraSections.map((section) => <View key={section.key} style={{ paddingTop: 12 }}>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: t.inkMuted, paddingBottom: 5 }}>{section.title}</Text>
+      {section.rows.map((r) => <View key={r.label} style={{ paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: t.hairline, gap: 2 }}>
+        <Text style={{ fontSize: 13, color: t.inkMuted }}>{r.label}</Text>
+        <Text style={{ fontSize: 16, lineHeight: 22, color: t.ink }}>{r.value}</Text>
+      </View>)}
+    </View>)}
+    {care.filter((c) => c.src === 'geschaetzt').map((c) => <Text key={c.group} onPress={() => onCare(c.group)} style={{ paddingVertical: 5, fontSize: 14, color: t.accent }}>Pflege-Schätzung prüfen: {CARE.find((x) => x.key === c.group)?.label ?? c.group}</Text>)}
+    {fx.care && !careText && <View style={{ paddingVertical: 9, gap: 6 }}><Text style={{ fontSize: 13, color: t.inkMuted }}>Pflege</Text><Text style={{ fontSize: 16, color: t.inkMuted }}>Noch leer</Text><Text onPress={onEdit} style={{ fontSize: 15, color: t.accent }}>Pflegehinweise bearbeiten</Text></View>}
+    {onAnalysis && <Pressable accessibilityRole="button" accessibilityLabel="KI-Analyse öffnen" onPress={onAnalysis} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 16, color: t.ink }}>KI-Analyse</Text><Icon name="chevron" size="inline" color={t.inkMuted} /></Pressable>}
+  </View>;
 }
-
 // ---------- Kauf (Spec 5) ----------
 
 /** Shop als Domain („zalando.de“), antippen öffnet den Shop (17.11.2026, Max) */
