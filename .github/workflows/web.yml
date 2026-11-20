@@ -24,22 +24,21 @@ jobs:
       - run: pnpm -r typecheck
       - run: pnpm test
       - run: pnpm --filter @valet/app build:web
-      - name: Veröffentlichungs-Branch laden
+      - name: Veröffentlichungs-Branch separat laden
         if: github.ref == 'refs/heads/main'
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone --depth 1 --branch gh-pages "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/gh-pages"
       - name: Live-App aktualisieren und Vorschau behalten
         if: github.ref == 'refs/heads/main'
         run: |
-          PAGES_DIR="$GITHUB_WORKSPACE"
-          test "$(git -C "$PAGES_DIR" rev-parse --show-toplevel)" = "$PAGES_DIR"
+          PAGES_DIR="$RUNNER_TEMP/gh-pages"
           test -f "$GITHUB_WORKSPACE/apps/app/dist/index.html"
           rsync -a --delete --exclude='/preview/' "$GITHUB_WORKSPACE/apps/app/dist/" "$PAGES_DIR/"
           touch "$PAGES_DIR/.nojekyll"
           git -C "$PAGES_DIR" add -A
           if ! git -C "$PAGES_DIR" diff --cached --quiet; then
             git -C "$PAGES_DIR" -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Web-App ${GITHUB_SHA::7}"
-            git -C "$PAGES_DIR" push --force origin HEAD:gh-pages
+            git -C "$PAGES_DIR" push origin HEAD:gh-pages
           fi
