@@ -133,7 +133,9 @@ export function ItemEditor(p: Props) {
     return <SimpleEditRow key={field.key} label={field.label} last={last} values={values}>
       {field.kind === 'scale' && <Wrap>{[1, 2, 3, 4, 5].map((n) => scaleWord(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={value === i + 1} onPress={() => setProfile(field.key, value === i + 1 ? null : i + 1)} />)}</Wrap>}
       {field.kind === 'range' && (() => {
-        const range = Array.isArray(value) ? value as readonly [number, number] : null;
+        const range = Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number'
+          ? ([value[0], value[1]] as const)
+          : null;
         return <View style={{ gap: 8 }}>
           <FieldLabel>Von</FieldLabel>
           <Wrap>{[1, 2, 3, 4, 5].map((n) => scaleWord(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[0] === i + 1} onPress={() => { const lo = i + 1; setProfile(field.key, [lo, Math.max(lo, range?.[1] ?? lo)]); }} />)}</Wrap>

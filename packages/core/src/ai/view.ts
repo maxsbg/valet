@@ -108,11 +108,14 @@ export function analysisSections(f: EditForm): AnalysisSection[] {
     { key: 'details', title: 'Details', rows: details, weak: false },
     { key: 'wear', title: 'Tragen', rows: wear, weak: false },
   ];
-  for (const g of ['shape', 'surface', 'style'] as const) {
-    const rows = PROFILE_FIELDS.filter((x) => x.group === g && x.applies(ctx))
-      .map((x) => shown(ROW_LABEL[x.key as ProfileKey] ?? x.label, profileLabel(x.key, p[x.key as ProfileKey])));
-    const confidence = f.confidence[g];
-    out.push({ key: g, title: SECTION_TITLE[g], rows, weak: confidence != null && confidence < WEAK });
+  if (hasProfile(f.analysisBase)) {
+    for (const g of ['shape', 'surface', 'style'] as const) {
+      const rows = PROFILE_FIELDS.filter((x) => x.group === g && x.applies(ctx))
+        .map((x) => ({ label: ROW_LABEL[x.key as ProfileKey] ?? x.label, value: profileLabel(x.key, p[x.key as ProfileKey]) }))
+        .filter((row) => row.value !== '');
+      const confidence = f.confidence[g];
+      out.push({ key: g, title: SECTION_TITLE[g], rows, weak: confidence != null && confidence < WEAK });
+    }
   }
   return out.filter((section) => section.rows.length > 0);
 }
