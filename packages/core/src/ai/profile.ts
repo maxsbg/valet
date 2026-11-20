@@ -8,7 +8,7 @@ import { fieldsFor } from '../fields';
 export const PROFILE_PROMPT_VERSION = '2.0';
 
 /** Worauf ein Feld schaut: Kategorie-Pfad + Steckbrief-Werte (alles Keys), von denen es abhängt */
-export type Ctx = { category: string | null; sub: string | null; pattern: string | null; materials: readonly string[] };
+export type Ctx = { category: string | null; sub: string | null; pattern: string | null; materials: readonly string[]; /** Typ (z. B. low_top_sneaker), optional */ type?: string | null };
 export type Applies = (c: Ctx) => boolean;
 export type Group = 'surface' | 'shape' | 'style';
 export type Opt = { readonly key: string; readonly label: string };
@@ -33,7 +33,26 @@ const legCats = is(['pants', 'shorts']);
 const shoe = is(['shoe']);
 /** Schafthöhe nur bei Schuhen mit Fersenteil – nicht bei Sandalen, Pantoletten (auch Mules), Clogs, Hausschuhen (Max, 21.11.2026) */
 const NO_SHAFT = ['sandal', 'slide', 'clog', 'house_shoe'];
-const shafted: Applies = (c) => shoe(c) && !NO_SHAFT.includes(c.sub ?? '');
+/** Schafthöhe, die sich aus dem Typ bzw. der Unterkategorie ergibt (Max, 21.11.2026) – dann kein Feld, Wert wird abgeleitet */
+const SHAFT_BY_TYPE: Readonly<Record<string, string>> = {
+  low_top_sneaker: 'low', mid_top_sneaker: 'ankle', high_top_sneaker: 'ankle',
+  running_shoe: 'low', football_boot: 'low', indoor_shoe: 'low', tennis_shoe: 'low', training_shoe: 'low',
+  chelsea_boot: 'ankle', desert_boot: 'ankle', lace_up_boot: 'ankle', western_boot: 'mid', rain_boot: 'mid', sheepskin_boot: 'mid',
+  knee_boot: 'high', over_knee_boot: 'high',
+  hiking_boot: 'ankle', low_hiking_shoe: 'low', trail_running_shoe: 'low',
+};
+const SHAFT_BY_SUB: Readonly<Record<string, string>> = { dress_shoe: 'low', slip_on: 'low', flat: 'low' };
+/** Abgeleitete Schafthöhe (Key aus SHAFTS) oder null (offen bzw. kein Schaft) */
+export function impliedShaft(c: Pick<Ctx, 'category' | 'sub' | 'type'>): string | null {
+  if (c.category !== 'shoe') return null;
+  return (c.type ? SHAFT_BY_TYPE[c.type] : undefined) ?? (c.sub ? SHAFT_BY_SUB[c.sub] : undefined) ?? null;
+}
+/** Schafthöhe eines Schuhs: abgeleitet, sonst Profilwert; ohne Schaft (Sandale …) → null */
+export function shaftOf(c: Pick<Ctx, 'category' | 'sub' | 'type'>, profileShaft: string | null | undefined): string | null {
+  if (c.category !== 'shoe' || NO_SHAFT.includes(c.sub ?? '')) return null;
+  return impliedShaft(c) ?? profileShaft ?? null;
+}
+const shafted: Applies = (c) => shoe(c) && !NO_SHAFT.includes(c.sub ?? '') && impliedShaft(c) == null;
 const bag = is(['bag']);
 const notJewelry: Applies = (c) => c.category !== 'jewelry';
 const structured: Applies = (c) => clothing(c) || shoe(c) || bag(c);
@@ -96,7 +115,7 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
   { key: 'shoulder', kind: 'enum', label: 'Schulter', group: 'shape', applies: upper, only: 'Oberbekleidung, Oberteil, Kleid', values: SHOULDERS, hint: 'Schulterpartie' },
   { key: 'leg', kind: 'enum', label: 'Beinverlauf', group: 'shape', applies: legCats, only: 'Hose, Shorts', values: LEGS, hint: 'Verlauf vom Knie zum Saum, nicht die Weite' },
   { key: 'toe', kind: 'enum', label: 'Schuhspitze', group: 'shape', applies: shoe, only: 'Schuhe', values: TOES, hint: 'Form der Schuhspitze' },
-  { key: 'shaft', kind: 'enum', label: 'Schafthöhe', group: 'shape', applies: shafted, only: 'Schuhe außer Sandalen, Pantoletten, Clogs, Hausschuhen', values: SHAFTS, hint: 'Höhe des Schafts' },
+  { key: 'shaft', kind: 'enum', label: 'Schafthöhe', group: 'shape', applies: shafted, only: 'Schuhe, bei denen der Typ die Höhe nicht vorgibt (nicht bei Sandalen, Pantoletten, Clogs, Hausschuhen)', values: SHAFTS, hint: 'Höhe des Schafts' },
   { key: 'sole', kind: 'enum', label: 'Sohle', group: 'shape', applies: shoe, only: 'Schuhe', values: SOLES, hint: 'Dicke und Form der Sohle' },
   { key: 'heel', kind: 'enum', label: 'Absatz', group: 'shape', applies: shoe, only: 'Schuhe', values: HEELS, hint: 'none kein Absatz · low unter 3 cm · mid 3–7 cm · high über 7 cm' },
   { key: 'bag_size', kind: 'enum', label: 'Taschengröße', group: 'shape', applies: bag, only: 'Taschen', values: BAG_SIZES, hint: 'Größe der Tasche' },

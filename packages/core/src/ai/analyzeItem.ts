@@ -213,7 +213,7 @@ export function profilePatch(
   const materials = toMaterialParts((row.materials ?? []).map((m) => (typeof m === 'string' ? { name: m } : m))).map((m) => m.name);
   // Kategorie tolerant lesen wie in toEditForm (Altwerte „Hose“ → pants)
   const path = normalizeCategory({ category: row.category || null, subcategory: row.subcategory, name: row.name });
-  const ctx = { category: path.category, sub: path.subcategory, pattern: toKey(PATTERNS, row.pattern), materials };
+  const ctx = { category: path.category, sub: path.subcategory, type: path.type, pattern: toKey(PATTERNS, row.pattern), materials };
   // a.profile kann aus einer anderen Quelle stammen → Werte noch einmal prüfen
   // Beinverlauf aus dem Namen nur, wenn der Name nicht selbst eine offene Bildschätzung ist
   const trusted = nameTrusted({ aiPending: row.ai_pending ?? [], analysisBase: row.analysis ?? {} });

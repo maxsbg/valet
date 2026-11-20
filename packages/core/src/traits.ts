@@ -166,6 +166,8 @@ export const DEFAULT_FORMALITY: Range = [2, 3];
 export type MatchItem = {
   category: string | null;
   subcategory: string | null;
+  /** Typ (optional, z. B. für die abgeleitete Schafthöhe) */
+  type?: string | null;
   colors: readonly string[] | null;
   pattern: string | null;
   materials: readonly string[] | null;
@@ -192,7 +194,7 @@ export type MatchTraits = {
 /** Merkmale fürs Matching aus Steckbrief + gespeichertem Profil (nur Felder, die für die Kategorie gelten) */
 export function matchTraits(item: MatchItem): MatchTraits {
   const profile = readProfile(item.analysis?.profile);
-  const p = activeProfile(profile, { category: item.category, sub: item.subcategory, pattern: item.pattern, materials: item.materials ?? [] });
+  const p = activeProfile(profile, { category: item.category, sub: item.subcategory, type: item.type ?? null, pattern: item.pattern, materials: item.materials ?? [] });
   const color = colorTraits(item.colors);
   const colorKeys = toColorKeys(item.colors ?? []);
   let partial = false;
