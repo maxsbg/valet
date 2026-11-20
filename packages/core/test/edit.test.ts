@@ -294,3 +294,32 @@ test('Kategoriewechsel: Hose → Schuh blendet leg in activeProfile aus, zurück
   assert.ok('change' in r);
   assert.equal(((r.change.analysis as Record<string, any>).profile).leg, 'tapered');
 });
+
+import { parsePct, setMaterialPct, materialPctSum, materialOrderOff, sortMaterialsByPct } from '../src/edit';
+
+test('Material-%: Eingabe lesen, Unsinn → leer statt 1 %', () => {
+  assert.equal(parsePct(''), null);
+  assert.equal(parsePct('abc'), null);
+  assert.equal(parsePct('80'), 80);
+  assert.equal(parsePct('12,6'), 13);
+  assert.equal(parsePct('80 %'), 80);
+  assert.equal(parsePct('250'), 100);
+  assert.equal(parsePct('0'), 1);
+});
+
+test('Material-%: setzen, löschen, Summe, Reihenfolge', () => {
+  const list = [{ name: 'cotton' }, { name: 'polyester', pct: 20 }];
+  const a = setMaterialPct(list, 'cotton', 80);
+  assert.deepEqual(a, [{ name: 'cotton', pct: 80 }, { name: 'polyester', pct: 20 }]);
+  assert.deepEqual(setMaterialPct(a, 'cotton', null)[0], { name: 'cotton' });
+  assert.equal(materialPctSum(a), 100);
+  assert.equal(materialOrderOff(a), false);
+  const off = [{ name: 'cotton', pct: 20 }, { name: 'wool' }, { name: 'polyester', pct: 80 }];
+  assert.equal(materialOrderOff(off), true);
+  assert.deepEqual(sortMaterialsByPct(off).map((m) => m.name), ['polyester', 'cotton', 'wool']);
+});
+
+test('Material-%: über 100 % blockiert das Speichern', () => {
+  const r = editChange(base({ materials: [{ name: 'cotton', pct: 80 }, { name: 'polyester', pct: 80 }] }));
+  assert.ok('error' in r && /160 %/.test(r.error));
+});

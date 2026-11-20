@@ -312,6 +312,26 @@ export function toggleMaterial(list: readonly MaterialPart[], name: string): Mat
 }
 export const materialRank = (list: readonly MaterialPart[], name: string) => list.findIndex((m) => m.name === name) + 1;
 
+/** Prozent-Eingabe lesen: leer oder keine Zahl → null, sonst ganze Zahl 1–100 */
+export function parsePct(v: string): number | null {
+  const n = Number(v.trim().replace(',', '.').replace(/%$/, '').trim());
+  if (!v.trim() || !Number.isFinite(n)) return null;
+  return Math.max(1, Math.min(100, Math.round(n)));
+}
+export const setMaterialPct = (list: readonly MaterialPart[], name: string, pct: number | null): MaterialPart[] =>
+  list.map((m) => (m.name !== name ? m : pct == null ? { name: m.name } : { ...m, pct }));
+export const materialPctSum = (list: readonly MaterialPart[]) => list.reduce((s, m) => s + (m.pct ?? 0), 0);
+/** Rang widerspricht den Anteilen (ein späteres Material hat mehr % als ein früheres) */
+export function materialOrderOff(list: readonly MaterialPart[]): boolean {
+  const pcts = list.map((m) => m.pct).filter((p): p is number => p != null);
+  return pcts.some((p, i) => i > 0 && p > pcts[i - 1]!);
+}
+/** Nach Anteil sortieren (höchster zuerst); ohne Anteil bleiben in ihrer Reihenfolge dahinter */
+export function sortMaterialsByPct(list: readonly MaterialPart[]): MaterialPart[] {
+  const withPct = list.filter((m) => m.pct != null).sort((a, b) => b.pct! - a.pct!);
+  return [...withPct, ...list.filter((m) => m.pct == null)];
+}
+
 /** Größe antippen: Wert samt System setzen; erneut tippen hebt auf (System bleibt) */
 export function pickSize(f: EditForm, system: SizeSystemAny, size: string | null): EditForm {
   return setField(setField(f, 'sizeSystem', system), 'size', size);
@@ -414,6 +434,7 @@ function sameAnalysis(next: Record<string, unknown>, base: Record<string, unknow
 
 export function editChange(f: EditForm, opts: { isNew?: boolean } = {}): EditResult {
   if (!f.name.trim()) return { error: 'Bitte einen Namen eingeben.' };
+  if (materialPctSum(f.materials) > 100) return { error: `Materialanteile ergeben ${materialPctSum(f.materials)} %, höchstens 100 % möglich.` };
   if (!isValidPath({ category: f.category, subcategory: f.subcategory, type: f.type })) return { error: 'Kategorie ist unvollständig.' };
   const price = num(f.isWish ? 'Preis' : 'Bezahlt', f.isWish ? f.listPrice : f.price);
   const list = num('Listenpreis', f.listPrice);
