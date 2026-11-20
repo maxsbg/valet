@@ -40,6 +40,8 @@ export type Tile = {
   wishTag: WishTag | null;
   /** Shop (für die Suche in der Wunschliste) */
   shop: string | null;
+  /** Produktlink (leer = „Link fehlt“) */
+  link: string | null;
   price: number | null;
   pricePaid: number | null;
   listPrice: number | null;
@@ -87,7 +89,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     supabase.from('persons').select('id,name,color,user_id,item_order').eq('wardrobe_id', w.id).order('created_at'),
     supabase
       .from('items')
-      .select('id,name,brand,category,subcategory,item_type,fit_length,colors,layers,color,owner_id,owner_ids,status,status_until,qty,reversible,main_side,set_id,is_wish,is_gift,wishlist_id,wish_tag,shop,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
+      .select('id,name,brand,category,subcategory,item_type,fit_length,colors,layers,color,owner_id,owner_ids,status,status_until,qty,reversible,main_side,set_id,is_wish,is_gift,wishlist_id,wish_tag,shop,link,price_paid,list_price,sold_price,payers,material,created_at,purchase_date,seasons,style')
       .eq('wardrobe_id', w.id),
     supabase.from('item_images').select('item_id,side,kind,colors,storage_path'),
     supabase.from('wishlists').select('id,name,owner_id,item_order,created_at').eq('wardrobe_id', w.id).order('created_at'),
@@ -131,6 +133,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     wishlistId: i.wishlist_id ?? null,
     wishTag: isWishTag(i.wish_tag) ? i.wish_tag : null,
     shop: i.shop || null,
+    link: i.link?.trim() || null,
     price: i.price_paid ?? i.list_price ?? null,
     pricePaid: i.price_paid,
     listPrice: i.list_price,

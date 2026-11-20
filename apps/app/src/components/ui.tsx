@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { personKey, type Person } from '@/lib/wardrobe';
 import { Monogram } from './Monogram';
 import { WithoutAnalysis } from './WithoutAnalysis';
+import { Toggle } from './edit/fields';
+import { setSetting, useSettings } from '@/lib/settings';
 import { MONO_SIZE, monoInset } from '@valet/ui';
 import { Icon, type SymbolName } from '@/components/Icon';
 
@@ -47,6 +49,8 @@ export function Header({ title, tint = true }: { title: string; tint?: boolean }
   const me = wardrobe?.persons.find((p) => p.user_id === session?.user.id);
   const tone = t.person[personKey(me?.color ?? null)];
   const letter = (me?.name ?? session?.user.email ?? '?').trim().slice(0, 1).toUpperCase();
+  const { linkDot } = useSettings();
+  const noLink = wardrobe?.items.filter((i) => !i.isWish && i.link === null && i.status !== 'out' && i.status !== 'sold').length ?? 0;
   return (
     <View style={s.header}>
       {tint && <TopTint />}
@@ -59,7 +63,12 @@ export function Header({ title, tint = true }: { title: string; tint?: boolean }
         footer={<SheetButton label="Abmelden" onPress={() => { setOpen(false); supabase.auth.signOut(); }} />}>
         <Text style={{ fontSize: 15, color: t.inkMuted }}>{session?.user.email}</Text>
         {wardrobe && <Text style={{ fontSize: 15, color: t.inkMuted, marginTop: 4, marginBottom: space.sm }}>Schrank „{wardrobe.name}“</Text>}
-        <OptionRow label="Alte Bilder zuordnen" selected={false} last onPress={() => { setOpen(false); router.push('/bilder-zuordnen'); }} />
+        <OptionRow label="Alte Bilder zuordnen" selected={false} onPress={() => { setOpen(false); router.push('/bilder-zuordnen'); }} />
+        <OptionRow label={`Links nachtragen${noLink ? ` (${noLink} ohne Link)` : ''}`} selected={false} last onPress={() => { setOpen(false); router.push('/links'); }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 }}>
+          <Text style={{ flex: 1, fontSize: 15, color: t.ink }}>Roter Punkt auf Kacheln, wenn der Link fehlt</Text>
+          <Toggle on={linkDot} label="Roter Punkt bei fehlendem Link" onToggle={() => setSetting('linkDot', !linkDot)} />
+        </View>
         <WithoutAnalysis open={open} onNavigate={() => setOpen(false)} />
       </Sheet>
     </View>

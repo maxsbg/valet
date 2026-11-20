@@ -197,6 +197,12 @@ function ClosetDetail({ id }: { id: string }) {
           <View style={{ gap: 2, marginTop: 4 }}>
             {!!it.brand && <Text style={[s.brand, { color: t.inkMuted }]}>{it.brand}</Text>}
             <Text style={[s.name, { color: t.ink }]}>{it.name}</Text>
+            {!it.link?.trim() && (
+              <Pressable accessibilityRole="button" onPress={() => router.push(`/links?item=${id}`)} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#D93A2B' }} />
+                <Text style={{ fontSize: 14, color: t.inkMuted }}>Link fehlt – <Text style={{ color: t.actionText, fontWeight: '600' }}>nachtragen</Text></Text>
+              </Pressable>
+            )}
           </View>
           <Segmented items={[{ key: 'overview', label: 'Übersicht' }, { key: 'profile', label: 'Steckbrief' }, { key: 'purchase', label: 'Kauf' }]} value={tab} onChange={setTab} />
 
