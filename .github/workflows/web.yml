@@ -33,10 +33,13 @@ jobs:
       - name: Live-App aktualisieren und Vorschau behalten
         if: github.ref == 'refs/heads/main'
         run: |
-          rsync -a --delete --exclude='/preview/' apps/app/dist/ pages/
-          touch pages/.nojekyll
-          git -C pages add -A
-          if ! git -C pages diff --cached --quiet; then
-            git -C pages -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Web-App ${GITHUB_SHA::7}"
-            git -C pages push --force origin HEAD:gh-pages
+          PAGES_DIR="$GITHUB_WORKSPACE/pages"
+          test "$(git -C "$PAGES_DIR" rev-parse --show-toplevel)" = "$PAGES_DIR"
+          test -f "$GITHUB_WORKSPACE/apps/app/dist/index.html"
+          rsync -a --delete --exclude='/preview/' "$GITHUB_WORKSPACE/apps/app/dist/" "$PAGES_DIR/"
+          touch "$PAGES_DIR/.nojekyll"
+          git -C "$PAGES_DIR" add -A
+          if ! git -C "$PAGES_DIR" diff --cached --quiet; then
+            git -C "$PAGES_DIR" -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Web-App ${GITHUB_SHA::7}"
+            git -C "$PAGES_DIR" push --force origin HEAD:gh-pages
           fi
