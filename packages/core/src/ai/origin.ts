@@ -22,3 +22,10 @@ export function originsOf(f: { analysisBase: Record<string, unknown> }): Record<
 
 /** Herkunft des offenen Werts eines Felds (ohne Eintrag: Bild) */
 export const originOf = (origins: Record<string, Origin>, k: string): Origin => origins[k] ?? 'image';
+
+/**
+ * Zählen Begriffe im Namen als eigene Quelle? Nur, wenn der Name nicht selbst eine Bildschätzung der KI ist
+ * (sonst schlüge die KI mit „Oversized Hoodie“ ihre eigene Foto-Schätzung): vom Nutzer (bestätigt) oder aus Shop/Etikett.
+ */
+export const nameTrusted = (f: { aiPending: readonly string[]; analysisBase: Record<string, unknown> }): boolean =>
+  !f.aiPending.includes('name') || originOf(originsOf(f), 'name') !== 'image';

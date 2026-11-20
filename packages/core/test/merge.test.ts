@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkAnalysis } from '../src/ai/analyzeItem';
+import { checkAnalysis, profileFilled } from '../src/ai/analyzeItem';
 import { checkInfo } from '../src/ai/readInfo';
 import { mergeSources, applyAnalysis, applyInfo, infoContext, confirmedContext, analysisSource, infoSource, DESCRIPTION_MAX, type SourceInfo } from '../src/ai/merge';
 import { confirmAi, confirmAllAi, editChange, emptyEditForm, setCategory, setField, setName } from '../src/edit';
@@ -161,7 +161,7 @@ test('Zweiter Schritt bei „Neues Teil“: nur das Bild, keine zurückgedrehten
   const shop = checkInfo({ kind: 'shop', brand: 'Zara', category: 'top/shirt' });
   const step1 = mergeSources(blank(), { infos: [{ from: 'screenshot', info: shop }] });
   const edited = setField(setField(step1, 'brand', ''), 'size', 'L');
-  const step2 = mergeSources(edited, { image: checkAnalysis({ category: 'shoe/sneaker', colors: ['white'] }), used: ['screenshot'] }, NOW);
+  const step2 = mergeSources(edited, { image: checkAnalysis({ category: 'shoe/sneaker', colors: ['white'], profile: { sheen: 1 } }), used: ['screenshot'] }, NOW);
   assert.equal(step2.brand, '');
   assert.equal(step2.category, 'top'); // Shop-Kategorie (Rang 2) schlägt das Bild
   assert.equal(step2.size, 'L');
@@ -212,7 +212,7 @@ test('Zwei Schritte wie bei „Neues Teil“: Passform einer Info ohne Kategorie
   assert.match(infoContext(infos), /Passform: Weite weit/);
   const step1 = mergeSources(blank(), { infos });
   assert.equal(step1.fit.width, null); // noch keine Kategorie
-  const step2 = mergeSources(step1, { image: checkAnalysis({ category: 'top/t_shirt', width: 2, colors: ['white'] }), late: infos }, NOW);
+  const step2 = mergeSources(step1, { image: checkAnalysis({ category: 'top/t_shirt', width: 2, colors: ['white'], profile: { sheen: 1 } }), late: infos }, NOW);
   assert.equal(step2.fit.width, 4);
   assert.equal(step2.aiMeta?.source, 'image+screenshot');
   // vom Nutzer in der Zwischenzeit gesetzte Passform bleibt
@@ -369,4 +369,40 @@ test('Pflege: neue Gruppe zu bestätigter Pflege wird einzeln markiert, die best
   const r = editChange({ ...g, name: 'Teil' }, { isNew: true });
   assert.ok('change' in r);
   assert.equal(((r.change.analysis as { src: Record<string, string> }).src)['care.dry'], 'label');
+});
+
+// ---------- Prüfung 20.11.2026, Runde 6 ----------
+
+test('Antwort ohne Mode-Profil: Fakten ja, aber kein „analysiert“ (meta bleibt)', () => {
+  const a = checkAnalysis({ category: 'top', colors: ['navy'] });
+  assert.equal(profileFilled(a), false);
+  const f = applyAnalysis(blank(), a, NOW);
+  assert.deepEqual(f.colors, ['navy']);
+  assert.equal(f.aiMeta, blank().aiMeta);
+});
+
+test('Kategoriewechsel verwirft offene Längen-Stufe mit anderer Bedeutung (kurz–lang ↔ Mini–Maxi)', () => {
+  const img = applyAnalysis(blank(), checkAnalysis({ category: 'top/t_shirt', length: 4, width: 2, colors: ['white'], profile: { sheen: 1 } }), NOW);
+  const dress = applyInfo(img, checkInfo({ kind: 'shop', category: 'dress' }));
+  assert.equal(dress.category, 'dress');
+  assert.equal(dress.fit.length, null);
+});
+
+test('Name ändern: Stufen aus einem früheren Namen fallen weg; Kategorie danach schlägt aus dem Namen vor', () => {
+  const tee = setName({ ...blank(), category: 'top', subcategory: 't_shirt' }, 'Oversized Tee');
+  assert.deepEqual([tee.fit.width, tee.fit.length], [4, 4]);
+  const relaxed = setName(tee, 'Relaxed Tee');
+  assert.deepEqual([relaxed.fit.width, relaxed.fit.length], [3, null]);
+  const plain = setName(relaxed, 'Tee');
+  assert.equal(plain.fit.width, null); assert.ok(!plain.aiPending.includes('fit'));
+  const chino = setCategory(setName(blank(), 'Slim Fit Chino'), { category: 'pants', subcategory: 'trousers', type: null });
+  assert.equal(chino.fit.width, 0); assert.ok(chino.aiPending.includes('fit'));
+});
+
+test('Pflege: gleicher Wert aus ranghöherer Quelle stuft die Herkunft hoch', () => {
+  const s = applyInfo(blank(), checkInfo({ kind: 'shop', care: { wash: 'w30' } }));
+  const l = applyInfo(s, checkInfo({ kind: 'label', care: { wash: 'w30' } }));
+  assert.equal((l.analysisBase.src as Record<string, string>)['care.wash'], 'label');
+  const p = applyInfo(l, checkInfo({ kind: 'shop', care: { wash: 'w40' } }), 'page');
+  assert.equal(p.care.wash?.v, 'w30');
 });

@@ -1,7 +1,7 @@
 // KI „Infos auslesen“ (Spec 7): Etikett, Shop-Screenshot oder Bestellbestätigung → Steckbrief und Kauf.
 // Gleicher Durchreicher wie „Teil erkennen“ (Edge Function `ki`), gleiche festen Listen.
 
-import { MATERIALS, CARE, type Care, type CareGroup, type MaterialPart } from '../attributes';
+import { MATERIALS, CARE, colorLabel, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, categoryDescription, checkAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
 import { emptyConfidence, emptyProfile } from './profile';
 import { ONE_SIZE } from '../attributes';
@@ -66,12 +66,21 @@ const WHAT: Record<InfoKind, string> = {
   order: 'eine Bestellbestätigung oder Rechnung',
 };
 
-export function readInfoPrompt(kind: InfoKind | null): string {
+/**
+ * `hint` = was über das Teil schon bekannt ist (Name, Marke, Farben), damit die KI bei einer Bestellung mit mehreren
+ * Artikeln den passenden nimmt (≤ 200 Zeichen).
+ */
+export function readInfoPrompt(kind: InfoKind | null, hint = ''): string {
+  const h = hint.replace(/\s+/g, ' ').trim().slice(0, 200);
   return `Du siehst ${kind ? WHAT[kind] : 'ein Etikett, einen Shop-Screenshot oder eine Bestellbestätigung zu einem Kleidungsstück'}.
 Lies nur ab, was dort steht oder klar zu sehen ist – nichts schätzen. Fehlt eine Angabe: null bzw. leere Liste.
 Nutze für Listenfelder nur die vorgegebenen Werte (Keys). name = exakter Produktname, ohne Farbe (sonst null).
-Stehen mehrere Artikel darauf, nimm nur den ersten bzw. den hervorgehobenen.`;
+${h ? `Gesucht ist dieses Teil: ${h}. Stehen mehrere Artikel darauf, nimm den, der dazu passt; passt keiner, den ersten bzw. hervorgehobenen.` : 'Stehen mehrere Artikel darauf, nimm nur den ersten bzw. den hervorgehobenen.'}`;
 }
+
+/** Bekanntes zum Teil als kurzer Hinweis für readInfoPrompt („Oxford-Hemd · COS · Weiß“) */
+export const infoHint = (f: { name: string; brand: string; colors: readonly string[] }): string =>
+  [f.name.trim(), f.brand.trim(), f.colors.map((c) => colorLabel(c)).join(', ')].filter(Boolean).join(' · ');
 
 // ---------- Antwort prüfen ----------
 
@@ -161,6 +170,16 @@ export type PageFacts = {
 };
 
 export const PAGE_FACTS_MAX = 2400;
+
+/**
+ * Preise der Seite nur in Euro übernehmen: nennt die Seite eine andere Währung (USD, GBP …), werden Preis und
+ * Listenpreis verworfen (sonst stünden 59 $ als 59,00 € im Feld). Ohne Währungsangabe bleibt alles wie gelesen.
+ */
+export function pagePriceInEuro(info: Info, facts: Pick<PageFacts, 'currency'>): Info {
+  const c = (facts.currency ?? '').trim().toUpperCase();
+  if (!c || c === 'EUR' || c === '€') return info;
+  return { ...info, price: null, listPrice: null };
+}
 
 /** Prompt für den Text einer Produktseite; der Seitentext hängt die Edge Function `ki` dahinter. */
 export function readPagePrompt(facts: PageFacts): string {

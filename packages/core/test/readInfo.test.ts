@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { READ_INFO_SCHEMA, checkInfo, applyInfo, infoUsable, readInfoPrompt, readPagePrompt } from '../src/ai/readInfo';
+import { READ_INFO_SCHEMA, checkInfo, applyInfo, infoHint, infoUsable, pagePriceInEuro, readInfoPrompt, readPagePrompt } from '../src/ai/readInfo';
 import { emptyEditForm, setField } from '../src/edit';
 import { CATEGORY_PATHS } from '../src/ai/analyzeItem';
 
@@ -88,4 +88,13 @@ test('Etikett ohne übernehmbare Angaben gilt als leer; Einheitsgröße wird erk
   assert.equal(infoUsable(checkInfo({ category: 'top/shirt' }), 'label'), false);
   assert.equal(checkInfo({ size: 'Einheitsgröße' }).size, 'One Size');
   assert.equal(checkInfo({ size: 'W32 / L34 (Regular)' }).size, 'W32 / L34 (Regular)');
+});
+
+test('Bestellung mit mehreren Artikeln: Hinweis auf das gesuchte Teil im Prompt; Preise nur in Euro', () => {
+  assert.match(readInfoPrompt('order', infoHint({ name: 'Oxford-Hemd', brand: 'COS', colors: ['white'] })), /Gesucht ist dieses Teil: Oxford-Hemd · COS · Weiß/);
+  assert.match(readInfoPrompt(null), /den ersten bzw\. den hervorgehobenen/);
+  const i = checkInfo({ price: 59, list_price: 79 });
+  assert.equal(pagePriceInEuro(i, { currency: 'USD' }).price, null);
+  assert.equal(pagePriceInEuro(i, { currency: 'EUR' }).price, 59);
+  assert.equal(pagePriceInEuro(i, {}).price, 59);
 });

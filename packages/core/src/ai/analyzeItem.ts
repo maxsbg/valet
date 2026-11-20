@@ -173,9 +173,11 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
  * irgendein Profilwert) gelten als Fehlschlag – sonst stünde ein leeres Profil als „analysiert“ (meta.v = 2) da.
  */
 export function analysisUsable(a: Analysis): boolean {
-  if (a.path.category || a.colors.length) return true;
-  return Object.values(a.profile).some((v) => (Array.isArray(v) ? v.length > 0 : v != null));
+  return !!(a.path.category || a.colors.length) || profileFilled(a);
 }
+/** Hat die Antwort ein Mode-Profil? Ohne gilt das Teil nicht als „analysiert“ (kein meta.v = 2; Stapellauf: Fehlversuch) */
+export const profileFilled = (a: Pick<Analysis, 'profile'>): boolean =>
+  Object.values(a.profile).some((v) => (Array.isArray(v) ? v.length > 0 : v != null));
 
 // ---------- Ins Formular übernehmen ----------
 

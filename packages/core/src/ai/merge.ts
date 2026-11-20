@@ -9,11 +9,11 @@ import { dropHidden, setField, setCategory, fitOpen, type EditForm } from '../ed
 import { fieldsFor, matchSize } from '../fields';
 import { fitFromName, fitTermsIn, nameFitFor } from '../fitName';
 import { PROFILE_FIELDS, aiMeta, clearInactive, emptyConfidence, emptyProfile, type AnalysisSource, type Ctx, type Profile } from './profile';
-import type { Analysis } from './analyzeItem';
+import { profileFilled, type Analysis } from './analyzeItem';
 import type { Info } from './readInfo';
 
-import { ORIGIN_RANK, originOf, originsOf, type InfoSource, type Origin } from './origin';
-export { ORIGIN_RANK, originsOf, type InfoSource, type Origin } from './origin';
+import { ORIGIN_RANK, nameTrusted, originOf, originsOf, type InfoSource, type Origin } from './origin';
+export { ORIGIN_RANK, nameTrusted, originsOf, type InfoSource, type Origin } from './origin';
 export type SourceInfo = { from: InfoSource; info: Info };
 /**
  * `image` = Bildanalyse, `infos` = ausgelesene Infos. `used` = Quellen, die als Kontext in die Bildanalyse eingingen
@@ -73,8 +73,9 @@ function applyFacts(form: EditForm, a: Analysis, from: Origin): EditForm {
   let f = form;
   const marked: string[] = [];
   const origin: Record<string, Origin> = {};
-  const open = new Set(form.aiPending);
-  const origins = originsOf(form);
+  // nach einem Kategoriewechsel neu gelesen (setCategory kann Vorschläge aus dem Namen setzen bzw. versteckte entfernen)
+  let open = new Set(form.aiPending);
+  let origins = originsOf(form);
   const may = (k: string, empty: boolean) => empty || (open.has(k) && RANK[originOf(origins, k)] <= RANK[from]);
   const allowed = (k: string) => from !== 'label' || LABEL_FACTS.has(k);
   const put = <K extends keyof EditForm>(k: K, v: EditForm[K], empty: boolean, has: boolean) => {
@@ -114,6 +115,7 @@ function applyFacts(form: EditForm, a: Analysis, from: Origin): EditForm {
       Object.assign(origin, { category: from, 'category.sub': from, 'category.type': from });
     }
   }
+  if (f !== form) { open = new Set(f.aiPending); origins = { ...originsOf(f), ...origin }; }
   put('name', a.name ?? '', !f.name.trim(), !!a.name);
   put('brand', a.brand ?? '', !f.brand.trim(), !!a.brand);
   put('colors', a.colors, f.colors.length === 0, a.colors.length > 0);
@@ -179,6 +181,7 @@ function applyExtras(form: EditForm, info: Info, from: InfoSource): EditForm {
   // gleich- oder rangniedrigerer Quelle (Herkunft je Gruppe „care.wash“ …). Vom Nutzer gesetzte Gruppen („hand“) nie.
   const care: Care = { ...f.care };
   const careOrigin: Record<string, Origin> = {};
+  const originUp: Record<string, Origin> = {};
   const careOpen = open.has('care');
   for (const [g, v] of Object.entries(info.care) as [CareGroup, NonNullable<Care[CareGroup]>][]) {
     const cur = care[g];
@@ -189,7 +192,12 @@ function applyExtras(form: EditForm, info: Info, from: InfoSource): EditForm {
       const replaceable = cur.src === 'geschaetzt' || (groupOpen && own != null && RANK[own] <= RANK[from]);
       if (!replaceable) continue;
     }
-    if (JSON.stringify(cur) === JSON.stringify(v)) continue;
+    if (JSON.stringify(cur) === JSON.stringify(v)) {
+      // gleicher Wert aus ranghöherer Quelle: nur die Herkunft hochstufen (wie bei den anderen Feldern)
+      const own = origins[`care.${g}`];
+      if (own && RANK[from] > RANK[own]) originUp[`care.${g}`] = from;
+      continue;
+    }
     care[g] = v; careOrigin[`care.${g}`] = from;
   }
   if (Object.keys(careOrigin).length) {
@@ -205,6 +213,7 @@ function applyExtras(form: EditForm, info: Info, from: InfoSource): EditForm {
       marked.push('care'); Object.assign(origin, keep, careOrigin);
     }
   }
+  Object.assign(origin, originUp);
   return withOrigins(addPending(f, marked), origin);
 }
 
@@ -239,15 +248,10 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
   // Profil erst hier nach Kategorie bereinigen: mit dem endgültigen Pfad, Muster und Material (Spec 8)
   const ctx: Ctx = { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
   const used = [...infos.map((x) => x.from), ...(s.used ?? []), ...(s.late ?? []).map((x) => x.from)].map((from) => ({ from }));
+  // ohne Mode-Profil (nur Steckbrief-Fakten) bleibt das bisherige Profil samt meta – das Teil gilt nicht als neu analysiert
+  if (!profileFilled(s.image)) return f;
   return { ...f, profile: legFromName(clearInactive(s.image.profile, ctx), nameTrusted(f) ? f.name : null, ctx), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) };
 }
-
-/**
- * Zählen Begriffe im Namen als eigene Quelle? Nur, wenn der Name nicht selbst eine Bildschätzung der KI ist
- * (sonst schlüge die KI mit „Oversized Hoodie“ ihre eigene Foto-Schätzung): vom Nutzer (bestätigt) oder aus Shop/Etikett.
- */
-export const nameTrusted = (f: Pick<EditForm, 'aiPending' | 'analysisBase'>): boolean =>
-  !f.aiPending.includes('name') || originOf(originsOf(f), 'name') !== 'image';
 
 /** Passform-Stufen aus Begriffen im Namen (Rang „name“) in offene Stufen gleichen oder niedrigeren Rangs */
 function applyNameFit(f: EditForm): EditForm {

@@ -2,7 +2,7 @@
 // Läuft modulweit (nicht in der Seite), damit er beim Tab-Wechsel weiterläuft. Höchstens BATCH_PER_MIN je Minute
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
-import { BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
+import { profileFilled, BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -117,12 +117,15 @@ export async function startBatch(wardrobeId: string) {
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       last = Date.now();
       let a: Awaited<ReturnType<typeof analyzeStored>>;
+      let counted = false;
       try {
         a = await analyzeStored(path);
-        countCall();
+        countCall(); counted = true;
+        // ohne Mode-Profil zählt die Antwort nicht als Ergänzung (sonst stünde ein leeres Profil als „analysiert“ da)
+        if (!profileFilled(a)) throw new Error('empty_answer');
       } catch (e) {
         const { code, status } = await kiError(e);
-        if (status != null || code) countCall(); // Anfrage kam an (zählt fürs Kontingent)
+        if (!counted && (status != null || code)) countCall(); // Anfrage kam an (zählt fürs Kontingent)
         const kind = batchErrorKind(code, status);
         const global = code === 'rate_limited' || status === 429 || code === 'config_error' || status === 401 || status === 403 || (status == null && !code);
         // scheitert dasselbe Teil nach „Weiter“ erneut vorübergehend, liegt es wohl am Teil → Fehlversuch statt Endlos-Pause

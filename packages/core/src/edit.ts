@@ -10,7 +10,7 @@ import { capSize, fieldsFor, kindHasLetters, sizeSystemOn, STRAPS, type SizeSyst
 import { equalSplit, formatPrice, parseAmount, splitGap } from './money';
 import { isWishTag, type WishTag } from './tile';
 import { checkConfidence, emptyConfidence, readProfile, type AiMeta, type Confidence, type Profile } from './ai/profile';
-import { ORIGIN_RANK, originOf, originsOf } from './ai/origin';
+import { ORIGIN_RANK, nameTrusted, originOf, originsOf } from './ai/origin';
 
 /** Spalten der Tabelle items, die das Formular liest (Teilmenge, alles optional) */
 export type EditRow = Partial<{
@@ -180,12 +180,20 @@ function emptyValue(f: EditForm, k: string): boolean {
 export function setCategory(f: EditForm, p: { category: string | null; subcategory: string | null; type: string | null }): EditForm {
   const before = fieldsFor(f.category, f.subcategory).size, after = fieldsFor(p.category, p.subcategory).size;
   let next = setField(setField(setField(f, 'category', p.category), 'subcategory', p.subcategory), 'type', p.type);
-  if (before === after) return dropHidden(next);
+  // offene (KI-)Stufen, deren Skala nach dem Wechsel etwas anderes bedeutet (Länge kurz–lang ↔ Mini–Maxi), verwerfen
+  if (f.aiPending.includes('fit')) {
+    const steps = (c: string | null, k: FitScale['key']) => fitScalesOf(c).find((sc) => sc.key === k)?.steps.join('|') ?? '';
+    const fit = { ...next.fit };
+    for (const k of ['width', 'length', 'rise'] as const) if (fit[k] != null && steps(f.category, k) && steps(f.category, k) !== steps(p.category, k)) fit[k] = null;
+    next = { ...next, fit };
+  }
+  if (before === after) return dropHidden(suggestFitFromName(next));
   // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose, Handschuh, Mütze …): bleibt stehen (Max, 15.11.2026).
   // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.
   const keepLetters = f.sizeSystem === 'letters' && !!f.size && kindHasLetters(after);
   // offene KI-Werte in Feldern, die es für die neue Kategorie nicht gibt, fallen weg (auch beim Wählen in Bearbeiten)
-  return dropHidden(keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null });
+  // Passform aus dem Namen erst jetzt möglich, wenn der Name vor der Kategorie stand (nur bei offener Passform)
+  return dropHidden(suggestFitFromName(keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null }));
 }
 
 /** Passform noch offen: leer oder nur unbestätigt vorgeschlagen (vom Nutzer bestätigte Passform bleibt immer) */
@@ -197,10 +205,22 @@ export const fitOpen = (f: Pick<EditForm, 'fit' | 'aiPending'>): boolean =>
  * Nur wenn `open` (Passform vorher leer oder unbestätigt) und der Name für die Kategorie etwas hergibt.
  */
 export function suggestFitFromName(f: EditForm, open: boolean = fitOpen(f)): EditForm {
-  if (!open) return f;
+  // nur Namen vom Nutzer oder aus Shop/Etikett – ein von der KI aus dem Foto erzeugter Name zählt nicht (nameTrusted)
+  if (!open || !nameTrusted(f)) return f;
   // Rang je Stufe (Spec 6.7): Begriffe im Namen ersetzen nur Stufen, die Shop oder Etikett nicht selbst nennen
   const origins = originsOf(f);
-  const part = Object.fromEntries(Object.entries(nameFitFor(f.category, fitFromName(f.name).fit))
+  // Stufen, die nur aus einem früheren Namen stammten und der neue Name nicht mehr trägt, zurücksetzen
+  const fromName = nameFitFor(f.category, fitFromName(f.name).fit);
+  if (f.aiPending.includes('fit')) {
+    const stale = (['width', 'length', 'rise'] as const).filter((k) => origins[`fit.${k}`] === 'name' && !(k in fromName) && f.fit[k] != null);
+    if (stale.length) {
+      const fit = { ...f.fit }; for (const k of stale) fit[k] = null;
+      const src = Object.fromEntries(Object.entries(isObj(f.analysisBase.src) ? f.analysisBase.src : {}).filter(([k]) => !stale.some((s) => k === `fit.${s}`)));
+      f = { ...f, fit, analysisBase: { ...f.analysisBase, src } };
+      if (fit.width == null && fit.length == null && fit.rise == null) f = { ...f, aiPending: f.aiPending.filter((k) => k !== 'fit') };
+    }
+  }
+  const part = Object.fromEntries(Object.entries(fromName)
     .filter(([k]) => f.fit[k as keyof EditForm['fit']] == null || !f.aiPending.includes('fit') || ORIGIN_RANK[originOf(origins, `fit.${k}`)] <= ORIGIN_RANK.name));
   if (Object.keys(part).length === 0) return f;
   const src = { ...(isObj(f.analysisBase.src) ? f.analysisBase.src : {}), ...Object.fromEntries(Object.keys(part).map((k) => [`fit.${k}`, 'name'])) };

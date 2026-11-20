@@ -64,6 +64,8 @@ export default function Neu() {
   const pageDesc = useRef<string | null>(null);
   // Schritt „Hast du noch weitere Infos?“
   const [moreLink, setMoreLink] = useState('');
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const earlySave = useRef(false);
   const run = useRef(0); // verwirft Ergebnisse, wenn inzwischen ein anderes Foto gewählt wurde
   const urls = useRef<string[]>([]);
 
@@ -117,6 +119,8 @@ export default function Neu() {
         pageInfo.current = readPage(page.text, page.facts);
         pageDesc.current = page.facts.description ?? null;
         pageInfo.current.catch(() => {}); // Fehler erst beim Formular melden
+      } else if (!page.blocked) {
+        toast.show('Auf der Seite steht zu wenig Text – Angaben wie Material und Pflege bitte selbst ergänzen.');
       }
       setWeb({ url, page, error: page.blocked ? 'Der Shop lässt die Seite nicht von außen laden.' : !page.images.length ? 'Auf der Seite wurden keine Bilder gefunden.' : undefined });
     } catch (e) {
@@ -191,14 +195,17 @@ export default function Neu() {
       ?? (page ? page.then((info) => ({ infos: [{ from: 'page' as const, info }], description: pageDesc.current })) : null);
     if (!p && !read) return;
     const n = run.current;
+    earlySave.current = false;
+    setAiBusy(read ? 'KI liest die Infos aus … Vorschläge erscheinen gleich in den Feldern.' : 'KI analysiert das Foto … Vorschläge erscheinen gleich in den Feldern.');
     (async () => {
       let extra: Extra = { infos: [], description: null };
       const errors: unknown[] = [];
       if (read) { try { extra = await read; } catch (e) { errors.push(e); } }
       if (n !== run.current) return;
+      if (p) setAiBusy('KI analysiert das Foto … Vorschläge erscheinen gleich in den Feldern.');
       // leere Infos (nichts Lesbares) nicht übernehmen und nicht als Kontext zählen
-      if (extra.infos.length && !extra.infos.some((x) => infoUsable(x.info))) toast.show('Auf dem Bild bzw. der Seite war nichts Lesbares – weiter nur mit dem Foto.');
-      extra = { ...extra, infos: extra.infos.filter((x) => infoUsable(x.info)) };
+      if (extra.infos.length && !extra.infos.some((x) => infoUsable(x.info, x.from))) toast.show('Auf dem Bild bzw. der Seite war nichts Lesbares – weiter nur mit dem Foto.');
+      extra = { ...extra, infos: extra.infos.filter((x) => infoUsable(x.info, x.from)) };
       if (extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
       if (p) {
         try {
@@ -209,6 +216,7 @@ export default function Neu() {
           setF((cur) => cur && mergeSources(cur, { image: a, late: extra.infos }));
         } catch (e) { errors.push(e); }
       }
+      if (n === run.current) setAiBusy(null);
       if (n !== run.current || !errors.length) return;
       const first = errors[0] as { page?: boolean; message?: string };
       if (first?.page) return toast.show(`${first.message} Weiter nur mit dem Foto.`);
@@ -219,6 +227,11 @@ export default function Neu() {
 
   async function save() {
     if (!f || !wardrobe) return;
+    // KI läuft noch: erst hinweisen; zweites Tippen speichert ohne die ausstehenden Vorschläge
+    if (aiBusy && !earlySave.current) {
+      earlySave.current = true;
+      return toast.show('Die KI ist gleich fertig. Nochmal „Fertig“ tippen, um ohne ihre Vorschläge zu speichern.');
+    }
     const r = editChange(f, { isNew: true });
     if ('error' in r) return toast.show(r.error);
     // Leere Angaben weglassen → Standardwerte der Datenbank
@@ -241,7 +254,7 @@ export default function Neu() {
       <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
         wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
         onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
-        saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }} onError={(m) => toast.show(m)}
+        saving={saving} aiBusy={aiBusy} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setAiBusy(null); setStep('start'); }} onError={(m) => toast.show(m)}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: null, setId: null }} />
       {toast.node}
     </View>

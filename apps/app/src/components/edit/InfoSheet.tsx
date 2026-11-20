@@ -17,7 +17,7 @@ const KINDS: { key: InfoKind; title: string; text: string; icon: SymbolName }[] 
   { key: 'order', title: 'Bestellbestätigung', text: 'Bezahlter Preis, Kaufdatum, Shop, Größe', icon: 'bag' },
 ];
 
-export function InfoSheet({ open, onClose, onResult }: { open: boolean; onClose: () => void; onResult: (info: Info) => void }) {
+export function InfoSheet({ open, onClose, onResult, hint = '' }: { open: boolean; onClose: () => void; onResult: (info: Info) => void; hint?: string }) {
   const t = useTheme();
   const [kind, setKind] = useState<InfoKind | null>(null);
   const [state, setState] = useState<'idle' | 'busy' | 'error'>('idle');
@@ -28,7 +28,7 @@ export function InfoSheet({ open, onClose, onResult }: { open: boolean; onClose:
   const pick = (f: File) => {
     const n = ++run.current;
     setState('busy');
-    readInfo(f, kind)
+    readInfo(f, kind, hint)
       // ausdrücklich gewählte Art gilt für die Rangfolge (z. B. Etikett: nur Material, Größe, Pflege …)
       .then((info) => {
         if (n !== run.current) return;

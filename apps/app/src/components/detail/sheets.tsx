@@ -1,8 +1,8 @@
 // Blätter der Detailseite: Reservieren, „Stimmt das?“ für geschätzte Pflege (Spec 4), KI-Analyse (Analyse v2, Spec 14)
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import { CARE, kiMessage, analysisNote, analysisSections, careLabel, colorCheck, confirmedContext, hasProfile, reanalysisChange, type CareGroup, type CareValue, type EditForm } from '@valet/core';
-import { analysisImage, updateItem } from '@/lib/item';
+import { CARE, kiMessage, analysisNote, analysisSections, careLabel, colorCheck, confirmedContext, hasProfile, profileFilled, reanalysisChange, toEditForm, type CareGroup, type CareValue, type EditForm, type EditRow } from '@valet/core';
+import { analysisImage, loadItem, updateItem } from '@/lib/item';
 import { analyzeStored, kiError } from '@/lib/ki';
 import { Icon } from '@/components/Icon';
 import { useTheme } from '@/lib/theme';
@@ -101,8 +101,9 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
   const [imgError, setImgError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const runId = useRef(0);
   useEffect(() => {
-    if (!open) return;
+    if (!open) { runId.current++; setBusy(false); return; } // Schließen verwirft eine laufende Analyse
     setError(null); setImgError(false);
     analysisImage(itemId).then(setImg).catch(() => { setImg(null); setImgError(true); });
   }, [open, itemId]);
@@ -113,16 +114,24 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
 
   async function run() {
     if (!img) { setError(imgError ? 'Bild konnte nicht geladen werden – bitte Verbindung prüfen und erneut öffnen.' : 'Kein Bild vorhanden – zuerst ein Foto hinzufügen.'); return; }
+    const n = ++runId.current;
     setBusy(true); setError(null);
     try {
       let a: Awaited<ReturnType<typeof analyzeStored>>;
       try { a = await analyzeStored(img.path, confirmedContext(f)); } catch (e) {
+        if (n !== runId.current) return;
         const { code, status } = await kiError(e);
         setError(kiMessage(code, status));
         return;
       }
-      const row = { category: f.category, subcategory: f.subcategory, pattern: f.pattern, materials: f.materials, analysis: f.analysisBase, ai_pending: f.aiPending, name: f.name };
-      try { await updateItem(itemId, reanalysisChange(f, row, a)); } catch { setError('Speichern fehlgeschlagen. Bitte noch einmal versuchen.'); return; }
+      if (n !== runId.current) return; // Blatt inzwischen geschlossen: Ergebnis verwerfen
+      if (!profileFilled(a)) { setError(kiMessage('empty_answer', null)); return; }
+      try {
+        // frisch lesen: wurde das Teil während der Analyse bearbeitet (z. B. „Alle übernehmen“), gilt dessen Stand
+        const fresh = toEditForm((await loadItem(itemId)).item as unknown as EditRow);
+        const row = { category: fresh.category, subcategory: fresh.subcategory, pattern: fresh.pattern, materials: fresh.materials, analysis: fresh.analysisBase, ai_pending: fresh.aiPending, name: fresh.name };
+        await updateItem(itemId, reanalysisChange(fresh, row, a));
+      } catch { setError('Speichern fehlgeschlagen. Bitte noch einmal versuchen.'); return; }
       onSaved('Neu analysiert.');
     } finally { setBusy(false); }
   }

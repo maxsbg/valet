@@ -194,6 +194,7 @@ export function batchErrorKind(code: string, status: number | null): 'pause' | '
 export function kiMessage(code: string, status: number | null): string {
   if (code === 'rate_limited' || status === 429) return 'Das Gratis-Kontingent der KI ist gerade erschöpft. Bitte später noch einmal.';
   if (code === 'empty_answer') return 'Die KI hat nichts Brauchbares geliefert. Bitte noch einmal versuchen.';
+  if (code === 'not_member') return 'Die KI steht erst zur Verfügung, wenn du einem Schrank beigetreten bist.';
   if (status === 401 || status === 403) return 'Anmeldung abgelaufen. Bitte neu laden und noch einmal versuchen.';
   if (status === 404) return 'Das Bild wurde nicht gefunden.';
   if (code === 'model_rejected' || status === 422) return 'Die KI konnte das nicht auswerten. Ein anderes Foto bzw. ein anderer Link hilft oft.';

@@ -1,13 +1,13 @@
 // Bearbeiten-Seite (VALET_DETAILSEITE_SPEC.md, Abschnitte 7 und 7a) – gemeinsam für „Bearbeiten“ und „Neues Teil prüfen“.
 // Kopf X · Titel · Haken, Bild-Kachel, KI-Hinweis, Name, Marke, Reiter Steckbrief · Kauf (Wunschteil: Steckbrief · Wunsch).
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, styleLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, STYLES, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
-  applyInfo, confirmAllAi, shopFromLink, tileKind,
+  applyInfo, confirmAllAi, infoHint, shopFromLink, tileKind,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -47,6 +47,8 @@ type Props = {
   onPic: (side: Side, p: Picture | null) => void;
   hex: string | null;
   saving: boolean;
+  /** KI liest bzw. analysiert noch (Neues Teil): Hinweis zeigen, Vorschläge kommen gleich */
+  aiBusy?: string | null;
   onCancel: () => void;
   onSave: () => void;
   onDelete?: () => void;
@@ -408,6 +410,12 @@ export function ItemEditor(p: Props) {
           <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={f.reversible} kind={tileKind(f.category, f.subcategory, f.type, f.fit.length)}
             hex={p.hex} colors={f.colors} colorsB={f.colorsB} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto}
             loadStored={p.loadStored} onError={p.onError} />
+          {!!p.aiBusy && (
+            <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline, alignItems: 'center' }]}>
+              <ActivityIndicator color={t.accent} />
+              <Text style={{ flex: 1, fontSize: 14, lineHeight: 19, color: t.ink }}>{p.aiBusy}</Text>
+            </View>
+          )}
           {f.aiPending.length > 0 && (
             <View style={[s.kiCard, { backgroundColor: t.surface, borderColor: t.hairline }]}>
               <KiBadge />
@@ -430,7 +438,7 @@ export function ItemEditor(p: Props) {
           )}
         </View>
       </Page>
-      <InfoSheet open={info} onClose={() => setInfo(false)} onResult={(r) => onForm((cur) => applyInfo(cur, r))} />
+      <InfoSheet open={info} hint={infoHint(f)} onClose={() => setInfo(false)} onResult={(r) => onForm((cur) => applyInfo(cur, r))} />
     </KeyboardAvoidingView>
   );
 }

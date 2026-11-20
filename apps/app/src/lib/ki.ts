@@ -1,5 +1,5 @@
 // KI über die Edge Function `ki` (Durchreicher zu Gemini). Prompt, Schema und Prüfung kommen aus @valet/core.
-import { ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, analysisUsable, checkAnalysis, checkInfo, readInfoPrompt, readPagePrompt, type PageFacts, type Analysis, type Info, type InfoKind } from '@valet/core';
+import { ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, analysisUsable, pagePriceInEuro, checkAnalysis, checkInfo, readInfoPrompt, readPagePrompt, type PageFacts, type Analysis, type Info, type InfoKind } from '@valet/core';
 import { supabase } from './supabase';
 
 /** Blob → Base64 ohne data:-Präfix */
@@ -57,8 +57,8 @@ async function ask(image: Blob, prompt: string, schema: unknown, opts: { tempera
 }
 
 /** Etikett, Shop-Screenshot oder Bestellbestätigung auslesen */
-export async function readInfo(file: Blob, kind: InfoKind | null): Promise<Info> {
-  return checkInfo((await ask(await shrink(file), readInfoPrompt(kind), READ_INFO_SCHEMA)).data);
+export async function readInfo(file: Blob, kind: InfoKind | null, hint = ''): Promise<Info> {
+  return checkInfo((await ask(await shrink(file), readInfoPrompt(kind, hint), READ_INFO_SCHEMA)).data);
 }
 
 /**
@@ -101,5 +101,5 @@ export async function readPage(text: string, facts: PageFacts): Promise<Info> {
     body: { text: text.slice(0, 20000), prompt: readPagePrompt(facts), schema: READ_INFO_SCHEMA },
   });
   if (error) throw error;
-  return checkInfo(res?.data);
+  return pagePriceInEuro(checkInfo(res?.data), facts);
 }

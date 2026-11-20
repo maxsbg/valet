@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
 
     if (!supabaseUrl || !supabaseAnonKey || !modelToken) {
       console.error("Missing required environment variables");
-      return jsonResponse({ error: "Server configuration error" }, 500);
+      return jsonResponse({ error: "config_error" }, 503);
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -162,6 +162,16 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
+
+    // Nur Mitglieder eines Schranks dürfen das gemeinsame Gratis-Kontingent nutzen (Registrierung ist offen).
+    // RLS members_read: eigene Mitgliedschaften sind lesbar.
+    const { data: membership, error: memberError } = await supabase
+      .from("wardrobe_members").select("wardrobe_id").eq("user_id", user.id).limit(1);
+    if (memberError) {
+      console.error("membership check failed", memberError.message);
+      return jsonResponse({ error: "storage_unavailable" }, 503);
+    }
+    if (!membership?.length) return jsonResponse({ error: "not_member" }, 403);
 
     // 3. Request-Body validieren
     let payload: RequestPayload;
