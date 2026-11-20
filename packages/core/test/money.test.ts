@@ -4,10 +4,13 @@ import { parseAmount, qtyOf, totalPaid, convert } from '../src/money';
 
 test('parseAmount liest deutsche Schreibweise', () => {
   assert.equal(parseAmount('1.234,56 €'), 1234.56);
+  assert.equal(parseAmount('1.200'), 1200);
+  assert.equal(parseAmount('2.000 €'), 2000);
   assert.equal(parseAmount('54,9'), 54.9);
   assert.equal(parseAmount('49.90'), 49.9);
   assert.equal(parseAmount(''), null);
   assert.equal(parseAmount('abc'), null);
+  assert.equal(parseAmount('12abc'), null);
 });
 
 test('Menge ist mindestens 1', () => {

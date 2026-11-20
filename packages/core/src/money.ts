@@ -4,8 +4,21 @@
 export function parseAmount(v: unknown, decimals = 2): number | null {
   if (v === '' || v == null) return null;
   let s = String(v).trim().replace(/[€\s]/g, '');
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
-  const n = parseFloat(s);
+  const sign = /^[+-]/.test(s) ? s[0] : '';
+  const body = sign ? s.slice(1) : s;
+  let normalized: string;
+  if (body.includes(',')) {
+    const [integer, fraction, ...extra] = body.split(',');
+    if (integer == null || fraction == null || extra.length > 0 || !/^\d+(?:\.\d{3})*$/.test(integer) || !/^\d+$/.test(fraction)) return null;
+    normalized = `${integer.replace(/\./g, '')}.${fraction}`;
+  } else if (/^\d{1,3}(?:\.\d{3})+$/.test(body)) {
+    normalized = body.replace(/\./g, '');
+  } else if (/^\d+\.\d+$/.test(body) || /^\d+$/.test(body)) {
+    normalized = body;
+  } else {
+    return null;
+  }
+  const n = Number(`${sign}${normalized}`);
   const f = 10 ** decimals;
   return Number.isFinite(n) ? Math.round(n * f) / f : null;
 }
