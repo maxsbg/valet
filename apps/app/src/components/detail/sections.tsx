@@ -72,69 +72,29 @@ function Rows({ rows }: { rows: [string, React.ReactNode[]][] }) {
  */
 export function SteckbriefView({ f, onCare, onEdit, onAnalysis }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void; onAnalysis?: () => void }) {
   const t = useTheme();
-  const caps = (list: (string | null | undefined)[]) => list.filter((x): x is string => !!x).map((x, i) => <ValueCapsule key={`${i}-${x}`} label={x} />);
-  const colors = (list: string[]) => list.map((c) => <ValueCircle key={c} a11y={colorLabel(c)}><ColorDot name={c} onFill /></ValueCircle>);
   const fx = fieldsFor(f.category, f.subcategory);
   const rev = fx.reversible && f.reversible;
   const care = careList(f.care);
-  const estimated = care.some((c) => c.src === 'geschaetzt');
-  const aussehen: [string, React.ReactNode[]][] = [
-    ['Kategorie', caps([categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })])],
-    ['Saison', SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)],
-    [rev ? 'Farben Seite A' : 'Farben', colors(f.colors)],
-    ...(rev ? [['Farben Seite B', colors(f.colorsB)] as [string, React.ReactNode[]]] : []),
-    ['Material', caps(f.materials.map((m) => (m.pct != null ? `${materialLabel(m.name)} ${m.pct} %` : materialLabel(m.name))))],
-    ['Größe', fx.size ? caps([sizeText(f.sizeSystem, f.size), fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? `Kragen ${f.collarSize}` : null]) : []],
-    ['Passform', caps(fitWords(f))],
+  const rows: [string, string][] = [
+    ['Kategorie', categoryLast({ category: f.category, subcategory: f.subcategory, type: f.type })],
+    ['Saison', SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => x.label).join(', ')],
+    [rev ? 'Farben Seite A' : 'Farben', f.colors.map(colorLabel).join(', ')],
+    ...(rev ? [['Farben Seite B', f.colorsB.map(colorLabel).join(', ')] as [string, string]] : []),
+    ['Material', f.materials.map((m) => m.pct != null ? materialLabel(m.name) + ' ' + m.pct + ' %' : materialLabel(m.name)).join(', ')],
+    ['Größe', [fx.size ? sizeText(f.sizeSystem, f.size) : '', fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? 'Kragen ' + f.collarSize : ''].filter(Boolean).join(', ')],
+    ['Passform', fitWords(f).join(', ')],
   ];
-  const has = (rows: [string, React.ReactNode[]][]) => rows.some(([, v]) => v.length > 0);
-  return (
-    <>
-      {has(aussehen) && <EditCard title="Aussehen" rows><Rows rows={aussehen} /></EditCard>}
-      {fx.care && <EditCard title="Pflege" rows={care.length > 0}>
-        {care.length ? (
-          <View style={{ paddingBottom: 12 }}>
-            <View style={[s.row, { justifyContent: 'flex-start' }]}>
-              <Wrap gap={6}>
-                {care.map((c) => {
-                  const g = CARE.find((x) => x.key === c.group)!;
-                  const o = g.options.find((x) => x.id === c.v);
-                  const est = c.src === 'geschaetzt';
-                  const circle = (
-                    <ValueCircle a11y={`${g.label}: ${o?.short ?? c.v}`} estimated={est}>
-                      <Icon name={c.v as SymbolName} size="button" color={est ? t.inkMuted : t.onFill} />
-                    </ValueCircle>
-                  );
-                  return est
-                    ? <Pressable key={c.group} accessibilityRole="button" accessibilityHint="Schätzung prüfen" onPress={() => onCare(c.group)}>{circle}</Pressable>
-                    : <View key={c.group}>{circle}</View>;
-                })}
-              </Wrap>
-            </View>
-            {estimated && <Hint>geschätzt aus Material</Hint>}
-          </View>
-        ) : (
-          <View style={{ gap: 10 }}>
-            <Text style={{ fontSize: 15, color: t.inkMuted }}>noch leer</Text>
-            <Wrap>
-              <Capsule label="Etikett" icon={(c) => <Icon name="label" size="chip" color={c} />} onPress={onEdit} />
-              <Capsule label="Selbst wählen" onPress={onEdit} />
-            </Wrap>
-          </View>
-        )}
-      </EditCard>}
-      {onAnalysis && (
-        <Pressable accessibilityRole="button" accessibilityLabel="KI-Analyse öffnen" onPress={onAnalysis}
-          style={({ pressed }) => [s.plainRow, { backgroundColor: t.surface, borderColor: t.hairline, minHeight: 52, opacity: pressed ? 0.7 : 1 }]}>
-          <Icon name="sparkle" size="row" color={t.accent} />
-          <Text style={{ flex: 1, fontSize: 16, color: t.ink }}>KI-Analyse</Text>
-          <Icon name="chevron" size="inline" color={t.inkMuted} />
-        </Pressable>
-      )}
-    </>
-  );
+  const careText = care.map((c) => { const group = CARE.find((x) => x.key === c.group); const option = group?.options.find((x) => x.id === c.v); return (group?.label ?? c.group) + ': ' + (option?.short ?? c.v) + (c.src === 'geschaetzt' ? ' (geschätzt)' : ''); }).join(', ');
+  const shown = [...rows, ...(fx.care ? [['Pflege', careText] as [string, string]] : [])].filter(([, value]) => !!value);
+  return <View style={{ gap: 0 }}>
+    {shown.map(([label, value], i) => <View key={label} style={{ minHeight: 42, paddingVertical: 9, borderBottomWidth: i < shown.length - 1 || !!onAnalysis ? 1 : 0, borderBottomColor: t.hairline, gap: 3 }}>
+      <Text style={{ fontSize: 13, color: t.inkMuted }}>{label}</Text>
+      <Text style={{ fontSize: 16, lineHeight: 22, color: t.ink }}>{value}</Text>
+    </View>)}
+    {fx.care && !careText && <View style={{ paddingVertical: 9, gap: 6 }}><Text style={{ fontSize: 13, color: t.inkMuted }}>Pflege</Text><Text style={{ fontSize: 16, color: t.inkMuted }}>Noch leer</Text><Text onPress={onEdit} style={{ fontSize: 15, color: t.accent }}>Pflegehinweise bearbeiten</Text></View>}
+    {onAnalysis && <Pressable accessibilityRole="button" accessibilityLabel="KI-Analyse öffnen" onPress={onAnalysis} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontSize: 16, color: t.ink }}>KI-Analyse</Text><Icon name="chevron" size="inline" color={t.inkMuted} /></Pressable>}
+  </View>;
 }
-
 // ---------- Kauf (Spec 5) ----------
 
 /** Shop als Domain („zalando.de“), antippen öffnet den Shop (17.11.2026, Max) */
