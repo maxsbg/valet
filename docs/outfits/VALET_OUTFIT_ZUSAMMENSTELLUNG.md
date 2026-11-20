@@ -77,6 +77,7 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
   - `date` Date 18–24 · `party` Party 20–3 (Folgetag mitlesen) · `formal` Formell 16–24 · `special_occasion` Besonderer Anlass 12–24
   - `sport` Sport 17–21 (Hin- und Rückweg) · `vacation` Urlaub 9–22 · `beach` Strand 10–19 · `other` Sonstiges 8–22
   - `loungewear` Loungewear: drinnen, Schalter „Regen berücksichtigen“ standardmäßig aus
+- **Sport drinnen/draußen (20.11.2026, Max):** kein eigener Schalter. Temperatur zählt immer (Hin- und Rückweg). Der Schalter „Regen berücksichtigen“ deckt „drinnen“ ab: bei Sport standardmäßig an (Training draußen), für Halle/Gym aus. Bewusste Lücke: Hallensport bei Regen verlangt dann keine regenfeste Außenlage.
 - **Schalter „Regen berücksichtigen“** (Standard an): aus z. B. bei Auto/Taxi oder wenn man drinnen bleibt.
 - **Regenstufe = schlimmste Stunde im Zeitraum** nach Regenmenge (mm/h, einheitlicher als der Wettercode):
   - Niesel: unter 0,5 mm/h
