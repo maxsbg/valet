@@ -335,11 +335,17 @@ const LAYER_BY_SUB: Readonly<Record<string, readonly number[]>> = {
   // Oberteil
   shirt: [0, 1, 2], blouse: [0, 1], sweatshirt: [1], hoodie: [1], sweater: [1], sweater_vest: [1], other: [],
   // Oberbekleidung
+  // Einteilung der Jacken (Max, 21.11.2026): Außen = über einen Pullover, schützt vor Kälte/Wind/Regen;
+  // leichte Übergangsjacken offen darüber oder außen; wie ein Pullover getragen = Mittellage + offen darüber
   blazer: [2], vest: [2], cardigan: [1, 2], sweat_jacket: [1, 2], overshirt: [2, 3], trucker_jacket: [2, 3], bolero: [2],
+  blouson: [2, 3], varsity_jacket: [2, 3], coach_jacket: [2, 3], field_jacket: [2, 3],
+  coat: [3], trench_coat: [3], parka: [3], puffer_jacket: [3], shearling_jacket: [3], biker_jacket: [3], sports_jacket: [3],
 };
 /** Vorgabe nach Typ (vor der Unterkategorie) */
 const LAYER_BY_TYPE: Readonly<Record<string, readonly number[]>> = {
   suit_vest: [1], knit_vest: [1], puffer_vest: [3], poncho: [3], cape: [3], robe: [],
+  // Sportjacken (Max, 21.11.2026): Trainingsjacke wie Sweatjacke, Windbreaker als Übergangsjacke
+  track_jacket: [1, 2], windbreaker: [2, 3], anorak: [3], rain_jacket: [3], thermal_jacket: [3],
 };
 const LAYER_BY_CATEGORY: Readonly<Record<string, readonly number[]>> = { top: [0], outerwear: [3], dress: [0] };
 

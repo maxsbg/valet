@@ -284,7 +284,7 @@ export function ItemEditor(p: Props) {
         fx.weather && ((last) => (
           <SimpleEditRow label="Wetter" open={!!open.weather} onToggle={() => toggle('weather')} ai={ai('warmth') || ai('rain')} last={last}
             values={[
-              ...(f.warmth != null ? [<ValueScale key="w" steps={3} on={(i) => i < f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <Icon name="thermo" size="inline" color={c} />} />] : []),
+              ...(f.warmth != null ? [<ValueScale key="w" steps={4} on={(i) => i <= f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <Icon name="thermo" size="inline" color={c} />} />] : []),
               ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <Icon name="drop" size="inline" color={c} />} />] : []),
             ]}>
             <WeatherPicker warmth={f.warmth} rain={f.rain} onWarmth={(v) => set('warmth', v)} onRain={(v) => set('rain', v)} />
