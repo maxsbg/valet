@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Valet – Outfit-Zusammenstellung</title>
+<style>body{background:#F5F0E8;color:#2a1a1d;font:16px/1.55 -apple-system,system-ui,sans-serif;max-width:680px;margin:0 auto;padding:24px 18px}h1{color:#722638;font-size:26px;line-height:1.2}h2{color:#722638;margin-top:28px}li{margin:6px 0}code{background:#fff;padding:1px 4px;border-radius:4px;font-size:14px}b{color:#722638}</style></head><body>
+<h1>Valet – Outfit-Zusammenstellung (Brainstorming, 20.11.2026)</h1>
+<p>Stand: Brainstorming mit Max, noch keine Umsetzung. Gilt für Würfel, Tagesvorschlag, „rund um ein Teil“ und später Kauf-Check/Lücken-Analyse (eine gemeinsame Logik).</p>
+<p><b>Ausgangslage:</b> Die Merkmale der Teile stehen (<code>matchTraits</code> in <code>packages/core/src/traits.ts</code>: Farbwirkung, Formalität als Bereich, Auffälligkeit, optisches Gewicht, Struktur, Lagen-Rolle, Statement; dazu Profilfelder in <code>ai/profile.ts</code> wie Metallton, Form, Glanz, Vielseitigkeit; Wetter/Saison/Lagen in <code>fields.ts</code>/<code>attributes.ts</code>). Passform (Weite/Länge) ist in <code>MatchItem.fit</code> vorgesehen, aber noch nicht ausgewertet. Es fehlt die eigentliche Kombinationslogik.</p>
+<p><b>Entschieden (Max, 20.11.2026):</b></p>
+<ul>
+<li>Keine Ampel-/Kriterien-Anzeige für den Nutzer.</li>
+<li>Wie intern bewertet wird (Score, Gewichte), wird noch gemeinsam durchgegangen – nicht selbst festlegen.</li>
+</ul>
+<h2>Die 7 Schritte</h2>
+<ol>
+<li><b>Kontext:</b> Anlass, Wetter, Datum, Person, optional Ankerteil („rund um …“).</li>
+<li><b>Gerüst:</b> benötigte Slots je Tag (Oberteil, Unterteil, Schuhe, je nach Wetter Mid-/Außenlage); Lagen-Regel mit automatischer Unterlage (meist Weiß, Schwarz nur bei dunklem Anteil).</li>
+<li><b>Harte Filter:</b> Status (Wäsche, verliehen, reserviert, eingelagert, aussortiert), Wetter, Formalitätsbereiche aller Teile müssen sich überschneiden.</li>
+<li><b>Weiche Bewertung pro Paar:</b> Farbe (Sanzo Wada, Temperatur – Mode-Neutrale <code>wearNeutral</code> lösen keinen Bruch aus), höchstens ein Statement-Teil, optisches Gewicht oben/unten im Gleichgewicht, Struktur-Mix, gleicher Metallton.</li>
+<li><b>Aufbau Schritt für Schritt:</b> mit Anker bzw. zufälligem Startteil beginnen, jeden Slot mit dem Teil füllen, das zu den bereits gewählten am besten passt; per Zufall aus den Top 3–5 ziehen, damit der Würfel nicht immer dasselbe liefert.</li>
+<li><b>Vielfalt:</b> kürzlich Getragenes abwerten, „lange nicht getragen“ leicht bevorzugen, später Vorlieben aus dem Outfit-Duell als Gewichtung.</li>
+<li><b>KI nur optional:</b> z. B. Freitext („heute etwas Mutigeres“). Alles davor läuft lokal und sofort, ohne KI-Aufruf.</li>
+</ol>
+<h2>Begriffe</h2>
+<ul>
+<li><b>Duell-Elo:</b> Jedes Outfit startet mit z. B. 1000 Punkten; ein Sieg bringt Punkte, mehr gegen stärkere Gegner → Rangliste. Wichtiger: lernen, welche Merkmale öfter gewinnen, und das in Schritt 6 einfließen lassen.</li>
+<li><b>Kosten pro Tragen fürs Outfit:</b> Summe der Kosten pro Tragen der enthaltenen Teile. Eher fürs Wrapped, für die Zusammenstellung kaum relevant.</li>
+</ul>
+<h2>Nächster Schritt</h2>
+<p>Harte Regeln und Gerüst (Schritte 2–3) gemeinsam mit Max festlegen.</p>
+<p style="margin-top:32px;color:#722638;text-align:center">valet</p></body></html>
