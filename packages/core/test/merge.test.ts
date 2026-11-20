@@ -348,8 +348,9 @@ test('Infos auf einen neueren Stand angewendet: Profil und Bildvorschläge bleib
 });
 
 test('Kategoriewechsel in Bearbeiten räumt offene KI-Werte in versteckten Feldern weg', () => {
-  const f = applyAnalysis(blank(), checkAnalysis({ colors: ['blue'], layers: [1] }), NOW);
-  assert.deepEqual(f.layers, [1]);
+  // die KI schätzt keine Lagen mehr (Vorgabe je Unterkategorie) – offener Wert hier von Hand
+  const f = { ...setField(blank(), 'layers', [1]), aiPending: ['layers'] };
+  assert.deepEqual(checkAnalysis({ colors: ['blue'], layers: [1] }).layers, []);
   const bag = setCategory(f, { category: 'bag', subcategory: null, type: null });
   assert.deepEqual(bag.layers, []); assert.ok(!bag.aiPending.includes('layers'));
   // bestätigte Werte bleiben gespeichert

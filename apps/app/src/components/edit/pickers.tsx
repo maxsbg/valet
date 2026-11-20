@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, COLORS, LAYERS, colorLabel, RAIN, WARMTH, nuancesOf, tapMainColor, tapNuance, type Care, type CareGroup, type ColorPick, type FitScale,
+  CARE, COLORS, LAYERS, LAYER_HINTS, colorLabel, RAIN, WARMTH, nuancesOf, tapMainColor, tapNuance, type Care, type CareGroup, type ColorPick, type FitScale,
   CAP_ADJUSTABLE, CAP_FITTED, CAP_FLEXFIT, COLLAR_SIZES, LETTER_DOUBLES, ONE_SIZE, PANTS_LENGTH, PANTS_WAIST, SHOE_SIZES, SHOE_THIRDS,
   composeWL, hasCollarSize, isShoeThird, pantsWaistOnly, parseWL, sizeChoices, type SizeChoice, type SizeKind, type SizeSystemAny,
 } from '@valet/core';
@@ -98,17 +98,14 @@ export function FitPicker({ scales, fit, onPick }: { scales: readonly FitScale[]
   );
 }
 
-/** Lagen: 4 Stufen von innen nach außen, mehrere möglich; darunter „Auch allein tragbar“ */
-export function LayersPicker({ layers, standalone, onToggle, onStandalone }: { layers: number[]; standalone: boolean; onToggle: (i: number) => void; onStandalone: () => void }) {
-  const t = useTheme();
+/** Lagen von innen nach außen als Kapseln, mehrere möglich; darunter Beispiele */
+export function LayersPicker({ layers, onToggle }: { layers: number[]; onToggle: (i: number) => void }) {
   return (
-    <View style={{ gap: 10 }}>
-      <Scale caption="Lagen von innen nach außen" value="" steps={LAYERS.length} on={(i) => layers.includes(i)} onPick={onToggle}
-        labels={LAYERS} a11y={(i) => `Lage: ${LAYERS[i]}`} />
-      <View style={[s.scaleHead, { minHeight: 44 }]}>
-        <Text style={{ fontSize: 15, color: t.ink }}>Auch allein tragbar</Text>
-        <Toggle on={standalone} onToggle={onStandalone} label="Auch allein tragbar" />
-      </View>
+    <View style={{ gap: 8 }}>
+      <Wrap>{LAYERS.map((l, i) => (
+        <Capsule key={l} label={l} selected={layers.includes(i)} a11y={`Lage: ${l} (${LAYER_HINTS[i]})`} onPress={() => onToggle(i)} />
+      ))}</Wrap>
+      <Hint>{LAYERS.map((l, i) => `${l}: ${LAYER_HINTS[i]}`).join(' · ')}</Hint>
     </View>
   );
 }

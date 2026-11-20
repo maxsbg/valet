@@ -4,6 +4,7 @@
 
 import { COLORS, MULTICOLOR, colorFamily, colorHex, toColorKeys, toStyleKeys } from './attributes';
 import { activeProfile, readProfile, type Range } from './ai/profile';
+import { layersOf } from './fields';
 
 // ---------- OKLCH ----------
 
@@ -218,7 +219,7 @@ export function matchTraits(item: MatchItem): MatchTraits {
   const weight = p.visual_weight ?? 3, texture = p.texture_intensity ?? 3;
   if (p.visual_weight == null || p.texture_intensity == null) partial = true;
 
-  const layers = (item.layers ?? []).filter((n) => Number.isInteger(n) && n >= 0 && n <= 3);
+  const layers = layersOf(item).filter((n) => Number.isInteger(n) && n >= 0 && n <= 3);
   const top = layers.length ? Math.max(...layers) : null;
   const layerRole = top == null ? null : top === 0 ? 'base' : top === 3 ? 'outer' : 'mid';
 

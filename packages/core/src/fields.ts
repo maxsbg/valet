@@ -68,7 +68,7 @@ export function fieldsFor(category: string | null | undefined, sub?: string | nu
         closure: !sub || TOP_CLOSURE.has(sub), strap: false, care: true };
     }
     case 'dress':
-      return { pattern: true, reversible: true, size: 'clothing', layers: false, weather: true, neckline: { label: 'Ausschnitt', options: NECKLINES }, closure: false, strap: false, care: true };
+      return { pattern: true, reversible: true, size: 'clothing', layers: true, weather: true, neckline: { label: 'Ausschnitt', options: NECKLINES }, closure: false, strap: false, care: true };
     case 'pants':
     case 'shorts':
       return { pattern: true, reversible: true, size: 'pants', layers: false, weather: true, neckline: null, closure: false, strap: false, care: true };
@@ -327,3 +327,28 @@ export function matchSize(kind: SizeKind | null, raw: string | null | undefined,
       return SIZES.numbers.includes(s) ? { system: 'numbers', size: s } : null;
   }
 }
+
+// ---------- Lagen-Vorgabe je Unterkategorie (Max, 20.11.2026) ----------
+
+/** 0 Basis · 1 Mittellage · 2 Offen darüber · 3 Außen. Fehlt ein Eintrag, gilt die Vorgabe der Kategorie (LAYER_BY_CATEGORY). */
+const LAYER_BY_SUB: Readonly<Record<string, readonly number[]>> = {
+  // Oberteil
+  shirt: [0, 1, 2], blouse: [0, 1], sweatshirt: [1], hoodie: [1], sweater: [1], sweater_vest: [1], other: [],
+  // Oberbekleidung
+  blazer: [2], vest: [2], cardigan: [1, 2], sweat_jacket: [1, 2], overshirt: [2, 3], trucker_jacket: [2, 3], bolero: [2],
+};
+/** Vorgabe nach Typ (vor der Unterkategorie) */
+const LAYER_BY_TYPE: Readonly<Record<string, readonly number[]>> = {
+  suit_vest: [1], knit_vest: [1], puffer_vest: [3], poncho: [3], cape: [3], robe: [],
+};
+const LAYER_BY_CATEGORY: Readonly<Record<string, readonly number[]>> = { top: [0], outerwear: [3], dress: [0] };
+
+/** Vorgabe der Lagen für einen Kategorie-Pfad; Kategorien ohne Lagen → [] */
+export function defaultLayers(category: string | null | undefined, sub?: string | null, type?: string | null): number[] {
+  if (!category || !fieldsFor(category, sub).layers) return [];
+  const own = (type ? LAYER_BY_TYPE[type] : undefined) ?? (category !== 'dress' && sub ? LAYER_BY_SUB[sub] : undefined) ?? LAYER_BY_CATEGORY[category] ?? [];
+  return [...own];
+}
+/** Lagen eines Teils: gespeicherte, sonst die Vorgabe der Kategorie */
+export const layersOf = (i: { category: string | null; subcategory?: string | null; item_type?: string | null; type?: string | null; layers?: readonly number[] | null }): number[] =>
+  i.layers?.length ? [...i.layers] : defaultLayers(i.category, i.subcategory, i.item_type ?? i.type);

@@ -29,7 +29,7 @@ test('Blatt: Details/Tragen plus dieselben anwendbaren Profilfelder wie im Edito
   const noProfile = analysisSections({ ...base, profile: emptyProfile() });
   assert.deepEqual(noProfile.map((s) => s.title), ['Details', 'Tragen', 'Form', 'Oberfläche', 'Wirkung']);
   assert.ok(noProfile[0]!.rows.some((r) => r.label === 'Stil' && r.value === 'Klassisch'));
-  assert.deepEqual(noProfile[1]!.rows.find((r) => r.label === 'Lagen')?.value, 'Unterlage · Mitte, zu');
+  assert.deepEqual(noProfile[1]!.rows.find((r) => r.label === 'Lagen')?.value, 'Basis · Mittellage');
   const emptySurface = noProfile.find((s) => s.key === 'surface')!;
   assert.ok(emptySurface.rows.some((r) => r.label === 'Glanz' && r.value === 'Noch nicht angegeben'));
   assert.ok(!emptySurface.rows.some((r) => r.label === 'Mustergröße'));

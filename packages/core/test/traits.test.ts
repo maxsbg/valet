@@ -152,7 +152,8 @@ test('matchTraits: ohne Profil → partial, Ersatzwerte, keine Ausnahme', () => 
   assert.equal(m.partial, true);
   assert.deepEqual(m.formality, [2, 3]);
   assert.equal(m.presence, 2); assert.equal(m.weight, 3); assert.equal(m.texture, 3);
-  assert.equal(m.layerRole, null); assert.equal(m.statement, false);
+  assert.equal(m.layerRole, 'mid'); assert.equal(m.statement, false); // ohne Lagen: Vorgabe Pullover = Mittellage
+  assert.equal(matchTraits(item({ category: 'bag', subcategory: null })).layerRole, null);
   assert.equal(m.color?.distribution, 'solid');
   assert.doesNotThrow(() => matchTraits({ ...item(), colors: null, materials: null, layers: null, styles: null, analysis: { profile: 'kaputt' } }));
 });
