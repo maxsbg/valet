@@ -61,9 +61,8 @@ export function ReadRow({ label, values, last }: { label: string; values: React.
 
 
 /**
- * Steckbrief (Spec 4, verschlankt 19.11.2026, KI-Analyse v2 Spec 14): nur Kategorie, Saison, Farben, Material, Größe,
- * Passform (Begriffe statt Skalen, fitWords) und Pflege. Muster, Stil, Kragen, Verschluss, Trägerart, Lagen und Wetter
- * stehen im Blatt „KI-Analyse“ (Zeile am Ende). Bearbeiten zeigt weiter alle Felder.
+ * Steckbrief: vollständige, schlichte Bezeichner-Wert-Liste. Neben den Grundangaben werden auch Details,
+ * Trageeigenschaften und vorhandene KI-Profilwerte angezeigt. Bearbeiten bleibt als einfache Inline-Liste bedienbar.
  */
 export function SteckbriefView({ f, onCare, onEdit, onAnalysis }: { f: EditForm; onCare: (g: CareGroup) => void; onEdit: () => void; onAnalysis?: () => void }) {
   const t = useTheme();
