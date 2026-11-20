@@ -13,7 +13,7 @@ export type Applies = (c: Ctx) => boolean;
 export type Group = 'surface' | 'shape' | 'style';
 export type Opt = { readonly key: string; readonly label: string };
 
-type Base = { key: string; label: string; group: Group; applies: Applies; only: string; hint: string };
+type Base = { key: string; label: string; group: Group; applies: Applies; only: string; hint: string; /** nur ausgeblendet (Oberfläche), Wert wird weiter gespeichert */ hidden?: boolean };
 export type ProfileField =
   | (Base & { kind: 'scale' })
   | (Base & { kind: 'range' })
@@ -119,13 +119,13 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
   { key: 'sole', kind: 'enum', label: 'Sohle', group: 'shape', applies: shoe, only: 'Schuhe', values: SOLES, hint: 'Dicke und Form der Sohle' },
   { key: 'heel', kind: 'enum', label: 'Absatz', group: 'shape', applies: shoe, only: 'Schuhe', values: HEELS, hint: 'none kein Absatz · low unter 3 cm · mid 3–7 cm · high über 7 cm' },
   { key: 'bag_size', kind: 'enum', label: 'Taschengröße', group: 'shape', applies: bag, only: 'Taschen', values: BAG_SIZES, hint: 'Größe der Tasche' },
-  { key: 'effects', kind: 'list', label: 'Wirkung', group: 'style', applies: all, only: ALL, values: EFFECTS, max: 2,
+  { key: 'effects', kind: 'list', label: 'Wirkung', group: 'style', applies: all, only: ALL, values: EFFECTS, max: 2, hidden: true, // Eindruck ausgeblendet (Max, 21.11.2026): von der Logik ungenutzt, Werte bleiben
     hint: 'höchstens 2 Begriffe, nur wenn sie klar zutreffen' },
 ];
 
-/** Profilfelder, die im aktuellen Kategorie- und Steckbrief-Kontext gelten. */
+/** Profilfelder, die im aktuellen Kategorie- und Steckbrief-Kontext gelten und angezeigt werden (ohne ausgeblendete). */
 export const profileFieldsFor = (ctx: Ctx, group?: Group): readonly ProfileField[] =>
-  PROFILE_FIELDS.filter((field) => field.applies(ctx) && (group == null || field.group === group));
+  PROFILE_FIELDS.filter((field) => !field.hidden && field.applies(ctx) && (group == null || field.group === group));
 
 // ---------- Typen ----------
 

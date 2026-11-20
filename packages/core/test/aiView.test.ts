@@ -47,7 +47,7 @@ test('Blatt: Details/Tragen plus dieselben anwendbaren Profilfelder wie im Edito
   assert.ok(!s.find((x) => x.key === 'shape')!.rows.some((r) => r.label === 'Beinverlauf'));
   assert.deepEqual(s.find((x) => x.key === 'style')!.rows, [
     { label: 'Auffälligkeit', value: 'Noch nicht angegeben' }, { label: 'Vielseitigkeit', value: 'Noch nicht angegeben' },
-    { label: 'Formalität', value: 'Casual bis Business' }, { label: 'Eindruck', value: 'Noch nicht angegeben' },
+    { label: 'Formalität', value: 'Casual bis Business' }, // Eindruck ausgeblendet (21.11.2026)
   ]);
   assert.ok(s.find((x) => x.key === 'shape')!.rows.some((r) => r.label === 'Silhouette'));
 });
