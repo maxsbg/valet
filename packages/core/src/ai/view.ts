@@ -2,7 +2,7 @@
 // Einzel-Nachanalyse und Stapellauf „Profile ergänzen“. Reine Funktionen, die App zeichnet nur.
 
 import { fitScalesOf } from '../categories';
-import { LAYERS, RAIN, WARMTH, collarLabel, closureLabel, patternLabel, styleLabel } from '../attributes';
+import { LAYERS, RAIN, WARMTH, collarLabel, closureLabel, patternLabel } from '../attributes';
 import { fieldsFor, layersOf, strapLabel } from '../fields';
 import { confirmAllAi, editChange, type EditForm } from '../edit';
 import { profileFieldsFor, activeProfile, profileLabel, type Ctx, type Group, type ProfileKey } from './profile';
@@ -91,7 +91,6 @@ export function analysisSections(f: EditForm): AnalysisSection[] {
   const details: AnalysisRow[] = [
     ...(fx.pattern ? [shown(rev ? 'Muster Seite A' : 'Muster', f.pattern ? patternLabel(f.pattern) : '')] : []),
     ...(fx.pattern && rev ? [shown('Muster Seite B', f.patternB ? patternLabel(f.patternB) : '')] : []),
-    shown('Stil', f.styles.map(styleLabel).filter(Boolean).join(', ')),
     ...(fx.neckline ? [shown(fx.neckline.label, f.collar ? collarLabel(f.collar) : '')] : []),
     ...(fx.closure ? [shown('Verschluss', f.closure ? closureLabel(f.closure) : '')] : []),
     ...(fx.strap ? [shown('Trägerart', f.strap ? strapLabel(f.strap) : '')] : []),

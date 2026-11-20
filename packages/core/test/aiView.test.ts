@@ -28,7 +28,7 @@ test('Blatt: Details/Tragen plus dieselben anwendbaren Profilfelder wie im Edito
     confidence: { category: 10, color: 9, material: 7, surface: 5, shape: 9, style: 8 } });
   const noProfile = analysisSections({ ...base, profile: emptyProfile() });
   assert.deepEqual(noProfile.map((s) => s.title), ['Details', 'Tragen', 'Form', 'Oberfläche', 'Wirkung']);
-  assert.ok(noProfile[0]!.rows.some((r) => r.label === 'Stil' && r.value === 'Klassisch'));
+  assert.ok(!noProfile[0]!.rows.some((r) => r.label === 'Stil')); // Stil entfällt (21.11.2026)
   assert.deepEqual(noProfile[1]!.rows.find((r) => r.label === 'Lagen')?.value, 'Basis · Mittellage');
   const emptySurface = noProfile.find((s) => s.key === 'surface')!;
   assert.ok(emptySurface.rows.some((r) => r.label === 'Glanz' && r.value === 'Noch nicht angegeben'));
