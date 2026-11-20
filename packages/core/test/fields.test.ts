@@ -161,6 +161,12 @@ test('Lagen-Vorgabe je Unterkategorie (Max, 20.11.2026)', () => {
   assert.deepEqual(defaultLayers('top', 'shirt'), [0, 1, 2]);
   assert.deepEqual(defaultLayers('top', 'hoodie'), [1]);
   assert.deepEqual(defaultLayers('outerwear', 'coat'), [3]);
+  // Jacken-Einteilung (Max, 21.11.2026)
+  assert.deepEqual(defaultLayers('outerwear', 'sports_jacket', 'track_jacket'), [1, 2]);
+  assert.deepEqual(defaultLayers('outerwear', 'sports_jacket', 'rain_jacket'), [3]);
+  assert.deepEqual(defaultLayers('outerwear', 'sports_jacket', 'windbreaker'), [2, 3]);
+  assert.deepEqual(defaultLayers('outerwear', 'blouson', 'bomber_jacket'), [2, 3]);
+  assert.deepEqual(defaultLayers('outerwear', 'biker_jacket'), [3]);
   assert.deepEqual(defaultLayers('outerwear', 'blazer'), [2]);
   assert.deepEqual(defaultLayers('outerwear', 'vest', 'puffer_vest'), [3]);
   assert.deepEqual(defaultLayers('outerwear', 'vest', 'suit_vest'), [1]);

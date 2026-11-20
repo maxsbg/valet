@@ -112,13 +112,13 @@ export function LayersPicker({ layers, onToggle }: { layers: number[]; onToggle:
 
 /** Wetter: Wärme 0–3 (sehr leicht … warm) und Regen 0–2 (schlecht … gut) als Balken */
 export function WeatherPicker({ warmth, rain, onWarmth, onRain }: { warmth: number | null; rain: number | null; onWarmth: (v: number | null) => void; onRain: (v: number | null) => void }) {
-  // Wärme: Wert v → v Striche (0 = „sehr leicht“ ohne Strich); Regen: Wert r → r + 1 Striche
-  const tapWarm = (i: number) => onWarmth(warmth === i + 1 ? i : warmth === i && i === 0 ? null : i + 1);
+  // Wärme: Wert v → v + 1 Striche (4 Stufen sichtbar, Max 21.11.2026); Regen: Wert r → r + 1 Striche; gleichen Strich erneut → leer
+  const tapWarm = (i: number) => onWarmth(warmth === i ? null : i);
   const tapRain = (i: number) => onRain(rain === i ? (i === 0 ? null : i - 1) : i);
   return (
     <View style={{ gap: 14 }}>
-      <Scale caption="Wärme" icon="thermo" value={warmth == null ? '–' : WARMTH[warmth]!} steps={3} on={(i) => warmth != null && i < warmth}
-        onPick={tapWarm} a11y={(i) => `Wärme: ${WARMTH[i + 1]}`} />
+      <Scale caption="Wärme" icon="thermo" value={warmth == null ? '–' : WARMTH[warmth]!} steps={4} on={(i) => warmth != null && i <= warmth}
+        onPick={tapWarm} a11y={(i) => `Wärme: ${WARMTH[i]}`} />
       <Scale caption="Regen" icon="drop" value={rain == null ? '–' : RAIN[rain]!} steps={3} on={(i) => rain != null && i <= rain}
         onPick={tapRain} a11y={(i) => `Regen: ${RAIN[i]}`} />
     </View>
