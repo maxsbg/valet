@@ -23,6 +23,59 @@ Stand: Brainstorming mit Max, noch keine Umsetzung. Gilt für Würfel, Tagesvors
 - **Duell-Elo:** Jedes Outfit startet mit z. B. 1000 Punkten; ein Sieg bringt Punkte, mehr gegen stärkere Gegner → Rangliste. Wichtiger: lernen, welche Merkmale öfter gewinnen, und das in Schritt 6 einfließen lassen.
 - **Kosten pro Tragen fürs Outfit:** Summe der Kosten pro Tragen der enthaltenen Teile. Eher fürs Wrapped, für die Zusammenstellung kaum relevant.
 
+## Gerüst und harte Regeln (entschieden 20.11.2026, Max)
+
+Gilt zunächst nur für die **Tagesplanung** (ein Outfit für einen Tag). Andere Modi (Würfel frei, Packliste, Kauf-Check …) später gesondert prüfen.
+
+### Gerüst
+
+- Immer: Unterteil + Basis-Oberteil (oder Kleid) + Schuhe.
+- Nach gefühlter Temperatur des Tages:
+  - ab 24 °: nur Basis, Shorts erlaubt, keine Außenlage; dünne Hemden erlaubt
+  - 17–23 °: Basis, optional Mittellage oder Offen darüber
+  - 10–16 °: Basis + Mittellage oder Offen darüber, leichte Jacke optional
+  - 3–9 °: Basis + Mittellage + Außenlage
+  - unter 3 °: wie 3–9 °, Schal/Mütze optional
+- Lagen-Regel: Teile mit durchgehender Knopfleiste **oder durchgehendem Zip** (Hemd, Overshirt, Zip-Hoodie, Trainingsjacke, Fleece) brauchen eine Basis darunter, außer unter einem Pullover. Sommer-Ausnahme (offen ohne Shirt) **nur für Hemden**, nicht für Zips. Henley/Quarter-Zip zählen nicht. Unterlage automatisch ergänzen (Weiß ≈ 90 %, Schwarz nur bei dunklem Anteil).
+- Accessoires (Kappe, Gürtel, Tasche, Schmuck) nicht in Version 1.
+
+### Wärme je Teil (`warmth` 0–3: sehr leicht · leicht · mittel · warm)
+
+Keine Wärme-Summe, sondern Grenzen je Teil:
+- ab 24 °: höchstens „leicht“
+- 17–23 °: höchstens „mittel“ (z. B. Wollhose fliegt raus)
+- 10–16 °: alles erlaubt
+- unter 10 °: „sehr leicht“ fliegt raus, keine Shorts
+- Außenlage zusätzlich: 3–9 ° mindestens „mittel“, unter 3 ° „warm“
+
+### Harte Filter
+
+1. Status: nur „Im Schrank“. Eingelagerte nur über einen **Schalter** (oder als selbst gewähltes Ankerteil).
+2. Reservierung: an dem Tag für jemand anderen reservierte Teile fallen raus.
+3. Saison: aktuelle Saison oder keine angegeben.
+4. Regen (`rain` 0–2: schlecht · mittel · gut):
+   - Niesel: nichts fliegt raus, „schlecht“ wird nur abgewertet (weiche Bewertung)
+   - Regen: Außenlage und Schuhe mindestens „mittel“
+   - Starkregen: Außenlage „gut“, Schuhe mindestens „mittel“
+5. Formalität: Bereiche aller Teile überschneiden sich und treffen den Bereich des Anlasses (z. B. Sport 1, Campus 1–3, Büro 3–4, Formell 4–5).
+6. Sets: **nicht** automatisch mitnehmen. Logik offen, wahrscheinlich nur „Set kommt eher in Frage“.
+
+### Teile anderer Personen (z. B. Paul)
+
+- Schalter beim Planen: „Nur meins“ / „Beide Schränke“.
+- Fremdes Teil im Outfit → immer Anfrage: die andere Person bekommt eine Mitteilung, nach Bestätigung wird reserviert.
+- Keine zwei festen Modi („zusammen wohnen“/„separat“), sondern eine Einstellung je verbundenem Schrank: „Teile sind sofort greifbar“ ja/nein. Bei „nein“ fremde Teile erst ab morgen vorschlagen (müssen abgeholt werden).
+
+### Wetter
+
+- Quelle vorerst **Open-Meteo** (kostenlos, ohne Schlüssel/Karte) hinter einer eigenen austauschbaren Schnittstelle (z. B. `WeatherProvider` → einheitliches Tageswetter: gefühlte Temperatur, Regenstufe). 
+- **Vermerk:** in der iOS-App später **WeatherKit** als weitere Quelle anschließen, ohne die Logik zu ändern.
+- Regenstufe aus den Stundenwerten des Tages festlegen – Grenzen noch mit Max abstimmen.
+
+### Vielfalt
+
+„Lange nicht getragen“ leicht bevorzugen (Schritt 6); zusätzlich ein Modus „nur lange nicht Getragenes“ (Max: ja).
+
 ## Nächster Schritt
 
-Harte Regeln und Gerüst (Schritte 2–3) gemeinsam mit Max festlegen.
+Regen-Grenzen festlegen, dann Schritt 4 (weiche Bewertung) gemeinsam mit Max durchgehen.
