@@ -2906,10 +2906,6 @@ packages:
 
 snapshots:
 
-  '@jsquash/webp@1.5.0':
-    dependencies:
-      wasm-feature-detect: 1.9.0
-
   2g@1.0.1(typescript@6.0.3):
     optionalDependencies:
       typescript: 6.0.3
@@ -3902,6 +3898,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@jsquash/webp@1.5.0':
+    dependencies:
+      wasm-feature-detect: 1.9.0
 
   '@noxcturnal/noxcturnal-darwin-arm64@0.1.12':
     optional: true
