@@ -149,8 +149,6 @@ export async function createItem(wardrobeId: string, data: NewItem | Record<stri
   return id;
 }
 
-const ext = (_b: Blob) => 'webp';
-
 /** Speichert Bild + Vorschaubild einer Seite. Neuer Dateiname bei jedem Speichern, damit der Browser-Zwischenspeicher nie ein altes Bild zeigt. */
 export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 'b', p: Picture, legacyId: string | null = null) {
   // Auch ältere/gespiegelte Picture-Blobs vor dem Upload normalisieren – Storage bekommt ausschließlich WebP.
@@ -159,11 +157,11 @@ export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 
   if (main.type !== 'image/webp' || thumb.type !== 'image/webp') throw new Error('Bilder müssen vor dem Upload in WebP umgewandelt werden.');
   const stamp = Date.now().toString(36);
   const base = `${wardrobeId}/${itemId}/${side}-${stamp}`;
-  const mainPath = `${base}.${ext(main)}`;
-  const thumbPath = `${base}-thumb.${ext(thumb)}`;
+  const mainPath = `${base}.webp`;
+  const thumbPath = `${base}-thumb.webp`;
   const bucket = supabase.storage.from('items');
-  const opts = (b: Blob) => ({ contentType: 'image/webp', cacheControl: '31536000', upsert: false });
-  const [m, t] = await Promise.all([bucket.upload(mainPath, main, opts(main)), bucket.upload(thumbPath, thumb, opts(thumb))]);
+  const opts = { contentType: 'image/webp', cacheControl: '31536000', upsert: false };
+  const [m, t] = await Promise.all([bucket.upload(mainPath, main, opts), bucket.upload(thumbPath, thumb, opts)]);
   const upErr = m.error ?? t.error;
   if (upErr) {
     await bucket.remove([mainPath, thumbPath]);
