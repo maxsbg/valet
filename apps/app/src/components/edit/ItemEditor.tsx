@@ -239,7 +239,7 @@ export function ItemEditor(p: Props) {
         fx.pattern && reversible && textRow('patternB', 'Muster Seite B', PATTERNS),
         (last) => (
           <SimpleEditRow label="Material" open={!!open.material} onToggle={() => toggle('material')} ai={ai('materials')} last={last}
-            values={capsules(f.materials.map((m) => materialLabel(m.name)))}>
+            values={capsules(f.materials.map((m) => m.pct != null ? `${materialLabel(m.name)} ${m.pct} %` : materialLabel(m.name)))}>
             <Wrap>{MATERIALS.map((m) => {
               const r = materialRank(f.materials, m.key);
               return <Capsule key={m.key} label={m.label} selected={r > 0} a11y={r ? `${m.label}, Rang ${r}` : m.label} leading={r ? <RankBadge n={r} /> : undefined}
