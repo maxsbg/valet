@@ -68,7 +68,7 @@ function SimpleEditRow({ label, values, ai, last, children }: { label: string; v
   const t = useTheme();
   return <View style={{ paddingVertical: 10, borderBottomWidth: last ? 0 : 1, borderBottomColor: t.hairline, gap: 8 }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Text style={{ flex: 1, fontSize: 15, color: t.inkMuted }}>{label}</Text>{ai && <KiBadge />}</View>
-    <Text style={{ fontSize: 15, lineHeight: 21, color: values.length ? t.ink : t.inkMuted }}>{values.length ? values.map((v, i) => <React.Fragment key={i}>{i ? ', ' : ''}{v}</React.Fragment>) : 'Noch nicht angegeben'}</Text>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>{values.length ? values : <Text style={{ fontSize: 15, color: t.inkMuted }}>Noch nicht angegeben</Text>}</View>
     {children}
   </View>;
 }
