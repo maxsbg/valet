@@ -37,7 +37,8 @@ const WISH_LABEL: Record<WishTag, string> = { nextcop: 'Next Cop', grail: 'Grail
 type Props = {
   title: string;
   form: EditForm;
-  onForm: (f: EditForm) => void;
+  /** neuer Stand oder Rechnung auf dem aktuellsten Stand (für Ergebnisse, die erst später ankommen) */
+  onForm: (f: EditForm | ((cur: EditForm) => EditForm)) => void;
   persons: Person[];
   meId: string | null;
   wishlists: Wishlist[];
@@ -429,7 +430,7 @@ export function ItemEditor(p: Props) {
           )}
         </View>
       </Page>
-      <InfoSheet open={info} onClose={() => setInfo(false)} onResult={(r) => onForm(applyInfo(f, r))} />
+      <InfoSheet open={info} onClose={() => setInfo(false)} onResult={(r) => onForm((cur) => applyInfo(cur, r))} />
     </KeyboardAvoidingView>
   );
 }

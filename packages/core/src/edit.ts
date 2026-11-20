@@ -1,7 +1,7 @@
 // Bearbeiten-Seite (auch „Neues Teil prüfen“) – Formular-Modell (VALET_DETAILSEITE_SPEC.md, Abschnitte 7 und 7a)
 // Plattformunabhängig: Laden aus der Datenbank-Zeile, Ändern, Prüfen, zurück in eine Datenbank-Änderung.
 
-import { isValidPath, type FitScale } from './categories';
+import { fitScalesOf, isValidPath, type FitScale } from './categories';
 import { fitFromName, nameFitFor } from './fitName';
 import { COLLAR_LIST, CLOSURES, MAX_COLORS, ONE_SIZE, PATTERNS, colorLabel, materialLabel, migrateSeasons, styleLabel, toColorKeys, toMaterialParts, toStyleKeys, type Care, type MaterialPart } from './attributes';
 import { toKey } from './keys';
@@ -118,7 +118,7 @@ function withPendingSrc(f: Pick<EditForm, 'analysisBase' | 'aiPending'>): Record
   if (!isObj(base) || !('src' in base)) return base;
   const { src, ...rest } = base;
   const pending = new Set(f.aiPending);
-  const kept = isObj(src) ? Object.fromEntries(Object.entries(src).filter(([k]) => pending.has(k.split('.')[0]!))) : {};
+  const kept = isObj(src) ? Object.fromEntries(Object.entries(src).filter(([k]) => pending.has(k) || pending.has(k.split('.')[0]!))) : {};
   return Object.keys(kept).length ? { ...rest, src: kept } : rest;
 }
 
@@ -128,15 +128,64 @@ function withPendingSrc(f: Pick<EditForm, 'analysisBase' | 'aiPending'>): Record
 export function setField<K extends keyof EditForm>(f: EditForm, k: K, v: EditForm[K]): EditForm {
   return { ...f, [k]: v, aiPending: f.aiPending.filter((x) => x !== k && !x.startsWith(`${String(k)}.`)) };
 }
+/**
+ * Offene KI-Werte in Feldern, die es für den endgültigen Pfad nicht gibt (Spec 8a „Die KI füllt nur die gezeigten Felder“),
+ * wieder leeren und aus aiPending nehmen – sonst stünden versteckte, nie bestätigbare Vorschläge im Formular.
+ * Vom Nutzer gesetzte (bestätigte) Werte bleiben wie immer gespeichert.
+ */
+export function dropHidden(f: EditForm): EditForm {
+  const open = new Set(f.aiPending);
+  if (!open.size || !f.category) return f; // ohne Kategorie ist noch nichts endgültig
+  const fx = fieldsFor(f.category, f.subcategory);
+  const out: EditForm = { ...f };
+  const drop: string[] = [];
+  const clear = <K extends keyof EditForm>(k: K, empty: EditForm[K], hidden: boolean) => {
+    if (hidden && open.has(k)) { out[k] = empty; drop.push(k); }
+  };
+  clear('pattern', null, !fx.pattern);
+  clear('collar', null, !!f.collar && !(fx.neckline?.options.some((o) => o.key === f.collar)));
+  clear('closure', null, !fx.closure);
+  clear('strap', null, !fx.strap);
+  clear('layers', [], !fx.layers);
+  clear('warmth', null, !fx.weather);
+  clear('rain', null, !fx.weather);
+  clear('size', null, fx.size == null);
+  if (open.has('fit')) {
+    const scales = new Set(fitScalesOf(f.category).map((sc) => sc.key));
+    const fit = { ...f.fit };
+    for (const k of ['width', 'length', 'rise'] as const) if (!scales.has(k)) fit[k] = null;
+    out.fit = fit;
+    if (fit.width == null && fit.length == null && fit.rise == null) drop.push('fit');
+  }
+  if (!fx.care) {
+    if (open.has('care')) { out.care = {}; drop.push('care'); }
+    // einzeln vorgeschlagene Gruppen (care.dry …) ebenso entfernen
+    for (const k of open) if (k.startsWith('care.')) { const g = k.slice(5) as keyof Care; const c = { ...out.care }; delete c[g]; out.care = c; drop.push(k); }
+  }
+  // offene Markierungen ohne Wert (z. B. Größe, die setCategory geleert hat) nicht stehen lassen
+  for (const k of open) if (emptyValue(out, k)) drop.push(k);
+  return drop.length ? { ...out, aiPending: out.aiPending.filter((k) => !drop.includes(k)) } : out;
+}
+
+/** Ist das Formularfeld leer? (unbekannte Schlüssel gelten als nicht leer) */
+function emptyValue(f: EditForm, k: string): boolean {
+  if (k === 'fit') return f.fit.width == null && f.fit.length == null && f.fit.rise == null;
+  if (k === 'care') return Object.keys(f.care).length === 0;
+  if (!(k in f)) return false;
+  const v = (f as unknown as Record<string, unknown>)[k];
+  return v == null || v === '' || (Array.isArray(v) && v.length === 0);
+}
+
 /** Kategorie ändern: Pfad setzen und das Größen-System an die neue Art anpassen (z. B. Hose → W/L, Schuh → EU) */
 export function setCategory(f: EditForm, p: { category: string | null; subcategory: string | null; type: string | null }): EditForm {
   const before = fieldsFor(f.category, f.subcategory).size, after = fieldsFor(p.category, p.subcategory).size;
   let next = setField(setField(setField(f, 'category', p.category), 'subcategory', p.subcategory), 'type', p.type);
-  if (before === after) return next;
+  if (before === after) return dropHidden(next);
   // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose, Handschuh, Mütze …): bleibt stehen (Max, 15.11.2026).
   // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.
   const keepLetters = f.sizeSystem === 'letters' && !!f.size && kindHasLetters(after);
-  return keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null };
+  // offene KI-Werte in Feldern, die es für die neue Kategorie nicht gibt, fallen weg (auch beim Wählen in Bearbeiten)
+  return dropHidden(keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null });
 }
 
 /** Passform noch offen: leer oder nur unbestätigt vorgeschlagen (vom Nutzer bestätigte Passform bleibt immer) */

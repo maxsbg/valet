@@ -81,3 +81,11 @@ test('Leere Info erkennen, Seiten-Prompt bleibt unter der Grenze der Edge Functi
   const p = readPagePrompt({ name: big, brand: big, price: 1, currency: big, sku: big, color: big, material: big, description: big, shop: big });
   assert.ok(p.length < 4000, String(p.length));
 });
+
+test('Etikett ohne übernehmbare Angaben gilt als leer; Einheitsgröße wird erkannt', () => {
+  assert.equal(infoUsable(checkInfo({ kind: 'label', category: 'top/shirt', colors: ['red'] })), false);
+  assert.equal(infoUsable(checkInfo({ kind: 'shop', category: 'top/shirt' })), true);
+  assert.equal(infoUsable(checkInfo({ category: 'top/shirt' }), 'label'), false);
+  assert.equal(checkInfo({ size: 'Einheitsgröße' }).size, 'One Size');
+  assert.equal(checkInfo({ size: 'W32 / L34 (Regular)' }).size, 'W32 / L34 (Regular)');
+});

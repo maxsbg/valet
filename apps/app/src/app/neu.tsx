@@ -238,7 +238,7 @@ export default function Neu() {
 
   if (step === 'form' && f) return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
+      <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
         wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
         onPic={(side, p) => (side === 'b' ? setPicB(p) : setPicture(p))} hex={picture?.colors[0]?.h ?? null}
         saving={saving} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setStep('start'); }} onError={(m) => toast.show(m)}

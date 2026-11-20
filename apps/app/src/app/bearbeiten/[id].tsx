@@ -88,7 +88,7 @@ export default function Bearbeiten() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ItemEditor title="Bearbeiten" form={f} onForm={setF} persons={wardrobe?.persons ?? []} meId={me?.id ?? null} wishlists={wardrobe?.wishlists ?? []}
+      <ItemEditor title="Bearbeiten" form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null} wishlists={wardrobe?.wishlists ?? []}
         current={current} pics={pics} onPic={(side, p) => setPics((x) => ({ ...x, [side]: p }))} hex={tile?.hex ?? null}
         saving={saving} onCancel={close} onSave={save} onDelete={() => setConfirmDelete(true)} initialTab={reiter === 'kauf' ? 'kauf' : 'steck'}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: id, setId: orig.set_id }}

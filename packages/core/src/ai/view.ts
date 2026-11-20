@@ -28,8 +28,10 @@ export function fitWords(f: Pick<EditForm, 'category' | 'subcategory' | 'pattern
   const form = legs ? profileLabel('leg', p.leg) : profileLabel('silhouette', p.silhouette);
   const set = fitScalesOf(f.category).filter((sc) => f.fit[sc.key] != null);
   const words = set.map((sc) => sc.steps[f.fit[sc.key]!] ?? '');
-  // gleiches Wort mehrfach (z. B. „normal“ bei Weite, Länge und Bund) → mit Bezeichnung: „Weite normal · Länge normal“
-  const scales = set.map((sc, i) => (words.filter((w) => w === words[i]).length > 1 ? `${sc.label} ${words[i]}` : cap(words[i]!)));
+  // Spec 14.2 („Zulaufend · Normal · Lang · Hoch“): Wörter für sich; nur doppelte Wörter bekommen die Bezeichnung
+  // („Weite normal · Länge normal“). Bezeichnung immer davor wäre eindeutiger – offen für Max.
+  const labelled = (i: number) => words.filter((w) => w === words[i]).length > 1;
+  const scales = set.map((sc, i) => (labelled(i) ? `${sc.label} ${words[i]}` : cap(words[i]!)));
   const shoulder = p.shoulder && p.shoulder !== 'natural' ? profileLabel('shoulder', p.shoulder) : '';
   return [form, ...scales, shoulder].filter(Boolean);
 }

@@ -1,6 +1,6 @@
 // „Infos auslesen“ (Spec 7, Leinwand „H · Infos auslesen“): Etikett / Shop-Screenshot / Bestellbestätigung, dann Kamera oder Fotos.
 // Die KI (lib/ki.ts → readInfo) liest das Bild aus; das Ergebnis übernimmt der Editor als markierte Vorschläge.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/lib/theme';
 import { Sheet } from '@/components/Sheet';
@@ -22,16 +22,23 @@ export function InfoSheet({ open, onClose, onResult }: { open: boolean; onClose:
   const [kind, setKind] = useState<InfoKind | null>(null);
   const [state, setState] = useState<'idle' | 'busy' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const close = () => { setKind(null); setState('idle'); onClose(); };
+  // Laufnummer: Schließen/Abbrechen macht ein noch laufendes Auslesen ungültig (Ergebnis wird verworfen)
+  const run = useRef(0);
+  const close = () => { run.current++; setKind(null); setState('idle'); onClose(); };
   const pick = (f: File) => {
+    const n = ++run.current;
     setState('busy');
     readInfo(f, kind)
       // ausdrücklich gewählte Art gilt für die Rangfolge (z. B. Etikett: nur Material, Größe, Pflege …)
       .then((info) => {
-        if (!infoUsable(info)) { setMessage('Auf dem Bild war nichts Lesbares zu finden.'); setState('error'); return; }
+        if (n !== run.current) return;
+        if (!infoUsable(info, kind === 'label' ? 'label' : null)) { setMessage(kind === 'label' ? 'Auf dem Etikett war nichts Passendes zu finden (Marke, Material, Größe, Pflege).' : 'Auf dem Bild war nichts Lesbares zu finden.'); setState('error'); return; }
         onResult(kind ? { ...info, kind } : info); close();
       })
-      .catch(async (e) => { const { code, status } = await kiError(e); setMessage(kiMessage(code, status)); setState('error'); });
+      .catch(async (e) => {
+        if (n !== run.current) return;
+        const { code, status } = await kiError(e); setMessage(kiMessage(code, status)); setState('error');
+      });
   };
   return (
     <Sheet open={open} onClose={close} title="Infos auslesen" head={<SheetHead title="Infos auslesen" onCancel={close} onDone={close} />}>

@@ -106,8 +106,9 @@ export async function startBatch(wardrobeId: string) {
       const path = paths.get(r.id);
       if (!path) { // kein Bild: kein Aufruf, nur vermerken (frisch gelesen, falls inzwischen analysiert)
         const now = await loadRow(r.id).catch(() => null);
-        if (now && batchPending(now.analysis)) await save(r.id, failedPatch(now.analysis)).catch(() => {});
-        set({ failed: state.failed + 1 });
+        const patch = now && batchPending(now.analysis) ? failedPatch(now.analysis) : null;
+        if (patch) await save(r.id, patch).catch(() => {});
+        if (patch && batchSkipped(patch.analysis)) set({ skipped: state.skipped + 1 }); else set({ failed: state.failed + 1 });
         continue;
       }
       if (usedToday() >= BATCH_PER_DAY) { set({ phase: 'paused', message: `Tagesgrenze erreicht (${BATCH_PER_DAY}). Morgen geht es weiter.` }); return; }
@@ -132,8 +133,10 @@ export async function startBatch(wardrobeId: string) {
         }
         pausedOn = null;
         const now = await loadRow(r.id).catch(() => null);
-        await save(r.id, failedPatch((now ?? r).analysis)).catch(() => {});
-        set({ failed: state.failed + 1 });
+        const patch = failedPatch((now ?? r).analysis);
+        await save(r.id, patch).catch(() => {});
+        // dritter Fehlversuch: ab jetzt übersprungen (nicht „wird erneut versucht“)
+        if (batchSkipped(patch.analysis)) set({ skipped: state.skipped + 1 }); else set({ failed: state.failed + 1 });
         rejectedRun = code === 'model_rejected' ? rejectedRun + 1 : 0;
         if (rejectedRun >= BATCH_MAX_REJECTED_RUN) {
           set({ phase: 'paused', message: `${BATCH_MAX_REJECTED_RUN} Teile hintereinander abgelehnt – vermutlich ein Problem bei der KI. Später „Weiter“ tippen.` });

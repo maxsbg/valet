@@ -5,7 +5,7 @@
 
 import { categoryName, fitScalesOf, subcategoryName, typeName, type CategoryPath, type FitScale } from '../categories';
 import { colorLabel, materialLabel, patternLabel, type Care, type CareGroup, type MaterialPart } from '../attributes';
-import { setField, setCategory, fitOpen, type EditForm } from '../edit';
+import { dropHidden, setField, setCategory, fitOpen, type EditForm } from '../edit';
 import { fieldsFor, matchSize } from '../fields';
 import { fitFromName, fitTermsIn, nameFitFor } from '../fitName';
 import { PROFILE_FIELDS, aiMeta, clearInactive, emptyConfidence, emptyProfile, type AnalysisSource, type Ctx, type Profile } from './profile';
@@ -48,7 +48,7 @@ function withOrigins(f: EditForm, set: Record<string, Origin>): EditForm {
   // nur Einträge zu Feldern behalten, die noch offen sind (bestätigte brauchen keine Herkunft mehr)
   const pending = new Set(f.aiPending);
   const all = { ...originsOf(f), ...set };
-  const src = Object.fromEntries(Object.entries(all).filter(([k]) => pending.has(k.split('.')[0]!)));
+  const src = Object.fromEntries(Object.entries(all).filter(([k]) => pending.has(k) || pending.has(k.split('.')[0]!)));
   return { ...f, analysisBase: { ...f.analysisBase, src } };
 }
 
@@ -185,17 +185,25 @@ function applyExtras(form: EditForm, info: Info, from: InfoSource): EditForm {
     if (cur) {
       if (cur.src === 'hand') continue;
       const own = origins[`care.${g}`];
-      const replaceable = cur.src === 'geschaetzt' || (careOpen && own != null && RANK[own] <= RANK[from]);
+      const groupOpen = careOpen || open.has(`care.${g}`);
+      const replaceable = cur.src === 'geschaetzt' || (groupOpen && own != null && RANK[own] <= RANK[from]);
       if (!replaceable) continue;
     }
     if (JSON.stringify(cur) === JSON.stringify(v)) continue;
     care[g] = v; careOrigin[`care.${g}`] = from;
   }
   if (Object.keys(careOrigin).length) {
-    // setField nimmt 'care' aus aiPending → Herkunft der übrigen offenen Gruppen bewahren
-    const keep = careOpen ? Object.fromEntries(Object.entries(origins).filter(([k]) => k.startsWith('care.'))) : {};
-    f = setField(f, 'care', care);
-    marked.push('care'); Object.assign(origin, keep, careOrigin);
+    const confirmed = !careOpen && Object.keys(f.care).some((g) => !open.has(`care.${g}`));
+    if (confirmed) {
+      // bestätigte Gruppen bleiben bestätigt: nur die neuen Gruppen werden markiert (aiPending „care.dry“ …)
+      f = { ...f, care };
+      marked.push(...Object.keys(careOrigin)); Object.assign(origin, careOrigin);
+    } else {
+      // setField nimmt 'care' (und 'care.*') aus aiPending → Herkunft der übrigen offenen Gruppen bewahren
+      const keep = Object.fromEntries(Object.entries(origins).filter(([k]) => k.startsWith('care.')));
+      f = setField(f, 'care', care);
+      marked.push('care'); Object.assign(origin, keep, careOrigin);
+    }
   }
   return withOrigins(addPending(f, marked), origin);
 }
@@ -249,50 +257,6 @@ function applyNameFit(f: EditForm): EditForm {
 }
 /** Info ohne Inhalt (für das Nachziehen der Größe in `late`); item wird dort nicht gelesen */
 const noInfo = (): Info => ({ kind: null, item: NO_FACTS, shop: null, price: null, listPrice: null, purchaseDate: null, size: null, articleNo: null, care: {} });
-
-/**
- * Offene KI-Werte in Feldern, die es für den endgültigen Pfad nicht gibt (Spec 8a „Die KI füllt nur die gezeigten Felder“),
- * wieder leeren und aus aiPending nehmen – sonst stünden versteckte, nie bestätigbare Vorschläge im Formular.
- * Vom Nutzer gesetzte (bestätigte) Werte bleiben wie immer gespeichert.
- */
-function dropHidden(f: EditForm): EditForm {
-  const open = new Set(f.aiPending);
-  if (!open.size || !f.category) return f; // ohne Kategorie ist noch nichts endgültig
-  const fx = fieldsFor(f.category, f.subcategory);
-  const out: EditForm = { ...f };
-  const drop: string[] = [];
-  const clear = <K extends keyof EditForm>(k: K, empty: EditForm[K], hidden: boolean) => {
-    if (hidden && open.has(k)) { out[k] = empty; drop.push(k); }
-  };
-  clear('pattern', null, !fx.pattern);
-  clear('collar', null, !!f.collar && !(fx.neckline?.options.some((o) => o.key === f.collar)));
-  clear('closure', null, !fx.closure);
-  clear('strap', null, !fx.strap);
-  clear('layers', [], !fx.layers);
-  clear('warmth', null, !fx.weather);
-  clear('rain', null, !fx.weather);
-  clear('size', null, fx.size == null);
-  if (open.has('fit')) {
-    const scales = new Set(fitScalesOf(f.category).map((sc) => sc.key));
-    const fit = { ...f.fit };
-    for (const k of ['width', 'length', 'rise'] as const) if (!scales.has(k)) fit[k] = null;
-    out.fit = fit;
-    if (fit.width == null && fit.length == null && fit.rise == null) drop.push('fit');
-  }
-  if (!fx.care && open.has('care')) { out.care = {}; drop.push('care'); }
-  // offene Markierungen ohne Wert (z. B. Größe, die setCategory geleert hat) nicht stehen lassen
-  for (const k of open) if (emptyValue(out, k)) drop.push(k);
-  return drop.length ? { ...out, aiPending: out.aiPending.filter((k) => !drop.includes(k)) } : out;
-}
-
-/** Ist das Formularfeld leer? (unbekannte Schlüssel gelten als nicht leer) */
-function emptyValue(f: EditForm, k: string): boolean {
-  if (k === 'fit') return f.fit.width == null && f.fit.length == null && f.fit.rise == null;
-  if (k === 'care') return Object.keys(f.care).length === 0;
-  if (!(k in f)) return false;
-  const v = (f as unknown as Record<string, unknown>)[k];
-  return v == null || v === '' || (Array.isArray(v) && v.length === 0);
-}
 
 const NO_FACTS: Analysis = {
   path: { category: null, subcategory: null, type: null }, name: null, brand: null, colors: [], pattern: null, materials: [], styles: [], seasons: [],

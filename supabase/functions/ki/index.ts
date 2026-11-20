@@ -201,7 +201,10 @@ Deno.serve(async (req: Request) => {
         .download(imagePath!);
       if (storageError || !fileBlob) {
         console.warn("storage download failed", storageError?.message);
-        return jsonResponse({ error: `Failed to download image from bucket '${storageBucket}'` }, 404);
+        // nur echtes „nicht gefunden“ als 404 (Fehlversuch am Teil); sonst vorübergehend → 503 (Stapellauf pausiert)
+        const status = (storageError as { statusCode?: string | number } | null)?.statusCode;
+        const missing = !storageError || String(status) === "404" || /not.?found/i.test(storageError.message ?? "");
+        return jsonResponse({ error: missing ? "image_not_found" : "storage_unavailable" }, missing ? 404 : 503);
       }
       mimeType = fileBlob.type || "image/jpeg";
       // gleiche Grenzen wie für mitgeschickte Bilder (Base64 ist ~4/3 der Bytes)
@@ -250,7 +253,8 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "config_error" }, 503);
     }
     // Liegt es an der Anfrage selbst (nicht an Überlast), soll der Stapellauf das Teil als Fehlversuch zählen statt zu pausieren
-    if (rejected > 0 && rejected + limited === attempted && attempted === models.length) return jsonResponse({ error: "model_rejected" }, 422);
+    // nur, wenn kein Modell am Kontingent hing (gemischt → lieber pausieren als dem Teil einen Fehlversuch anrechnen)
+    if (rejected > 0 && limited === 0 && rejected === attempted && attempted === models.length) return jsonResponse({ error: "model_rejected" }, 422);
     // Fehlertext des Anbieters nur ins Log, nicht an die App
     return jsonResponse({ error: "AI request failed" }, 502);
   } catch (err) {

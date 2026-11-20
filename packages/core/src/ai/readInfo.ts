@@ -4,6 +4,8 @@
 import { MATERIALS, CARE, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { ANALYZE_ITEM_PROPS, CATEGORY_PATHS, categoryDescription, checkAnalysis, type Analysis, type JsonSchema } from './analyzeItem';
 import { emptyConfidence, emptyProfile } from './profile';
+import { ONE_SIZE } from '../attributes';
+import type { InfoSource } from './origin';
 import { toKey } from '../keys';
 
 export type InfoKind = 'label' | 'shop' | 'order';
@@ -89,6 +91,13 @@ export type Info = {
 type Raw = Record<string, unknown>;
 const str = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 const money = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v < 100000 ? Math.round(v * 100) / 100 : null);
+/** Größe als Text (bis 30 Zeichen, erst danach mit der Liste abgeglichen); „Einheitsgröße“/„OS“ → One Size */
+function readSize(v: unknown): string | null {
+  const t = typeof v === 'string' ? v.trim().replace(/\s+/g, ' ').slice(0, 30) : '';
+  if (!t) return null;
+  return /^(einheitsgr(ö|oe)(ß|ss)e|one ?size|os|onesize|unisize)$/i.test(t) ? ONE_SIZE : t;
+}
+
 /** JJJJ-MM-TT, nur echte Kalendertage (2026-02-30 → null) */
 const date = (v: unknown) => {
   if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
@@ -120,13 +129,19 @@ export function checkInfo(raw: unknown): Info {
   return {
     kind, item, care,
     shop: str(r.shop, 40), price: money(r.price), listPrice: money(r.list_price), purchaseDate: date(r.purchase_date),
-    size: str(r.size, 12), articleNo: str(r.article_no, 40),
+    size: readSize(r.size), articleNo: str(r.article_no, 40),
   };
 }
 
-/** Hat die ausgelesene Info überhaupt etwas ergeben? (leer → dem Nutzer sagen statt still schließen) */
-export function infoUsable(i: Info): boolean {
+/**
+ * Hat die ausgelesene Info etwas ergeben, das die Quelle auch liefern darf? (sonst dem Nutzer sagen statt still schließen)
+ * Etikett: nur Marke, Material, Größe, Pflege, Artikelnummer (wie beim Übernehmen).
+ */
+export function infoUsable(i: Info, from: InfoSource | null = null): boolean {
   const it = i.item;
+  if ((from ?? (i.kind === 'label' ? 'label' : null)) === 'label') {
+    return !!(it.brand || it.materials.length || i.size || i.articleNo || Object.keys(i.care).length);
+  }
   return !!(it.path.category || it.name || it.brand || it.colors.length || it.materials.length || it.pattern || it.seasons.length
     || it.collar || it.closure || it.strap || Object.values(it.fit).some((v) => v != null)
     || i.shop || i.price != null || i.listPrice != null || i.purchaseDate || i.size || i.articleNo || Object.keys(i.care).length);

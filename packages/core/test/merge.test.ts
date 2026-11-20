@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { checkAnalysis } from '../src/ai/analyzeItem';
 import { checkInfo } from '../src/ai/readInfo';
 import { mergeSources, applyAnalysis, applyInfo, infoContext, confirmedContext, analysisSource, infoSource, DESCRIPTION_MAX, type SourceInfo } from '../src/ai/merge';
-import { confirmAi, confirmAllAi, editChange, emptyEditForm, setField, setName } from '../src/edit';
+import { confirmAi, confirmAllAi, editChange, emptyEditForm, setCategory, setField, setName } from '../src/edit';
 
 const NOW = '2026-11-19T11:00:00.000Z';
 const blank = () => ({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] as string[] });
@@ -336,4 +336,37 @@ test('Bearbeiten: Name ersetzt keine offene Shop-Stufe, vermerkt Herkunft „nam
   assert.equal(f.fit.rise, 2);
   const src = f.analysisBase.src as Record<string, string>;
   assert.equal(src['fit.width'], 'screenshot'); assert.equal(src['fit.rise'], 'name');
+});
+
+// ---------- Prüfung 20.11.2026, Runde 5 ----------
+
+test('Infos auf einen neueren Stand angewendet: Profil und Bildvorschläge bleiben', () => {
+  const img = applyAnalysis(blank(), checkAnalysis({ category: 'top/sweater', colors: ['navy'], profile: { sheen: 2 } }), NOW);
+  const f = applyInfo(img, checkInfo({ kind: 'label', material_parts: [{ name: 'wool', pct: 100 }] }));
+  assert.equal(f.profile.sheen, 2); assert.equal(f.aiMeta?.v, 2); assert.deepEqual(f.colors, ['navy']);
+  assert.equal(f.materials[0]!.name, 'wool');
+});
+
+test('Kategoriewechsel in Bearbeiten räumt offene KI-Werte in versteckten Feldern weg', () => {
+  const f = applyAnalysis(blank(), checkAnalysis({ colors: ['blue'], layers: [1] }), NOW);
+  assert.deepEqual(f.layers, [1]);
+  const bag = setCategory(f, { category: 'bag', subcategory: null, type: null });
+  assert.deepEqual(bag.layers, []); assert.ok(!bag.aiPending.includes('layers'));
+  // bestätigte Werte bleiben gespeichert
+  const own = setCategory(setField(blank(), 'layers', [1]), { category: 'bag', subcategory: null, type: null });
+  assert.deepEqual(own.layers, [1]);
+});
+
+test('Pflege: neue Gruppe zu bestätigter Pflege wird einzeln markiert, die bestätigten bleiben bestätigt', () => {
+  const own = { ...blank(), care: { wash: { v: 'w30', src: 'etikett' as const } } };
+  const f = applyInfo(own, checkInfo({ kind: 'label', care: { dry: 'nodry' } }));
+  assert.ok(!f.aiPending.includes('care'));
+  assert.ok(f.aiPending.includes('care.dry'));
+  assert.equal(f.care.wash?.v, 'w30'); assert.equal(f.care.dry?.v, 'nodry');
+  // ein späteres Etikett darf die offene Gruppe ersetzen, nicht die bestätigte
+  const g = applyInfo(f, checkInfo({ kind: 'label', care: { dry: 'drylow', wash: 'w60' } }));
+  assert.equal(g.care.dry?.v, 'drylow'); assert.equal(g.care.wash?.v, 'w30');
+  const r = editChange({ ...g, name: 'Teil' }, { isNew: true });
+  assert.ok('change' in r);
+  assert.equal(((r.change.analysis as { src: Record<string, string> }).src)['care.dry'], 'label');
 });
