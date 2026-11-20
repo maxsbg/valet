@@ -8,6 +8,7 @@ import {
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank,
   pickSizeSystem, pickSize, sizeText, pickFit, togglePayer, splitView, qtyHint, formatPrice, type ColorPick, type EditForm, type WishTag,
   applyInfo, confirmAllAi, infoHint, setCare, shopFromLink, tileKind,
+  PROFILE_FIELDS, SCALE_WORDS,
 } from '@valet/core';
 import { detail } from '@valet/ui';
 import { useTheme } from '@/lib/theme';
@@ -111,6 +112,49 @@ export function ItemEditor(p: Props) {
   };
   const capsules = (list: readonly string[]) => list.map((x) => <ValueCapsule key={x} label={x} />);
 
+  // KI-Profil: vorhandene Analysewerte werden in denselben groben Bereichen wie auf der Detailseite bearbeitbar.
+  const profileContext = { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
+  const setProfile = (key: string, value: unknown) => set('profile', { ...f.profile, [key]: value } as EditForm['profile']);
+  const profileRow = (field: (typeof PROFILE_FIELDS)[number], last: boolean): React.ReactNode => {
+    const value = f.profile[field.key as keyof EditForm['profile']] as unknown;
+    const scaleLabels = SCALE_WORDS[field.key as keyof typeof SCALE_WORDS] ?? [];
+    let values: React.ReactNode[] = [];
+    if (field.kind === 'scale') {
+      const n = typeof value === 'number' ? value : null;
+      values = n == null ? [] : [<ValueCapsule key="v" label={scaleLabels[n - 1] ?? String(n)} />];
+    } else if (field.kind === 'range') {
+      const range = Array.isArray(value) ? value as readonly [number, number] : null;
+      values = range ? [<ValueCapsule key="v" label={range[0] === range[1] ? (scaleLabels[range[0] - 1] ?? String(range[0])) : `${scaleLabels[range[0] - 1] ?? range[0]} bis ${scaleLabels[range[1] - 1] ?? range[1]}`} />] : [];
+    } else if (field.kind === 'enum') {
+      const selected = typeof value === 'string' ? field.values.find((x) => x.key === value) : null;
+      values = selected ? [<ValueCapsule key="v" label={selected.label} />] : [];
+    } else {
+      values = (Array.isArray(value) ? value : []).map((key) => <ValueCapsule key={String(key)} label={field.values.find((x) => x.key === key)?.label ?? String(key)} />);
+    }
+    return <SimpleEditRow key={field.key} label={field.label} last={last} values={values}>
+      {field.kind === 'scale' && <Wrap>{scaleLabels.map((label, i) => <Capsule key={i} label={label} selected={value === i + 1} onPress={() => setProfile(field.key, value === i + 1 ? null : i + 1)} />)}</Wrap>}
+      {field.kind === 'range' && (() => {
+        const range = Array.isArray(value) ? value as readonly [number, number] : null;
+        return <View style={{ gap: 8 }}>
+          <FieldLabel>Von</FieldLabel>
+          <Wrap>{scaleLabels.map((label, i) => <Capsule key={i} label={label} selected={(range?.[0] ?? 3) === i + 1} onPress={() => { const lo = i + 1; setProfile(field.key, [lo, Math.max(lo, range?.[1] ?? lo)]); }} />)}</Wrap>
+          <FieldLabel>Bis</FieldLabel>
+          <Wrap>{scaleLabels.map((label, i) => <Capsule key={i} label={label} selected={(range?.[1] ?? 3) === i + 1} onPress={() => { const hi = i + 1; setProfile(field.key, [Math.min(range?.[0] ?? hi, hi), hi]); }} />)}</Wrap>
+        </View>;
+      })()}
+      {field.kind === 'enum' && <Wrap>{field.values.map((option) => <Capsule key={option.key} label={option.label} selected={value === option.key} onPress={() => setProfile(field.key, value === option.key ? null : option.key)} />)}</Wrap>}
+      {field.kind === 'list' && <Wrap>{field.values.map((option) => <Capsule key={option.key} label={option.label} selected={Array.isArray(value) && value.includes(option.key)} onPress={() => {
+        const current = Array.isArray(value) ? value as string[] : [];
+        if (!current.includes(option.key) && current.length >= field.max) return;
+        setProfile(field.key, toggleIn(current, option.key));
+      }} />)}</Wrap>}
+    </SimpleEditRow>;
+  };
+  const profileCard = (group: 'shape' | 'surface' | 'style', title: string) => {
+    const fields = PROFILE_FIELDS.filter((field) => field.group === group && field.applies(profileContext));
+    return card(title, fields.map((field) => (last) => profileRow(field, last)));
+  };
+
   // ---------- Steckbrief ----------
   const scales = fitScalesOf(f.category);
   const subs = subListOf(f.category);
@@ -202,6 +246,9 @@ export function ItemEditor(p: Props) {
                 onPress={() => set('materials', toggleMaterial(f.materials, m.key))} />;
             })}</Wrap>
             <Hint>Die Zahl ist die Reihenfolge nach Anteil, 1 = Hauptmaterial.</Hint>
+            {f.materials.map((part) => <TextField key={part.name} label={`${materialLabel(part.name)} · Anteil in %`} value={part.pct == null ? '' : String(part.pct)}
+              onChange={(v) => set('materials', f.materials.map((m) => m.name !== part.name ? m : { ...m, pct: v.trim() ? Math.max(1, Math.min(100, Math.round(Number(v.replace(',', '.')) || 1))) : null }))}
+              placeholder="optional" keyboardType="number-pad" inputMode="numeric" />)}
           </SimpleEditRow>
         ),
         !!fx.size && ((last) => (
@@ -251,6 +298,10 @@ export function ItemEditor(p: Props) {
         fx.closure && textRow('closure', 'Verschluss', CLOSURES),
         fx.strap && textRow('strap', 'Trägerart', STRAPS),
       ])}
+
+      {profileCard('shape', 'Form')}
+      {profileCard('surface', 'Oberfläche')}
+      {profileCard('style', 'Wirkung')}
 
       {card('Pflege', [
         fx.care && ((last) => (
