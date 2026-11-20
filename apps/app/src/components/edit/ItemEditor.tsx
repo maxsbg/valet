@@ -438,7 +438,12 @@ export function ItemEditor(p: Props) {
           )}
         </View>
       </Page>
-      <InfoSheet open={info} hint={infoHint(f)} onClose={() => setInfo(false)} onResult={(r) => onForm((cur) => applyInfo(cur, r))} />
+      <InfoSheet open={info} hint={infoHint(f)} link={f.link} onClose={() => setInfo(false)}
+        onResult={(r, from, url) => onForm((cur) => {
+          const next = applyInfo(cur, r, from);
+          // Link wie bei „Neues Teil“ per Link: ins Feld Link (falls leer), Shop aus der Domain
+          return url && !next.link.trim() ? { ...setField(next, 'link', url), shop: shopFromLink(next.shop, '', url) } : next;
+        })} />
     </KeyboardAvoidingView>
   );
 }
