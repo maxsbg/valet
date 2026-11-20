@@ -138,7 +138,7 @@ export function ItemEditor(p: Props) {
           <FieldLabel>Von</FieldLabel>
           <Wrap>{[1, 2, 3, 4, 5].map((n) => scaleWord(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[0] === i + 1} onPress={() => { const lo = i + 1; setProfile(field.key, [lo, Math.max(lo, range?.[1] ?? lo)]); }} />)}</Wrap>
           <FieldLabel>Bis</FieldLabel>
-          <Wrap>{[1, 2, 3, 4, 5].map((n) => profileLabel(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[1] === i + 1} onPress={() => { const hi = i + 1; setProfile(field.key, [Math.min(range?.[0] ?? hi, hi), hi]); }} />)}</Wrap>
+          <Wrap>{[1, 2, 3, 4, 5].map((n) => scaleWord(field.key, n)).map((label, i) => <Capsule key={i} label={label} selected={range?.[1] === i + 1} onPress={() => { const hi = i + 1; setProfile(field.key, [Math.min(range?.[0] ?? hi, hi), hi]); }} />)}</Wrap>
         </View>;
       })()}
       {field.kind === 'enum' && <Wrap>{field.values.map((option) => <Capsule key={option.key} label={option.label} selected={value === option.key} onPress={() => setProfile(field.key, value === option.key ? null : option.key)} />)}</Wrap>}
