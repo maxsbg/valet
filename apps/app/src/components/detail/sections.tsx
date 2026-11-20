@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  CARE, SEASONS, colorLabel, materialLabel, careList, categoryLast, discountPct, fitWords, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
+  CARE, SEASONS, analysisSections, colorLabel, materialLabel, careList, categoryLast, discountPct, fitWords, formatPrice, hasCollarSize, setOrder, shareRows, shopView,
   shortDate, shortUrl, sizeText, splitLabel, statFontSize, fieldsFor, type CareGroup, type EditForm, type StatTile,
 } from '@valet/core';
 import { detail } from '@valet/ui';
@@ -78,13 +78,22 @@ export function SteckbriefView({ f, onCare, onEdit, onAnalysis }: { f: EditForm;
     ['Material', f.materials.map((m) => m.pct != null ? materialLabel(m.name) + ' ' + m.pct + ' %' : materialLabel(m.name)).join(', ')],
     ['Größe', [fx.size ? sizeText(f.sizeSystem, f.size) : '', fx.size === 'clothing' && hasCollarSize(f.subcategory) && f.collarSize ? 'Kragen ' + f.collarSize : ''].filter(Boolean).join(', ')],
     ['Passform', fitWords(f).join(', ')],
+    ...(fx.reversible ? [['Wendbar', f.reversible ? 'Ja' : 'Nein'] as [string, string]] : []),
   ];
   const careText = care.map((c) => { const group = CARE.find((x) => x.key === c.group); const option = group?.options.find((x) => x.id === c.v); return (group?.label ?? c.group) + ': ' + (option?.short ?? c.v) + (c.src === 'geschaetzt' ? ' (geschätzt)' : ''); }).join(', ');
   const shown = [...rows, ...(fx.care ? [['Pflege', careText] as [string, string]] : [])].filter(([, value]) => !!value);
+  const extraSections = analysisSections(f);
   return <View style={{ gap: 0 }}>
     {shown.map(([label, value], i) => <View key={label} style={{ minHeight: 42, paddingVertical: 9, borderBottomWidth: i < shown.length - 1 || !!onAnalysis ? 1 : 0, borderBottomColor: t.hairline, gap: 3 }}>
       <Text style={{ fontSize: 13, color: t.inkMuted }}>{label}</Text>
       <Text style={{ fontSize: 16, lineHeight: 22, color: t.ink }}>{value}</Text>
+    </View>)}
+    {extraSections.map((section) => <View key={section.key} style={{ paddingTop: 12 }}>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: t.inkMuted, paddingBottom: 5 }}>{section.title}</Text>
+      {section.rows.map((r) => <View key={r.label} style={{ paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: t.hairline, gap: 2 }}>
+        <Text style={{ fontSize: 13, color: t.inkMuted }}>{r.label}</Text>
+        <Text style={{ fontSize: 16, lineHeight: 22, color: t.ink }}>{r.value}</Text>
+      </View>)}
     </View>)}
     {care.filter((c) => c.src === 'geschaetzt').map((c) => <Text key={c.group} onPress={() => onCare(c.group)} style={{ paddingVertical: 5, fontSize: 14, color: t.accent }}>Pflege-Schätzung prüfen: {CARE.find((x) => x.key === c.group)?.label ?? c.group}</Text>)}
     {fx.care && !careText && <View style={{ paddingVertical: 9, gap: 6 }}><Text style={{ fontSize: 13, color: t.inkMuted }}>Pflege</Text><Text style={{ fontSize: 16, color: t.inkMuted }}>Noch leer</Text><Text onPress={onEdit} style={{ fontSize: 15, color: t.accent }}>Pflegehinweise bearbeiten</Text></View>}
