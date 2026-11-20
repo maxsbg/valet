@@ -38,5 +38,5 @@ jobs:
           git -C pages add -A
           if ! git -C pages diff --cached --quiet; then
             git -C pages -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Web-App ${GITHUB_SHA::7}"
-            git -C pages push origin gh-pages
+            git -C pages push origin HEAD:gh-pages
           fi
