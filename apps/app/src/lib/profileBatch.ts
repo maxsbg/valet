@@ -2,7 +2,7 @@
 // Läuft modulweit (nicht in der Seite), damit er beim Tab-Wechsel weiterläuft. Höchstens BATCH_PER_MIN je Minute
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
-import { profileFilled, BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
+import { hasProfile, profileFilled, BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, profilePatch, type ProfilePatchRow } from '@valet/core';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -50,6 +50,17 @@ async function loadRows(wardrobeId: string): Promise<Row[]> {
       .eq('wardrobe_id', wardrobeId).order('id').range(from, from + 999);
     if (error) throw error;
     out.push(...((data ?? []) as Row[]));
+    if (!data || data.length < 1000) return out;
+  }
+}
+
+/** IDs aller Teile (Schrank und Wunschliste) ohne KI-Profil v2 – für die Übersicht im Profil-Blatt */
+export async function itemsWithoutProfile(wardrobeId: string): Promise<string[]> {
+  const out: string[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from('items').select('id,analysis').eq('wardrobe_id', wardrobeId).order('id').range(from, from + 999);
+    if (error) throw error;
+    for (const r of data ?? []) if (!hasProfile((r as { analysis: unknown }).analysis)) out.push((r as { id: string }).id);
     if (!data || data.length < 1000) return out;
   }
 }
