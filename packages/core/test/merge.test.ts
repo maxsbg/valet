@@ -8,7 +8,7 @@ import { confirmAi, confirmAllAi, dropImageSuggestions, editChange, emptyEditFor
 const NOW = '2026-11-19T11:00:00.000Z';
 const blank = () => ({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] as string[] });
 const image = () => checkAnalysis({
-  category: 'top/shirt', name: 'Rippshirt', colors: ['navy'], materials: ['polyester'], width: 2, length: 2,
+  category: 'top/shirt', name: 'Rippshirt', colors: ['navy'], materials: ['polyester'], width: 'regular', length: 'regular',
   profile: { sheen: 2, texture_intensity: 3, surface: 'rib_knit' }, confidence: { color: 8, material: 4 },
 }, 'gemini-3.5-flash-lite');
 const page = (extra: Record<string, unknown> = {}) => checkInfo({
@@ -52,21 +52,21 @@ test('Rangfolge: Etikett schlägt Shop, Begriffe im Namen schlagen das Bild, Sho
   assert.deepEqual(f.materials, [{ name: 'cotton', pct: 92 }, { name: 'elastane', pct: 8 }]);
   assert.equal(f.shop, 'COS');
   assert.equal(f.size, 'M');
-  // Name „Slim …“ (von der Seite) → Weite 0 statt Bildschätzung 2; Länge bleibt aus dem Bild
-  assert.deepEqual(f.fit, { width: 0, length: 2, rise: null });
+  // Name „Slim …“ (von der Seite) → Weite Slim statt Bildschätzung Regular; Länge bleibt aus dem Bild
+  assert.deepEqual(f.fit, { width: 0, length: 1, rise: null });
   // nennt die Seite selbst eine Weite, gilt die
-  const g = mergeSources(blank(), { image: image(), infos: [{ from: 'page', info: page({ width: 3 }) }] }, NOW);
-  assert.equal(g.fit.width, 3);
+  const g = mergeSources(blank(), { image: image(), infos: [{ from: 'page', info: page({ width: 'relaxed' }) }] }, NOW);
+  assert.equal(g.fit.width, 2);
 });
 
 test('Rangfolge: bestätigter Nutzerwert schlägt alles', () => {
   let start = setField(blank(), 'materials', [{ name: 'linen', pct: 100 }]);
   start = setField(start, 'name', 'Mein Shirt');
-  start = setField(start, 'fit', { width: 4, length: null, rise: null });
+  start = setField(start, 'fit', { width: 3, length: null, rise: null });
   const f = mergeSources(start, { image: image(), infos: [{ from: 'label', info: label() }, { from: 'page', info: page() }] }, NOW);
   assert.deepEqual(f.materials, [{ name: 'linen', pct: 100 }]);
   assert.equal(f.name, 'Mein Shirt');
-  assert.deepEqual(f.fit, { width: 4, length: null, rise: null });
+  assert.deepEqual(f.fit, { width: 3, length: null, rise: null });
   for (const k of ['materials', 'name', 'fit']) assert.ok(!f.aiPending.includes(k));
   assert.deepEqual(f.colors, ['black']); // leeres Feld wird trotzdem gefüllt
 });
@@ -148,13 +148,13 @@ test('Profil wird mit der endgültigen Kategorie bereinigt (Shop sagt Jeans, Bil
 });
 
 test('Passform aus einer Info ohne Kategorie bleibt und schlägt die Begriffe im Namen', () => {
-  const shot = checkInfo({ kind: 'shop', category: null, width: 3 });
-  assert.equal(shot.item.fit.width, 3);
+  const shot = checkInfo({ kind: 'shop', category: null, width: 'relaxed' });
+  assert.equal(shot.item.fit.width, 'relaxed');
   const f = mergeSources({ ...blank(), name: 'Slim Jeans', category: 'pants', subcategory: 'jeans' }, { infos: [{ from: 'screenshot', info: shot }] });
-  assert.equal(f.fit.width, 3);
+  assert.equal(f.fit.width, 3); // Hose: Relaxed = Stufe 3
   // ohne Info gewinnt der Name über das Bild
-  const g = applyAnalysis({ ...blank(), name: 'Slim Jeans', category: 'pants', subcategory: 'jeans' }, checkAnalysis({ category: 'pants/jeans', width: 2, colors: ['blue'] }), NOW);
-  assert.equal(g.fit.width, 0);
+  const g = applyAnalysis({ ...blank(), name: 'Slim Jeans', category: 'pants', subcategory: 'jeans' }, checkAnalysis({ category: 'pants/jeans', width: 'regular', colors: ['blue'] }), NOW);
+  assert.equal(g.fit.width, 1); // Hose: Slim = Stufe 1
 });
 
 test('Zweiter Schritt bei „Neues Teil“: nur das Bild, keine zurückgedrehten Eingaben, bestätigte Größe bleibt', () => {
@@ -175,7 +175,7 @@ test('Zweiter Schritt bei „Neues Teil“: nur das Bild, keine zurückgedrehten
 test('Neu analysieren: bestätigte Passform verdrängt widersprechende Begriffe im Namen aus dem Kontext', () => {
   const f = { ...blank(), name: 'Slim Jeans', category: 'pants', subcategory: 'jeans', fit: { width: 2, length: null, rise: null } };
   const ctx = confirmedContext(f);
-  assert.ok(ctx.includes('Weite normal'));
+  assert.ok(ctx.includes('Weite Regular'));
   assert.ok(!/slim/i.test(ctx.split('\n').find((l) => l.startsWith('Passform')) ?? ''));
 });
 
@@ -207,17 +207,17 @@ test('Etikett ohne Shop, Preis, Kaufdatum (auch bei Wunschteilen)', () => {
 });
 
 test('Zwei Schritte wie bei „Neues Teil“: Passform einer Info ohne Kategorie übersteht den Bild-Schritt und steht im Kontext', () => {
-  const shot = checkInfo({ kind: 'shop', category: null, width: 4 });
+  const shot = checkInfo({ kind: 'shop', category: null, width: 'oversized' });
   const infos: SourceInfo[] = [{ from: 'screenshot', info: shot }];
-  assert.match(infoContext(infos), /Passform: Weite weit/);
+  assert.match(infoContext(infos), /Passform: Weite Oversized/);
   const step1 = mergeSources(blank(), { infos });
   assert.equal(step1.fit.width, null); // noch keine Kategorie
-  const step2 = mergeSources(step1, { image: checkAnalysis({ category: 'top/t_shirt', width: 2, colors: ['white'], profile: { sheen: 1 } }), late: infos }, NOW);
-  assert.equal(step2.fit.width, 4);
+  const step2 = mergeSources(step1, { image: checkAnalysis({ category: 'top/t_shirt', width: 'regular', colors: ['white'], profile: { sheen: 1 } }), late: infos }, NOW);
+  assert.equal(step2.fit.width, 3);
   assert.equal(step2.aiMeta?.source, 'image+screenshot');
   // vom Nutzer in der Zwischenzeit gesetzte Passform bleibt
   const own = setField({ ...step1, category: 'top', subcategory: 't_shirt' }, 'fit', { width: 1, length: null, rise: null });
-  assert.equal(mergeSources(own, { image: checkAnalysis({ category: 'top/t_shirt', width: 2 }), late: infos }, NOW).fit.width, 1);
+  assert.equal(mergeSources(own, { image: checkAnalysis({ category: 'top/t_shirt', width: 'regular' }), late: infos }, NOW).fit.width, 1);
 });
 
 test('Gespeichert wird nur die Herkunft noch offener Felder', () => {
@@ -269,12 +269,12 @@ test('Größe einer Info ohne Kategorie wird nach dem Bild mit dem endgültigen 
 // ---------- Prüfung 20.11.2026, Runde 3 ----------
 
 test('Begriffe im KI-erzeugten Namen zählen nicht als eigene Quelle', () => {
-  const f = applyAnalysis(blank(), checkAnalysis({ category: 'top/sweater', name: 'Oversized Hoodie', width: 2, length: 2, colors: ['grey'] }), NOW);
-  assert.deepEqual([f.fit.width, f.fit.length], [2, 2]);
+  const f = applyAnalysis(blank(), checkAnalysis({ category: 'top/sweater', name: 'Oversized Hoodie', width: 'regular', length: 'regular', colors: ['grey'] }), NOW);
+  assert.deepEqual([f.fit.width, f.fit.length], [1, 1]);
   const jeans = applyAnalysis(blank(), checkAnalysis({ category: 'pants/jeans', name: 'Straight Leg Jeans', colors: ['blue'], profile: { leg: 'tapered' } }), NOW);
   assert.equal(jeans.profile.leg, 'tapered');
   // Name vom Shop dagegen schon
-  const shop = mergeSources(blank(), { image: checkAnalysis({ category: 'pants/jeans', width: 2, colors: ['blue'], profile: { leg: 'tapered' } }),
+  const shop = mergeSources(blank(), { image: checkAnalysis({ category: 'pants/jeans', width: 'regular', colors: ['blue'], profile: { leg: 'tapered' } }),
     infos: [{ from: 'page', info: checkInfo({ name: 'Straight Leg Jeans', category: 'pants/jeans' }) }] }, NOW);
   assert.equal(shop.profile.leg, 'straight');
 });
@@ -330,7 +330,7 @@ test('Kategorie: echter Wechsel setzt die Herkunft aller Ebenen neu', () => {
 });
 
 test('Bearbeiten: Name ersetzt keine offene Shop-Stufe, vermerkt Herkunft „name“', () => {
-  const shop = applyInfo({ ...blank(), category: 'pants', subcategory: 'jeans' }, checkInfo({ kind: 'shop', category: 'pants/jeans', width: 4 }));
+  const shop = applyInfo({ ...blank(), category: 'pants', subcategory: 'jeans' }, checkInfo({ kind: 'shop', category: 'pants/jeans', width: 'wide' }));
   const f = setName(shop, 'High Waist Slim Jeans');
   assert.equal(f.fit.width, 4);
   assert.equal(f.fit.rise, 2);
@@ -382,7 +382,7 @@ test('Antwort ohne Mode-Profil: Fakten ja, aber kein „analysiert“ (meta blei
 });
 
 test('Kategoriewechsel verwirft offene Längen-Stufe mit anderer Bedeutung (kurz–lang ↔ Mini–Maxi)', () => {
-  const img = applyAnalysis(blank(), checkAnalysis({ category: 'top/t_shirt', length: 4, width: 2, colors: ['white'], profile: { sheen: 1 } }), NOW);
+  const img = applyAnalysis(blank(), checkAnalysis({ category: 'top/t_shirt', length: 'longline', width: 'regular', colors: ['white'], profile: { sheen: 1 } }), NOW);
   const dress = applyInfo(img, checkInfo({ kind: 'shop', category: 'dress' }));
   assert.equal(dress.category, 'dress');
   assert.equal(dress.fit.length, null);
@@ -390,13 +390,13 @@ test('Kategoriewechsel verwirft offene Längen-Stufe mit anderer Bedeutung (kurz
 
 test('Name ändern: Stufen aus einem früheren Namen fallen weg; Kategorie danach schlägt aus dem Namen vor', () => {
   const tee = setName({ ...blank(), category: 'top', subcategory: 't_shirt' }, 'Oversized Tee');
-  assert.deepEqual([tee.fit.width, tee.fit.length], [4, 4]);
+  assert.deepEqual([tee.fit.width, tee.fit.length], [3, 2]);
   const relaxed = setName(tee, 'Relaxed Tee');
-  assert.deepEqual([relaxed.fit.width, relaxed.fit.length], [3, null]);
+  assert.deepEqual([relaxed.fit.width, relaxed.fit.length], [2, null]);
   const plain = setName(relaxed, 'Tee');
   assert.equal(plain.fit.width, null); assert.ok(!plain.aiPending.includes('fit'));
   const chino = setCategory(setName(blank(), 'Slim Fit Chino'), { category: 'pants', subcategory: 'trousers', type: null });
-  assert.equal(chino.fit.width, 0); assert.ok(chino.aiPending.includes('fit'));
+  assert.equal(chino.fit.width, 1); assert.ok(chino.aiPending.includes('fit'));
 });
 
 test('Pflege: gleicher Wert aus ranghöherer Quelle stuft die Herkunft hoch', () => {

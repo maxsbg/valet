@@ -1,7 +1,7 @@
 // Bearbeiten-Seite (auch „Neues Teil prüfen“) – Formular-Modell (VALET_DETAILSEITE_SPEC.md, Abschnitte 7 und 7a)
 // Plattformunabhängig: Laden aus der Datenbank-Zeile, Ändern, Prüfen, zurück in eine Datenbank-Änderung.
 
-import { fitScalesOf, isValidPath, type FitScale } from './categories';
+import { convertFit, fitScalesOf, isValidPath, type FitScale } from './categories';
 import { fitFromName, nameFitFor } from './fitName';
 import { COLLAR_LIST, CLOSURES, MAX_COLORS, ONE_SIZE, PATTERNS, colorLabel, materialLabel, migrateSeasons, styleLabel, toColorKeys, toMaterialParts, toStyleKeys, type Care, type MaterialPart } from './attributes';
 import { toKey } from './keys';
@@ -180,13 +180,9 @@ function emptyValue(f: EditForm, k: string): boolean {
 export function setCategory(f: EditForm, p: { category: string | null; subcategory: string | null; type: string | null }): EditForm {
   const before = fieldsFor(f.category, f.subcategory).size, after = fieldsFor(p.category, p.subcategory).size;
   let next = setField(setField(setField(f, 'category', p.category), 'subcategory', p.subcategory), 'type', p.type);
-  // offene (KI-)Stufen, deren Skala nach dem Wechsel etwas anderes bedeutet (Länge kurz–lang ↔ Mini–Maxi), verwerfen
-  if (f.aiPending.includes('fit')) {
-    const steps = (c: string | null, k: FitScale['key']) => fitScalesOf(c).find((sc) => sc.key === k)?.steps.join('|') ?? '';
-    const fit = { ...next.fit };
-    for (const k of ['width', 'length', 'rise'] as const) if (fit[k] != null && steps(f.category, k) && steps(f.category, k) !== steps(p.category, k)) fit[k] = null;
-    next = { ...next, fit };
-  }
+  // Stufen über ihren Begriff in die Skala der neuen Kategorie umrechnen (Oberteil Relaxed → Hose Relaxed);
+  // ohne Gegenstück (Länge Cropped ↔ Mini–Maxi) wird die Stufe leer
+  if (f.category !== p.category) next = { ...next, fit: convertFit(f.category, p.category, next.fit) };
   if (before === after) return dropHidden(suggestFitFromName(next));
   // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose, Handschuh, Mütze …): bleibt stehen (Max, 15.11.2026).
   // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.

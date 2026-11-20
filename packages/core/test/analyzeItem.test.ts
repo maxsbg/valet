@@ -18,13 +18,13 @@ test('Pfad: gültig übernommen, ungültig verworfen', () => {
 test('Prüfung: Unsinn fliegt raus; unpassende Felder fallen beim Zusammenführen mit dem endgültigen Pfad weg', () => {
   const a = checkAnalysis({
     category: 'pants/jeans', name: ' Straight Jeans ', colors: ['blue', 'Lila-Glitzer', 'blue'], pattern: 'solid',
-    materials: ['denim', 'elastane'], collar: 'button_down', width: 2, length: 9, rise: 1, layers: [0], warmth: 2, strap: 'chain',
+    materials: ['denim', 'elastane'], collar: 'button_down', width: 'regular', length: 'knielang', rise: 'regular', layers: [0], warmth: 2, strap: 'chain',
   });
   assert.deepEqual(a.path, { category: 'pants', subcategory: 'jeans', type: null });
   assert.equal(a.name, 'Straight Jeans');
   assert.deepEqual(a.colors, ['blue']);
   assert.deepEqual(a.materials, [{ name: 'denim' }, { name: 'elastane' }]);
-  assert.deepEqual(a.fit, { width: 2, length: null, rise: 1 }); // Länge 9 ungültig
+  assert.deepEqual(a.fit, { width: 'regular', length: null, rise: 'regular' }); // unbekannter Begriff fliegt raus
   // checkAnalysis prüft nur Werte; im Formular (Hose) gibt es keinen Kragen, keine Trägerart, keine Lagen
   const f = applyAnalysis({ ...emptyEditForm({ ownerId: 'max' }), aiPending: [] }, a);
   assert.equal(f.collar, null);

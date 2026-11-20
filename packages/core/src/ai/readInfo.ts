@@ -37,9 +37,9 @@ const READ_ITEM: Record<string, JsonSchema> = {
   collar: read('collar', 'Nur wenn genannt (z. B. „Rundhals“, „Button-Down“), sonst null'),
   closure: read('closure', 'Nur wenn genannt, sonst null'),
   strap: read('strap', 'Nur wenn genannt (bei Taschen), sonst null'),
-  width: { ...ITEM.width!, description: 'Nur wenn ein Passform-Begriff genannt ist: 0 Slim/Skinny … 2 Regular … 3 Relaxed, 4 Oversized/Baggy/Wide/Boxy; sonst null' },
-  length: { ...ITEM.length!, description: 'Nur wenn genannt: 0 Cropped/kurz … 4 lang (bei Kleid/Rock: 0 Mini, 1 über Knie, 2 Knie, 3 Midi, 4 Maxi). Bei Oberteilen: „Oversized“ = auch 4, „Boxy“ und „Cropped“ = 0; sonst null' },
-  rise: { ...ITEM.rise!, description: 'Nur wenn genannt: 0 Low Rise, 1 Mid Rise, 2 High Waist/High Rise; sonst null' },
+  width: { ...ITEM.width!, description: 'Nur wenn ein Passform-Begriff genannt ist: skinny, slim, regular, relaxed, oversized (auch Boxy), wide (auch Baggy, Wide Leg); sonst null' },
+  length: { ...ITEM.length!, description: 'Nur wenn genannt: cropped, regular, longline (Oberteil), long, short/mid (Shorts); Kleid/Rock: mini, above_knee, knee, midi, maxi. Bei Oberteilen: „Oversized“ = longline, „Boxy“ und „Cropped“ = cropped; sonst null' },
+  rise: { ...ITEM.rise!, description: 'Nur wenn genannt: low (Low Rise), regular (Mid Rise), high (High Waist/High Rise); sonst null' },
 };
 const PROPS: Record<string, JsonSchema> = {
   kind: { type: ['string', 'null'], enum: ['label', 'shop', 'order', null], description: 'Art des Bildes: label = Etikett/Pflegeetikett, shop = Produktseite eines Shops, order = Bestellbestätigung/Rechnung; null bei reinem Seitentext' },

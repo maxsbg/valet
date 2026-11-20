@@ -72,26 +72,74 @@ export function pickCategory(p: CategoryPath, level: 'category' | 'subcategory' 
 
 // ---------- Passform je Kategorie (Stufen-Index) ----------
 
-export type FitScale = { key: 'width' | 'length' | 'rise'; label: string; steps: readonly string[] };
-const WIDTH: FitScale = { key: 'width', label: 'Weite', steps: ['schmal', 'eher schmal', 'normal', 'eher weit', 'weit'] };
-const LENGTH: FitScale = { key: 'length', label: 'Länge', steps: ['kurz', 'eher kurz', 'normal', 'eher lang', 'lang'] };
-const DRESS_LENGTH: FitScale = { key: 'length', label: 'Länge', steps: ['Mini', 'über Knie', 'Knie', 'Midi', 'Maxi'] };
-const RISE: FitScale = { key: 'rise', label: 'Bund', steps: ['tief', 'normal', 'hoch'] };
+/**
+ * Skala je Kategorie: `keys` = englische Begriffe (KI, Namen, Umrechnen), `steps` = Anzeige. Gespeichert wird der
+ * Index (items.fit_width/fit_length/fit_rise). Begriffe statt „schmal … weit“ seit 20.11.2026 (Max), Migration 0016.
+ */
+export type FitScale = { key: 'width' | 'length' | 'rise'; label: string; keys: readonly string[]; steps: readonly string[] };
+const scale = (key: FitScale['key'], label: string, pairs: string): FitScale => {
+  const list = pairs.split(' · ').map((p) => { const i = p.indexOf(' '); return [p.slice(0, i), p.slice(i + 1)] as const; });
+  return { key, label, keys: list.map(([k]) => k), steps: list.map(([, l]) => l) };
+};
+const TOP_WIDTH = scale('width', 'Weite', 'slim Slim · regular Regular · relaxed Relaxed · oversized Oversized');
+const PANTS_WIDTH = scale('width', 'Weite', 'skinny Skinny · slim Slim · regular Regular · relaxed Relaxed · wide Wide');
+const SHORTS_WIDTH = scale('width', 'Weite', 'slim Slim · regular Regular · relaxed Relaxed · wide Wide');
+const TOP_LENGTH = scale('length', 'Länge', 'cropped Cropped · regular Regular · longline Longline');
+const PANTS_LENGTH_FIT = scale('length', 'Länge', 'cropped Cropped · regular Regular · long Long');
+const SHORTS_LENGTH = scale('length', 'Länge', 'short Short · mid Mid · long Long');
+const DRESS_LENGTH = scale('length', 'Länge', 'mini Mini · above_knee über Knie · knee Knie · midi Midi · maxi Maxi');
+const RISE = scale('rise', 'Bund', 'low tief · regular normal · high hoch');
 
 /** Skalen je Kategorie; alle anderen Kategorien haben keine Passform-Zeile. */
 export const FIT_SCALES: Readonly<Record<string, readonly FitScale[]>> = {
-  top: [WIDTH, LENGTH],
-  pants: [WIDTH, LENGTH, RISE],
-  shorts: [WIDTH, LENGTH, RISE],
+  top: [TOP_WIDTH, TOP_LENGTH],
+  pants: [PANTS_WIDTH, PANTS_LENGTH_FIT, RISE],
+  shorts: [SHORTS_WIDTH, SHORTS_LENGTH, RISE],
   dress: [DRESS_LENGTH],
   skirt: [DRESS_LENGTH, RISE],
 };
 export const fitScalesOf = (c: string | null | undefined): readonly FitScale[] => (c && FIT_SCALES[c]) || [];
+export const fitScaleOf = (c: string | null | undefined, k: FitScale['key']): FitScale | undefined => fitScalesOf(c).find((sc) => sc.key === k);
 
-/** Shop-Begriffe → Stufen (für die KI und das Auslesen). Tapered, Bootcut, Flared entfallen. */
-export const FIT_TERMS: Readonly<Record<string, Partial<Record<FitScale['key'], number>>>> = {
-  slim: { width: 0 }, relaxed: { width: 3 }, oversized: { width: 4, length: 4 }, boxy: { width: 4, length: 0 },
-  cropped: { length: 0 }, baggy: { width: 4 }, 'high waist': { rise: 2 }, 'low rise': { rise: 0 },
+/** Alle Begriffe je Skala (für das KI-Schema), Reihenfolge wie in den Skalen */
+export const FIT_KEYS: Readonly<Record<FitScale['key'], readonly string[]>> = {
+  width: [...new Set([...PANTS_WIDTH.keys, ...TOP_WIDTH.keys])],
+  length: [...new Set([...TOP_LENGTH.keys, ...PANTS_LENGTH_FIT.keys, ...SHORTS_LENGTH.keys, ...DRESS_LENGTH.keys])],
+  rise: RISE.keys,
+};
+/** Gibt es einen Begriff in der Skala nicht, gilt der nächstliegende (Oberteil „wide“ = Oversized, Shorts „regular“ = Mid) */
+const FIT_ALIAS: Readonly<Record<string, readonly string[]>> = {
+  skinny: ['slim'], oversized: ['wide'], wide: ['oversized'], baggy: ['wide', 'oversized'],
+  cropped: ['short'], short: ['cropped'], longline: ['long'], long: ['longline'], regular: ['mid'], mid: ['regular'],
+};
+/** Begriff → Index in der Skala der Kategorie; passt nichts → null (z. B. „cropped“ bei Kleidern) */
+export function fitIndex(category: string | null | undefined, k: FitScale['key'], word: unknown): number | null {
+  const sc = fitScaleOf(category, k);
+  if (!sc || typeof word !== 'string') return null;
+  for (const w of [word, ...(FIT_ALIAS[word] ?? [])]) { const i = sc.keys.indexOf(w); if (i >= 0) return i; }
+  return null;
+}
+/** Index → Begriff der Kategorie */
+export const fitKey = (category: string | null | undefined, k: FitScale['key'], i: number | null | undefined): string | null =>
+  i == null ? null : fitScaleOf(category, k)?.keys[i] ?? null;
+/** Stufen beim Kategoriewechsel über den Begriff umrechnen (Oberteil Relaxed → Hose Relaxed); passt nichts → null */
+export function convertFit<T extends Partial<Record<FitScale['key'], number | null>>>(from: string | null | undefined, to: string | null | undefined, fit: T): T {
+  const out = { ...fit };
+  // ohne Skala vorher (noch keine Kategorie) oder nachher (Feld versteckt, Wert bleibt gespeichert) bleibt die Stufe
+  for (const k of ['width', 'length', 'rise'] as const) if (out[k] != null && fitScaleOf(from, k) && fitScaleOf(to, k)) (out as Record<string, number | null>)[k] = fitIndex(to, k, fitKey(from, k, out[k]));
+  return out;
+}
+/** Anzeige eines Begriffs (erste Skala, die ihn kennt): „oversized“ → „Oversized“ */
+export function fitWordLabel(k: FitScale['key'], word: string): string {
+  for (const scales of Object.values(FIT_SCALES)) for (const sc of scales) if (sc.key === k && sc.keys.includes(word)) return sc.steps[sc.keys.indexOf(word)]!;
+  return word;
+}
+
+/** Shop-Begriffe → Begriffe der Skalen (für die KI und das Auslesen). Tapered, Bootcut, Flared entfallen (Beinverlauf). */
+export const FIT_TERMS: Readonly<Record<string, Partial<Record<FitScale['key'], string>>>> = {
+  skinny: { width: 'skinny' }, slim: { width: 'slim' }, regular: { width: 'regular' }, relaxed: { width: 'relaxed' },
+  oversized: { width: 'oversized', length: 'longline' }, boxy: { width: 'oversized', length: 'cropped' },
+  cropped: { length: 'cropped' }, longline: { length: 'longline' }, baggy: { width: 'wide' }, 'high waist': { rise: 'high' }, 'low rise': { rise: 'low' },
 };
 
 // ---------- Darstellung im Mosaik und auf dem Outfit-Board ----------

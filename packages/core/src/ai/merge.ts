@@ -3,7 +3,7 @@
 // Das Profil (profile, confidence, aiMeta) kommt immer und nur aus der Bildanalyse.
 // Dazu der Kontext für den Prompt der Bildanalyse („Angaben des Shops, verlässlicher als das Foto: …“).
 
-import { categoryName, fitScalesOf, subcategoryName, typeName, type CategoryPath, type FitScale } from '../categories';
+import { categoryName, fitIndex, fitScaleOf, fitScalesOf, fitWordLabel, subcategoryName, typeName, type CategoryPath, type FitScale } from '../categories';
 import { colorLabel, materialLabel, patternLabel, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { dropHidden, setField, setCategory, fitOpen, type EditForm } from '../edit';
 import { fieldsFor, matchSize } from '../fields';
@@ -131,7 +131,8 @@ function applyFacts(form: EditForm, a: Analysis, from: Origin): EditForm {
     const scales = new Set(fitScalesOf(f.category).map((sc) => sc.key));
     const fitOk = open.has('fit') || (f.fit.width == null && f.fit.length == null && f.fit.rise == null);
     const given: Partial<EditForm['fit']> = {};
-    for (const [k, v] of Object.entries(a.fit) as [FitScale['key'], number | null][]) {
+    for (const [k, word] of Object.entries(a.fit) as [FitScale['key'], string | null][]) {
+      const v = fitIndex(f.category, k, word);
       if (v == null || !scales.has(k) || !fitOk) continue;
       if (f.fit[k] != null && RANK[originOf(origins, `fit.${k}`)] > RANK[from]) continue;
       given[k] = v; origin[`fit.${k}`] = from;
@@ -256,8 +257,9 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
 /** Passform-Stufen aus Begriffen im Namen (Rang „name“) in offene Stufen gleichen oder niedrigeren Rangs */
 function applyNameFit(f: EditForm): EditForm {
   if (!fitOpen(f) || !nameTrusted(f)) return f;
-  const part = nameFitFor(f.category, fitFromName(f.name).fit);
-  return Object.keys(part).length ? applyFacts(f, { ...NO_FACTS, fit: { width: null, length: null, rise: null, ...part } }, 'name') : f;
+  const words = fitFromName(f.name).fit;
+  if (!Object.keys(nameFitFor(f.category, words)).length) return f;
+  return applyFacts(f, { ...NO_FACTS, fit: { width: null, length: null, rise: null, ...words } }, 'name');
 }
 /** Info ohne Inhalt (für das Nachziehen der Größe in `late`); item wird dort nicht gelesen */
 const noInfo = (): Info => ({ kind: null, item: NO_FACTS, shop: null, price: null, listPrice: null, purchaseDate: null, size: null, articleNo: null, care: {} });
@@ -292,14 +294,21 @@ const pathText = (p: CategoryPath): string => {
 };
 const materialText = (ms: readonly MaterialPart[]) =>
   ms.map((m) => `${m.pct ? `${m.pct} % ` : ''}${materialLabel(m.name)} (${m.name})`).join(', ');
-/** Stufen als Text; ohne Kategorie die allgemeinen Skalen (Weite, Länge kurz–lang, Bund) */
-const fitText = (category: string | null, fit: Partial<Record<FitScale['key'], number | null>>) =>
-  fitScalesOf(category ?? 'pants').filter((sc) => fit[sc.key] != null).map((sc) => `${sc.label} ${sc.steps[fit[sc.key]!] ?? ''}`.trim());
+/** Passform als Text: Begriffe (Info/Analyse) direkt, Stufen (Formular) über die Skala der Kategorie */
+const fitText = (category: string | null, fit: Partial<Record<FitScale['key'], number | string | null>>) =>
+  (['width', 'length', 'rise'] as const).flatMap((k) => {
+    const v = fit[k];
+    if (v == null) return [];
+    const label = { width: 'Weite', length: 'Länge', rise: 'Bund' }[k];
+    // Begriff aus einer Info/Analyse oder Stufe aus dem Formular (Skala der Kategorie)
+    const word = typeof v === 'string' ? fitWordLabel(k, v) : fitScaleOf(category, k)?.steps[v];
+    return word ? [`${label} ${word}`] : [];
+  });
 const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
 
 type Facts = {
   name?: string | null; path?: CategoryPath; colors?: readonly string[]; pattern?: string | null; materials?: readonly MaterialPart[];
-  fit?: Partial<Record<FitScale['key'], number | null>>; description?: string | null;
+  fit?: Partial<Record<FitScale['key'], number | string | null>>; description?: string | null;
   /** Passform-Begriffe aus Name/Beschreibung mitschicken (nicht, wenn eine bestätigte Passform ihnen widerspräche) */
   nameTerms?: boolean;
   /** Kategorie für die Skalen-Wörter der Passform (sonst die aus `path`) */

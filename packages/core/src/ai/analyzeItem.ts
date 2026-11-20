@@ -2,7 +2,7 @@
 // Die Edge Function `ki` ist nur ein Durchreicher zu Gemini (OpenAI-kompatible Schnittstelle; Bild + Prompt + Schema);
 // alles Fachliche liegt hier, damit es mit denselben festen Listen arbeitet wie Bearbeiten und Steckbrief.
 
-import { CATEGORY_TREE, isValidPath, type CategoryPath } from '../categories';
+import { CATEGORY_TREE, FIT_KEYS, isValidPath, type CategoryPath } from '../categories';
 import { COLOR_LIST, COLLAR_LIST, MAX_COLORS, MATERIALS, MULTICOLOR, PATTERNS, STYLES, SEASONS, CLOSURES, LAYERS, WARMTH, RAIN, toMaterialParts, type MaterialPart } from '../attributes';
 import { STRAPS } from '../fields';
 import { keysOf, toKey, type KeyList } from '../keys';
@@ -46,6 +46,7 @@ const list = (values: KeyList, description: string): JsonSchema =>
   ({ type: 'array', items: { type: 'string', enum: values.map((v) => v.key) }, description: `${description} (${labels(values)})` });
 const steps = (max: number) => Array.from({ length: max + 1 }, (_, i) => i);
 const level = (max: number, description: string): JsonSchema => ({ type: ['integer', 'null'], enum: [...steps(max), null], description });
+const fitWord = (k: keyof typeof FIT_KEYS, description: string): JsonSchema => ({ type: ['string', 'null'], enum: [...FIT_KEYS[k], null], description });
 
 /** Beschreibung des Kategorie-Felds (auch für „Infos auslesen“) */
 export const categoryDescription = (intro: string) => `${intro} Pfad aus Keys, getrennt mit „${SEP}“. Labels: ${CATEGORY_PATH_LABELS}`;
@@ -62,9 +63,9 @@ export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   collar: str(NECK_LIST, 'Kragen bzw. Ausschnitt, nur bei Oberteil, Kleid und Oberbekleidung'),
   closure: str(CLOSURES, 'Verschluss, nur wenn sichtbar'),
   strap: str(STRAPS, 'Trägerart, nur bei Taschen'),
-  width: level(4, 'Passform Weite 0 schmal … 2 normal … 4 weit; nur Oberteil, Hose, Shorts'),
-  length: level(4, 'Länge 0 kurz … 4 lang (bei Kleid/Rock: 0 Mini, 1 über Knie, 2 Knie, 3 Midi, 4 Maxi)'),
-  rise: level(2, 'Bundhöhe 0 tief, 1 normal, 2 hoch; nur Hose, Shorts, Rock'),
+  width: fitWord('width', 'Passform Weite; nur Oberteil, Hose, Shorts. Oberteil: slim, regular, relaxed, oversized. Hose: skinny, slim, regular, relaxed, wide. Shorts: slim, regular, relaxed, wide'),
+  length: fitWord('length', 'Länge; Oberteil: cropped, regular, longline (deutlich verlängert). Hose: cropped (Knöchel frei), regular, long. Shorts: short, mid, long (bis Knie). Kleid/Rock: mini, above_knee, knee, midi, maxi'),
+  rise: fitWord('rise', 'Bundhöhe low, regular, high; nur Hose, Shorts, Rock'),
   layers: { type: 'array', items: { type: 'integer', enum: steps(3) }, description: `Mögliche Lagen: ${LAYERS.map((l, i) => `${i} = ${l}`).join('; ')}; nur Oberteil und Oberbekleidung` },
   warmth: level(3, `Wärme: ${WARMTH.map((w, i) => `${i} ${w}`).join(', ')}`),
   rain: level(2, `Regentauglich: ${RAIN.map((r, i) => `${i} ${r}`).join(', ')}`),
@@ -105,7 +106,8 @@ export type Analysis = {
   collar: string | null;
   closure: string | null;
   strap: string | null;
-  fit: { width: number | null; length: number | null; rise: number | null };
+  /** Passform als Begriffe („oversized“); in Stufen der Kategorie umgerechnet wird beim Zusammenführen (fitIndex) */
+  fit: { width: string | null; length: string | null; rise: string | null };
   layers: number[];
   warmth: number | null;
   rain: number | null;
@@ -122,6 +124,7 @@ const pickList = (v: unknown, allowed: KeyList, max = Infinity): string[] =>
   Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === 'string' && allowed.some((a) => a.key === x)))].slice(0, max) : [];
 const pickLevel = (v: unknown, max: number): number | null =>
   typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max ? v : null;
+const pickWord = (v: unknown, allowed: readonly string[]): string | null => (typeof v === 'string' && allowed.includes(v) ? v : null);
 const text = (v: unknown, max = 80): string | null => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 
 /** Kategorie-Pfad „top/shirt/long_sleeve_shirt“ → Pfad aus Keys; ungültig → ohne Kategorie */
@@ -158,7 +161,7 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
     collar: pickStr(r.collar, NECK_LIST),
     closure: pickStr(r.closure, CLOSURES),
     strap: pickStr(r.strap, STRAPS),
-    fit: { width: pickLevel(r.width, 4), length: pickLevel(r.length, 4), rise: pickLevel(r.rise, 2) },
+    fit: { width: pickWord(r.width, FIT_KEYS.width), length: pickWord(r.length, FIT_KEYS.length), rise: pickWord(r.rise, FIT_KEYS.rise) },
     layers: Array.isArray(r.layers) ? [...new Set(r.layers.filter((x) => pickLevel(x, 3) !== null) as number[])].sort() : [],
     warmth: pickLevel(r.warmth, 3),
     rain: pickLevel(r.rain, 2),

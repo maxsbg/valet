@@ -156,17 +156,18 @@ Ersetzt die alte Acloset-Liste (Plural, übersetzte Typen wie „Denimjacke“ u
 | Schmuck | Ohrring, Halskette, Armband, Ring, Brosche, Uhr, Sonstiges |
 | Accessoire | Unterwäsche (Boxershorts, Slip, Unterhemd, BH, Thermowäsche), Socke (Sneakersocke, Sportsocke, Stutzen, Kniestrumpf), Strumpfhose, Bademode (Badeshorts, Badehose, Bikini, Badeanzug), Gürtel, Schal (Strickschal, Loop-Schal, Halstuch, Bandana), Anzug-Accessoire (Krawatte, Fliege, Einstecktuch, Manschettenknopf), Handschuh (Fingerhandschuh, Fäustling, Sporthandschuh, Torwarthandschuh), Brille (Sehbrille, Sonnenbrille), Haarschmuck, Geldbörse, Handyhülle, Traditionelle Kleidung, Stulpe, Sonstiges |
 
-**Passform je Kategorie** (Skalen, Werte als Stufen-Index speichern, nicht als Text):
+**Passform je Kategorie** (Begriffe statt Wörter-Skala seit 20.11.2026, Max; gespeichert wird der Stufen-Index, Migration 0016; Quelle `FIT_SCALES` in `categories.ts`):
 
 | Kategorie | Skalen |
 |---|---|
-| Oberteil | Weite 5 (schmal, eher schmal, normal, eher weit, weit) · Länge 5 (kurz, eher kurz, normal, eher lang, lang) |
-| Hose | Weite 5 · Länge 5 · Bund 3 (tief, normal, hoch) |
-| Kleid | Länge 5 (Mini, über Knie, Knie, Midi, Maxi) |
-| Rock | Länge 5 (wie Kleid) · Bund 3 |
+| Oberteil | Weite Slim · Regular · Relaxed · Oversized · Länge Cropped · Regular · Longline |
+| Hose | Weite Skinny · Slim · Regular · Relaxed · Wide · Länge Cropped · Regular · Long · Bund tief · normal · hoch |
+| Shorts | Weite Slim · Regular · Relaxed · Wide · Länge Short · Mid · Long · Bund wie Hose |
+| Kleid | Länge Mini · über Knie · Knie · Midi · Maxi |
+| Rock | Länge wie Kleid · Bund wie Hose |
 | alle anderen | keine Passform-Zeile |
 
-Shop-Begriffe rechnet die KI um (Slim = schmal, Relaxed = eher weit, Oversized = weit + lang, Boxy = weit + kurz, Cropped = kurz, Baggy = weit, High Waist = Bund hoch, Low Rise = Bund tief). Tapered, Bootcut und Flared entfallen als Stufen; seit 20.11.2026 gehen sie (wie Straight Leg/Straight Fit) als Beinverlauf ins KI-Profil (`profile.leg`, Bootcut/Flared → Ausgestellt). Weitere Schreibweisen im Namen: Skinny/Slimfit = Slim, High Rise/Highwaist = High Waist, Loose Fit = Relaxed.
+Die KI liefert Begriffe (Keys wie `oversized`), die App rechnet sie in die Stufe der Kategorie um (`fitIndex`); fehlt ein Begriff in der Skala, gilt der nächste (Oberteil „wide“ = Oversized, Hose „oversized“ = Wide, Shorts „regular“ = Mid, Longline ↔ Long). Beim Kategoriewechsel wird über den Begriff umgerechnet (`convertFit`), ohne Gegenstück wird die Stufe leer. Shop-Begriffe: Skinny, Slim, Regular, Relaxed, Oversized (= Oversized + Longline), Boxy (= Oversized + Cropped), Cropped, Longline, Baggy/Wide Leg (= Wide), High Waist (= Bund hoch), Low Rise (= Bund tief). Tapered, Bootcut, Flared und Straight gehen als Beinverlauf ins KI-Profil (`profile.leg`). Weitere Schreibweisen im Namen: Slimfit = Slim, Skinny Fit = Skinny, Regular Fit = Regular, High Rise/Highwaist = High Waist, Loose Fit = Relaxed.
 
 **Weitere Listen:** Material zusätzlich Flanell und Lammfell, Muster zusätzlich Zopfmuster und Rippstrick, Verschluss zusätzlich Schnalle (z. B. Tasche mit Schnallen). Kragenweite bei der Größe nur für Unterkategorie Hemd.
 
