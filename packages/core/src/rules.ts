@@ -30,10 +30,30 @@ export const SEASONS_BY_WARMTH: readonly (readonly Season[])[] = [
   ['spring', 'summer'], ['spring', 'summer', 'autumn'], ['spring', 'autumn', 'winter'], ['autumn', 'winter'],
 ];
 const ALL_SEASONS: readonly Season[] = ['spring', 'summer', 'autumn', 'winter'];
-/** Saison aus der Wärme; Teile ohne Wetterfeld (Schmuck, Taschen, Brille …) = ganzjährig */
+const SPRING_SUMMER: readonly Season[] = ['spring', 'summer'];
+const COLD: readonly Season[] = ['autumn', 'winter'];
+const NOT_SUMMER: readonly Season[] = ['spring', 'autumn', 'winter'];
+/** Basisteile: leicht = ganzjährig (im Winter unterste Lage) */
+const BASE_TOPS = new Set(['t_shirt', 'long_sleeve', 'shirt', 'polo', 'blouse', 'bodysuit', 'sports_top']);
+/**
+ * Saison (Anzeige, Schrank-Filter, Statistik – für Outfits zählt die Temperatur, Max 21.11.2026).
+ * Grundsatz aus der Wärme, mit Ausnahmen: Kappen, Socken, Schmuck, Taschen ganzjährig; Bademode Sommer;
+ * Schuhe offen Frühling+Sommer, geschlossen ganzjährig, Stiefel Herbst–Frühling, gefüttert Herbst+Winter;
+ * leichte Basisteile und Hosen bis mittel ganzjährig; warme Mäntel auch Frühling; Mütze/Schal/Handschuh ab mittel Herbst+Winter.
+ */
 export function seasonsFrom(category: string | null, sub: string | null, warmth: number | null): readonly Season[] | null {
   if (!fieldsFor(category, sub).weather) return category ? ALL_SEASONS : null;
-  return warmth == null ? null : SEASONS_BY_WARMTH[warmth] ?? null;
+  if (category === 'headwear' && sub === 'cap') return ALL_SEASONS;
+  if (category === 'accessory' && (sub === 'sock' || sub === 'tights')) return ALL_SEASONS;
+  if (category === 'accessory' && sub === 'swimwear') return ['summer'];
+  if (warmth == null) return null;
+  if (category === 'shoe') return [SPRING_SUMMER, ALL_SEASONS, NOT_SUMMER, COLD][warmth] ?? null;
+  if ((category === 'accessory' && (sub === 'scarf' || sub === 'glove' || sub === 'warmer')) || (category === 'headwear' && sub === 'beanie_cap'))
+    return warmth >= 2 ? COLD : ALL_SEASONS;
+  if (category === 'top' && BASE_TOPS.has(sub ?? '') && warmth === 1) return ALL_SEASONS;
+  if (category === 'pants' && warmth <= 2) return warmth === 0 ? SPRING_SUMMER : ALL_SEASONS;
+  if (category === 'outerwear' && warmth === 3) return NOT_SUMMER;
+  return SEASONS_BY_WARMTH[warmth] ?? null;
 }
 
 // ---------- Verschluss und Kragen aus dem Typ ----------
