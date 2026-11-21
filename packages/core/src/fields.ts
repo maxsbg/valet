@@ -331,7 +331,7 @@ export function matchSize(kind: SizeKind | null, raw: string | null | undefined,
 // ---------- Lagen-Vorgabe je Unterkategorie (Max, 20.11.2026) ----------
 
 /** 0 Basis · 1 Mittellage · 2 Offen darüber · 3 Außen. Fehlt ein Eintrag, gilt die Vorgabe der Kategorie (LAYER_BY_CATEGORY). */
-const LAYER_BY_SUB: Readonly<Record<string, readonly number[]>> = {
+export const LAYER_BY_SUB: Readonly<Record<string, readonly number[]>> = {
   // Oberteil
   shirt: [0, 1, 2], blouse: [0, 1], sweatshirt: [1], hoodie: [1], sweater: [1], sweater_vest: [1], other: [],
   // Oberbekleidung
@@ -342,12 +342,12 @@ const LAYER_BY_SUB: Readonly<Record<string, readonly number[]>> = {
   coat: [3], trench_coat: [3], parka: [3], puffer_jacket: [3], shearling_jacket: [3], biker_jacket: [3], sports_jacket: [3],
 };
 /** Vorgabe nach Typ (vor der Unterkategorie) */
-const LAYER_BY_TYPE: Readonly<Record<string, readonly number[]>> = {
+export const LAYER_BY_TYPE: Readonly<Record<string, readonly number[]>> = {
   suit_vest: [1], knit_vest: [1], puffer_vest: [3], poncho: [3], cape: [3], robe: [],
   // Sportjacken (Max, 21.11.2026): Trainingsjacke wie Sweatjacke, Windbreaker als Übergangsjacke
   track_jacket: [1, 2], windbreaker: [2, 3], anorak: [3], rain_jacket: [3], thermal_jacket: [3],
 };
-const LAYER_BY_CATEGORY: Readonly<Record<string, readonly number[]>> = { top: [0], outerwear: [3], dress: [0] };
+export const LAYER_BY_CATEGORY: Readonly<Record<string, readonly number[]>> = { top: [0], outerwear: [3], dress: [0] };
 
 /** Vorgabe der Lagen für einen Kategorie-Pfad; Kategorien ohne Lagen → [] */
 export function defaultLayers(category: string | null | undefined, sub?: string | null, type?: string | null): number[] {

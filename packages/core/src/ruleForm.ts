@@ -51,7 +51,7 @@ export function applyRules(f: EditForm): EditForm {
   if (s && replaceable('seasons', f.seasons.length === 0)) set('seasons', [...s], 'rule');
 
   // Verschluss und Kragen
-  for (const [k, r] of [['closure', R.closureFrom(i)], ['collar', R.collarFrom(i)]] as const) {
+  for (const [k, r] of [['closure', R.closureFrom(i)], ['collar', R.collarFrom(i)], ['strap', R.strapFrom(i)]] as const) {
     if (!r) continue;
     const cur = out[k];
     if (!replaceable(k, cur == null)) continue;
@@ -97,6 +97,7 @@ export function applyProfileRules(f: EditForm): EditForm {
   const simple = <V>(v: V | null) => (v == null ? null : { v, why: 'Typ' });
   pick('heel', simple(R.heelFrom(i)) as never, 'shape');
   pick('bag_size', simple(R.bagSizeFrom(i)) as never, 'shape');
+  pick('sole', simple(R.soleFrom(i)) as never, 'shape');
   pick('structure', R.structureFrom(i) as never, 'shape');
   pick('sheen', R.sheenFrom(i) as never, 'surface');
   pick('surface', R.surfaceFrom(i) as never, 'surface');

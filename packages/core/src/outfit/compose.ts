@@ -8,7 +8,7 @@ import { layersOf } from '../fields';
 import { fitScaleOf } from '../categories';
 import type { OccasionKey } from '../occasions';
 import { DEFAULT_OUTFIT_CONFIG, type OutfitConfig, type RainLevel } from './config';
-import type { Range } from '../ai/profile';
+import { shaftOf, type Range } from '../ai/profile';
 import { WADA } from './wadaData';
 import { weatherFrom } from '../weather';
 
@@ -49,6 +49,8 @@ export type DayContext = {
   /** ISO-Datum des Tages */
   date: string;
   includeStored: boolean;
+  /** Schnee oder Matsch erwartet (Schneefall mit Wahrscheinlichkeit ≥ rainProb.hard); gilt nur mit rainOn */
+  snow?: boolean;
 };
 
 export type Slot = 'bottom' | 'base' | 'mid' | 'open' | 'outer' | 'shoes';
@@ -72,7 +74,7 @@ export function bandOf(t: number, cfg: OutfitConfig = DEFAULT_OUTFIT_CONFIG): Ba
 }
 
 /** Regenstufe aus Stundenwerten (nur Stunden im Zeitraum übergeben) */
-export function rainFromHours(hours: readonly { mm: number; prob: number; thunder?: boolean }[], cfg: OutfitConfig = DEFAULT_OUTFIT_CONFIG): { level: RainLevel; soft: boolean } {
+export function rainFromHours(hours: readonly { mm: number; prob: number; thunder?: boolean; snowCm?: number }[], cfg: OutfitConfig = DEFAULT_OUTFIT_CONFIG): { level: RainLevel; soft: boolean; snow: boolean } {
   const lvl = (h: { mm: number; thunder?: boolean }): RainLevel => (h.thunder || h.mm >= cfg.rainMm.heavy ? 'heavy' : h.mm >= cfg.rainMm.drizzle ? 'rain' : h.mm > 0 ? 'drizzle' : 'none');
   const order: RainLevel[] = ['none', 'drizzle', 'rain', 'heavy'];
   let hard: RainLevel = 'none', soft: RainLevel = 'none';
@@ -81,7 +83,8 @@ export function rainFromHours(hours: readonly { mm: number; prob: number; thunde
     if (h.prob >= cfg.rainProb.hard && order.indexOf(l) > order.indexOf(hard)) hard = l;
     else if (h.prob >= cfg.rainProb.soft && order.indexOf(l) > order.indexOf(soft)) soft = l;
   }
-  return { level: hard, soft: order.indexOf(soft) > order.indexOf(hard) && order.indexOf(soft) >= 2 };
+  const snow = hours.some((h) => (h.snowCm ?? 0) > 0 && h.prob >= cfg.rainProb.hard);
+  return { level: hard, soft: order.indexOf(soft) > order.indexOf(hard) && order.indexOf(soft) >= 2, snow };
 }
 
 // ---------- Schätzungen für fehlende Werte ----------
@@ -178,6 +181,13 @@ export function hardReason(i: OutfitItem, slot: Slot, ctx: DayContext, cfg: Outf
     const w = warmthOf(i).v;
     if (w === 0 && ctx.tempC < cfg.shoeTemp.openMin) return 'zu kalt für offene Schuhe';
     if (w >= 3 && ctx.tempC > cfg.shoeTemp.linedMax) return 'gefütterte Schuhe zu warm';
+  }
+  if (ctx.rainOn && ctx.snow) {
+    if (slot === 'shoes') {
+      const shaft = shaftOf({ category: i.category, sub: i.subcategory ?? null, type: i.item_type ?? null }, (i.profile?.shaft as string | null | undefined) ?? null);
+      if (!shaft || !cfg.snow.shoeShafts.includes(shaft) || rainOf(i).v < cfg.snow.shoeRainMin) return 'nicht schneetauglich';
+    }
+    if (slot === 'outer' && warmthOf(i).v < cfg.snow.outerWarmthMin) return 'Außenlage zu dünn für Schnee';
   }
   if (ctx.rainOn && (ctx.rain === 'rain' || ctx.rain === 'heavy') && (slot === 'outer' || slot === 'shoes')) {
     const need = cfg.rainMin[ctx.rain][slot === 'outer' ? 'outer' : 'shoe'];

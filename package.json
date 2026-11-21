@@ -9,7 +9,8 @@
     "farbmerkmale": "tsx docs/ki/analyse-v2/erstellen.ts",
     "outfitpruefung": "tsx docs/outfits/pruefung/erstellen.mts",
     "wetterregeln": "tsx docs/ki/wetter/erstellen.ts",
-    "regeln": "tsx docs/ki/regeln/erstellen.ts"
+    "regeln": "tsx docs/ki/regeln/erstellen.ts",
+    "einordnung": "tsx docs/einordnung/erstellen.ts"
   },
   "devDependencies": {
     "tsx": "4"

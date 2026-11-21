@@ -21,7 +21,7 @@ test('Regenstufe: schlimmste Stunde ab 50 %, 30–49 % nur weich', () => {
   assert.equal(rainFromHours([{ mm: 0.2, prob: 80 }, { mm: 1, prob: 60 }]).level, 'rain');
   assert.equal(rainFromHours([{ mm: 5, prob: 70 }]).level, 'heavy');
   assert.equal(rainFromHours([{ mm: 0, prob: 0, thunder: true }]).level, 'none');
-  assert.deepEqual(rainFromHours([{ mm: 2, prob: 40 }]), { level: 'none', soft: true });
+  assert.deepEqual(rainFromHours([{ mm: 2, prob: 40 }]), { level: 'none', soft: true, snow: false });
 });
 
 test('Harte Filter: Status, Wärme, Shorts, Regen, Anlass', () => {
@@ -37,6 +37,14 @@ test('Harte Filter: Status, Wärme, Shorts, Regen, Anlass', () => {
   const jeans = it({ id: 'jn', category: 'pants', subcategory: 'jeans', warmth: 2, seasons: ['autumn', 'winter'] });
   assert.equal(hardReason(jeans, 'bottom', day({ tempC: 26, month: 7 })), null);
   assert.equal(hardReason(jeans, 'bottom', day({ tempC: 31, month: 7 })), 'zu warm');
+  // Schnee (Max 21.11.2026): Schuhe ab Knöchel mit Regenschutz, Außenlage warm
+  const snow = day({ tempC: 4, snow: true });
+  assert.equal(hardReason(it({ id: 'sn', category: 'shoe', subcategory: 'sneaker', item_type: 'low_top_sneaker', rain: 1, warmth: 1 }), 'shoes', snow), 'nicht schneetauglich');
+  assert.equal(hardReason(it({ id: 'bt', category: 'shoe', subcategory: 'boot', item_type: 'lace_up_boot', rain: 1, warmth: 2 }), 'shoes', snow), null);
+  assert.equal(hardReason(it({ id: 'ch', category: 'shoe', subcategory: 'boot', item_type: 'chelsea_boot', rain: 0, warmth: 2 }), 'shoes', snow), 'nicht schneetauglich');
+  assert.equal(hardReason(it({ id: 'bl', category: 'outerwear', subcategory: 'blouson', warmth: 2, rain: 1 }), 'outer', snow), 'Außenlage zu dünn für Schnee');
+  assert.equal(hardReason(it({ id: 'sn2', category: 'shoe', subcategory: 'sneaker', item_type: 'low_top_sneaker', rain: 1, warmth: 1 }), 'shoes', { ...snow, rainOn: false }), null);
+  assert.equal(rainFromHours([{ mm: 0.2, prob: 70, snowCm: 1 }]).snow, true);
 });
 
 test('Slots: Zip-Jacke nie Basis', () => {

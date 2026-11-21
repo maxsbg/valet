@@ -161,3 +161,12 @@ test('Saison: Ausnahmen je Kategorie', () => {
   assert.deepEqual(seasonsFrom('top', 'tank_top', 0), ['spring', 'summer']);
   assert.deepEqual(seasonsFrom('accessory', 'swimwear', 0), ['summer']);
 });
+
+test('Sohle, Trägerart, Krawatte', () => {
+  assert.equal(Rules.soleFrom({ category: 'shoe', subcategory: 'sneaker', type: 'chunky_sneaker', materials: [], name: '' }), 'chunky');
+  assert.equal(Rules.strapFrom({ category: 'bag', subcategory: 'backpack', type: null, materials: [], name: '' })?.v, 'backpack_straps');
+  assert.equal(Rules.strapFrom({ category: 'bag', subcategory: 'belt_bag', type: null, materials: [], name: '' }), null);
+  assert.deepEqual(Rules.formalityFrame({ category: 'accessory', subcategory: 'suit_accessory', type: 'tie', materials: [], name: '' })?.v, [3, 5]);
+  const bag = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'bag', subcategory: 'handbag', type: 'shopper' });
+  assert.equal(bag.strap, 'handles');
+});

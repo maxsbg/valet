@@ -32,16 +32,16 @@ const shapeCats = is([...UPPER, 'skirt']);
 const legCats = is(['pants', 'shorts']);
 const shoe = is(['shoe']);
 /** Schafthöhe nur bei Schuhen mit Fersenteil – nicht bei Sandalen, Pantoletten (auch Mules), Clogs, Hausschuhen (Max, 21.11.2026) */
-const NO_SHAFT = ['sandal', 'slide', 'clog', 'house_shoe'];
+export const NO_SHAFT = ['sandal', 'slide', 'clog', 'house_shoe'];
 /** Schafthöhe, die sich aus dem Typ bzw. der Unterkategorie ergibt (Max, 21.11.2026) – dann kein Feld, Wert wird abgeleitet */
-const SHAFT_BY_TYPE: Readonly<Record<string, string>> = {
+export const SHAFT_BY_TYPE: Readonly<Record<string, string>> = {
   low_top_sneaker: 'low', mid_top_sneaker: 'ankle', high_top_sneaker: 'ankle',
   running_shoe: 'low', football_boot: 'low', indoor_shoe: 'low', tennis_shoe: 'low', training_shoe: 'low',
   chelsea_boot: 'ankle', desert_boot: 'ankle', lace_up_boot: 'ankle', western_boot: 'mid', rain_boot: 'mid', sheepskin_boot: 'mid',
   knee_boot: 'high', over_knee_boot: 'high',
   hiking_boot: 'ankle', low_hiking_shoe: 'low', trail_running_shoe: 'low',
 };
-const SHAFT_BY_SUB: Readonly<Record<string, string>> = { dress_shoe: 'low', slip_on: 'low', flat: 'low' };
+export const SHAFT_BY_SUB: Readonly<Record<string, string>> = { dress_shoe: 'low', slip_on: 'low', flat: 'low' };
 /** Abgeleitete Schafthöhe (Key aus SHAFTS) oder null (offen bzw. kein Schaft) */
 export function impliedShaft(c: Pick<Ctx, 'category' | 'sub' | 'type'>): string | null {
   if (c.category !== 'shoe') return null;
