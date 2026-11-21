@@ -4,7 +4,7 @@
 
 import type { Care, CareGroup, MaterialPart, Season } from './attributes';
 import { fieldsFor } from './fields';
-import { colorTrait } from './traits';
+import { colorTrait, mainColors } from './traits';
 import { materialShares } from './weather';
 
 export type RuleInput = {
@@ -372,13 +372,15 @@ const LOUD_PATTERNS = new Set(['animal', 'floral', 'tropical', 'paisley', 'camou
  */
 /** Typen, die von Natur aus weniger kombinierbar sind (Max 21.11.2026: Westerngürtel) */
 export const VERSATILITY_BY_TYPE: Record<string, number> = { western_belt: -1 };
-export function versatilityFrom(p: { colors: readonly string[]; pattern: string | null; presence: number | null; formality: readonly [number, number] | null; type?: string | null }): { v: number; why: string[] } | null {
+export function versatilityFrom(p: { colors: readonly string[]; pattern: string | null; presence: number | null; formality: readonly [number, number] | null; type?: string | null; shares?: readonly number[] | null }): { v: number; why: string[] } | null {
   if (!p.colors.length) return null;
+  // Details (Logo, Naht ≤ 10 %) zählen nicht als eigene Farbe
+  const colors = mainColors(p.colors, p.shares ?? null);
   const why: string[] = []; let v = 2.5;
   const t = p.type ? VERSATILITY_BY_TYPE[p.type] : undefined;
   if (t) { v += t; why.push(`Typ ${t > 0 ? '+' : '−'}${Math.abs(t)}`); }
-  const neutral = p.colors.filter((c) => { const t = colorTrait(c); return !!t && (t.neutral || t.wearNeutral); });
-  const accents = p.colors.length - neutral.length;
+  const neutral = colors.filter((c) => { const t = colorTrait(c); return !!t && (t.neutral || t.wearNeutral); });
+  const accents = colors.length - neutral.length;
   if (accents === 0) { v += 1; why.push('nur neutrale Farben +1'); } else if (accents >= 2) { v -= 1; why.push('mehrere Farben −1'); }
   if (!p.pattern || p.pattern === 'solid') { v += 0.5; why.push('unifarben +0,5'); } else if (LOUD_PATTERNS.has(p.pattern)) { v -= 1; why.push('lautes Muster −1'); }
   if (p.presence != null) {

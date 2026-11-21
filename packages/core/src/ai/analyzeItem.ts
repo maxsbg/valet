@@ -56,6 +56,8 @@ export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   name: { type: 'string', description: 'Kurze Artikelbezeichnung auf Deutsch, ohne Farbe, Marke und Passform-Begriffe (Slim, Oversized …), z. B. „Oxford-Hemd“' },
   brand: { type: ['string', 'null'], description: 'Nur wenn Logo oder Schriftzug lesbar ist, sonst null' },
   colors: list(COLOR_LIST, `1 bis ${MAX_COLORS} Farben, nach Flächenanteil sortiert. Nuance statt Hauptfarbe, wenn eindeutig (z. B. navy). multicolor nur bei mehr als drei Farben.`),
+  color_shares: { type: 'array', items: { type: 'integer', enum: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100] },
+    description: 'Sichtbarer Flächenanteil je Farbe in % (5er-Schritte), gleiche Reihenfolge wie colors, Summe 100. Kleine Details wie Logo, Naht, Knöpfe ehrlich klein schätzen (z. B. 5). Bei multicolor leer.' },
   pattern: str(PATTERNS, 'Muster des Stoffs'),
   materials: list(MATERIALS, 'Höchstens 3 geschätzte Materialien, Hauptmaterial zuerst. Leer, wenn nicht sinnvoll schätzbar.'),
   styles: list(STYLES, 'Passende Stile, höchstens 3'),
@@ -98,6 +100,8 @@ export type Analysis = {
   name: string | null;
   brand: string | null;
   colors: string[];
+  /** Flächenanteil je Farbe in % (gleiche Reihenfolge, Summe 100); leer = unbekannt (Max 21.11.2026) */
+  colorShares?: number[];
   pattern: string | null;
   materials: MaterialPart[];
   styles: string[];
@@ -126,6 +130,20 @@ const pickLevel = (v: unknown, max: number): number | null =>
 const pickWord = (v: unknown, allowed: readonly string[]): string | null => (typeof v === 'string' && allowed.includes(v) ? v : null);
 const text = (v: unknown, max = 80): string | null => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 
+/**
+ * Farbanteile prüfen: nur ganze Zahlen > 0 in gleicher Anzahl wie die (ungefilterten) Farben; ungültige Farben fallen
+ * mit ihrem Anteil weg; auf 100 normiert und auf 5er-Schritte gerundet. Sonst leer (dann feste Gewichte).
+ */
+function checkShares(v: unknown, colors: readonly string[], rawColors: unknown): number[] {
+  if (!Array.isArray(v) || !Array.isArray(rawColors) || !colors.length || colors[0] === MULTICOLOR) return [];
+  const pairs = rawColors.map((c, i) => [c, v[i]] as const).filter(([c, s]) => typeof c === 'string' && colors.includes(c) && typeof s === 'number' && s > 0);
+  const seen = new Set<string>();
+  const kept = pairs.filter(([c]) => (seen.has(c as string) ? false : (seen.add(c as string), true)));
+  if (kept.length !== colors.length) return [];
+  const sum = kept.reduce((a, [, s]) => a + (s as number), 0);
+  return colors.map((c) => Math.max(5, Math.round(((kept.find(([k]) => k === c)![1] as number) / sum) * 20) * 5));
+}
+
 /** Kategorie-Pfad „top/shirt/long_sleeve_shirt“ → Pfad aus Keys; ungültig → ohne Kategorie */
 export function parsePath(v: unknown): CategoryPath {
   // leere Teile („top//“) gelten als nicht angegeben, nie als leerer Text
@@ -153,6 +171,7 @@ export function checkAnalysis(raw: unknown, model: string | null = null): Analys
     name: text(r.name),
     brand: text(r.brand, 40),
     colors,
+    colorShares: checkShares(r.color_shares, colors, r.colors),
     pattern,
     materials: materials.map((name) => ({ name })),
     styles: pickList(r.styles, STYLES, 3),

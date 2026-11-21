@@ -83,6 +83,14 @@ add('material', 'Material und Anteile', `
 <p><b>Wofür:</b> Wärme rechnet alle Anteile gewichtet zusammen (5 % Wolle ändern nichts). Regen, Glanz, Oberfläche, Transparenz, Formstabilität schauen nur aufs Hauptmaterial. Pflege nimmt die vorsichtigste Stufe aller Materialien ab 15 %.</p>
 <p class="tip">Tipp: Je mehr Teile echte Prozente haben (über „Links nachtragen“ oder ein Etikettfoto), desto genauer wird alles.</p>`);
 
+// ---------- 2b. Farben ----------
+add('farben', 'Farben und Farbanteile', `
+<p>Die KI erkennt bis zu ${3} Farben, sortiert nach Fläche, und schätzt seit 21.11.2026 zu jeder Farbe den <b>Flächenanteil</b> in 5er-Schritten (z. B. Schwarz 95 %, Rot 5 %). Gespeichert in der Analyse, gültig nur solange die Farben gleich bleiben.</p>
+<ul><li><b>Details</b> (Anteil ≤ 10 %, z. B. Logo, Naht, Knöpfe) zählen nicht für Farbtemperatur, Sättigung, Farbverteilung und Vielseitigkeit – als Akzent für die Farbharmonie im Outfit bleiben sie erhalten (rotes Logo passt zu roten Sneakern).</li>
+<li>Die übrigen Farben werden nach ihren echten Anteilen gemittelt.</li>
+<li>Ohne Anteile (ältere Analysen) gelten feste Gewichte nach Rang: 70/30 bzw. 60/30/10.</li>
+<li>Ob ein Teil „laut“ wirkt, entscheidet vor allem die Auffälligkeit, die die KI am Foto schätzt.</li></ul>`);
+
 // ---------- 3. Wärme ----------
 add('waerme', 'Wärme (sehr leicht · leicht · mittel · warm)', `
 <p><b>Rechnung:</b> Grundwert aus Typ bzw. Unterkategorie + Verschiebung durch das Material (gewichtet nach Anteil) + 1 bei Futter-Wörtern im Namen → gerundet auf 0–3.</p>
