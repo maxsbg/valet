@@ -31,3 +31,4 @@ export * from './ai/view';
 export * from './outfit/config';
 export * from './outfit/compose';
 export * from './weather';
+export * from './rules';
