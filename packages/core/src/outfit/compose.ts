@@ -31,6 +31,8 @@ export type OutfitItem = {
   status?: string | null;
   fit_width?: number | null;
   profile?: Record<string, unknown> | null;
+  /** items.analysis.color_shares ({ colors, shares }) – echte Farbanteile, Details ≤ 10 % zählen nicht für die Farbwirkung */
+  color_shares?: unknown;
   last_worn?: string | null;
   /** an diesem Tag für jemand anderen reserviert */
   reservedForOther?: boolean;
@@ -150,7 +152,7 @@ export function traitsOf(i: OutfitItem): MatchTraits {
     t = matchTraits({
       category: i.category, subcategory: i.subcategory ?? null, colors: i.colors ?? null, pattern: i.pattern ?? null,
       materials: matNames(i.materials), layers: i.layers ?? null, styles: i.styles ?? null,
-      analysis: i.profile ? { profile: i.profile } : null,
+      analysis: i.profile || i.color_shares ? { profile: i.profile ?? null, color_shares: i.color_shares ?? null } : null,
     });
     traitCache.set(i, t);
   }

@@ -170,3 +170,24 @@ test('Sohle, Trägerart, Krawatte', () => {
   const bag = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'bag', subcategory: 'handbag', type: 'shopper' });
   assert.equal(bag.strap, 'handles');
 });
+
+import { colorTraits, sharesFor, mainColors } from '../src/traits';
+import { checkAnalysis } from '../src/ai/analyzeItem';
+
+test('Farbanteile: Details zählen nicht, echte Gewichte', () => {
+  const a = checkAnalysis({ category: 'outerwear', colors: ['black', 'red'], color_shares: [95, 5] });
+  assert.deepEqual(a.colorShares, [95, 5]);
+  assert.deepEqual(checkAnalysis({ colors: ['black', 'red'], color_shares: [60] }).colorShares, []);
+  const shares = sharesFor(['black', 'red'], { colors: ['black', 'red'], shares: [95, 5] });
+  assert.deepEqual(shares, [95, 5]);
+  assert.equal(sharesFor(['black', 'blue'], { colors: ['black', 'red'], shares: [95, 5] }), null); // Farben geändert
+  assert.deepEqual(mainColors(['black', 'red'], shares), ['black']);
+  const withLogo = colorTraits(['black', 'red'], shares)!, fixed = colorTraits(['black', 'red'])!;
+  assert.equal(withLogo.distribution, 'solid');
+  assert.equal(withLogo.temperature, 'neutral');
+  assert.ok(withLogo.chroma <= fixed.chroma);
+  // Vielseitigkeit: rotes Logo zählt nicht als Akzentfarbe
+  const v1 = Rules.versatilityFrom({ colors: ['black', 'red'], pattern: 'solid', presence: 2, formality: [1, 3], shares: [95, 5] })!.v;
+  const v2 = Rules.versatilityFrom({ colors: ['black', 'red'], pattern: 'solid', presence: 2, formality: [1, 3] })!.v;
+  assert.ok(v1 > v2);
+});

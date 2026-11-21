@@ -107,13 +107,37 @@ export type ColorTraits = {
 };
 
 const WEIGHTS: Readonly<Record<number, readonly number[]>> = { 1: [1], 2: [0.7, 0.3], 3: [0.6, 0.3, 0.1] };
+/** Farben mit höchstens so viel Flächenanteil (%) sind Details (Logo, Naht): zählen nicht für Temperatur, Verteilung, Vielseitigkeit – bleiben aber Akzent (Max 21.11.2026) */
+export const DETAIL_MAX = 10;
+/**
+ * Gespeicherte Farbanteile (items.analysis.color_shares = { colors, shares }) für diese Farben – nur, wenn die Farben
+ * noch genau dieselben sind (Reihenfolge egal); sonst null (dann feste Gewichte 70/30 bzw. 60/30/10).
+ */
+export function sharesFor(colors: readonly string[] | null | undefined, stored: unknown): number[] | null {
+  const keys = toColorKeys(colors ?? []);
+  if (!keys.length || !stored || typeof stored !== 'object') return null;
+  const s = stored as { colors?: unknown; shares?: unknown };
+  if (!Array.isArray(s.colors) || !Array.isArray(s.shares) || s.colors.length !== keys.length) return null;
+  const out = keys.map((k) => { const i = (s.colors as unknown[]).indexOf(k); const v = i >= 0 ? (s.shares as unknown[])[i] : null; return typeof v === 'number' && v > 0 ? v : null; });
+  return out.every((v): v is number => v != null) ? out : null;
+}
+/** Farben ohne Details (Anteil ≤ DETAIL_MAX); ohne Anteile alle; die Hauptfarbe bleibt immer */
+export function mainColors(colors: readonly string[] | null | undefined, shares: readonly number[] | null): string[] {
+  const keys = toColorKeys(colors ?? []);
+  if (!shares || shares.length !== keys.length) return keys;
+  const kept = keys.filter((_, i) => shares[i]! > DETAIL_MAX);
+  return kept.length ? kept : keys.slice(0, 1);
+}
 const contrastStep = (dL: number) => step(dL, [0.15, 0.3, 0.45, 0.6]);
 
 /** Farbwirkung aus den Steckbrief-Farben (Rang 1 zuerst, Keys oder tolerant Labels); ohne Farben → null */
-export function colorTraits(colors: readonly string[] | null | undefined): ColorTraits | null {
-  const keys = toColorKeys(colors ?? []).slice(0, 3);
+export function colorTraits(colors: readonly string[] | null | undefined, shares: readonly number[] | null = null): ColorTraits | null {
+  const all = toColorKeys(colors ?? []);
+  // mit Anteilen: Details (≤ DETAIL_MAX %) zählen nicht mit, Gewichte = echte Anteile; sonst feste Gewichte nach Rang
+  const useShares = !!shares && shares.length === all.length;
+  const keys = (useShares ? mainColors(all, shares) : all).slice(0, 3);
   if (!keys.length) return null;
-  const w = WEIGHTS[keys.length]!;
+  const w = useShares ? (() => { const s = keys.map((k) => shares![all.indexOf(k)]!); const sum = s.reduce((a, b) => a + b, 0); return s.map((x) => x / sum); })() : WEIGHTS[keys.length]!;
   const traits = keys.map((k) => (k === MULTICOLOR ? null : colorTrait(k)));
 
   let lightness = 0, chroma = 0, warm = false, cool = false;
@@ -195,7 +219,8 @@ export type MatchTraits = {
 export function matchTraits(item: MatchItem): MatchTraits {
   const profile = readProfile(item.analysis?.profile);
   const p = activeProfile(profile, { category: item.category, sub: item.subcategory, type: item.type ?? null, pattern: item.pattern, materials: item.materials ?? [] });
-  const color = colorTraits(item.colors);
+  const shares = sharesFor(item.colors, item.analysis?.color_shares);
+  const color = colorTraits(item.colors, shares);
   const colorKeys = toColorKeys(item.colors ?? []);
   let partial = false;
 
