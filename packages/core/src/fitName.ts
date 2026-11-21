@@ -9,22 +9,22 @@ type FitPart = Partial<Record<FitScale['key'], number>>;
 export type NameFit = { fit: FitWords; leg?: 'straight' | 'tapered' | 'flared'; hem?: 'open' | 'cuffed' | 'turn_up' };
 
 /** Schreibweisen im Namen → Begriff aus FIT_TERMS */
-const ALIASES: Readonly<Record<string, string>> = {
+export const FIT_NAME_ALIASES: Readonly<Record<string, string>> = {
   'slim fit': 'slim', slimfit: 'slim', 'skinny fit': 'skinny', 'regular fit': 'regular',
   oversize: 'oversized', 'over sized': 'oversized', 'over size': 'oversized',
   'high waisted': 'high waist', highwaist: 'high waist', 'high rise': 'high waist', highrise: 'high waist',
   'relaxed fit': 'relaxed', 'loose fit': 'relaxed', 'low waist': 'low rise',
 };
 /** Zusätzlich zu FIT_TERMS (nur fürs Auslesen des Namens) */
-const EXTRA: Readonly<Record<string, FitWords>> = { 'wide leg': { width: 'wide' } };
+export const FIT_NAME_EXTRA: Readonly<Record<string, FitWords>> = { 'wide leg': { width: 'wide' } };
 /** Nur Hinweis für profile.leg (keine Stufe der Passform) */
-const LEG_TERMS: Readonly<Record<string, NonNullable<NameFit['leg']>>> = {
+export const LEG_TERMS: Readonly<Record<string, NonNullable<NameFit['leg']>>> = {
   'straight leg': 'straight', 'straight fit': 'straight', tapered: 'tapered',
   bootcut: 'flared', 'boot cut': 'flared', flared: 'flared', flare: 'flared',
 };
 
 /** Nur Hinweis für profile.hem (Saum, Max 21.11.2026) */
-const HEM_TERMS: Readonly<Record<string, NonNullable<NameFit['hem']>>> = {
+export const HEM_TERMS: Readonly<Record<string, NonNullable<NameFit['hem']>>> = {
   'open leg': 'open', 'open hem': 'open', 'offener saum': 'open', 'offenes bein': 'open',
   cuffed: 'cuffed', 'cuffed leg': 'cuffed', bündchen: 'cuffed', 'mit bündchen': 'cuffed',
   'turn up': 'turn_up', turnup: 'turn_up', umschlag: 'turn_up', 'mit umschlag': 'turn_up',
@@ -41,9 +41,9 @@ export function fitFromName(name: string | null | undefined): NameFit {
   const n = norm(name ?? '');
   const out: NameFit = { fit: {} };
   if (!n.trim()) return out;
-  const terms: [string, FitWords][] = [...Object.entries(FIT_TERMS), ...Object.entries(EXTRA)];
+  const terms: [string, FitWords][] = [...Object.entries(FIT_TERMS), ...Object.entries(FIT_NAME_EXTRA)];
   for (const [term, part] of terms) {
-    const words = [term, ...Object.entries(ALIASES).filter(([, t]) => t === term).map(([a]) => a)];
+    const words = [term, ...Object.entries(FIT_NAME_ALIASES).filter(([, t]) => t === term).map(([a]) => a)];
     if (words.some((w) => has(n, w))) Object.assign(out.fit, part);
   }
   for (const [term, leg] of Object.entries(LEG_TERMS)) if (has(n, term)) out.leg = leg;
@@ -68,6 +68,6 @@ export function nameFitFor(category: string | null | undefined, words: FitWords)
 export function fitTermsIn(text: string | null | undefined): string[] {
   const n = norm(text ?? '');
   if (!n.trim()) return [];
-  const terms = [...Object.keys(FIT_TERMS), ...Object.keys(EXTRA), ...Object.keys(LEG_TERMS)];
-  return terms.filter((term) => [term, ...Object.entries(ALIASES).filter(([, t]) => t === term).map(([a]) => a)].some((w) => has(n, w)));
+  const terms = [...Object.keys(FIT_TERMS), ...Object.keys(FIT_NAME_EXTRA), ...Object.keys(LEG_TERMS)];
+  return terms.filter((term) => [term, ...Object.entries(FIT_NAME_ALIASES).filter(([, t]) => t === term).map(([a]) => a)].some((w) => has(n, w)));
 }

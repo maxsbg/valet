@@ -26,6 +26,8 @@ export type OutfitConfig = {
   /** Regen-Grenzen (mm/h) und Wahrscheinlichkeiten (%) */
   rainMm: { drizzle: number; heavy: number };
   rainProb: { hard: number; soft: number };
+  /** Schnee/Matsch (Max 21.11.2026): Schuhe mit Schaft ab Knöchel und Regenschutz ≥ shoeRainMin, Außenlage ≥ outerWarmthMin */
+  snow: { shoeShafts: readonly string[]; shoeRainMin: number; outerWarmthMin: number };
   /** Formalität je Anlass (1 Freizeit … 5 sehr formell) */
   occasionFormality: Record<OccasionKey, Range>;
   /** Zeitraum je Anlass (Stunden; Ende > 24 = Folgetag) */
@@ -61,6 +63,7 @@ export const DEFAULT_OUTFIT_CONFIG: OutfitConfig = {
   rainMin: { rain: { outer: 1, shoe: 1 }, heavy: { outer: 2, shoe: 1 } },
   rainMm: { drizzle: 0.5, heavy: 4 },
   rainProb: { hard: 50, soft: 30 },
+  snow: { shoeShafts: ['ankle', 'mid', 'high'], shoeRainMin: 1, outerWarmthMin: 3 },
   occasionFormality: {
     everyday: [1, 3], campus: [1, 3], office: [3, 4], cafe: [2, 3], date: [2, 4], party: [2, 4], formal: [4, 5],
     special_occasion: [3, 5], sport: [1, 1], vacation: [1, 3], beach: [1, 2], loungewear: [1, 1], other: [1, 4],

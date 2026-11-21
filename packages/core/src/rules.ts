@@ -126,6 +126,21 @@ export function heelFrom(i: RuleInput): string | null {
   return i.category === 'shoe' ? pick(i, HEEL_BY_TYPE, HEEL_BY_SUB) : null;
 }
 
+/** Sohle aus dem Typ (Max 21.11.2026); sonst KI */
+export const SOLE_BY_TYPE: Record<string, string> = { chunky_sneaker: 'chunky', platform_sneaker: 'platform', platform_heel: 'platform' };
+export function soleFrom(i: RuleInput): string | null {
+  return i.category === 'shoe' && i.type ? SOLE_BY_TYPE[i.type] ?? null : null;
+}
+
+/** Trägerart aus dem Typ (Steckbrief); Gürteltasche hat keinen passenden Wert → KI */
+export const STRAP_BY_TYPE: Record<string, string> = { shopper: 'handles', jute_bag: 'handles', minaudiere: 'none' };
+export const STRAP_BY_SUB: Record<string, string> = { backpack: 'backpack_straps', clutch: 'none' };
+export function strapFrom(i: RuleInput): { v: string; why: string } | null {
+  if (i.category !== 'bag') return null;
+  const v = pick(i, STRAP_BY_TYPE, STRAP_BY_SUB);
+  return v ? { v, why: i.type && STRAP_BY_TYPE[i.type] ? 'Typ' : 'Unterkategorie' } : null;
+}
+
 export const BAG_SIZE_BY_TYPE: Record<string, string> = {
   minaudiere: 'mini', baguette_bag: 'small', half_moon_bag: 'small', saddle_bag: 'small', hobo_bag: 'medium', bowling_bag: 'medium',
   satchel: 'medium', barrel_bag: 'medium', shopper: 'large', jute_bag: 'large', gym_sack: 'medium', weekender: 'large', duffel_bag: 'large',
@@ -315,6 +330,7 @@ export const FORMALITY_BY_TYPE: Record<string, readonly [number, number]> = {
   chunky_sneaker: [1, 2], platform_sneaker: [1, 2], chelsea_boot: [2, 4], desert_boot: [2, 3], lace_up_boot: [1, 3], western_boot: [2, 3],
   rain_boot: [1, 1], sheepskin_boot: [1, 2], briefcase: [3, 5], minaudiere: [4, 5],
   half_zip_sweater: [2, 4], half_zip_sweatshirt: [1, 2],
+  tie: [3, 5], bow_tie: [3, 5], pocket_square: [3, 5], cufflink: [3, 5],
   dress_belt: [3, 5], leather_belt: [1, 4], western_belt: [1, 2], web_belt: [1, 2], braided_belt: [1, 3],
 };
 export const FORMALITY_BY_SUB: Record<string, readonly [number, number]> = {
@@ -328,7 +344,7 @@ export const FORMALITY_BY_SUB: Record<string, readonly [number, number]> = {
   sneaker: [1, 3], sports_shoe: [1, 1], dress_shoe: [3, 5], boot: [1, 3], hiking_shoe: [1, 1], sandal: [1, 2], slide: [1, 1], clog: [1, 2],
   flat: [2, 4], high_heel: [3, 5], house_shoe: [1, 1],
   backpack: [1, 2], cloth_bag: [1, 2], belt_bag: [1, 2], handbag: [2, 4], clutch: [4, 5], travel_bag: [1, 2], work_bag: [3, 4],
-  belt: [1, 4],
+  belt: [1, 4], suit_accessory: [3, 5],
 };
 /** Lockere Schnitte im Namen senken die Obergrenze um eine Stufe (Max: Barrel-Anzughose ist weniger formell) */
 export const RELAXED_WORDS = ['barrel', 'baggy', 'loose', 'wide', 'wide leg', 'oversized', 'oversize', 'relaxed', 'balloon', 'parachute', 'jogger'];

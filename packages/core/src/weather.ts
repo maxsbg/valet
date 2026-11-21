@@ -45,7 +45,7 @@ export const WARMTH_BY_SUB: Readonly<Record<string, Warmth>> = {
   // Kopfbedeckung, Accessoires mit Wetterfeld
   cap: 0, hat: 0, beanie_cap: 2, scarf: 2, glove: 2, sock: 1, tights: 1, warmer: 2, swimwear: 0,
 };
-const WARMTH_BY_CATEGORY: Readonly<Record<string, Warmth>> = {
+export const WARMTH_BY_CATEGORY: Readonly<Record<string, Warmth>> = {
   top: 1, outerwear: 2, pants: 1, shorts: 0, skirt: 1, dress: 1, shoe: 1, headwear: 0, accessory: 1,
 };
 
@@ -109,11 +109,11 @@ const norm = (s: string) => ` ${s.toLowerCase().replace(/[^a-z0-9äöüß]+/g, '
 const hasWord = (n: string, w: string) => n.includes(` ${w} `);
 
 /** Typen, die per se regenfest sind */
-const RAIN_BY_TYPE: Readonly<Record<string, Rain>> = { rain_jacket: 2, rain_boot: 2, anorak: 1, windbreaker: 1, puffer_vest: 1 };
+export const RAIN_BY_TYPE: Readonly<Record<string, Rain>> = { rain_jacket: 2, rain_boot: 2, anorak: 1, windbreaker: 1, puffer_vest: 1 };
 /** Unterkategorien mit Mindest-Regenschutz (Trenchcoat: Gabardine, meist imprägniert) */
-const RAIN_BY_SUB: Readonly<Record<string, Rain>> = { trench_coat: 1 };
+export const RAIN_BY_SUB: Readonly<Record<string, Rain>> = { trench_coat: 1 };
 /** Nur hier zählt das Material für den Regenschutz (eine Stoffhose aus Polyester wird trotzdem nass, Max 21.11.2026) */
-const RAIN_BY_MATERIAL_IN: ReadonlySet<string> = new Set(['outerwear', 'shoe']);
+export const RAIN_BY_MATERIAL_IN: ReadonlySet<string> = new Set(['outerwear', 'shoe']);
 
 // ---------- Berechnung ----------
 
@@ -132,8 +132,8 @@ export type WeatherResult = {
  * Anzugstoffe (Max 21.11.2026): Anzug-/Stoffhosen, Sakkos, Anzugwesten sind aus Wolle leicht (Kammgarn, ganzjährig).
  * Wärmer nur durch Flanell, Tweed, Cord, Bouclé oder Wörter im Namen.
  */
-const TAILORED_SUBS = new Set(['trousers', 'blazer']);
-const TAILORED_TYPES = new Set(['suit_vest', 'suit_trousers', 'pleated_trousers', 'chino']);
+export const TAILORED_SUBS = new Set(['trousers', 'blazer']);
+export const TAILORED_TYPES = new Set(['suit_vest', 'suit_trousers', 'pleated_trousers', 'chino']);
 export const TAILORED_WARMTH: Readonly<Record<string, number>> = { flannel: 1, tweed: 1, corduroy: 1, boucle: 1, linen: -1, silk: -1 };
 export const TAILORED_WARM_WORDS: readonly string[] = ['flannel', 'flanell', 'tweed', 'cord', 'corduroy', 'winter', 'boucle'];
 const tailored = (sub: string | null | undefined, type: string | null | undefined) =>
