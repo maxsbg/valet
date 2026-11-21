@@ -172,17 +172,22 @@ export function applyWeather(f: EditForm): EditForm {
   const src0 = f.analysisBase?.src;
   const src: Record<string, unknown> = src0 && typeof src0 === 'object' && !Array.isArray(src0) ? { ...(src0 as Record<string, unknown>) } : {};
   let pending = [...f.aiPending];
+  const acc0 = f.analysisBase?.accepted;
+  let accepted: string[] = Array.isArray(acc0) ? acc0.filter((x): x is string => typeof x === 'string') : [];
   let out: EditForm = f;
   for (const k of ['warmth', 'rain'] as const) {
     const open = pending.includes(k);
-    if (f[k] != null && !open) continue; // bestätigt
+    const onlyAccepted = !open && accepted.includes(k);
+    if (f[k] != null && !open && !onlyAccepted) continue; // selbst eingetragen
+    if (onlyAccepted && (!trusted(r, k) || f[k] === r[k])) continue; // übernommener KI-Wert: nur bei Widerspruch korrigieren
     const fromMaterial = open && src[k] === 'material';
     if (trusted(r, k)) {
-      const origin = open ? (src[k] ?? 'image') : null;
+      const origin = open ? (src[k] ?? 'image') : onlyAccepted ? 'image' : null;
       if (f[k] != null && origin !== 'image' && origin !== 'name' && origin !== 'material') continue; // höherrangige Quelle
       if (f[k] === r[k] && fromMaterial) continue;
       out = { ...out, [k]: r[k] };
       if (!open) pending = [...pending, k];
+      accepted = accepted.filter((x) => x !== k);
       src[k] = 'material';
     } else if (fromMaterial) {
       out = { ...out, [k]: null };
@@ -191,7 +196,8 @@ export function applyWeather(f: EditForm): EditForm {
     }
   }
   if (out === f) return f;
-  return { ...out, aiPending: pending, analysisBase: { ...f.analysisBase, src } };
+  const { accepted: _a, ...base } = f.analysisBase ?? {};
+  return { ...out, aiPending: pending, analysisBase: { ...base, src, ...(accepted.length ? { accepted } : {}) } };
 }
 
 /** Hinweis in Bearbeiten, wenn Wärme oder Regen noch offen und aus Typ + Material berechnet sind */

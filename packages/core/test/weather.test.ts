@@ -127,3 +127,20 @@ test('Material-Anteile: Prozent, sonst nach Reihenfolge, Elasthan 3 %', () => {
   // 5 % Wolle ändern die Wärme nicht
   assert.equal(w('top', 't_shirt', null, []).warmth, weatherFrom({ category: 'top', subcategory: 't_shirt', type: null, materials: [{ name: 'cotton', pct: 95 }, { name: 'wool', pct: 5 }], name: '' }).warmth);
 });
+
+import { confirmAi, confirmAllAi, acceptedKeys } from '../src/edit';
+
+test('Übernommene KI-Werte darf die Regel korrigieren, selbst eingetragene nicht', () => {
+  let f = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'pants', subcategory: 'sweatpants', type: null });
+  // KI schlug Regen mittel vor, Max hat übernommen
+  f = { ...f, rain: 1, aiPending: ['rain'], analysisBase: { src: { rain: 'image' } } };
+  const acc = confirmAllAi(f);
+  assert.deepEqual(acceptedKeys(acc), ['rain']);
+  const g = setField(acc, 'materials', [{ name: 'cotton', pct: null }]);
+  assert.equal(g.rain, 0); // Regel: Hose nie Regenschutz aus Material
+  assert.ok(g.aiPending.includes('rain')); // wieder offen
+  // selbst eingetragen bleibt
+  const own = setField(confirmAi(f, 'rain'), 'rain', 1);
+  assert.deepEqual(acceptedKeys(own), []);
+  assert.equal(setField(own, 'materials', [{ name: 'cotton', pct: null }]).rain, 1);
+});

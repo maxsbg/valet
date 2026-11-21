@@ -131,7 +131,7 @@ function withPendingSrc(f: Pick<EditForm, 'analysisBase' | 'aiPending'>): Record
 
 /** Feld ändern; eine KI-Markierung dieses Felds verschwindet (Spec 7) */
 export function setField<K extends keyof EditForm>(f: EditForm, k: K, v: EditForm[K]): EditForm {
-  const next = { ...f, [k]: v, aiPending: f.aiPending.filter((x) => x !== k && !x.startsWith(`${String(k)}.`)) };
+  const next = markOwn({ ...f, [k]: v, aiPending: f.aiPending.filter((x) => x !== k && !x.startsWith(`${String(k)}.`)) }, String(k));
   // Material oder Wärme geändert: abgeleitete Werte neu (nur offene oder leere)
   return k === 'materials' || k === 'warmth' ? derive(next) : next;
 }
@@ -303,9 +303,28 @@ export function dropImageSuggestions(f: EditForm): EditForm {
 }
 
 /** KI-Vorschlag bestätigen (Wert bleibt) */
-export const confirmAi = (f: EditForm, k: string): EditForm => ({ ...f, aiPending: f.aiPending.filter((x) => x !== k) });
+export const confirmAi = (f: EditForm, k: string): EditForm =>
+  withAccepted({ ...f, aiPending: f.aiPending.filter((x) => x !== k) }, [k.split('.')[0]!]);
 /** Alle KI-Vorschläge übernehmen (Knopf „Alle übernehmen“): danach gelten sie als bestätigt (Spec 7, Detailseite) */
-export const confirmAllAi = (f: EditForm): EditForm => ({ ...f, aiPending: [] });
+export const confirmAllAi = (f: EditForm): EditForm => withAccepted({ ...f, aiPending: [] }, f.aiPending.map((k) => k.split('.')[0]!));
+
+/**
+ * Übernommene KI-Werte (items.analysis.accepted): bestätigt, aber nicht selbst eingetragen (Max 21.11.2026).
+ * Feste Regeln dürfen sie noch korrigieren (dann wieder offen), selbst Eingetragenes nie.
+ */
+export function acceptedKeys(f: Pick<EditForm, 'analysisBase'>): string[] {
+  const a = f.analysisBase?.accepted;
+  return Array.isArray(a) ? a.filter((k): k is string => typeof k === 'string') : [];
+}
+function withAccepted(f: EditForm, add: readonly string[], remove: readonly string[] = []): EditForm {
+  const cur = acceptedKeys(f);
+  const next = [...new Set([...cur, ...add])].filter((k) => !remove.includes(k));
+  if (next.length === cur.length && next.every((k) => cur.includes(k))) return f;
+  const { accepted: _, ...rest } = f.analysisBase ?? {};
+  return { ...f, analysisBase: next.length ? { ...rest, accepted: next } : rest };
+}
+/** Wert wurde selbst gesetzt → nicht mehr „nur übernommen“ */
+export const markOwn = (f: EditForm, k: string): EditForm => withAccepted(f, [], [k]);
 
 /** Mehrfachauswahl: an/aus (Reihenfolge = Reihenfolge der Wahl) */
 export const toggleIn = <T>(list: readonly T[], v: T): T[] => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);

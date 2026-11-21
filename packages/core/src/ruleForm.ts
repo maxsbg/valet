@@ -11,6 +11,10 @@ import * as R from './rules';
 /** Ab dieser Sicherheit (0–10) darf die KI einer Typ-/Material-Regel widersprechen */
 export const AI_SURE = 8;
 
+export const acceptedOf = (f: Pick<EditForm, 'analysisBase'>): string[] => {
+  const a = f.analysisBase?.accepted;
+  return Array.isArray(a) ? a.filter((k): k is string => typeof k === 'string') : [];
+};
 const input = (f: EditForm): R.RuleInput => ({
   category: f.category, subcategory: f.subcategory, type: f.type, materials: f.materials, name: f.name, colors: f.colors, nameTrusted: nameTrusted(f),
 });
@@ -23,18 +27,21 @@ export function applyRules(f: EditForm): EditForm {
   const i = input(f);
   const src: Record<string, unknown> = { ...originsOf(f) };
   let pending = [...f.aiPending];
+  // übernommene KI-Werte darf eine Regel noch korrigieren (dann wieder offen), selbst eingetragene nie
+  let accepted = acceptedOf(f);
   let out: EditForm = f;
   const isOpen = (k: string) => pending.includes(k);
   const set = <K extends keyof EditForm>(k: K, v: EditForm[K], origin: Origin) => {
-    if (same(out[k], v) && src[k as string] === origin) return;
+    if (same(out[k], v) && (src[k as string] === origin || !isOpen(k as string))) return; // gleicher Wert: nichts wieder öffnen
     out = { ...out, [k]: v };
     if (!isOpen(k as string)) pending = [...pending, k as string];
+    accepted = accepted.filter((x) => x !== k);
     src[k as string] = origin;
   };
   /** Darf ein offener/leerer Wert ersetzt werden? Nie über Shop/Etikett (außer eigene Regel) */
   const replaceable = (k: string, empty: boolean) => {
     if (empty) return true;
-    if (!isOpen(k)) return false; // bestätigt
+    if (!isOpen(k)) return accepted.includes(k); // bestätigt: nur übernommene KI-Werte
     const o = (src[k] as Origin | undefined) ?? 'image';
     return o === 'image' || o === 'name' || o === 'rule' || o === 'material';
   };
@@ -72,7 +79,8 @@ export function applyRules(f: EditForm): EditForm {
   }
 
   if (out === f) return f;
-  return { ...out, aiPending: pending, analysisBase: { ...out.analysisBase, src } };
+  const { accepted: _a, ...base } = out.analysisBase ?? {};
+  return { ...out, aiPending: pending, analysisBase: { ...base, src, ...(accepted.length ? { accepted } : {}) } };
 }
 
 /** Profil-Werte nach einer Bildanalyse (oder beim Nachrechnen): Regel, außer die KI ist sicher und widerspricht */
