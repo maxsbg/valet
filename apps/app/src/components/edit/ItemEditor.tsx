@@ -62,6 +62,9 @@ type Props = {
   onError?: (message: string) => void;
   /** Start-Reiter (z. B. „Preis fehlt“ antippen → Kauf) */
   initialTab?: 'steck' | 'kauf';
+  /** Rückseite (Backprint): zweites Foto ohne „Wendbar“; nur wenn die Seite es anbietet */
+  back?: boolean;
+  onBack?: (on: boolean) => void;
   /** Set (nur Schrank-Teile): Zustand, Teile des Schranks, bisheriges Set */
   set?: { draft: SetDraft; onChange: (d: SetDraft) => void; items: Tile[]; currentId: string | null; setId: string | null };
 };
@@ -224,8 +227,16 @@ export function ItemEditor(p: Props) {
         (last) => colorRow('a', last),
         fx.reversible && ((last) => (
           <PlainRow label="Wendbar" inset last={last}>
-            <SymbolSwitch on={f.reversible} label="Wendbar" onToggle={() => set('reversible', !f.reversible)}>
+            <SymbolSwitch on={f.reversible} label="Wendbar" onToggle={() => { if (!f.reversible) p.onBack?.(false); set('reversible', !f.reversible); }}>
               {(c) => <Icon name="reversible" size="row" color={c} />}
+            </SymbolSwitch>
+          </PlainRow>
+        )),
+        // Rückseite (Backprint, Max 21.11.2026): zweites Foto, gemeinsame Farben; schließt Wendbar aus
+        !!p.onBack && !reversible && ((last) => (
+          <PlainRow label="Rückseite" inset last={last}>
+            <SymbolSwitch on={!!p.back} label="Rückseite" onToggle={() => p.onBack!(!p.back)}>
+              {(c) => <Icon name="backside" size="row" color={c} />}
             </SymbolSwitch>
           </PlainRow>
         )),
@@ -471,7 +482,7 @@ export function ItemEditor(p: Props) {
       </View>
       <Page contentContainerStyle={{ alignItems: 'center', paddingBottom: bottom + 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ width: col, paddingTop: 12, gap: 14 }}>
-          <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={f.reversible} kind={tileKind(f.category, f.subcategory, f.type, f.fit.length)}
+          <EditImage width={col} current={p.current} pics={p.pics} onPick={p.onPic} reversible={reversible} back={!reversible && !!p.back} kind={tileKind(f.category, f.subcategory, f.type, f.fit.length)}
             hex={p.hex} colors={f.colors} colorsB={f.colorsB} onInfo={() => setInfo(true)} onChangePhoto={p.onChangePhoto}
             loadStored={p.loadStored} onError={p.onError} />
           {!!p.aiBusy && (

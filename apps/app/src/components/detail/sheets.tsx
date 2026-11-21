@@ -97,7 +97,7 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
   open: boolean; itemId: string; f: EditForm; onSaved: (msg: string) => void; onClose: () => void;
 }) {
   const t = useTheme();
-  const [img, setImg] = useState<{ path: string; colors: { h: string; s: number }[] } | null | undefined>(undefined);
+  const [img, setImg] = useState<{ path: string; colors: { h: string; s: number }[]; backPath: string | null } | null | undefined>(undefined);
   const [imgError, setImgError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +118,7 @@ export function AnalysisSheet({ open, itemId, f, onSaved, onClose }: {
     setBusy(true); setError(null);
     try {
       let a: Awaited<ReturnType<typeof analyzeStored>>;
-      try { a = await analyzeStored(img.path, confirmedContext(f)); } catch (e) {
+      try { a = await analyzeStored(img.path, confirmedContext(f), img.backPath); } catch (e) {
         if (n !== runId.current) return;
         const { code, status } = await kiError(e);
         setError(kiMessage(code, status));

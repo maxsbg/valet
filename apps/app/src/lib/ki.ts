@@ -1,5 +1,5 @@
 // KI über die Edge Function `ki` (Durchreicher zu Gemini). Prompt, Schema und Prüfung kommen aus @valet/core.
-import { ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, analysisUsable, pagePriceInEuro, checkAnalysis, checkInfo, readInfoPrompt, readPagePrompt, type PageFacts, type Analysis, type Info, type InfoKind } from '@valet/core';
+import { ANALYZE_ITEM_PROMPT, BACK_SIDE_NOTE, ANALYZE_ITEM_SCHEMA, READ_INFO_SCHEMA, analysisUsable, pagePriceInEuro, checkAnalysis, checkInfo, readInfoPrompt, readPagePrompt, type PageFacts, type Analysis, type Info, type InfoKind } from '@valet/core';
 import { supabase } from './supabase';
 
 /** Blob → Base64 ohne data:-Präfix */
@@ -46,11 +46,12 @@ function usable(data: unknown, model: string | null): Analysis {
 /** Antwort der Edge Function: geprüft wird in core, `model` = tatsächlich genutztes Modell */
 type Answer = { data: unknown; model: string | null };
 
-async function ask(image: Blob, prompt: string, schema: unknown, opts: { temperature?: number; text?: string } = {}): Promise<Answer> {
+async function ask(image: Blob, prompt: string, schema: unknown, opts: { temperature?: number; text?: string; back?: Blob | null } = {}): Promise<Answer> {
   const data = await toBase64(image);
-  const { text, ...rest } = opts;
+  const { text, back, ...rest } = opts;
+  const backImage = back ? { data: await toBase64(back), mimeType: back.type || 'image/jpeg' } : null;
   const { data: res, error } = await supabase.functions.invoke('ki', {
-    body: { image: { data, mimeType: image.type || 'image/jpeg' }, prompt, schema, ...rest, ...(text ? { text } : {}) },
+    body: { image: { data, mimeType: image.type || 'image/jpeg' }, prompt, schema, ...rest, ...(text ? { text } : {}), ...(backImage ? { backImage } : {}) },
   });
   if (error) throw error;
   return { data: res?.data, model: typeof res?.model === 'string' ? res.model : null };
@@ -65,9 +66,9 @@ export async function readInfo(file: Blob, kind: InfoKind | null, hint = ''): Pr
  * Teil auf dem Bild erkennen. `context` = Angaben aus Shopseite/Screenshot/Etikett (infoContext), die die Edge Function
  * hinter den Prompt hängt. Wirft bei Fehler; „rate_limited“ = Gratis-Kontingent gerade erschöpft.
  */
-export async function analyzePicture(image: Blob, context = ''): Promise<Analysis> {
-  // Temperatur 0: gleiches Bild → möglichst gleiches Profil (Spec 6.3)
-  const { data, model } = await ask(image, ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, { temperature: 0, text: context.slice(0, 20000) });
+export async function analyzePicture(image: Blob, context = '', back: Blob | null = null): Promise<Analysis> {
+  // Temperatur 0: gleiches Bild → möglichst gleiches Profil (Spec 6.3); Rückseite (Backprint) als zweites Bild
+  const { data, model } = await ask(image, ANALYZE_ITEM_PROMPT, ANALYZE_ITEM_SCHEMA, { temperature: 0, text: withBack(context, !!back).slice(0, 20000), back });
   return usable(data, model);
 }
 
@@ -75,14 +76,18 @@ export async function analyzePicture(image: Blob, context = ''): Promise<Analysi
  * Gespeichertes Teil neu erkennen (Spec 8): Bild aus dem Storage über den Pfad (freigestelltes Hauptbild Seite A,
  * sonst Original). `context` geht als Text hinter den Prompt. Wirft bei Fehler; kiError(e) liefert den Code („rate_limited“ …).
  */
-export async function analyzeStored(imagePath: string, context = ''): Promise<Analysis> {
-  // context: bestätigte Steckbrief-Werte (confirmedContext), damit das Profil zu ihnen passt
+export async function analyzeStored(imagePath: string, context = '', backPath: string | null = null): Promise<Analysis> {
+  // context: bestätigte Steckbrief-Werte (confirmedContext), damit das Profil zu ihnen passt; backPath = Rückseite (Backprint)
+  const text = withBack(context, !!backPath);
   const { data: res, error } = await supabase.functions.invoke('ki', {
-    body: { imagePath, prompt: ANALYZE_ITEM_PROMPT, schema: ANALYZE_ITEM_SCHEMA, temperature: 0, ...(context ? { text: context.slice(0, 20000) } : {}) },
+    body: { imagePath, prompt: ANALYZE_ITEM_PROMPT, schema: ANALYZE_ITEM_SCHEMA, temperature: 0, ...(text ? { text: text.slice(0, 20000) } : {}), ...(backPath ? { backPath } : {}) },
   });
   if (error) throw error;
   return usable(res?.data, typeof res?.model === 'string' ? res.model : null);
 }
+
+/** Kontext um den Rückseiten-Hinweis ergänzen (nur mit zweitem Bild) */
+const withBack = (context: string, back: boolean) => (back ? [BACK_SIDE_NOTE, context].filter(Boolean).join('\n\n') : context);
 
 /** Fehlercode der Edge Function („rate_limited“, „empty_answer“, HTTP-Status 404 …) aus einem Fehler lesen; ohne Status = Netzfehler */
 export async function kiError(e: unknown): Promise<{ code: string; status: number | null }> {

@@ -28,3 +28,6 @@ Einzige Quelle: `packages/ui/src/symbols.ts` (`SYMBOLS`). Übersicht für Max: `
 - Besonderer Anlass = Rosette (Funkeln bleibt KI). Sonstiges = Formen (sah vorher aus wie „Mehr“). Zurücksetzen = Rückgängig-Pfeil (nicht wie Wendbar). Reihenfolge = gerade Pfeile hoch/runter (nicht Chevron). „Outfit damit“/Baukasten = Karten-Stapel mit Plus (Würfel bleibt fürs Generieren). Büro bleibt Aktentasche.
 - Angeglichen: Strich überall 2; neu gezeichnet Verliehen, Eingelagert, Frühling, Herbst, Sommer, Kamera, Etikett, Tüte/Gekauft; Eckradius 2 bei Kalender, Wäsche, Handy, Würfel; Größe/Mitte bei Alltag, Party (eine Linie weniger), Strand, Café, Wärme, Loungewear, Geschenk, Büro, KI, Regen, Waschen/Nicht bleichen.
 - Woche/Monat blättern mit Chevron statt Zurück-Pfeil.
+
+## Entscheidung 21.11.2026 (Max)
+- Neu `backside` („Rückseite“, z. B. Backprint): liegender Ring um eine senkrechte Achse, Variante B1. Vorn läuft der Ring vor der Achse (Achse unterbrochen), hinten dahinter (Ring unterbrochen) – so entsteht Tiefe. Pfeilspitze vorn rechts, wo der Ring fast waagerecht läuft, Flügel gleich lang im rechten Winkel wie bei `reversible`. Bewusst anders als Wendbar (zwei Pfeile im Kreis): Wendbar = Innenseite tragbar, eigene Farben; Rückseite = dasselbe Teil von hinten, eine gemeinsame Farbliste.

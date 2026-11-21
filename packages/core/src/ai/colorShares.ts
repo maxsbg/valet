@@ -13,9 +13,10 @@ export function sharesMissing(colors: readonly string[] | null | undefined, anal
   return !sharesFor(keys, (analysis as { color_shares?: unknown } | null)?.color_shares);
 }
 
-export function colorSharesPrompt(colors: readonly string[]): string {
+export function colorSharesPrompt(colors: readonly string[], back = false): string {
   const keys = toColorKeys(colors);
   return [
+    ...(back ? ['Das zweite Bild zeigt die Rückseite desselben Teils (z. B. Backprint) – rechne beide Seiten zusammen.'] : []),
     'Du siehst ein Kleidungsstück. Seine Farben sind bereits festgelegt (nach Fläche sortiert):',
     keys.map((k, i) => `${i + 1}. ${colorLabel(k)} (${k})`).join('\n'),
     'Schätze für jede dieser Farben ihren Anteil an der sichtbaren Fläche des Teils in Prozent, in 5er-Schritten, in genau dieser Reihenfolge.',

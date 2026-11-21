@@ -10,7 +10,7 @@ import type { Picture } from '@/lib/cutout';
 import { useSession } from '@/lib/session';
 import { useTheme } from '@/lib/theme';
 import { useBottomInset } from '@/lib/bottomInset';
-import { loadItem, loadPictures, loadStoredPicture, updateItem, deleteItem, saveImage, saveSet, type ItemRow } from '@/lib/item';
+import { loadItem, loadPictures, loadStoredPicture, updateItem, deleteItem, saveImage, deleteImageSide, saveSet, type ItemRow } from '@/lib/item';
 import type { SetDraft } from '@/components/edit/SetPicker';
 import { nameToHex } from '@/lib/wardrobe';
 import { colorHex } from '@valet/core';
@@ -25,6 +25,8 @@ export default function Bearbeiten() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [current, setCurrent] = useState<Record<'a' | 'b', string | null>>({ a: null, b: null });
   const [pics, setPics] = useState<Record<'a' | 'b', Picture | null>>({ a: null, b: null });
+  // Rückseite (Backprint): nicht wendbar, aber mit Foto der Seite B (Max 21.11.2026)
+  const [back, setBack] = useState(false);
   // Set (entschieden 15.11.2026: wird in Bearbeiten gepflegt)
   const [setDraft, setSetDraft] = useState<SetDraft>({ on: false, members: [], name: '' });
   const [set0, setSet0] = useState<SetDraft | null>(null);
@@ -45,6 +47,9 @@ export default function Bearbeiten() {
     setSetDraft(s0); setSet0(s0);
   }, [orig, wardrobe, set0, id]);
 
+  // Rückseite an, wenn das Teil nicht wendbar ist, aber ein Foto der Seite B hat
+  useEffect(() => { if (orig && current.b && !orig.reversible) setBack(true); }, [orig, current.b]);
+
   const tile = wardrobe?.items.find((i) => i.id === id);
   const close = () => (router.canGoBack() ? router.back() : router.replace(`/teil/${id}`));
   if (!f || !orig) return <View style={{ flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={t.accent} /></View>;
@@ -57,13 +62,17 @@ export default function Bearbeiten() {
     setSaving(true);
     try {
       // Neue Bilder zuerst, damit bei einem Fehler nichts halb gespeichert ist
-      const sides = (['a', 'b'] as const).filter((x) => pics[x] && (x === 'a' || f.reversible));
+      const twoSides = f.reversible || back;
+      const sides = (['a', 'b'] as const).filter((x) => pics[x] && (x === 'a' || twoSides));
       for (const x of sides) await saveImage(orig!.wardrobe_id, id, x, pics[x]!);
+      // weder wendbar noch Rückseite: Foto der Seite B entfernen (sonst gälte es als Rückseite)
+      const dropB = !twoSides && !!current.b;
+      if (dropB) await deleteImageSide(id, 'b');
       await updateItem(id, c);
       // Set: geändert → speichern; Schalter aus oder kein weiteres Teil → Set aufgelöst
       const setChanged = !f.isWish && set0 && (setDraft.on !== set0.on || setDraft.name !== set0.name || setDraft.members.join() !== set0.members.join());
       if (setChanged) await saveSet(orig!.set_id, setDraft.on ? [id, ...setDraft.members] : [id], setDraft.name.trim() || null);
-      if (sides.length || setChanged) { await reload(); return close(); } // Kacheln, Farbschein und Detailbild neu laden
+      if (sides.length || setChanged || dropB) { await reload(); return close(); } // Kacheln, Farbschein und Detailbild neu laden
       const colorChanged = c.color !== orig!.color;
       const firstHex = f.colors[0] ? colorHex(f.colors[0]) : null;
       patch(id, {
@@ -89,7 +98,7 @@ export default function Bearbeiten() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ItemEditor title="Bearbeiten" form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null} wishlists={wardrobe?.wishlists ?? []}
-        current={current} pics={pics} onPic={(side, p) => setPics((x) => ({ ...x, [side]: p }))} hex={tile?.hex ?? null}
+        current={current} pics={pics} onPic={(side, p) => setPics((x) => ({ ...x, [side]: p }))} back={back} onBack={setBack} hex={tile?.hex ?? null}
         saving={saving} onCancel={close} onSave={save} onDelete={() => setConfirmDelete(true)} initialTab={reiter === 'kauf' ? 'kauf' : 'steck'}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: id, setId: orig.set_id }}
         loadStored={(side) => loadStoredPicture(id, side)} onError={(m) => toast.show(m)} />

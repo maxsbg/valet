@@ -118,6 +118,8 @@ export const SYMBOLS = {
     els: ['c:12,12,9', 'M15.5 8.6a4.5 4.5 0 1 0 0 6.8', 'M7 11h6', 'M7 13.4h6'] },
   reversible: { group: 'plakette', meaning: 'Wendbar', uses: ['Plakette oben rechts', 'Schalter „Wendbar“ in Bearbeiten'],
     els: ['M4.5 11a7.5 7.5 0 0 1 13-4.5L19.5 8.5', 'M19.5 4v4.5H15', 'M19.5 13a7.5 7.5 0 0 1-13 4.5L4.5 15.5', 'M4.5 20v-4.5H9'] },
+  backside: { group: 'plakette', meaning: 'Rückseite (z. B. Backprint) – Foto umdrehen', uses: ['Plakette oben rechts (statt Wendbar)', 'Schalter „Rückseite“ in Bearbeiten', 'Frage „Wendbar oder Rückseite?“ bei Neues Teil'],
+    els: ['M20.91 11.94A9 4 0 0 0 13.87 8.59', 'M10.13 8.59A9 4 0 1 0 19.63 14.62', 'M16.22 13.46L19.63 14.62L18.48 18.03', 'M12 3.5V14.7', 'M12 18.3V21.5'] },
   grail: { group: 'wunsch', meaning: 'Grail', uses: ['Wunsch-Kategorie „Grail“'],
     els: ['M4.5 16l-1.2-8.5 5 3.8L12 5l3.7 6.3 5-3.8L19.5 16z', 'M4.5 19.5h15'] },
   watchlist: { group: 'wunsch', meaning: 'Watchlist', uses: ['Wunsch-Kategorie „Watchlist“'],
