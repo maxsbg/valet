@@ -7,6 +7,7 @@ import { nameTrusted, originsOf, type Origin } from './ai/origin';
 import type { ConfidenceGroup, Profile } from './ai/profile';
 import type { Care } from './attributes';
 import * as R from './rules';
+import { sharesFor } from './traits';
 
 /** Ab dieser Sicherheit (0–10) darf die KI einer Typ-/Material-Regel widersprechen */
 export const AI_SURE = 8;
@@ -110,7 +111,7 @@ export function applyProfileRules(f: EditForm): EditForm {
   const fr = R.formalityFrame(i);
   if (fr && !own.has('formality')) p.formality = R.clampFormality(p.formality, fr.v);
   // Vielseitigkeit ausrechnen
-  const ve = R.versatilityFrom({ colors: f.colors, pattern: f.pattern, presence: p.presence, formality: p.formality, type: f.type });
+  const ve = R.versatilityFrom({ colors: f.colors, pattern: f.pattern, presence: p.presence, formality: p.formality, type: f.type, shares: sharesFor(f.colors, f.analysisBase?.color_shares) });
   if (ve && !own.has('versatility')) p.versatility = ve.v;
   return same(p, f.profile) ? f : { ...f, profile: p };
 }

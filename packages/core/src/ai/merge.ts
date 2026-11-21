@@ -253,6 +253,8 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
   // Wärme/Regen aus Typ + Material (über der Bildschätzung, nie über bestätigten Werten)
   // danach feste Regeln (Saison aus Wärme, Verschluss/Kragen aus Typ, Muster aus Name, Pflege aus Material)
   f = applyRules(applyWeather(dropHidden(f)));
+  // Farbanteile der Bildanalyse (gelten nur, solange die Farben gleich bleiben – sharesFor in traits.ts)
+  if (s.image?.colorShares?.length) f = { ...f, analysisBase: { ...f.analysisBase, color_shares: { colors: s.image.colors, shares: s.image.colorShares } } };
   if (!s.image) return f;
   // Profil erst hier nach Kategorie bereinigen: mit dem endgültigen Pfad, Muster und Material (Spec 8)
   const ctx: Ctx = { category: f.category, sub: f.subcategory, type: f.type, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
