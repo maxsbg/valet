@@ -79,8 +79,9 @@ export function applyRules(f: EditForm): EditForm {
 export function applyProfileRules(f: EditForm): EditForm {
   const i = input(f);
   const p: Profile = { ...f.profile };
+  const own = new Set(ownProfileKeys(f));
   const pick = <K extends keyof Profile>(k: K, r: { v: Profile[K]; why: string } | null, g: ConfidenceGroup) => {
-    if (!r || r.v == null) return;
+    if (!r || r.v == null || own.has(k)) return;
     const ki = p[k];
     if (ki != null && ki !== r.v && !byName(r.why) && sure(f, g)) return;
     p[k] = r.v;
@@ -95,14 +96,36 @@ export function applyProfileRules(f: EditForm): EditForm {
   pick('metal_tone', R.metalFrom(i) as never, 'material');
   pick('denim_wash', R.washFrom(i) as never, 'color');
   const pat = R.patternFrom(i);
-  if (pat?.scale) p.pattern_scale = pat.scale;
+  if (pat?.scale && !own.has('pattern_scale')) p.pattern_scale = pat.scale;
   // Formalität: KI-Bereich in den Rahmen des Typs
   const fr = R.formalityFrame(i);
-  if (fr) p.formality = R.clampFormality(p.formality, fr.v);
+  if (fr && !own.has('formality')) p.formality = R.clampFormality(p.formality, fr.v);
   // Vielseitigkeit ausrechnen
-  const ve = R.versatilityFrom({ colors: f.colors, pattern: f.pattern, presence: p.presence, formality: p.formality });
-  if (ve) p.versatility = ve.v;
+  const ve = R.versatilityFrom({ colors: f.colors, pattern: f.pattern, presence: p.presence, formality: p.formality, type: f.type });
+  if (ve && !own.has('versatility')) p.versatility = ve.v;
   return same(p, f.profile) ? f : { ...f, profile: p };
+}
+
+// ---------- Eigene Profilwerte ----------
+
+/** Profilwerte, die du selbst gesetzt hast (items.analysis.own) – Regeln und neue Analysen lassen sie stehen */
+export function ownProfileKeys(f: Pick<EditForm, 'analysisBase'>): string[] {
+  const o = f.analysisBase?.own;
+  return Array.isArray(o) ? o.filter((k): k is string => typeof k === 'string') : [];
+}
+/** Profilwert selbst setzen (merkt sich das Feld als eigen; leer = wieder frei für KI und Regel) */
+export function setProfileField(f: EditForm, key: keyof Profile, value: unknown): EditForm {
+  const own = new Set(ownProfileKeys(f));
+  const empty = value == null || (Array.isArray(value) && !value.length);
+  if (empty) own.delete(key); else own.add(key);
+  return { ...f, profile: { ...f.profile, [key]: value } as Profile, analysisBase: { ...f.analysisBase, own: [...own] } };
+}
+/** Neues KI-Profil übernehmen, eigene Werte bleiben */
+export function keepOwnProfile(next: Profile, prev: Profile, own: readonly string[]): Profile {
+  if (!own.length) return next;
+  const out = { ...next } as Record<string, unknown>;
+  for (const k of own) if (k in prev) out[k] = (prev as Record<string, unknown>)[k];
+  return out as Profile;
 }
 
 /** Hinweis in Bearbeiten: Wert offen und aus einer Regel */

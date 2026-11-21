@@ -285,7 +285,12 @@
     {
      "key": "sweatshirt",
      "label": "Sweatshirt",
-     "types": []
+     "types": [
+      {
+       "key": "half_zip_sweatshirt",
+       "label": "Half-/Quarter-Zip"
+      }
+     ]
     },
     {
      "key": "hoodie",
@@ -295,7 +300,12 @@
     {
      "key": "sweater",
      "label": "Pullover",
-     "types": []
+     "types": [
+      {
+       "key": "half_zip_sweater",
+       "label": "Half-/Quarter-Zip"
+      }
+     ]
     },
     {
      "key": "sweater_vest",
@@ -1126,7 +1136,28 @@
     {
      "key": "belt",
      "label": "Gürtel",
-     "types": []
+     "types": [
+      {
+       "key": "dress_belt",
+       "label": "Anzuggürtel"
+      },
+      {
+       "key": "leather_belt",
+       "label": "Ledergürtel"
+      },
+      {
+       "key": "western_belt",
+       "label": "Westerngürtel"
+      },
+      {
+       "key": "web_belt",
+       "label": "Stoffgürtel"
+      },
+      {
+       "key": "braided_belt",
+       "label": "Flechtgürtel"
+      }
+     ]
     },
     {
      "key": "scarf",

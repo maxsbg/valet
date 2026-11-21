@@ -87,3 +87,29 @@ test('Regeln: Profil – Formalitäts-Rahmen, Barrel senkt, Vielseitigkeit gerec
   assert.deepEqual(p.formality, [4, 4]);
   assert.equal(p.versatility, 4);
 });
+
+import { setProfileField } from '../src/ruleForm';
+import * as Rules from '../src/rules';
+
+test('Half-/Quarter-Zip und Gürtel-Typen', () => {
+  const hz = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'top', subcategory: 'sweater', type: 'half_zip_sweater' });
+  assert.equal(hz.closure, 'zipper');
+  assert.equal(hz.collar, 'stand_collar');
+  const plain = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'top', subcategory: 'sweater', type: null });
+  assert.equal(plain.closure, 'none');
+  const named = Rules.collarFrom({ category: 'top', subcategory: 'sweatshirt', type: null, materials: [], name: 'Quarter Zip Sweat' });
+  assert.equal(named?.v, 'stand_collar');
+  const western = Rules.versatilityFrom({ colors: ['black'], pattern: 'solid', presence: 3, formality: [1, 2], type: 'western_belt' });
+  const leather = Rules.versatilityFrom({ colors: ['black'], pattern: 'solid', presence: 3, formality: [1, 2], type: 'leather_belt' });
+  assert.equal((leather?.v ?? 0) - (western?.v ?? 0), 1);
+  assert.deepEqual(Rules.formalityFrame({ category: 'accessory', subcategory: 'belt', type: 'leather_belt', materials: [], name: '' })?.v, [1, 4]);
+});
+
+test('Eigene Profilwerte bleiben bei Regeln und neuer Analyse', () => {
+  let f = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'accessory', subcategory: 'belt', type: 'leather_belt' });
+  f = { ...f, colors: ['black'], profile: { ...emptyProfile(), formality: [2, 3] } };
+  f = setProfileField(f, 'formality', [3, 5]);
+  assert.deepEqual(applyProfileRules(f).profile.formality, [3, 5]); // über dem Rahmen, aber selbst gesetzt
+  const cleared = setProfileField(f, 'formality', null);
+  assert.deepEqual(cleared.analysisBase.own, []);
+});

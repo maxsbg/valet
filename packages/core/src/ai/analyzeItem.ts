@@ -217,6 +217,10 @@ export function profilePatch(
   // a.profile kann aus einer anderen Quelle stammen → Werte noch einmal prüfen
   // Beinverlauf aus dem Namen nur, wenn der Name nicht selbst eine offene Bildschätzung ist
   const trusted = nameTrusted({ aiPending: row.ai_pending ?? [], analysisBase: row.analysis ?? {} });
-  const profile = legFromName(clearInactive(readProfile(a.profile), ctx), trusted ? row.name : null, ctx);
+  const fresh = legFromName(clearInactive(readProfile(a.profile), ctx), trusted ? row.name : null, ctx);
+  // eigene Profilwerte (analysis.own) bleiben
+  const own = Array.isArray(row.analysis?.own) ? (row.analysis!.own as unknown[]).filter((k): k is string => typeof k === 'string') : [];
+  const prev = readProfile(row.analysis?.profile) as unknown as Record<string, unknown>;
+  const profile = own.length ? ({ ...fresh, ...Object.fromEntries(own.filter((k) => k in prev).map((k) => [k, prev[k]])) } as typeof fresh) : fresh;
   return { analysis: mergeAnalysis(row.analysis, profile, checkConfidence(a.confidence), aiMeta(a.model ?? null, now)) };
 }
