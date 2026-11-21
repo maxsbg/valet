@@ -5,6 +5,7 @@
 import type { Care, CareGroup, MaterialPart, Season } from './attributes';
 import { fieldsFor } from './fields';
 import { colorTrait } from './traits';
+import { materialShares } from './weather';
 
 export type RuleInput = {
   category: string | null; subcategory: string | null; type: string | null;
@@ -15,13 +16,9 @@ export type RuleInput = {
 const nm = (i: RuleInput) => (i.nameTrusted === false ? '' : i.name);
 const norm = (s: string) => ` ${s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ')} `;
 const has = (name: string, words: readonly string[]) => { const n = norm(name); return words.find((w) => n.includes(` ${w} `)) ?? null; };
-/** Material-Anteile (ohne % gleich verteilt), größter zuerst */
-function shares(parts: readonly MaterialPart[]) {
-  const known = parts.filter((p) => p.pct != null).reduce((a, p) => a + (p.pct ?? 0), 0);
-  const open = parts.filter((p) => p.pct == null).length;
-  const rest = open ? Math.max(0, 100 - known) / open : 0;
-  return parts.map((p) => ({ name: p.name, share: (p.pct ?? rest) / 100 })).sort((a, b) => b.share - a.share);
-}
+
+/** Anteile wie bei Wärme/Regen (Prozent, sonst nach Reihenfolge), größter zuerst */
+const shares = (parts: readonly MaterialPart[]) => [...materialShares(parts)].sort((a, b) => b.share - a.share);
 const main = (i: RuleInput) => shares(i.materials)[0]?.name ?? null;
 /** Typ vor Unterkategorie nachschlagen */
 const pick = <T>(i: RuleInput, byType: Record<string, T>, bySub: Record<string, T>): T | null =>

@@ -113,3 +113,17 @@ test('Eigene Profilwerte bleiben bei Regeln und neuer Analyse', () => {
   const cleared = setProfileField(f, 'formality', null);
   assert.deepEqual(cleared.analysisBase.own, []);
 });
+
+import { materialShares } from '../src/weather';
+
+test('Material-Anteile: Prozent, sonst nach Reihenfolge, Elasthan 3 %', () => {
+  const s = (ps: { name: string; pct?: number | null }[]) => materialShares(ps).map((x) => Math.round(x.share * 100));
+  assert.deepEqual(s([{ name: 'cotton' }, { name: 'wool' }]), [80, 20]);
+  assert.deepEqual(s([{ name: 'cotton' }, { name: 'wool' }, { name: 'nylon' }]), [70, 20, 10]);
+  assert.deepEqual(s([{ name: 'cotton' }, { name: 'elastane' }]), [97, 3]);
+  assert.deepEqual(s([{ name: 'cotton', pct: 95 }, { name: 'wool', pct: 5 }]), [95, 5]);
+  assert.deepEqual(s([{ name: 'cotton', pct: 60 }, { name: 'wool' }, { name: 'nylon' }]), [60, 32, 8]);
+  assert.deepEqual(s([{ name: 'elastane' }]), [100]);
+  // 5 % Wolle ändern die Wärme nicht
+  assert.equal(w('top', 't_shirt', null, []).warmth, weatherFrom({ category: 'top', subcategory: 't_shirt', type: null, materials: [{ name: 'cotton', pct: 95 }, { name: 'wool', pct: 5 }], name: '' }).warmth);
+});

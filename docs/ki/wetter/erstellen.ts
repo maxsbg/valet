@@ -54,7 +54,7 @@ small{display:block;color:#7a6a66;font-size:12px}i{font-style:normal;font-size:1
 tr.diff{background:#fff6ef}td.hl b{color:#b8430f}.note{background:#fff;border-radius:14px;padding:12px 14px}</style></head><body>
 <h1>Wärme &amp; Regen aus Typ + Material</h1>
 <div class="note"><b>So wird gerechnet</b><ul>
-<li><b>Wärme</b> = Grundwert aus Typ/Unterkategorie + Verschiebung durch das Material (gewichtet nach Prozent, ohne Prozent gleich verteilt) + 1 bei Stichwort im Namen (${WARM_WORDS.map(esc).join(', ')}); Ergebnis 0–3.</li>
+<li><b>Wärme</b> = Grundwert aus Typ/Unterkategorie + Verschiebung durch das Material (gewichtet nach Prozent; ohne Prozent nach Reihenfolge 80/20 bzw. 70/20/10, Elasthan 3 %) + 1 bei Stichwort im Namen (${WARM_WORDS.map(esc).join(', ')}); Ergebnis 0–3.</li>
 <li><b>Regen</b> = Regenschutz des Hauptmaterials (größter Anteil); Regenjacke/Gummistiefel gut, Anorak/Windbreaker/Steppweste mindestens mittel; Stichwort „wasserdicht“ (${RAIN_WORDS.proof.map(esc).join(', ')}) → gut, „wasserabweisend“ (${RAIN_WORDS.repellent.map(esc).join(', ')}) → mindestens mittel.</li>
 <li><b>Rangfolge:</b> von dir bestätigt &gt; aus Material berechnet &gt; KI-Schätzung aus dem Bild (nur wenn kein Material bekannt).</li></ul></div>
 ${compare}

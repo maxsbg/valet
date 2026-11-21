@@ -68,14 +68,31 @@ export const MATERIAL_RAIN: Readonly<Record<string, Rain>> = {
   leather: 1, faux_leather: 1, polyester: 1, nylon: 1, down: 1, tweed: 1, plastic_rubber: 2,
 };
 
-/** Anteile 0–1 je Material; ohne Prozentangaben gleich verteilt, fehlende Prozente teilen sich den Rest */
+/** Gewichte nach Reihenfolge für Materialien ohne Prozent (das zuerst genannte ist fast immer das Hauptmaterial, Max 21.11.2026) */
+export const ORDER_WEIGHTS: readonly (readonly number[])[] = [[], [1], [0.8, 0.2], [0.7, 0.2, 0.1]];
+/** Elasthan ohne Prozent = Kleinstanteil */
+export const ELASTANE_GUESS = 3;
+/**
+ * Anteile (0–1) je Material in der eingetragenen Reihenfolge: Prozent, wo bekannt; Elasthan ohne Prozent 3 %;
+ * den Rest bekommen die übrigen ohne Prozent nach Reihenfolge (2 → 80/20, 3 → 70/20/10, ab 4: 60/20, Rest gleich).
+ */
 export function materialShares(parts: readonly MaterialPart[]): { name: string; share: number }[] {
   if (!parts.length) return [];
   const known = parts.reduce((a, p) => a + (p.pct ?? 0), 0);
-  const without = parts.filter((p) => p.pct == null).length;
-  if (!known) return parts.map((p) => ({ name: p.name, share: 1 / parts.length }));
-  const rest = Math.max(0, 100 - known) / Math.max(1, without);
-  return parts.map((p) => ({ name: p.name, share: (p.pct ?? rest) / 100 }));
+  const open = parts.filter((p) => p.pct == null && p.name !== 'elastane');
+  // Elasthan ohne Prozent = 3 %, außer es ist das einzige Material ohne Angabe und sonst nichts eingetragen
+  const onlyElastane = !open.length && known === 0;
+  const elastane = onlyElastane ? 0 : parts.filter((p) => p.pct == null && p.name === 'elastane').length * ELASTANE_GUESS;
+  const rest = Math.max(0, 100 - known - elastane);
+  const n = open.length;
+  const w = n < ORDER_WEIGHTS.length ? ORDER_WEIGHTS[n]! : [0.6, 0.2, ...Array(n - 2).fill(0.2 / (n - 2))];
+  let k = 0;
+  return parts.map((p) => ({
+    name: p.name,
+    share: (p.pct != null ? p.pct
+      : p.name === 'elastane' ? (onlyElastane ? 100 / parts.filter((x) => x.pct == null).length : ELASTANE_GUESS)
+      : rest * (w[k++] ?? 0)) / 100,
+  }));
 }
 
 // ---------- Stichwörter im Namen ----------
