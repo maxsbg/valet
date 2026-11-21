@@ -42,7 +42,7 @@ export function seasonsFrom(category: string | null, sub: string | null, warmth:
 // ---------- Verschluss und Kragen aus dem Typ ----------
 
 export const CLOSURE_BY_TYPE: Record<string, string> = {
-  zip_hoodie: 'zipper', henley_t_shirt: 'buttons', henley_long_sleeve: 'buttons', short_sleeve_polo: 'buttons', long_sleeve_polo: 'buttons',
+  zip_hoodie: 'zipper', half_zip_sweater: 'zipper', half_zip_sweatshirt: 'zipper', henley_t_shirt: 'buttons', henley_long_sleeve: 'buttons', short_sleeve_polo: 'buttons', long_sleeve_polo: 'buttons',
   short_sleeve_shirt: 'buttons', long_sleeve_shirt: 'buttons', short_sleeve_blouse: 'buttons', long_sleeve_blouse: 'buttons',
   single_breasted_blazer: 'buttons', double_breasted_blazer: 'buttons', suit_vest: 'buttons', puffer_vest: 'zipper',
   bomber_jacket: 'zipper', harrington_jacket: 'zipper', track_jacket: 'zipper', rain_jacket: 'zipper', thermal_jacket: 'zipper', windbreaker: 'zipper',
@@ -57,7 +57,7 @@ export const CLOSURE_BY_TYPE: Record<string, string> = {
 export const CLOSURE_BY_SUB: Record<string, string> = {
   shirt: 'buttons', blouse: 'buttons', polo: 'buttons', blazer: 'buttons', trucker_jacket: 'buttons',
   sweat_jacket: 'zipper', puffer_jacket: 'zipper', biker_jacket: 'zipper', blouson: 'zipper', varsity_jacket: 'snaps', coach_jacket: 'snaps',
-  clog: 'none', slide: 'none', house_shoe: 'none',
+  clog: 'none', slide: 'none', house_shoe: 'none', sweater: 'none', sweatshirt: 'none',
 };
 /** Wörter im Name gehen vor (z. B. „Mohair Zipper“ bei einer Strickjacke) */
 export const CLOSURE_WORDS: readonly [string, readonly string[]][] = [
@@ -73,7 +73,7 @@ export function closureFrom(i: RuleInput): { v: string; why: string } | null {
 }
 
 export const COLLAR_BY_TYPE: Record<string, string> = {
-  zip_hoodie: 'hood', henley_t_shirt: 'placket', henley_long_sleeve: 'placket', short_sleeve_polo: 'polo_collar', long_sleeve_polo: 'polo_collar',
+  zip_hoodie: 'hood', half_zip_sweater: 'stand_collar', half_zip_sweatshirt: 'stand_collar', henley_t_shirt: 'placket', henley_long_sleeve: 'placket', short_sleeve_polo: 'polo_collar', long_sleeve_polo: 'polo_collar',
   single_breasted_blazer: 'lapel_collar', double_breasted_blazer: 'lapel_collar', peacoat: 'lapel_collar', chesterfield_coat: 'lapel_collar',
   bomber_jacket: 'stand_collar', track_jacket: 'stand_collar', harrington_jacket: 'stand_collar',
 };
@@ -82,6 +82,7 @@ export const COLLAR_BY_SUB: Record<string, string> = {
   trucker_jacket: 'classic_collar', coach_jacket: 'classic_collar',
 };
 export const COLLAR_WORDS: readonly [string, readonly string[]][] = [
+  ['stand_collar', ['half zip', 'halfzip', 'quarter zip', 'quarterzip', '1 4 zip', 'troyer']],
   ['turtleneck', ['turtleneck', 'rollkragen', 'roll neck', 'rollneck', 'mock neck']],
   ['v_neck', ['v neck', 'vneck', 'v ausschnitt']],
   ['crew_neck', ['crewneck', 'crew neck', 'rundhals', 'rundausschnitt']],
@@ -296,6 +297,8 @@ export const FORMALITY_BY_TYPE: Record<string, readonly [number, number]> = {
   oxford: [4, 5], derby: [3, 5], monk_strap: [3, 5], wholecut: [5, 5], loafer: [2, 4], boat_shoe: [2, 3], moccasin: [2, 3],
   chunky_sneaker: [1, 2], platform_sneaker: [1, 2], chelsea_boot: [2, 4], desert_boot: [2, 3], lace_up_boot: [1, 3], western_boot: [2, 3],
   rain_boot: [1, 1], sheepskin_boot: [1, 2], briefcase: [3, 5], minaudiere: [4, 5],
+  half_zip_sweater: [2, 4], half_zip_sweatshirt: [1, 2],
+  dress_belt: [3, 5], leather_belt: [1, 4], western_belt: [1, 2], web_belt: [1, 2], braided_belt: [1, 3],
 };
 export const FORMALITY_BY_SUB: Record<string, readonly [number, number]> = {
   jeans: [1, 3], trousers: [2, 4], cargo_pants: [1, 2], sweatpants: [1, 2], leggings: [1, 2], overalls: [1, 2], pajama_pants: [1, 1],
@@ -308,6 +311,7 @@ export const FORMALITY_BY_SUB: Record<string, readonly [number, number]> = {
   sneaker: [1, 3], sports_shoe: [1, 1], dress_shoe: [3, 5], boot: [1, 3], hiking_shoe: [1, 1], sandal: [1, 2], slide: [1, 1], clog: [1, 2],
   flat: [2, 4], high_heel: [3, 5], house_shoe: [1, 1],
   backpack: [1, 2], cloth_bag: [1, 2], belt_bag: [1, 2], handbag: [2, 4], clutch: [4, 5], travel_bag: [1, 2], work_bag: [3, 4],
+  belt: [1, 4],
 };
 /** Lockere Schnitte im Namen senken die Obergrenze um eine Stufe (Max: Barrel-Anzughose ist weniger formell) */
 export const RELAXED_WORDS = ['barrel', 'baggy', 'loose', 'wide', 'wide leg', 'oversized', 'oversize', 'relaxed', 'balloon', 'parachute', 'jogger'];
@@ -333,9 +337,13 @@ const LOUD_PATTERNS = new Set(['animal', 'floral', 'tropical', 'paisley', 'camou
  * Vielseitigkeit 1–5: Start 2,5; nur neutrale Farben +1, eine Akzentfarbe ±0, mehrere Farben −1; unifarben +0,5, lautes Muster −1;
  * Auffälligkeit (KI) 1–2 +0,5, 4 −0,5, 5 −1; Formalitäts-Bereich über ≥ 3 Stufen +0,5, nur eine Stufe −0,5.
  */
-export function versatilityFrom(p: { colors: readonly string[]; pattern: string | null; presence: number | null; formality: readonly [number, number] | null }): { v: number; why: string[] } | null {
+/** Typen, die von Natur aus weniger kombinierbar sind (Max 21.11.2026: Westerngürtel) */
+export const VERSATILITY_BY_TYPE: Record<string, number> = { western_belt: -1 };
+export function versatilityFrom(p: { colors: readonly string[]; pattern: string | null; presence: number | null; formality: readonly [number, number] | null; type?: string | null }): { v: number; why: string[] } | null {
   if (!p.colors.length) return null;
   const why: string[] = []; let v = 2.5;
+  const t = p.type ? VERSATILITY_BY_TYPE[p.type] : undefined;
+  if (t) { v += t; why.push(`Typ ${t > 0 ? '+' : '−'}${Math.abs(t)}`); }
   const neutral = p.colors.filter((c) => { const t = colorTrait(c); return !!t && (t.neutral || t.wearNeutral); });
   const accents = p.colors.length - neutral.length;
   if (accents === 0) { v += 1; why.push('nur neutrale Farben +1'); } else if (accents >= 2) { v -= 1; why.push('mehrere Farben −1'); }

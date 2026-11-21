@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ruleNote, weatherNote } from '@valet/core';
+import { ruleNote, setProfileField, weatherNote } from '@valet/core';
 import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank, parsePct, setMaterialPct, materialPctSum, materialOrderOff, sortMaterialsByPct,
@@ -115,7 +115,7 @@ export function ItemEditor(p: Props) {
 
   // KI-Profil: vorhandene Analysewerte werden in denselben groben Bereichen wie auf der Detailseite bearbeitbar.
   const profileContext = { category: f.category, sub: f.subcategory, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
-  const setProfile = (key: string, value: unknown) => set('profile', { ...f.profile, [key]: value } as EditForm['profile']);
+  const setProfile = (key: string, value: unknown) => onForm(setProfileField(f, key as keyof EditForm['profile'], value));
   const profileRow = (field: (typeof PROFILE_FIELDS)[number], last: boolean): React.ReactNode => {
     const value = f.profile[field.key as keyof EditForm['profile']] as unknown;
     let values: React.ReactNode[] = [];

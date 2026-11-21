@@ -145,7 +145,7 @@ Ersetzt die alte Acloset-Liste (Plural, übersetzte Typen wie „Denimjacke“ u
 
 | Kategorie | Unterkategorie (Typ) |
 |---|---|
-| Oberteil | T-Shirt (Henley-T-Shirt), Langarmshirt (Henley-Langarmshirt), Ärmelloses Shirt, Trägertop, Trägerloses Top, Crop Top, Polohemd (Kurzarm-Polohemd, Langarm-Polohemd), Hemd (Kurzarmhemd, Langarmhemd), Bluse (Kurzarmbluse, Langarmbluse, Ärmellose Bluse), Sweatshirt, Kapuzenpullover, Pullover, Pullunder, Sporttop (Trikot, Funktionsshirt, Sport-BH), Body, Pyjama-Oberteil (Pyjama-Shirt, Nachthemd), Sonstiges |
+| Oberteil | T-Shirt (Henley-T-Shirt), Langarmshirt (Henley-Langarmshirt), Ärmelloses Shirt, Trägertop, Trägerloses Top, Crop Top, Polohemd (Kurzarm-Polohemd, Langarm-Polohemd), Hemd (Kurzarmhemd, Langarmhemd), Bluse (Kurzarmbluse, Langarmbluse, Ärmellose Bluse), Sweatshirt (Half-/Quarter-Zip), Kapuzenpullover, Pullover (Half-/Quarter-Zip), Pullunder, Sporttop (Trikot, Funktionsshirt, Sport-BH), Body, Pyjama-Oberteil (Pyjama-Shirt, Nachthemd), Sonstiges |
 | Kleid | T-Shirt-Kleid, Hemdkleid, Etuikleid, A-Linien-Kleid, Wickelkleid, Bodycon-Kleid, Shiftkleid, Slipdress, Skaterkleid, Stufenkleid, Tunika, Mantelkleid, Jumpsuit, Playsuit, Sonstiges |
 | Hose | Jeans, Stoffhose (Chino, Anzughose, Bundfaltenhose), Cargohose, Jogginghose (Trainingshose), Leggings, Latzhose, Shorts (Sportshorts, Cargoshorts, Bermudashorts, Anzugshorts), Pyjama-Hose (Schlafshorts), Sonstiges |
 | Rock | A-Linien-Rock, Bleistiftrock, Wickelrock, Plisseerock, Stufenrock, Tellerrock, Meerjungfrau-Rock, Sonstiges |
@@ -154,7 +154,7 @@ Ersetzt die alte Acloset-Liste (Plural, übersetzte Typen wie „Denimjacke“ u
 | Tasche | Handtasche (Shopper, Hobo-Bag, Bowlingtasche, Satchel, Baguette-Bag, Halbmondtasche, Satteltasche, Barrel-Bag), Clutch (Minaudière), Rucksack, Bauchtasche, Stoffbeutel (Jutebeutel, Turnbeutel), Reisetasche (Weekender, Duffel-Bag, Sporttasche), Arbeitstasche (Aktentasche, Laptoptasche), Koffer, Sonstiges |
 | Kopfbedeckung | Kappe (Baseball-Cap, Flat-Brim-Cap, Trucker-Cap, 5-Panel-Cap, Dad Cap), Hut (Fedora, Bucket Hat, Sonnenhut, Panamahut), Mütze (Beanie, Baskenmütze, Schiebermütze), Hijab, Sonstiges |
 | Schmuck | Ohrring, Halskette, Armband, Ring, Brosche, Uhr, Sonstiges |
-| Accessoire | Unterwäsche (Boxershorts, Slip, Unterhemd, BH, Thermowäsche), Socke (Sneakersocke, Sportsocke, Stutzen, Kniestrumpf), Strumpfhose, Bademode (Badeshorts, Badehose, Bikini, Badeanzug), Gürtel, Schal (Strickschal, Loop-Schal, Halstuch, Bandana), Anzug-Accessoire (Krawatte, Fliege, Einstecktuch, Manschettenknopf), Handschuh (Fingerhandschuh, Fäustling, Sporthandschuh, Torwarthandschuh), Brille (Sehbrille, Sonnenbrille), Haarschmuck, Geldbörse, Handyhülle, Traditionelle Kleidung, Stulpe, Sonstiges |
+| Accessoire | Unterwäsche (Boxershorts, Slip, Unterhemd, BH, Thermowäsche), Socke (Sneakersocke, Sportsocke, Stutzen, Kniestrumpf), Strumpfhose, Bademode (Badeshorts, Badehose, Bikini, Badeanzug), Gürtel (Anzuggürtel, Ledergürtel, Westerngürtel, Stoffgürtel, Flechtgürtel), Schal (Strickschal, Loop-Schal, Halstuch, Bandana), Anzug-Accessoire (Krawatte, Fliege, Einstecktuch, Manschettenknopf), Handschuh (Fingerhandschuh, Fäustling, Sporthandschuh, Torwarthandschuh), Brille (Sehbrille, Sonnenbrille), Haarschmuck, Geldbörse, Handyhülle, Traditionelle Kleidung, Stulpe, Sonstiges |
 
 **Passform je Kategorie** (Begriffe statt Wörter-Skala seit 20.11.2026, Max; gespeichert wird der Stufen-Index, Migration 0016; Quelle `FIT_SCALES` in `categories.ts`):
 
@@ -192,7 +192,7 @@ Felder, die für eine Kategorie keinen Sinn ergeben, werden in Bearbeiten **und*
 | Pflege | ✓ | ✓ | ✓ | ✓ | ✓ | – | – | ✓ | – | nur Textil* |
 
 - **Ausschnitt oder Kragen:** eine Zeile, Name und Werte nach Unterkategorie. Hemd und Bluse → „Kragen“ (Klassischer Kragen, Button-down, Stehkragen, Reverskragen, ohne Kragen). Übrige Oberteile und Kleid → „Ausschnitt“ (Rundhals, V-Ausschnitt, Knopfleiste, Polokragen, Rollkragen, Stehkragen, Kapuze). Oberbekleidung → „Kragen“ (wie Hemd + Kapuze).
-- **Verschluss** bei Oberteil nur, wo es einen gibt (Hemd, Bluse, Polohemd, Body); bei Accessoire nur Gürtel und Handschuh.
+- **Verschluss** bei Oberteil nur, wo es einen gibt (Hemd, Bluse, Polohemd, Body, seit 21.11.2026 auch Pullover und Sweatshirt wegen Half-/Quarter-Zip); bei Accessoire nur Gürtel und Handschuh.
 - \* **Pflege bei Accessoire** nur für Unterwäsche, Socke, Strumpfhose, Bademode, Schal, Anzug-Accessoire, Handschuh, Traditionelle Kleidung, Stulpe.
 - **Wetter bei Accessoire** nur Schal, Handschuh, Socke, Strumpfhose, Stulpe, Bademode.
 - **Wechsel der Kategorie** im Bearbeiten blendet die Zeilen sofort passend ein und aus.

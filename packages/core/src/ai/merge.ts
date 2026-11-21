@@ -6,7 +6,7 @@
 import { categoryName, fitIndex, fitScaleOf, fitScalesOf, fitWordLabel, subcategoryName, typeName, type CategoryPath, type FitScale } from '../categories';
 import { colorLabel, materialLabel, patternLabel, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { applyWeather } from '../weather';
-import { applyProfileRules, applyRules } from '../ruleForm';
+import { applyProfileRules, applyRules, keepOwnProfile, ownProfileKeys } from '../ruleForm';
 import { dropHidden, setField, setCategory, fitOpen, type EditForm } from '../edit';
 import { fieldsFor, matchSize } from '../fields';
 import { fitFromName, fitTermsIn, nameFitFor } from '../fitName';
@@ -260,7 +260,8 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
   // ohne Mode-Profil (nur Steckbrief-Fakten) bleibt das bisherige Profil samt meta – das Teil gilt nicht als neu analysiert
   if (!profileFilled(s.image)) return f;
   // Profil: Regeln aus Typ/Material/Name, außer die KI ist sich sicher und widerspricht (Max, 21.11.2026)
-  return applyProfileRules({ ...f, profile: legFromName(clearInactive(s.image.profile, ctx), nameTrusted(f) ? f.name : null, ctx), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) });
+  const fresh = legFromName(clearInactive(s.image.profile, ctx), nameTrusted(f) ? f.name : null, ctx);
+  return applyProfileRules({ ...f, profile: keepOwnProfile(fresh, f.profile, ownProfileKeys(f)), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) });
 }
 
 /** Passform-Stufen aus Begriffen im Namen (Rang „name“) in offene Stufen gleichen oder niedrigeren Rangs */

@@ -46,7 +46,7 @@ export const strapLabel = (key: string | null | undefined): string => label(STRA
 
 const ACC_CARE = new Set(['underwear', 'sock', 'tights', 'swimwear', 'scarf', 'suit_accessory', 'glove', 'traditional_clothing', 'warmer']);
 const ACC_WEATHER = new Set(['scarf', 'glove', 'sock', 'tights', 'warmer', 'swimwear']);
-const TOP_CLOSURE = new Set(['shirt', 'blouse', 'polo', 'bodysuit']);
+const TOP_CLOSURE = new Set(['shirt', 'blouse', 'polo', 'bodysuit', 'sweater', 'sweatshirt']); // Pullover/Sweatshirt: Half-/Quarter-Zip (Max 21.11.2026)
 const ACC_CLOSURE = new Set(['belt', 'glove']);
 /** Accessoires ohne Größenfeld (Werte bleiben gespeichert) */
 const ACC_NO_SIZE = new Set(['glasses', 'wallet', 'phone_case', 'hair_accessory', 'suit_accessory', 'scarf']);

@@ -27,7 +27,7 @@ test('Typen sind allein verständlich (Beispiele aus der Spec)', () => {
   assert.ok(typesOf('shoe', 'sneaker').includes('low_top_sneaker'));
   assert.deepEqual(typesOf('outerwear', 'sweat_jacket'), ['zip_hoodie']);
   assert.deepEqual(typesOf('outerwear', 'blouson'), ['bomber_jacket', 'harrington_jacket']);
-  assert.deepEqual(typesOf('top', 'sweatshirt'), []);
+  assert.deepEqual(typesOf('top', 'sweatshirt'), ['half_zip_sweatshirt']); // Max 21.11.2026
   assert.deepEqual(subcategoriesOf('skirt').length, 8);
   // Spec-Stand PR #45/#46: Peacoat statt Caban-Mantel, Beuteltasche entfernt
   assert.deepEqual(typesOf('outerwear', 'coat'), ['chesterfield_coat', 'peacoat', 'covert_coat', 'duster_coat', 'car_coat']);
