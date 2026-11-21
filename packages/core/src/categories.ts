@@ -86,7 +86,8 @@ const TOP_WIDTH = scale('width', 'Weite', 'slim Slim · regular Regular · relax
 const PANTS_WIDTH = scale('width', 'Weite', 'skinny Skinny · slim Slim · regular Regular · relaxed Relaxed · wide Wide');
 const SHORTS_WIDTH = scale('width', 'Weite', 'slim Slim · regular Regular · relaxed Relaxed · wide Wide');
 const TOP_LENGTH = scale('length', 'Länge', 'cropped Cropped · regular Regular · longline Longline');
-const PANTS_LENGTH_FIT = scale('length', 'Länge', 'cropped Cropped · regular Regular · long Long');
+// Hosenlänge (Max, 21.11.2026): „Long“ → „Stacked“ (Long heißt in Shops längere Größe), neu „Ankle“; Migration 0018 rechnet um
+const PANTS_LENGTH_FIT = scale('length', 'Länge', 'cropped Cropped · ankle Ankle · regular Regular · stacked Stacked');
 const SHORTS_LENGTH = scale('length', 'Länge', 'short Short · mid Mid · long Long');
 const DRESS_LENGTH = scale('length', 'Länge', 'mini Mini · above_knee über Knie · knee Knie · midi Midi · maxi Maxi');
 const RISE = scale('rise', 'Bund', 'low tief · regular normal · high hoch');
@@ -111,7 +112,7 @@ export const FIT_KEYS: Readonly<Record<FitScale['key'], readonly string[]>> = {
 /** Gibt es einen Begriff in der Skala nicht, gilt der nächstliegende (Oberteil „wide“ = Oversized, Shorts „regular“ = Mid) */
 const FIT_ALIAS: Readonly<Record<string, readonly string[]>> = {
   skinny: ['slim'], oversized: ['wide'], wide: ['oversized'], baggy: ['wide', 'oversized'],
-  cropped: ['short'], short: ['cropped'], longline: ['long'], long: ['longline'], regular: ['mid'], mid: ['regular'],
+  cropped: ['short'], short: ['cropped'], longline: ['long', 'stacked'], long: ['longline', 'stacked'], stacked: ['long', 'longline'], ankle: ['cropped', 'short'], regular: ['mid'], mid: ['regular'],
 };
 /** Begriff → Index in der Skala der Kategorie; passt nichts → null (z. B. „cropped“ bei Kleidern) */
 export function fitIndex(category: string | null | undefined, k: FitScale['key'], word: unknown): number | null {

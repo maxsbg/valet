@@ -219,10 +219,14 @@ function applyExtras(form: EditForm, info: Info, from: InfoSource): EditForm {
 }
 
 const LEG_FIELD = PROFILE_FIELDS.find((x) => x.key === 'leg');
-/** Beinverlauf aus dem Namen („Straight Leg“, „Tapered“) ersetzt die KI-Schätzung, nur bei Hose/Shorts */
+const HEM_FIELD = PROFILE_FIELDS.find((x) => x.key === 'hem');
+/** Beinverlauf („Straight Leg“, „Tapered“) und Saum („Open Leg“, „Cuffed“, Max 21.11.2026) aus dem Namen ersetzen die KI-Schätzung */
 export function legFromName(p: Profile, name: string | null | undefined, ctx: Ctx): Profile {
-  const leg = fitFromName(name).leg;
-  return leg && LEG_FIELD?.applies(ctx) ? { ...p, leg } : p;
+  const { leg, hem } = fitFromName(name);
+  let out = p;
+  if (leg && LEG_FIELD?.applies(ctx)) out = { ...out, leg };
+  if (hem && HEM_FIELD?.applies(ctx)) out = { ...out, hem };
+  return out;
 }
 
 // ---------- Alle Quellen ----------

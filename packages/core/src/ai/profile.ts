@@ -76,6 +76,8 @@ export const METAL_TONES = o('none Keiner · silver Silber · gold Gold · rose_
 export const SILHOUETTES = o('straight Straight · fitted Tailliert · a_line A-Linie · boxy Boxy · cocoon Cocoon');
 export const SHOULDERS = o('natural Natürlich · structured Gepolstert · dropped Dropped · raglan Raglan · sleeveless Ärmellos/Träger · off_shoulder Schulterfrei');
 export const LEGS = o('straight Straight · tapered Tapered · flared Flared · barrel Barrel');
+/** Saum der Hose (Max, 21.11.2026) */
+export const HEMS = o('open Offen · cuffed Bündchen · turn_up Umschlag');
 export const TOES = o('round Rund · almond Mandel · pointed Spitz · square Eckig · open Offen');
 export const SHAFTS = o('low Halbschuh · ankle Knöchel · mid Wade · high Knie und höher');
 export const SOLES = o('slim Schmal · regular Normal · chunky Klobig · platform Plateau');
@@ -114,6 +116,8 @@ export const PROFILE_FIELDS: readonly ProfileField[] = [
     hint: 'Grundform des Teils, nicht die Weite und nicht am Körper' },
   { key: 'shoulder', kind: 'enum', label: 'Schulter', group: 'shape', applies: upper, only: 'Oberbekleidung, Oberteil, Kleid', values: SHOULDERS, hint: 'Schulterpartie' },
   { key: 'leg', kind: 'enum', label: 'Beinverlauf', group: 'shape', applies: legCats, only: 'Hose, Shorts', values: LEGS, hint: 'Verlauf vom Knie zum Saum, nicht die Weite' },
+  { key: 'hem', kind: 'enum', label: 'Saum', group: 'shape', applies: is(['pants']), only: 'Hosen', values: HEMS,
+    hint: 'Abschluss am Bein: open = offener Saum, cuffed = elastisches Bündchen (z. B. Jogger), turn_up = Umschlag (hochgekrempelt)' },
   { key: 'toe', kind: 'enum', label: 'Schuhspitze', group: 'shape', applies: shoe, only: 'Schuhe', values: TOES, hint: 'Form der Schuhspitze' },
   { key: 'shaft', kind: 'enum', label: 'Schafthöhe', group: 'shape', applies: shafted, only: 'Schuhe, bei denen der Typ die Höhe nicht vorgibt (nicht bei Sandalen, Pantoletten, Clogs, Hausschuhen)', values: SHAFTS, hint: 'Höhe des Schafts' },
   { key: 'sole', kind: 'enum', label: 'Sohle', group: 'shape', applies: shoe, only: 'Schuhe', values: SOLES, hint: 'Dicke und Form der Sohle' },
@@ -136,7 +140,7 @@ export type Profile = {
   sheen: number | null; texture_intensity: number | null; visual_weight: number | null; pattern_contrast: number | null;
   structure: number | null; presence: number | null; versatility: number | null; formality: Range | null;
   surface: string | null; opacity: string | null; pattern_scale: string | null; denim_wash: string | null; metal_tone: string | null;
-  silhouette: string | null; shoulder: string | null; leg: string | null; toe: string | null; shaft: string | null;
+  silhouette: string | null; shoulder: string | null; leg: string | null; hem: string | null; toe: string | null; shaft: string | null;
   sole: string | null; heel: string | null; bag_size: string | null; effects: string[];
 };
 export type ProfileKey = keyof Profile;

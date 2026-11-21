@@ -6,7 +6,7 @@ import { FIT_TERMS, fitIndex, fitScalesOf, type FitScale } from './categories';
 type FitWords = Partial<Record<FitScale['key'], string>>;
 /** Stufen (Index) in der Skala einer Kategorie */
 type FitPart = Partial<Record<FitScale['key'], number>>;
-export type NameFit = { fit: FitWords; leg?: 'straight' | 'tapered' | 'flared' };
+export type NameFit = { fit: FitWords; leg?: 'straight' | 'tapered' | 'flared'; hem?: 'open' | 'cuffed' | 'turn_up' };
 
 /** Schreibweisen im Namen → Begriff aus FIT_TERMS */
 const ALIASES: Readonly<Record<string, string>> = {
@@ -21,6 +21,13 @@ const EXTRA: Readonly<Record<string, FitWords>> = { 'wide leg': { width: 'wide' 
 const LEG_TERMS: Readonly<Record<string, NonNullable<NameFit['leg']>>> = {
   'straight leg': 'straight', 'straight fit': 'straight', tapered: 'tapered',
   bootcut: 'flared', 'boot cut': 'flared', flared: 'flared', flare: 'flared',
+};
+
+/** Nur Hinweis für profile.hem (Saum, Max 21.11.2026) */
+const HEM_TERMS: Readonly<Record<string, NonNullable<NameFit['hem']>>> = {
+  'open leg': 'open', 'open hem': 'open', 'offener saum': 'open', 'offenes bein': 'open',
+  cuffed: 'cuffed', 'cuffed leg': 'cuffed', bündchen: 'cuffed', 'mit bündchen': 'cuffed',
+  'turn up': 'turn_up', turnup: 'turn_up', umschlag: 'turn_up', 'mit umschlag': 'turn_up',
 };
 
 const norm = (s: string) => ` ${s.toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim()} `;
@@ -40,6 +47,7 @@ export function fitFromName(name: string | null | undefined): NameFit {
     if (words.some((w) => has(n, w))) Object.assign(out.fit, part);
   }
   for (const [term, leg] of Object.entries(LEG_TERMS)) if (has(n, term)) out.leg = leg;
+  for (const [term, hem] of Object.entries(HEM_TERMS)) if (has(n, term)) out.hem = hem;
   return out;
 }
 
