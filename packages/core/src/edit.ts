@@ -1,6 +1,7 @@
 // Bearbeiten-Seite (auch „Neues Teil prüfen“) – Formular-Modell (VALET_DETAILSEITE_SPEC.md, Abschnitte 7 und 7a)
 // Plattformunabhängig: Laden aus der Datenbank-Zeile, Ändern, Prüfen, zurück in eine Datenbank-Änderung.
 
+import { applyWeather } from './weather';
 import { convertFit, fitScalesOf, isValidPath, type FitScale } from './categories';
 import { fitFromName, nameFitFor } from './fitName';
 import { COLLAR_LIST, CLOSURES, MAX_COLORS, ONE_SIZE, PATTERNS, colorLabel, materialLabel, migrateSeasons, styleLabel, toColorKeys, toMaterialParts, toStyleKeys, type Care, type MaterialPart } from './attributes';
@@ -127,7 +128,9 @@ function withPendingSrc(f: Pick<EditForm, 'analysisBase' | 'aiPending'>): Record
 
 /** Feld ändern; eine KI-Markierung dieses Felds verschwindet (Spec 7) */
 export function setField<K extends keyof EditForm>(f: EditForm, k: K, v: EditForm[K]): EditForm {
-  return { ...f, [k]: v, aiPending: f.aiPending.filter((x) => x !== k && !x.startsWith(`${String(k)}.`)) };
+  const next = { ...f, [k]: v, aiPending: f.aiPending.filter((x) => x !== k && !x.startsWith(`${String(k)}.`)) };
+  // Material geändert: Wärme/Regen neu berechnen (nur offene oder leere Werte)
+  return k === 'materials' ? applyWeather(next) : next;
 }
 /**
  * Offene KI-Werte in Feldern, die es für den endgültigen Pfad nicht gibt (Spec 8a „Die KI füllt nur die gezeigten Felder“),
@@ -187,13 +190,13 @@ export function setCategory(f: EditForm, p: { category: string | null; subcatego
   // Lagen folgen der Vorgabe, solange sie nicht selbst geändert wurden (leer oder gleich der alten Vorgabe)
   const same = (a: readonly number[], b: readonly number[]) => a.length === b.length && [...a].sort().every((x, i) => x === [...b].sort()[i]);
   if (!f.layers.length || same(f.layers, defaultLayers(f.category, f.subcategory, f.type))) next = { ...next, layers: defaultLayers(p.category, p.subcategory, p.type) };
-  if (before === after) return dropHidden(suggestFitFromName(next));
+  if (before === after) return applyWeather(dropHidden(suggestFitFromName(next)));
   // Buchstabengröße passt auch zur neuen Art (Kleidung ↔ Hose, Handschuh, Mütze …): bleibt stehen (Max, 15.11.2026).
   // Sonst Größe leeren; W/L ist bei Hosen nur vorgewählt, wenn keine Größe gesetzt ist.
   const keepLetters = f.sizeSystem === 'letters' && !!f.size && kindHasLetters(after);
   // offene KI-Werte in Feldern, die es für die neue Kategorie nicht gibt, fallen weg (auch beim Wählen in Bearbeiten)
   // Passform aus dem Namen erst jetzt möglich, wenn der Name vor der Kategorie stand (nur bei offener Passform)
-  return dropHidden(suggestFitFromName(keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null }));
+  return applyWeather(dropHidden(suggestFitFromName(keepLetters ? { ...next, sizeSystem: 'letters' } : { ...next, sizeSystem: sizeSystemOn(after, null, null), size: null })));
 }
 
 /** Passform noch offen: leer oder nur unbestätigt vorgeschlagen (vom Nutzer bestätigte Passform bleibt immer) */
@@ -232,7 +235,7 @@ export function suggestFitFromName(f: EditForm, open: boolean = fitOpen(f)): Edi
 
 /** Name ändern (Bearbeiten): enthält er einen Passform-Begriff, wird die Passform nur vorgeschlagen, nie still überschrieben */
 export function setName(f: EditForm, name: string): EditForm {
-  return suggestFitFromName(setField(f, 'name', name), fitOpen(f));
+  return applyWeather(suggestFitFromName(setField(f, 'name', name), fitOpen(f)));
 }
 
 /**

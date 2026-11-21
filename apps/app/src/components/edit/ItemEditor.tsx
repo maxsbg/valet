@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { weatherNote } from '@valet/core';
 import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank, parsePct, setMaterialPct, materialPctSum, materialOrderOff, sortMaterialsByPct,
@@ -287,6 +288,7 @@ export function ItemEditor(p: Props) {
               ...(f.warmth != null ? [<ValueScale key="w" steps={4} on={(i) => i <= f.warmth!} a11y={`Wärme ${WARMTH[f.warmth]}`} icon={(c) => <Icon name="thermo" size="inline" color={c} />} />] : []),
               ...(f.rain != null ? [<ValueScale key="r" steps={3} on={(i) => i <= f.rain!} a11y={`Regen ${RAIN[f.rain]}`} icon={(c) => <Icon name="drop" size="inline" color={c} />} />] : []),
             ]}>
+            {!!weatherNote(f) && <Text style={{ fontSize: 12, lineHeight: 16, color: t.inkMuted, marginBottom: 8 }}>{weatherNote(f)}</Text>}
             <WeatherPicker warmth={f.warmth} rain={f.rain} onWarmth={(v) => set('warmth', v)} onRain={(v) => set('rain', v)} />
           </SimpleEditRow>
         )),
