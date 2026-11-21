@@ -38,7 +38,7 @@ test('Rangfolge: Shop-Material schlägt Bild-Material, egal in welcher Reihenfol
   assert.deepEqual(f.materials, [{ name: 'cotton', pct: 95 }, { name: 'elastane', pct: 5 }]);
   assert.deepEqual(f.colors, ['black']);
   assert.equal(f.name, 'Slim Ribbed Shirt');
-  assert.equal(f.profile.sheen, 2); // Profil aus dem Bild
+  assert.equal(f.profile.sheen, 1); // Profil aus dem Bild, Glanz aus dem Material (Regel: Baumwolle matt, KI unsicher)
   assert.ok(f.aiPending.includes('materials'));
   // neuer Ablauf: erst Info anzeigen, dann Bild + Info zusammen
   const first = applyInfo(blank(), page(), 'page');

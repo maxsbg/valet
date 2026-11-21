@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { weatherNote } from '@valet/core';
+import { ruleNote, weatherNote } from '@valet/core';
 import {
   CATEGORY_LIST, CLOSURES, colorLabel, materialLabel, subListOf, typeListOf, label as keyLabel, type KeyList, MATERIALS, PATTERNS, SEASONS, LAYERS, WARMTH, RAIN, CARE, careList, categoryLast, fitScalesOf, hasCollarSize,
   layoutKind, pickCategory, setField, setName, setCategory, fieldsFor, STRAPS, toggleIn, pickOne, toggleMaterial, materialRank, parsePct, setMaterialPct, materialPctSum, materialOrderOff, sortMaterialsByPct,
@@ -186,6 +186,7 @@ export function ItemEditor(p: Props) {
     const v = f[key];
     return (
       <SimpleEditRow label={label} open={!!open[key]} onToggle={() => toggle(key)} ai={ai(key)} last={last} values={v ? [<ValueCapsule key={v} label={keyLabel(opts, v)} />] : []}>
+        {!!ruleNote(f, key) && <Text style={{ fontSize: 12, lineHeight: 16, color: t.inkMuted, marginBottom: 8 }}>{ruleNote(f, key)}</Text>}
         <Wrap>{opts.map((o) => <Capsule key={o.key} label={o.label} selected={v === o.key} onPress={() => set(key, pickOne(v, o.key))} />)}</Wrap>
       </SimpleEditRow>
     );
@@ -215,6 +216,7 @@ export function ItemEditor(p: Props) {
         (last) => (
           <SimpleEditRow label="Saison" open={!!open.season} onToggle={() => toggle('season')} ai={ai('seasons')} last={last}
             values={SEASONS.filter((x) => f.seasons.includes(x.key)).map((x) => <ValueCircle key={x.key} a11y={x.label}><Icon name={SEASON_ICON[x.key]!} size="row" color={t.onFill} /></ValueCircle>)}>
+            {!!ruleNote(f, 'seasons') && <Text style={{ fontSize: 12, lineHeight: 16, color: t.inkMuted, marginBottom: 8 }}>{ruleNote(f, 'seasons')}</Text>}
             <Wrap>{SEASONS.map((x) => <Capsule key={x.key} label={x.label} selected={f.seasons.includes(x.key)} onPress={() => set('seasons', toggleIn(f.seasons, x.key))}
               icon={(c) => <Icon name={SEASON_ICON[x.key]!} size="chip" color={c} />} />)}</Wrap>
           </SimpleEditRow>

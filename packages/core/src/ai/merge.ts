@@ -6,6 +6,7 @@
 import { categoryName, fitIndex, fitScaleOf, fitScalesOf, fitWordLabel, subcategoryName, typeName, type CategoryPath, type FitScale } from '../categories';
 import { colorLabel, materialLabel, patternLabel, type Care, type CareGroup, type MaterialPart } from '../attributes';
 import { applyWeather } from '../weather';
+import { applyProfileRules, applyRules } from '../ruleForm';
 import { dropHidden, setField, setCategory, fitOpen, type EditForm } from '../edit';
 import { fieldsFor, matchSize } from '../fields';
 import { fitFromName, fitTermsIn, nameFitFor } from '../fitName';
@@ -250,14 +251,16 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
     if (x.info.size) f = applyExtras(f, { ...noInfo(), size: x.info.size }, x.from);
   }
   // Wärme/Regen aus Typ + Material (über der Bildschätzung, nie über bestätigten Werten)
-  f = applyWeather(dropHidden(f));
+  // danach feste Regeln (Saison aus Wärme, Verschluss/Kragen aus Typ, Muster aus Name, Pflege aus Material)
+  f = applyRules(applyWeather(dropHidden(f)));
   if (!s.image) return f;
   // Profil erst hier nach Kategorie bereinigen: mit dem endgültigen Pfad, Muster und Material (Spec 8)
   const ctx: Ctx = { category: f.category, sub: f.subcategory, type: f.type, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
   const used = [...infos.map((x) => x.from), ...(s.used ?? []), ...(s.late ?? []).map((x) => x.from)].map((from) => ({ from }));
   // ohne Mode-Profil (nur Steckbrief-Fakten) bleibt das bisherige Profil samt meta – das Teil gilt nicht als neu analysiert
   if (!profileFilled(s.image)) return f;
-  return { ...f, profile: legFromName(clearInactive(s.image.profile, ctx), nameTrusted(f) ? f.name : null, ctx), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) };
+  // Profil: Regeln aus Typ/Material/Name, außer die KI ist sich sicher und widerspricht (Max, 21.11.2026)
+  return applyProfileRules({ ...f, profile: legFromName(clearInactive(s.image.profile, ctx), nameTrusted(f) ? f.name : null, ctx), confidence: s.image.confidence, aiMeta: aiMeta(s.image.model, now, analysisSource(used)) });
 }
 
 /** Passform-Stufen aus Begriffen im Namen (Rang „name“) in offene Stufen gleichen oder niedrigeren Rangs */

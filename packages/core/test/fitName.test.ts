@@ -77,17 +77,17 @@ test('Stapellauf: Beinverlauf aus dem gespeicherten Namen', () => {
 test('Bearbeiten: Name schlägt Passform nur vor, bestätigte bleibt', () => {
   const f = setName(shirt(), 'Slim Ribbed Shirt');
   assert.deepEqual(f.fit, { width: 0, length: null, rise: null });
-  assert.deepEqual(f.aiPending, ['fit']);
+  assert.deepEqual(f.aiPending.filter((k) => k !== 'closure'), ['fit']); // Verschluss aus dem Typ (Regel)
   // bestätigen, dann Name ändern: Passform bleibt
   const ok = confirmAi(f, 'fit');
   const g = setName(ok, 'Oversized Shirt');
   assert.deepEqual(g.fit, ok.fit);
-  assert.deepEqual(g.aiPending, []);
+  assert.deepEqual(g.aiPending.filter((k) => k !== 'closure'), []);
   // selbst gewählte Passform bleibt ebenfalls
   const own = setField(shirt(), 'fit', { width: 2, length: 1, rise: null });
   assert.deepEqual(setName(own, 'Cropped Tee').fit, { width: 2, length: 1, rise: null });
   // ohne Begriff: nichts vorgeschlagen
-  assert.deepEqual(setName(shirt(), 'Ribbed Shirt').aiPending, []);
+  assert.deepEqual(setName(shirt(), 'Ribbed Shirt').aiPending.filter((k) => k !== 'closure'), []);
 });
 
 test('Weitere Shop-Schreibweisen (Prüfung 20.11.2026)', () => {
