@@ -219,7 +219,7 @@ test('Formular: applyAnalysis ersetzt das Profil komplett, ohne profile.*-Markie
   const f = applyAnalysis(start, jeansAnalysis(), NOW);
   assert.equal(f.name, 'Meine Jeans'); // bestätigt → bleibt
   assert.deepEqual(f.colors, ['black']);
-  assert.deepEqual(f.profile, jeansAnalysis().profile); // komplett ersetzt: toe weg, sheen 2
+  assert.deepEqual(f.profile, { ...jeansAnalysis().profile, opacity: 'opaque', structure: 3, versatility: 4 }); // komplett ersetzt: toe weg, sheen 2; Transparenz + Formstabilität aus Regel
   assert.equal(f.profile.toe, null);
   assert.equal(f.profile.sheen, 2);
   assert.equal(f.confidence.category, 10);

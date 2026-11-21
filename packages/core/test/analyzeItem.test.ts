@@ -46,7 +46,7 @@ test('Übernehmen: nur leere Felder, alles Übernommene ist markiert', () => {
   assert.equal(f.name, 'Oxford-Hemd');
   assert.deepEqual(f.colors, ['light_grey']); // schon gewählt → bleibt
   assert.equal(f.collar, 'button_down');
-  assert.deepEqual([...f.aiPending].sort(), ['category', 'collar', 'name'] ); // Stil wird nicht mehr übernommen (21.11.2026)
+  assert.deepEqual([...f.aiPending].sort(), ['category', 'closure', 'collar', 'name'] ); // Verschluss aus dem Typ (Regel, 21.11.2026); Stil wird nicht mehr übernommen (21.11.2026)
 });
 
 test('Übernehmen: unbestätigter Foto-Vorschlag wird von der KI ersetzt', () => {

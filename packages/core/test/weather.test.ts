@@ -53,3 +53,37 @@ test('applyWeather: ersetzt Bildschätzung, nie bestätigte Werte', () => {
   assert.ok(!g.aiPending.includes('warmth'));
   assert.equal(applyWeather(g), g);
 });
+
+import { applyRules, applyProfileRules } from '../src/ruleForm';
+import { emptyProfile, emptyConfidence } from '../src/ai/profile';
+
+test('Regeln: Saison aus Wärme, Verschluss aus Typ, KI darf sicher widersprechen', () => {
+  let f = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'top', subcategory: 'polo', type: 'short_sleeve_polo' });
+  f = setField(f, 'materials', [{ name: 'cotton', pct: null }]);
+  assert.deepEqual(f.seasons, ['spring', 'summer', 'autumn']); // Polo leicht
+  assert.equal(f.closure, 'buttons');
+  assert.equal(f.collar, 'polo_collar');
+  assert.equal(f.care.wash?.v, 'w30');
+  assert.equal(f.care.wash?.src, 'geschaetzt');
+  // KI sieht sicher einen Zipper → bleibt
+  const ki = { ...f, closure: 'zipper', confidence: { ...emptyConfidence(), shape: 9 }, analysisBase: { src: {} } };
+  assert.equal(applyRules(ki).closure, 'zipper');
+  // KI unsicher → Regel
+  assert.equal(applyRules({ ...ki, confidence: { ...emptyConfidence(), shape: 5 } }).closure, 'buttons');
+  // selbst gesetzt bleibt
+  const own = setField(f, 'closure', 'snaps');
+  assert.equal(applyRules(own).closure, 'snaps');
+  // Name zählt nur, wenn vertraut
+  const zipName = setField(f, 'name', 'Zip Polo');
+  assert.equal(applyRules({ ...zipName, closure: null, aiPending: zipName.aiPending.filter((k) => k !== 'closure') }).closure, 'zipper');
+  const kiName = { ...zipName, closure: null, aiPending: ['name'], analysisBase: { src: { name: 'image' } } };
+  assert.equal(applyRules(kiName).closure, 'buttons');
+});
+
+test('Regeln: Profil – Formalitäts-Rahmen, Barrel senkt, Vielseitigkeit gerechnet', () => {
+  let f = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'pants', subcategory: 'trousers', type: 'suit_trousers' });
+  f = { ...f, name: 'Barrel Suit Trousers', colors: ['black'], pattern: 'solid', profile: { ...emptyProfile(), formality: [5, 5], presence: 2 } };
+  const p = applyProfileRules(f).profile;
+  assert.deepEqual(p.formality, [4, 4]);
+  assert.equal(p.versatility, 4);
+});
