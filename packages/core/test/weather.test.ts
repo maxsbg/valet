@@ -10,7 +10,11 @@ test('Wärme: Grundwert + Material + Stichwort', () => {
   assert.equal(w('headwear', 'cap', null, ['cotton']).warmth, 0);
   assert.equal(w('headwear', 'cap', null, ['wool']).warmth, 1);
   assert.equal(w('shorts', 'suit_shorts', null, ['cotton']).warmth, 0);
-  assert.equal(w('pants', 'trousers', null, ['wool']).warmth, 2);
+  assert.equal(w('pants', 'trousers', null, ['wool']).warmth, 1); // Anzugwolle = leicht (Max 21.11.2026)
+  assert.equal(w('pants', 'trousers', 'suit_trousers', ['flannel']).warmth, 2);
+  assert.equal(w('pants', 'trousers', null, ['wool'], 'Winter Wool Trousers').warmth, 2);
+  assert.equal(w('outerwear', 'blazer', null, ['wool']).warmth, 1);
+  assert.equal(w('top', 'sweater', null, ['wool']).warmth, 3);
   assert.equal(w('outerwear', 'blouson', null, ['leather']).warmth, 2);
   assert.equal(w('outerwear', 'blouson', null, ['leather'], 'Lined Leather Jacket').warmth, 3);
 });
@@ -60,7 +64,7 @@ import { emptyProfile, emptyConfidence } from '../src/ai/profile';
 test('Regeln: Saison aus Wärme, Verschluss aus Typ, KI darf sicher widersprechen', () => {
   let f = setCategory({ ...emptyEditForm({ ownerId: 'max' }) }, { category: 'top', subcategory: 'polo', type: 'short_sleeve_polo' });
   f = setField(f, 'materials', [{ name: 'cotton', pct: null }]);
-  assert.deepEqual(f.seasons, ['spring', 'summer', 'autumn']); // Polo leicht
+  assert.deepEqual(f.seasons, ['spring', 'summer', 'autumn', 'winter']); // Polo leicht = Basisteil ganzjährig
   assert.equal(f.closure, 'buttons');
   assert.equal(f.collar, 'polo_collar');
   assert.equal(f.care.wash?.v, 'w30');
@@ -143,4 +147,17 @@ test('Übernommene KI-Werte darf die Regel korrigieren, selbst eingetragene nich
   const own = setField(confirmAi(f, 'rain'), 'rain', 1);
   assert.deepEqual(acceptedKeys(own), []);
   assert.equal(setField(own, 'materials', [{ name: 'cotton', pct: null }]).rain, 1);
+});
+
+import { seasonsFrom } from '../src/rules';
+test('Saison: Ausnahmen je Kategorie', () => {
+  assert.deepEqual(seasonsFrom('shoe', 'sneaker', 1), ['spring', 'summer', 'autumn', 'winter']);
+  assert.deepEqual(seasonsFrom('shoe', 'sandal', 0), ['spring', 'summer']);
+  assert.deepEqual(seasonsFrom('shoe', 'boot', 2), ['spring', 'autumn', 'winter']);
+  assert.deepEqual(seasonsFrom('headwear', 'cap', 0), ['spring', 'summer', 'autumn', 'winter']);
+  assert.deepEqual(seasonsFrom('headwear', 'beanie_cap', 2), ['autumn', 'winter']);
+  assert.deepEqual(seasonsFrom('pants', 'jeans', 2), ['spring', 'summer', 'autumn', 'winter']);
+  assert.deepEqual(seasonsFrom('outerwear', 'coat', 3), ['spring', 'autumn', 'winter']);
+  assert.deepEqual(seasonsFrom('top', 'tank_top', 0), ['spring', 'summer']);
+  assert.deepEqual(seasonsFrom('accessory', 'swimwear', 0), ['summer']);
 });

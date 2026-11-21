@@ -33,6 +33,10 @@ test('Harte Filter: Status, Wärme, Shorts, Regen, Anlass', () => {
   assert.equal(hardReason(it({ id: 'j', category: 'outerwear', subcategory: 'blouson', warmth: 2, rain: 0 }), 'outer', day({ rain: 'rain' })), 'nicht regenfest genug');
   assert.equal(hardReason(it({ id: 'j', category: 'outerwear', subcategory: 'blouson', warmth: 2, rain: 0 }), 'outer', day({ rain: 'rain', rainOn: false })), null);
   assert.equal(hardReason(it({ id: 'f', styles: ['formal'] }), 'base', day({ occasion: 'sport' })), 'passt nicht zum Anlass');
+  // Hitze gestaffelt (Max 21.11.2026): Jeans (mittel) bei 26 °C erlaubt, ab 30 °C raus; Saison ist keine Grenze mehr
+  const jeans = it({ id: 'jn', category: 'pants', subcategory: 'jeans', warmth: 2, seasons: ['autumn', 'winter'] });
+  assert.equal(hardReason(jeans, 'bottom', day({ tempC: 26, month: 7 })), null);
+  assert.equal(hardReason(jeans, 'bottom', day({ tempC: 31, month: 7 })), 'zu warm');
 });
 
 test('Slots: Zip-Jacke nie Basis', () => {

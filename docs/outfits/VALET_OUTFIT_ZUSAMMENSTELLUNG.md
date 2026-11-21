@@ -42,7 +42,7 @@ Gilt zunächst nur für die **Tagesplanung** (ein Outfit für einen Tag). Andere
 ### Wärme je Teil (`warmth` 0–3: sehr leicht · leicht · mittel · warm)
 
 Keine Wärme-Summe, sondern Grenzen je Teil:
-- ab 24 °: höchstens „leicht“
+- ab 24 °: „leicht“ ohne Abzug; „mittel“ bis 29 ° erlaubt, aber abgewertet (`hotPenalty`), ab 30 ° raus; „warm“ immer raus (gestaffelt, Max 21.11.2026)
 - 17–23 °: höchstens „mittel“ (z. B. Wollhose fliegt raus)
 - 10–16 °: alles erlaubt
 - unter 10 °: „sehr leicht“ fliegt raus, keine Shorts
@@ -52,7 +52,7 @@ Keine Wärme-Summe, sondern Grenzen je Teil:
 
 1. Status: nur „Im Schrank“. Eingelagerte nur über einen **Schalter** (oder als selbst gewähltes Ankerteil).
 2. Reservierung: an dem Tag für jemand anderen reservierte Teile fallen raus.
-3. Saison: aktuelle Saison oder keine angegeben.
+3. ~~Saison~~ – seit 21.11.2026 keine harte Grenze mehr (Max): ob ein Teil passt, entscheidet die Temperatur. Die Saison zählt nur noch für Schrank-Filter und Statistik.
 4. Regen (`rain` 0–2: schlecht · mittel · gut):
    - Niesel: nichts fliegt raus, „schlecht“ wird nur abgewertet (weiche Bewertung)
    - Regen: Außenlage und Schuhe mindestens „mittel“

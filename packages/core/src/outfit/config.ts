@@ -12,9 +12,11 @@ export type OutfitConfig = {
   /** Gewichte der weichen Bewertung (Summe egal, wird normiert) */
   weights: { color: number; statement: number; formality: number; proportion: number; surface: number; metal: number; variety: number };
   /** Temperaturstufen (gefühlt, °C, untere Grenzen) */
-  temp: { hot: number; mild: number; cool: number; cold: number; freezing: number };
+  temp: { veryHot: number; hot: number; mild: number; cool: number; cold: number; freezing: number };
   /** Höchste Wärme je Stufe (0 sehr leicht … 3 warm); unter `cold` fliegt „sehr leicht“ raus */
-  warmthMax: { hot: number; mild: number };
+  /** hot: ohne Abzug erlaubt; hotSoft: bis 29 °C noch erlaubt (mit Abzug `hotPenalty` je Teil), ab `temp.veryHot` raus */
+  warmthMax: { hot: number; hotSoft: number; mild: number };
+  hotPenalty: number;
   /** Außenlage: Mindest-Wärme bei 3–9 ° bzw. unter 3 ° */
   outerWarmthMin: { cold: number; freezing: number };
   /** Schuhe (°C): Zehen offen nicht darunter, gefüttert nicht darüber */
@@ -52,8 +54,8 @@ export type OutfitConfig = {
 
 export const DEFAULT_OUTFIT_CONFIG: OutfitConfig = {
   weights: { color: 35, statement: 20, formality: 10, proportion: 10, surface: 5, metal: 5, variety: 15 },
-  temp: { hot: 24, mild: 17, cool: 10, cold: 3, freezing: -99 },
-  warmthMax: { hot: 1, mild: 2 },
+  temp: { veryHot: 30, hot: 24, mild: 17, cool: 10, cold: 3, freezing: -99 },
+  warmthMax: { hot: 1, hotSoft: 2, mild: 2 }, hotPenalty: 0.15,
   outerWarmthMin: { cold: 2, freezing: 3 },
   shoeTemp: { openMin: 12, linedMax: 15 },
   rainMin: { rain: { outer: 1, shoe: 1 }, heavy: { outer: 2, shoe: 1 } },

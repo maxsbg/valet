@@ -161,12 +161,12 @@ export function hardReason(i: OutfitItem, slot: Slot, ctx: DayContext, cfg: Outf
   if (i.status === 'stored') { if (!ctx.includeStored) return 'eingelagert'; }
   else if (i.status) return `Status ${i.status}`;
   if (i.reservedForOther) return 'für jemand anderen reserviert';
-  const season = seasonOfMonth(ctx.month);
-  if (i.seasons?.length && !i.seasons.includes(season)) return 'falsche Saison';
+  // Saison ist keine harte Grenze mehr – ob ein Teil passt, entscheidet die Temperatur (Max 21.11.2026)
   const b = bandOf(ctx.tempC, cfg);
   if (slot !== 'shoes') {
     const w = warmthOf(i).v;
-    if (b === 'hot' && w > cfg.warmthMax.hot) return 'zu warm';
+    // Hitze gestaffelt: bis 29 °C mittlere Teile nur abgewertet (weiche Bewertung), ab 30 °C raus; warme immer raus
+    if (b === 'hot' && w > cfg.warmthMax.hot && (ctx.tempC >= cfg.temp.veryHot || w > cfg.warmthMax.hotSoft)) return 'zu warm';
     if (b === 'mild' && w > cfg.warmthMax.mild) return 'zu warm';
     if ((b === 'cold' || b === 'freezing') && w === 0) return 'zu dünn';
     if (slot === 'outer' && b === 'cold' && w < cfg.outerWarmthMin.cold) return 'Außenlage zu dünn';
@@ -341,6 +341,11 @@ export function scoreOutfit(items: readonly OutfitItem[], ctx: DayContext, cfg: 
   }
   if (ctx.rainOn && ctx.rain === 'drizzle') for (const i of items) {
     if ((i.category === 'shoe' || i.category === 'outerwear') && rainOf(i).v === 0) { variety -= 0.2; notes.push(`Niesel: ${i.name ?? 'Teil'} nicht regenfest`); }
+  }
+  // Hitze unter 30 °C: mittlere Teile erlaubt, aber abgewertet
+  if (bandOf(ctx.tempC, cfg) === 'hot') {
+    const mid = items.filter((i) => i.category !== 'shoe' && warmthOf(i).v > cfg.warmthMax.hot).length;
+    if (mid) { variety -= cfg.hotPenalty * mid; notes.push('etwas warm für die Hitze'); }
   }
   // Schuhe weich nach Temperatur: Stiefel bei Kälte leicht bevorzugt, bei Hitze leicht abgewertet
   const shoeItem = items.find((i) => i.category === 'shoe');

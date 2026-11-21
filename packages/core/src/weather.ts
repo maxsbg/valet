@@ -128,6 +128,17 @@ export type WeatherResult = {
   warmthSure: boolean;
 };
 
+/**
+ * Anzugstoffe (Max 21.11.2026): Anzug-/Stoffhosen, Sakkos, Anzugwesten sind aus Wolle leicht (Kammgarn, ganzjährig).
+ * Wärmer nur durch Flanell, Tweed, Cord, Bouclé oder Wörter im Namen.
+ */
+const TAILORED_SUBS = new Set(['trousers', 'blazer']);
+const TAILORED_TYPES = new Set(['suit_vest', 'suit_trousers', 'pleated_trousers', 'chino']);
+export const TAILORED_WARMTH: Readonly<Record<string, number>> = { flannel: 1, tweed: 1, corduroy: 1, boucle: 1, linen: -1, silk: -1 };
+export const TAILORED_WARM_WORDS: readonly string[] = ['flannel', 'flanell', 'tweed', 'cord', 'corduroy', 'winter', 'boucle'];
+const tailored = (sub: string | null | undefined, type: string | null | undefined) =>
+  (!!sub && TAILORED_SUBS.has(sub)) || (!!type && TAILORED_TYPES.has(type));
+
 export function weatherFrom(i: WeatherInput): WeatherResult {
   const fx = i.category ? fieldsFor(i.category, i.subcategory ?? null) : null;
   if (!fx?.weather) return { warmth: null, rain: null, why: { warmth: 'kein Wetterfeld', rain: 'kein Wetterfeld' }, typeOnly: true, warmthSure: false };
@@ -137,8 +148,10 @@ export function weatherFrom(i: WeatherInput): WeatherResult {
 
   // Wärme
   const shoe = i.category === 'shoe';
-  let delta = shoe ? 0 : shares.reduce((a, m) => a + m.share * (MATERIAL_WARMTH[m.name] ?? 0), 0);
-  const warmWord = WARM_WORDS.find((w) => hasWord(n, w));
+  const suit = tailored(i.subcategory, i.type);
+  const table = suit ? TAILORED_WARMTH : MATERIAL_WARMTH;
+  let delta = shoe ? 0 : shares.reduce((a, m) => a + m.share * (table[m.name] ?? 0), 0);
+  const warmWord = WARM_WORDS.find((w) => hasWord(n, w)) ?? (suit ? TAILORED_WARM_WORDS.find((w) => hasWord(n, w)) : undefined);
   if (warmWord) delta = shoe ? Math.max(0, 3 - (base ?? 1)) : delta + 1;
   const warmth = base == null ? null : (Math.max(0, Math.min(3, Math.round(base + delta))) as Warmth);
   const whyW = base == null ? 'kein Grundwert'
