@@ -191,3 +191,17 @@ test('Farbanteile: Details zählen nicht, echte Gewichte', () => {
   const v2 = Rules.versatilityFrom({ colors: ['black', 'red'], pattern: 'solid', presence: 2, formality: [1, 3] })!.v;
   assert.ok(v1 > v2);
 });
+
+import { sharesMissing, checkColorShares, sharesChange } from '../src/ai/colorShares';
+
+test('Farbanteile nachtragen: nur mehrfarbig, mit Profil, ohne gültige Anteile', () => {
+  const prof = { meta: { v: 2 }, profile: { formality: [1, 2] } };
+  assert.equal(sharesMissing(['black', 'red'], prof), true);
+  assert.equal(sharesMissing(['black'], prof), false);
+  assert.equal(sharesMissing(['black', 'red'], null), false); // ohne Profil: „Profile ergänzen“
+  assert.deepEqual(checkColorShares({ color_shares: [90, 15] }, ['black', 'red']), [85, 15]);
+  assert.equal(checkColorShares({ color_shares: [100] }, ['black', 'red']), null);
+  const done = sharesChange(prof, ['black', 'red'], [90, 10]).analysis;
+  assert.equal(sharesMissing(['black', 'red'], done), false);
+  assert.deepEqual(done.profile, prof.profile);
+});

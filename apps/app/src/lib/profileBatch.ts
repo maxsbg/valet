@@ -39,7 +39,7 @@ function readDay(): { day: string; n: number } | null {
 let memDay: { day: string; n: number } | null = null;
 /** Heute schon verbrauchte Aufrufe */
 export function usedToday(): number { return batchUsed(readDay() ?? memDay, todayLocal()); }
-function countCall() {
+export function countCall() {
   const v = { day: todayLocal(), n: usedToday() + 1 };
   memDay = v;
   try { globalThis.localStorage?.setItem(KEY, JSON.stringify(v)); } catch { /* egal */ }

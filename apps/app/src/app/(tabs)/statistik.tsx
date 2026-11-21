@@ -8,6 +8,7 @@ import { Header, Chip, Empty, PageEnd } from '@/components/ui';
 import { ItemPicture } from '@/components/ItemPicture';
 import { Invite } from '@/components/Invite';
 import { ProfileBatch } from '@/components/ProfileBatch';
+import { ColorShareBatch } from '@/components/ColorShareBatch';
 import { useSession } from '@/lib/session';
 import { usePersisted } from '@/lib/usePersisted';
 import { useTheme, space, radius, DISPLAY, type Theme } from '@/lib/theme';
@@ -272,6 +273,7 @@ export default function Statistik() {
             </Text>
           </Pressable>
           <ProfileBatch />
+          <ColorShareBatch />
         </View>
         <PageEnd />
       </Page>
