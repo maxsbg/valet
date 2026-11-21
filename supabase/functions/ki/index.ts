@@ -31,6 +31,9 @@ interface RequestPayload {
   imagePath?: string;
   /** … oder direkt mitgeschickt (neues Teil, noch nicht hochgeladen), Base64 ohne data:-Präfix */
   image?: { data?: string; mimeType?: string };
+  /** Optional zweites Bild = Rückseite desselben Teils (Backprint), aus dem Storage oder mitgeschickt */
+  backPath?: string;
+  backImage?: { data?: string; mimeType?: string };
   prompt?: string;
   schema?: JsonSchema;
   /** Nur Text, ohne Bild (z. B. ausgelesene Produktseite) – wird hinter den Prompt gehängt */
@@ -71,16 +74,15 @@ async function callModel(params: {
   token: string;
   model: string;
   prompt: string;
-  /** null = nur Text */
-  base64Image: string | null;
-  mimeType: string;
+  /** leer = nur Text; mehrere = Vorderseite, Rückseite */
+  images: { b64: string; mime: string }[];
   schema: JsonSchema;
   temperature: number;
 }): Promise<unknown> {
-  const content = params.base64Image
+  const content = params.images.length
     ? [
       { type: "text", text: params.prompt },
-      { type: "image_url", image_url: { url: `data:${params.mimeType};base64,${params.base64Image}` } },
+      ...params.images.map((i) => ({ type: "image_url", image_url: { url: `data:${i.mime};base64,${i.b64}` } })),
     ]
     : params.prompt;
   const response = await fetch(params.endpoint, {
@@ -194,21 +196,15 @@ Deno.serve(async (req: Request) => {
     }
     const prompt = text ? `${basePrompt}\n\n---\n${text}` : basePrompt;
 
-    // 4. Bild: mitgeschickt oder aus dem Storage-Bucket (respektiert RLS des Users)
-    let base64Image: string | null = null;
-    let mimeType = "image/jpeg";
-    if (!imagePath && !inline?.data) {
-      // nur Text
-    } else if (inline?.data) {
-      mimeType = inline.mimeType || "image/jpeg";
-      if (!IMAGE_TYPES.includes(mimeType) || inline.data.length > MAX_IMAGE_B64) {
-        return jsonResponse({ error: "unsupported or too large image" }, 413);
+    // 4. Bilder: mitgeschickt oder aus dem Storage-Bucket (respektiert RLS des Users); optional Rückseite
+    const loadImage = async (path: string | undefined, sent: { data?: string; mimeType?: string } | undefined): Promise<{ b64: string; mime: string } | Response | null> => {
+      if (sent?.data) {
+        const mime = sent.mimeType || "image/jpeg";
+        if (!IMAGE_TYPES.includes(mime) || sent.data.length > MAX_IMAGE_B64) return jsonResponse({ error: "unsupported or too large image" }, 413);
+        return { b64: sent.data, mime };
       }
-      base64Image = inline.data;
-    } else {
-      const { data: fileBlob, error: storageError } = await supabase.storage
-        .from(storageBucket)
-        .download(imagePath!);
+      if (!path) return null;
+      const { data: fileBlob, error: storageError } = await supabase.storage.from(storageBucket).download(path);
       if (storageError || !fileBlob) {
         console.warn("storage download failed", storageError?.message);
         // nur echtes „nicht gefunden“ als 404 (Fehlversuch am Teil); sonst vorübergehend → 503 (Stapellauf pausiert)
@@ -216,12 +212,19 @@ Deno.serve(async (req: Request) => {
         const missing = !storageError || String(status) === "404" || /not.?found/i.test(storageError.message ?? "");
         return jsonResponse({ error: missing ? "image_not_found" : "storage_unavailable" }, missing ? 404 : 503);
       }
-      mimeType = fileBlob.type || "image/jpeg";
+      const mime = fileBlob.type || "image/jpeg";
       // gleiche Grenzen wie für mitgeschickte Bilder (Base64 ist ~4/3 der Bytes)
-      if (!IMAGE_TYPES.includes(mimeType) || fileBlob.size * 4 / 3 > MAX_IMAGE_B64) {
-        return jsonResponse({ error: "unsupported or too large image" }, 413);
-      }
-      base64Image = encodeBase64(await fileBlob.arrayBuffer());
+      if (!IMAGE_TYPES.includes(mime) || fileBlob.size * 4 / 3 > MAX_IMAGE_B64) return jsonResponse({ error: "unsupported or too large image" }, 413);
+      return { b64: encodeBase64(await fileBlob.arrayBuffer()), mime };
+    };
+    const images: { b64: string; mime: string }[] = [];
+    const front = await loadImage(imagePath, inline);
+    if (front instanceof Response) return front;
+    if (front) {
+      images.push(front);
+      const back = await loadImage(payload.backPath?.trim() || undefined, payload.backImage);
+      if (back instanceof Response) return back;
+      if (back) images.push(back);
     }
 
     // 5. Modell-Aufruf; bei Fehler (z. B. kaputtes JSON) ein Wiederholungsversuch
@@ -242,7 +245,7 @@ Deno.serve(async (req: Request) => {
       if (Date.now() - started > TOTAL_MS - CALL_MS) break;
       attempted++;
       try {
-        const data = await callModel({ endpoint, token: modelToken, model: m, prompt, base64Image, mimeType, schema: responseSchema, temperature });
+        const data = await callModel({ endpoint, token: modelToken, model: m, prompt, images, schema: responseSchema, temperature });
         return jsonResponse({ data, model: m }, 200);
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);

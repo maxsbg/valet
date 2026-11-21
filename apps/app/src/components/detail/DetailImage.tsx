@@ -22,6 +22,8 @@ export type DetailImageItem = {
   /** Form der Schrank-Kachel (`Tile.size`) – Foto im Rahmen so hoch wie dort */
   size?: string; hex: string | null; colors: readonly string[]; status: ItemStatus | null;
   reversible: boolean; qty: number; owners: string[];
+  /** Rückseite (Backprint): Plakette `backside` statt Wendbar */
+  back?: boolean;
   /** Set-Kennung – Set-Plakette oben rechts links neben Wendbar */
   setId?: string | null;
   /** Hauptbild (volle Auflösung) und Bild der anderen Seite */
@@ -38,12 +40,13 @@ export function DetailImage({ item, width, me, person, today }: {
   const glow = glowFor(item.colors, item.hex);
   const wish = item.wish ?? null;
   const price = wish ? priceLabel(wish.price) : null;
-  const tr = topRightFor(item.reversible, item.qty, !!item.setId);
+  const tr = topRightFor(item.reversible, item.qty, !!item.setId, !!item.back);
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
   const todayP = today && !wish ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
-  const flip = useFlip(tr?.reversible && item.imageBack ? item.imageBack : null, item.id);
+  const flip = useFlip((tr?.reversible || tr?.back) && item.imageBack ? item.imageBack : null, item.id);
+  const flipIcon = tr?.back ? 'backside' : 'reversible';
   const label = wish ? [item.name, wish.tag ? wishTagLabel(wish.tag) : null, price ? `${price} Euro` : null].filter(Boolean).join(', ') : tileA11yLabel({
-    name: item.name, status: item.status, reversible: item.reversible, set: !!item.setId, qty: item.qty, today: todayP,
+    name: item.name, status: item.status, reversible: item.reversible, back: !!tr?.back, set: !!item.setId, qty: item.qty, today: todayP,
     owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
   });
   const inset = Math.round(itemTile.photoInset * K);
@@ -78,13 +81,14 @@ export function DetailImage({ item, width, me, person, today }: {
             {/* Wendbar in der Ecke und obenauf, Set links dahinter leicht überlappt (wie die Monogramme) */}
             <View style={s.trRow}>
               {tr.set && <View style={{ zIndex: 1 }}><Glass scale={K} label="Set"><TileIcon name="link" color={B.ink} scale={K} /></Glass></View>}
-              {tr.reversible && (
+              {(tr.reversible || tr.back) && (
                 <View style={[tr.set && { marginLeft: -B.ownerOverlap * K }, { zIndex: 2 }]}>
                   {flip.can ? (
-                    <Pressable onPress={flip.toggle} hitSlop={4} accessibilityRole="button" accessibilityLabel={flip.back ? 'Wenden, zeigt Seite B' : 'Wenden, zeigt Seite A'}>
-                      <Glass scale={K}><Animated.View style={flip.iconStyle}><TileIcon name="reversible" color={B.ink} scale={K} /></Animated.View></Glass>
+                    <Pressable onPress={flip.toggle} hitSlop={4} accessibilityRole="button"
+                      accessibilityLabel={tr.back ? (flip.back ? 'Umdrehen, zeigt die Vorderseite' : 'Umdrehen, zeigt die Rückseite') : flip.back ? 'Wenden, zeigt Seite B' : 'Wenden, zeigt Seite A'}>
+                      <Glass scale={K}><Animated.View style={flip.iconStyle}><TileIcon name={flipIcon} color={B.ink} scale={K} /></Animated.View></Glass>
                     </Pressable>
-                  ) : <Glass scale={K} label="Wendbar"><TileIcon name="reversible" color={B.ink} scale={K} /></Glass>}
+                  ) : <Glass scale={K} label={tr.back ? 'Rückseite' : 'Wendbar'}><TileIcon name={flipIcon} color={B.ink} scale={K} /></Glass>}
                 </View>
               )}
             </View>

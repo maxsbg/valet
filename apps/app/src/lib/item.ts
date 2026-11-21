@@ -119,14 +119,46 @@ export async function loadStoredPicture(itemId: string, side: 'a' | 'b'): Promis
 
 /**
  * Bild für die KI-Nachanalyse (Spec 8): freigestelltes Hauptbild Seite A, sonst Original; dazu die Foto-Farben
- * (für „Farbe prüfen“). null = kein Bild.
+ * (für „Farbe prüfen“) und bei Teilen mit Rückseite (nicht wendbar, Foto der Seite B) deren Bild. null = kein Bild.
  */
-export async function analysisImage(itemId: string): Promise<{ path: string; colors: { h: string; s: number }[] } | null> {
-  const r = await supabase.from('item_images').select('side,kind,storage_path,colors').eq('item_id', itemId).in('kind', ['cutout', 'original']);
-  if (r.error) throw r.error;
-  const rows = (r.data ?? []).filter((x) => (x.side ?? 'a').trim().toLowerCase() !== 'b');
-  const main = rows.find((x) => x.kind === 'cutout') ?? rows.find((x) => x.kind === 'original');
-  return main ? { path: main.storage_path as string, colors: Array.isArray(main.colors) ? main.colors as { h: string; s: number }[] : [] } : null;
+export async function analysisImage(itemId: string): Promise<{ path: string; colors: { h: string; s: number }[]; backPath: string | null } | null> {
+  const m = (await analysisPaths([itemId])).get(itemId);
+  return m ? { path: m.path, colors: m.colors, backPath: m.back } : null;
+}
+
+/**
+ * Bilder für die KI je Teil (Stapelläufe): Seite A freigestellt, sonst Original; `back` = Seite B, nur bei Teilen
+ * mit Rückseite (nicht wendbar – Wendeteile haben eigene Farben je Seite, die KI sieht nur Seite A).
+ */
+export async function analysisPaths(ids: string[]): Promise<Map<string, { path: string; colors: { h: string; s: number }[]; back: string | null }>> {
+  type Img = { kind: string; path: string; colors: { h: string; s: number }[] };
+  const best = new Map<string, Img>();
+  const reversible = new Set<string>();
+  const sideOf = (v: string | null) => ((v ?? 'a').trim().toLowerCase() === 'b' ? 'b' : 'a');
+  for (let i = 0; i < ids.length; i += 200) {
+    const part = ids.slice(i, i + 200);
+    const [r, it] = await Promise.all([
+      supabase.from('item_images').select('item_id,side,kind,storage_path,colors').in('item_id', part).in('kind', ['cutout', 'original']),
+      supabase.from('items').select('id,reversible').in('id', part),
+    ]);
+    if (r.error) throw r.error;
+    if (it.error) throw it.error;
+    for (const x of it.data ?? []) if (x.reversible) reversible.add(x.id as string);
+    for (const x of r.data ?? []) {
+      const key = `${x.item_id}:${sideOf(x.side as string | null)}`;
+      const cur = best.get(key);
+      if (!cur || (cur.kind !== 'cutout' && x.kind === 'cutout'))
+        best.set(key, { kind: x.kind as string, path: x.storage_path as string, colors: Array.isArray(x.colors) ? x.colors as Img['colors'] : [] });
+    }
+  }
+  const out = new Map<string, { path: string; colors: Img['colors']; back: string | null }>();
+  for (const id of ids) {
+    const a = best.get(`${id}:a`);
+    if (!a) continue;
+    const b = reversible.has(id) ? null : best.get(`${id}:b`) ?? null;
+    out.set(id, { path: a.path, colors: a.colors, back: b?.path ?? null });
+  }
+  return out;
 }
 
 export type NewItem = ItemChange & { name: string; category: string };
@@ -179,6 +211,17 @@ export async function saveImage(wardrobeId: string, itemId: string, side: 'a' | 
   if (stale.length) await bucket.remove(stale); // aufräumen, Fehler egal
 }
 
+
+/** Bilder einer Seite entfernen (z. B. Rückseite ausgeschaltet): Zeilen in item_images und Dateien im Bucket */
+export async function deleteImageSide(itemId: string, side: 'a' | 'b') {
+  const old = await supabase.from('item_images').select('storage_path,side').eq('item_id', itemId);
+  if (old.error) throw old.error;
+  const rows = (old.data ?? []).filter((x) => ((x.side ?? 'a').trim().toLowerCase() === 'b' ? 'b' : 'a') === side);
+  if (!rows.length) return;
+  const del = await supabase.from('item_images').delete().eq('item_id', itemId).in('storage_path', rows.map((x) => x.storage_path as string));
+  if (del.error) throw del.error;
+  await supabase.storage.from('items').remove(rows.map((x) => x.storage_path as string)); // aufräumen, Fehler egal
+}
 
 export type ImageMigrationProgress = { total: number; done: number; migrated: number; skipped: number; cleanupPending: number; currentPath: string | null };
 export type ImageMigrationResult = ImageMigrationProgress & { failed: { path: string; error: string }[] };

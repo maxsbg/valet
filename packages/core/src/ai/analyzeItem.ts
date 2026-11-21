@@ -81,6 +81,12 @@ export const ANALYZE_ITEM_SCHEMA: JsonSchema = {
   additionalProperties: false,
 };
 
+/**
+ * Rückseite (Backprint, Max 21.11.2026): geht als Kontext hinter den Prompt, wenn ein zweites Bild mitkommt.
+ * Eine gemeinsame Farbliste für das ganze Teil; Kategorie und Passform aus der Vorderseite.
+ */
+export const BACK_SIDE_NOTE = `Hinweis: Das zweite Bild zeigt die Rückseite desselben Teils (z. B. Backprint). Farben, Farbanteile (color_shares), Muster und Auffälligkeit gelten für das ganze Teil – beide Seiten zusammen, gewichtet nach sichtbarer Fläche. Kategorie, Passform und Schnitt beurteilst du vor allem an der Vorderseite.`;
+
 export const ANALYZE_ITEM_PROMPT = `Du siehst ein Kleidungsstück oder Accessoire (Produktbild oder Handyfoto) und füllst
 für die Kleiderschrank-App Valet einen Steckbrief und ein Mode-Profil aus.
 

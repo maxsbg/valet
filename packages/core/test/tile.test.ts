@@ -53,7 +53,7 @@ test('Anzahl-Format: 2×, 12×, 99×, ab 100 99+, unter 2 keine Plakette', () =>
 
 test('Oben rechts: Kreis allein, Kapsel unter Wendbar', () => {
   assert.equal(topRightFor(false, 1), null);
-  assert.deepEqual(topRightFor(true, 1), { reversible: true, set: false, count: null });
+  assert.deepEqual(topRightFor(true, 1), { reversible: true, back: false, set: false, count: null });
   assert.equal(topRightFor(false, 2)?.count?.shape, 'circle');
   assert.equal(topRightFor(false, 12)?.count?.shape, 'circle');
   assert.equal(topRightFor(true, 2)?.count?.shape, 'capsule');
@@ -62,11 +62,17 @@ test('Oben rechts: Kreis allein, Kapsel unter Wendbar', () => {
 });
 
 test('Oben rechts: Set links neben Wendbar, Anzahl als Kapsel darunter', () => {
-  assert.deepEqual(topRightFor(false, 1, true), { reversible: false, set: true, count: null });
-  assert.deepEqual(topRightFor(true, 1, true), { reversible: true, set: true, count: null });
+  assert.deepEqual(topRightFor(false, 1, true), { reversible: false, back: false, set: true, count: null });
+  assert.deepEqual(topRightFor(true, 1, true), { reversible: true, back: false, set: true, count: null });
   assert.equal(topRightFor(false, 2, true)?.count?.shape, 'capsule');
   assert.equal(topRightFor(true, 3, true)?.count?.shape, 'capsule');
   assert.equal(topRightFor(false, 2, false)?.count?.shape, 'circle');
+});
+
+test('Oben rechts: Rückseite am Platz von Wendbar, nie beides', () => {
+  assert.deepEqual(topRightFor(false, 1, false, true), { reversible: false, back: true, set: false, count: null });
+  assert.equal(topRightFor(true, 1, false, true)?.back, false);
+  assert.equal(topRightFor(false, 2, false, true)?.count?.shape, 'capsule');
 });
 
 // ---------- Status ----------

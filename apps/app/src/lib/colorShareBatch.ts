@@ -7,6 +7,7 @@ import { BATCH_PER_DAY, BATCH_PER_MIN, batchErrorKind, checkColorShares, colorSh
 import { supabase } from './supabase';
 import { kiError } from './ki';
 import { countCall, usedToday } from './profileBatch';
+import { analysisPaths } from './item';
 
 export type SharesState = { phase: 'idle' | 'loading' | 'running' | 'paused' | 'done'; total: number; done: number; failed: number; processed: number; message: string };
 type Row = { id: string; colors: string[] | null; analysis: unknown };
@@ -28,29 +29,14 @@ async function loadRows(wardrobeId: string): Promise<Row[]> {
   }
 }
 
-/** Hauptbild Seite A: freigestellt, sonst Original */
-async function loadPaths(ids: string[]): Promise<Map<string, string>> {
-  const best = new Map<string, { kind: string; path: string }>();
-  for (let i = 0; i < ids.length; i += 200) {
-    const { data, error } = await supabase.from('item_images').select('item_id,side,kind,storage_path').in('item_id', ids.slice(i, i + 200)).in('kind', ['cutout', 'original']);
-    if (error) throw error;
-    for (const r of data ?? []) {
-      if ((r.side ?? 'a').trim().toLowerCase() === 'b') continue;
-      const cur = best.get(r.item_id as string);
-      if (!cur || (cur.kind !== 'cutout' && r.kind === 'cutout')) best.set(r.item_id as string, { kind: r.kind as string, path: r.storage_path as string });
-    }
-  }
-  return new Map([...best].map(([k, v]) => [k, v.path]));
-}
-
 /** Teile, denen noch Farbanteile fehlen */
 export async function countShares(wardrobeId: string): Promise<number> {
   return (await loadRows(wardrobeId)).filter((r) => sharesMissing(r.colors, r.analysis)).length;
 }
 
-async function askShares(path: string, colors: string[]): Promise<number[]> {
+async function askShares(path: string, colors: string[], backPath: string | null): Promise<number[]> {
   const { data: res, error } = await supabase.functions.invoke('ki', {
-    body: { imagePath: path, prompt: colorSharesPrompt(colors), schema: colorSharesSchema(colors), temperature: 0 },
+    body: { imagePath: path, prompt: colorSharesPrompt(colors, !!backPath), schema: colorSharesSchema(colors), temperature: 0, ...(backPath ? { backPath } : {}) },
   });
   if (error) throw error;
   const shares = checkColorShares(res?.data, colors);
@@ -66,13 +52,13 @@ export async function startShares(wardrobeId: string) {
     const todo = (await loadRows(wardrobeId)).filter((r) => sharesMissing(r.colors, r.analysis));
     set({ total: todo.length });
     if (!todo.length) { set({ phase: 'done', message: 'Alle mehrfarbigen Teile haben Farbanteile.' }); return; }
-    const paths = await loadPaths(todo.map((r) => r.id));
+    const paths = await analysisPaths(todo.map((r) => r.id));
     set({ phase: 'running' });
     let last = 0;
     for (const r of todo) {
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
       set({ processed: state.processed + 1 });
-      const path = paths.get(r.id);
+      const path = paths.get(r.id)?.path;
       if (!path) { set({ failed: state.failed + 1 }); continue; }
       if (usedToday() >= BATCH_PER_DAY) { set({ phase: 'paused', message: `Tagesgrenze erreicht (${BATCH_PER_DAY}). Morgen geht es weiter.` }); return; }
       const gap = last + GAP_MS - Date.now();
@@ -80,7 +66,7 @@ export async function startShares(wardrobeId: string) {
       last = Date.now();
       let shares: number[];
       try {
-        shares = await askShares(path, r.colors ?? []);
+        shares = await askShares(path, r.colors ?? [], paths.get(r.id)?.back ?? null);
         countCall();
       } catch (e) {
         const { code, status } = await kiError(e);

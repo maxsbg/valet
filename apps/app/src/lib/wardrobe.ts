@@ -31,6 +31,8 @@ export type Tile = {
   statusUntil: string | null;
   qty: number;
   reversible: boolean;
+  /** Rückseite (Backprint): nicht wendbar, aber mit Foto der Seite B – Plakette `backside`, eine gemeinsame Farbliste */
+  back: boolean;
   setId: string | null;
   isWish: boolean;
   /** Geschenk (kein Kaufpreis) */
@@ -56,7 +58,7 @@ export type Tile = {
   hex: string | null;
   /** Vorschaubild (400 px) für Kacheln */
   thumb: string | null;
-  /** Wendeteile: Vorschaubild der anderen Seite (Kachel dreht sich beim Tippen auf „Wendbar“) */
+  /** Wendeteile bzw. Rückseite: Vorschaubild der anderen Seite (Kachel dreht sich beim Tippen auf die Plakette) */
   thumbBack: string | null;
   /** Hauptbild (freigestellt oder Original) für die Detailseite */
   image: string | null;
@@ -127,6 +129,7 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     statusUntil: i.status_until ?? null,
     qty: i.qty ?? 1,
     reversible: !!i.reversible,
+    back: !i.reversible && thumbBy.has(`${i.id}:b`),
     setId: i.set_id,
     isWish: !!i.is_wish,
     isGift: !!i.is_gift,
@@ -146,9 +149,9 @@ export async function loadWardrobe(): Promise<Wardrobe | null> {
     style: i.style,
     hex: pick(colorsBy, i.id, i.main_side) ?? nameToHex(i.color),
     thumb: pick(thumbBy, i.id, i.main_side),
-    thumbBack: i.reversible ? other(thumbBy, i.id, i.main_side) : null,
+    thumbBack: i.reversible ? other(thumbBy, i.id, i.main_side) : thumbBy.get(`${i.id}:b`) ?? null,
     image: pick(imageBy, i.id, i.main_side),
-    imageBack: i.reversible ? other(imageBy, i.id, i.main_side) : null,
+    imageBack: i.reversible ? other(imageBy, i.id, i.main_side) : imageBy.get(`${i.id}:b`) ?? null,
   }; });
   const ids = new Set(tiles.map((t) => t.id));
   const wears = rest.wears.filter((x) => ids.has(x.itemId));

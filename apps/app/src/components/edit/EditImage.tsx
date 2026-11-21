@@ -27,6 +27,8 @@ type Props = {
   pics: Record<Side, Picture | null>;
   onPick: (side: Side, p: Picture | null) => void;
   reversible: boolean;
+  /** Rückseite (Backprint): zweites Foto wie bei Wendbar, aber „Vorderseite/Rückseite“, Symbol `backside`, gemeinsame Farben */
+  back?: boolean;
   /** Form für den Platzhalter (layoutKind) */
   kind: string;
   /** Foto-Farbe (Platzhalter; Schein nur ohne Steckbrief-Farben) */
@@ -42,17 +44,20 @@ type Props = {
   onError?: (message: string) => void;
 };
 
-export function EditImage({ width, current, pics, onPick, reversible, kind, hex, colors, colorsB, onInfo, onChangePhoto, loadStored, onError }: Props) {
+export function EditImage({ width, current, pics, onPick, reversible: rev, back = false, kind, hex, colors, colorsB, onInfo, onChangePhoto, loadStored, onError }: Props) {
   const t = useTheme();
   const [side, setSide] = useState<Side>('a');
+  // zwei Seiten: wendbar oder mit Rückseite (dann gemeinsame Farben)
+  const reversible = rev || back;
   useEffect(() => { if (!reversible) setSide('a'); }, [reversible]);
   const fade = useRef(new Animated.Value(0)).current; // 0 = Seite A, 1 = Seite B
   useEffect(() => { Animated.timing(fade, { toValue: side === 'b' ? 1 : 0, duration: 260, useNativeDriver: true }).start(); }, [side, fade]);
 
   const flow = usePictureFlow((p) => onPick(side, p));
-  const glow = glowFor(side === 'b' && reversible && colorsB?.length ? colorsB : colors, pics[side]?.colors[0]?.h ?? hex);
+  const glow = glowFor(side === 'b' && rev && colorsB?.length ? colorsB : colors, pics[side]?.colors[0]?.h ?? hex);
   const shadow = glowBoxShadow(glow, GLOW.blur, GLOW.spread);
-  const sideName = side === 'a' ? 'Seite A' : 'Seite B';
+  const names = back ? { a: 'Vorderseite', b: 'Rückseite' } : { a: 'Seite A', b: 'Seite B' };
+  const sideName = names[side];
   const h = Math.round(I.height * 300 / 380);
 
   if (flow.step !== 'idle') return <FlowPanel flow={flow} width={width} onError={onError} />;
@@ -67,12 +72,13 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
       <Animated.View key={s} pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: reversible ? op : 1, transform: [{ scale: reversible ? sc : 1 }] }]}>
         {/* Foto in der Form der Schrank-Kachel (Kappen bleiben klein wie im Schrank) */}
         <ItemPicture uri={uri} inset={20} category={kind} color={hex ?? itemTile.glow.fallback} shape={{ kind, width, height: h }}
-          label={pics[s] ? (s === 'a' ? 'Bild Seite A' : 'Bild Seite B') : undefined} />
+          label={pics[s] ? `Bild ${names[s]}` : undefined} />
       </Animated.View>
     );
   };
 
   const changeLabel = reversible ? `Foto ${sideName} ändern` : 'Foto ändern';
+  const turnLabel = back ? `Umdrehen, zeigt ${side === 'a' ? 'die Rückseite' : 'die Vorderseite'}` : `Wenden, zeigt ${sideName}`;
   return (
     <View style={{ alignItems: 'center' }}>
       <View style={[s_.tile, { width, height: h, boxShadow: shadow }]}>
@@ -86,9 +92,9 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
         )}
         {reversible && (
           <>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Wenden, zeigt ${sideName}`} onPress={() => setSide(side === 'a' ? 'b' : 'a')}
+            <Pressable accessibilityRole="button" accessibilityLabel={turnLabel} onPress={() => setSide(side === 'a' ? 'b' : 'a')}
               style={[s_.badge, badgeGlass]}>
-              <TileIcon name="reversible" color="#2a1a1d" scale={detail.image.badgeIcon / itemTile.badge.icon.size} />
+              <TileIcon name={back ? 'backside' : 'reversible'} color="#2a1a1d" scale={detail.image.badgeIcon / itemTile.badge.icon.size} />
             </Pressable>
             <View pointerEvents="none" style={[s_.sidePill, badgeGlass]}><Text style={s_.pillText}>{sideName}</Text></View>
           </>
@@ -111,7 +117,7 @@ export function EditImage({ width, current, pics, onPick, reversible, kind, hex,
       {reversible && (
         <View style={s_.dots}>
           {(['a', 'b'] as const).map((x) => (
-            <Pressable key={x} accessibilityRole="button" accessibilityLabel={x === 'a' ? 'Seite A' : 'Seite B'} onPress={() => setSide(x)} style={s_.dotHit}>
+            <Pressable key={x} accessibilityRole="button" accessibilityLabel={names[x]} onPress={() => setSide(x)} style={s_.dotHit}>
               <View style={[s_.dot, { width: side === x ? 18 : 7, backgroundColor: side === x ? t.ink : t.hairline }]} />
             </Pressable>
           ))}

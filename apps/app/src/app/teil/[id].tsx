@@ -191,7 +191,7 @@ function ClosetDetail({ id }: { id: string }) {
           </View>
 
           <DetailImage width={Math.min(col, 420)} me={me} person={person} today={id in todayBy ? { person: todayBy[id] ?? null } : null}
-            item={{ id, name: it.name, kind: tile.kind, size: tile.size, hex: tile.hex, colors: tile.colors, status: it.status, reversible: !!it.reversible, setId: it.set_id, qty: it.qty ?? 1,
+            item={{ id, name: it.name, kind: tile.kind, size: tile.size, hex: tile.hex, colors: tile.colors, status: it.status, reversible: !!it.reversible, back: !!tile.back, setId: it.set_id, qty: it.qty ?? 1,
               owners: tile.owners, image: mainPic, imageBack: tile.imageBack }} />
 
           <View style={{ gap: 2, marginTop: 4 }}>

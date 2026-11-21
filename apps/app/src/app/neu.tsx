@@ -20,7 +20,9 @@ import { MirrorButton } from '@/components/edit/MirrorButton';
 import { Dims, Glass } from '@/components/tile/TileBadge';
 import { itemTile } from '@valet/ui';
 
-type Step = 'start' | 'web' | 'work' | 'review' | 'more' | 'form';
+type Step = 'start' | 'web' | 'work' | 'review' | 'sides' | 'side2' | 'more' | 'form';
+/** Zweite Seite (Max 21.11.2026): keine · Rückseite (Backprint, gemeinsame Farben) · wendbar (eigene Farben) */
+type Sides = 'one' | 'back' | 'reversible';
 /** Ausgelesene Infos (Seite, Screenshot, Etikett) + Beschreibungstext der Seite – Kontext für die Bildanalyse */
 type Extra = { infos: SourceInfo[]; description: string | null };
 /** Fehler beim Laden einer Produktseite (kein KI-Fehler) – eigene Meldung */
@@ -47,12 +49,22 @@ export default function Neu() {
   const [step, setStep] = useState<Step>('start');
   const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
   const [picture, setPicture] = useState<Picture | null>(null);
+  // Bild im Schritt „Passt das so?“ – gehört zur Seite targetRef (a = vorn, b = Rückseite/Seite B)
+  const [cand, setCand] = useState<Picture | null>(null);
+  const targetRef = useRef<'a' | 'b'>('a');
+  // Zweite Seite: Antwort auf „Hat das Teil eine zweite Seite?“, zweites Foto aus der Mehrfachauswahl
+  const [sides, setSidesState] = useState<Sides>('one');
+  const sidesRef = useRef<Sides>('one');
+  const setSides = (v: Sides) => { sidesRef.current = v; setSidesState(v); };
+  const queued = useRef<File | null>(null);
   const [progress, setProgress] = useState<{ text: string; p?: number }>({ text: '' });
   const [failure, setFailure] = useState<string | null>(null);
   const [cached, setCached] = useState(true);
   const [f, setF] = useState<EditForm | null>(null);
   // Wendeteil: Foto der Seite B (im Formular gewählt)
-  const [picB, setPicB] = useState<Picture | null>(null);
+  const [picB, setPicBState] = useState<Picture | null>(null);
+  const picBRef = useRef<Picture | null>(null);
+  const setPicB = (p: Picture | null) => { picBRef.current = p; setPicBState(p); };
   const [setDraft, setSetDraft] = useState<SetDraft>({ on: false, members: [], name: '' });
   const [saving, setSaving] = useState(false);
   // Per Link: geladene Produktseite; die KI liest ihren Text schon, während du ein Bild wählst
@@ -91,16 +103,23 @@ export default function Neu() {
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
-  async function pick(file: File, model = false) {
+  /** Mehrfachauswahl: erstes Foto = Vorderseite, zweites = zweite Seite (Art wird danach gefragt) */
+  function pickMany(files: File[]) {
+    queued.current = files[1] ?? null;
+    pick(files[0]!, false, 'a');
+  }
+
+  async function pick(file: File, model = false, target: 'a' | 'b' = targetRef.current) {
+    targetRef.current = target;
     const n = ++run.current;
     setPhoto({ file, url: keep(URL.createObjectURL(file)) });
-    setPicture(null); setFailure(null);
+    setCand(null); setFailure(null);
     if (!canCutout) return keepOriginal(file);
     setStep('work'); setProgress({ text: 'Starte Freistellen …', p: 0 });
     try {
       const p = await cutout(file, (text, p) => n === run.current && setProgress({ text, p }), { model });
       if (n !== run.current) return;
-      keep(p.preview); setPicture(p); if (p.source === 'model') setCached(true);
+      keep(p.preview); setCand(p); if (p.source === 'model') setCached(true);
     } catch (e) {
       if (n !== run.current) return;
       setFailure((e as Error).message || String(e));
@@ -150,14 +169,32 @@ export default function Neu() {
     try {
       const p = await original(file);
       if (n !== run.current) return;
-      keep(p.preview); afterPicture(p);
+      keep(p.preview); accept(p);
     } catch (e) { setFailure((e as Error).message); setStep('review'); }
   }
 
-  /** Bild steht: beim Start über einen Link gleich zum Formular, sonst erst nach weiteren Infos fragen */
-  function afterPicture(p: Picture) {
+  /** „Passt“ bzw. Original: Bild der gerade bearbeiteten Seite übernehmen */
+  function accept(p: Picture) {
+    if (targetRef.current === 'b') { setPicB(p); targetRef.current = 'a'; return afterSides(picture); }
     setPicture(p);
-    if (web) return toForm(p);
+    // zwei Fotos gewählt oder noch offen: nach der zweiten Seite fragen
+    setStep('sides');
+  }
+
+  /** Antwort auf „Hat das Teil eine zweite Seite?“ */
+  function answerSides(v: Sides) {
+    setSides(v);
+    if (v === 'one') { queued.current = null; setPicB(null); return afterSides(picture); }
+    const next = queued.current;
+    queued.current = null;
+    if (next) return pick(next, false, 'b');
+    targetRef.current = 'b';
+    setStep('side2');
+  }
+
+  /** Seiten stehen: beim Start über einen Link gleich zum Formular, sonst erst nach weiteren Infos fragen */
+  function afterSides(front: Picture | null) {
+    if (web) return toForm(front);
     setStep('more');
   }
 
@@ -188,7 +225,9 @@ export default function Neu() {
    */
   function toForm(p: Picture | null, more?: { read: Promise<Extra>; link?: string }) {
     setPicture(p);
-    const base = f ?? emptyEditForm({ ownerId: me?.id ?? null, wish });
+    const base0 = f ?? emptyEditForm({ ownerId: me?.id ?? null, wish });
+    // Antwort „wendbar“ → Schalter Wendbar an (Rückseite bleibt Zustand dieser Seite)
+    const base = sidesRef.current === 'reversible' && !base0.reversible ? setField(base0, 'reversible', true) : base0;
     const link = more?.link ?? web?.url;
     setF(link && !base.link ? { ...setField(base, 'link', link), shop: shopFromLink(base.shop, '', link) } : base);
     setStep('form');
@@ -215,7 +254,9 @@ export default function Neu() {
       if (read && extra.infos.length) setF((cur) => cur && mergeSources(cur, { infos: extra.infos }));
       if (p) {
         try {
-          const a = await analyzePicture(p.main, infoContext(extra.infos, extra.description));
+          // Rückseite (Backprint): die KI sieht beide Fotos – Farben, Anteile, Muster über das ganze Teil
+          const back = sidesRef.current === 'back' ? picBRef.current : null;
+          const a = await analyzePicture(p.main, infoContext(extra.infos, extra.description), back?.main ?? null);
           if (n !== run.current) return;
           // Infos sind schon übernommen (mit Herkunft); nur noch das Bild – so dreht es keine Eingaben des Nutzers zurück
           // Passform-Stufen und Größe der Infos noch einmal (late): im ersten Schritt fehlte evtl. die Kategorie
@@ -248,7 +289,7 @@ export default function Neu() {
     const data = Object.fromEntries(Object.entries(r.change).filter(([k, v]) => k === 'category' || (v !== null && v !== '')));
     setSaving(true);
     try {
-      const newId = await createItem(wardrobe.id, data, picture, f.reversible ? picB : null);
+      const newId = await createItem(wardrobe.id, data, picture, f.reversible || sides === 'back' ? picB : null);
       if (!f.isWish && setDraft.on && setDraft.members.length) await saveSet(null, [newId, ...setDraft.members], setDraft.name.trim() || null);
       await reload();
       close();
@@ -261,9 +302,9 @@ export default function Neu() {
   if (step === 'form' && f) return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ItemEditor title={wish ? 'Neuer Wunsch' : 'Neues Teil'} form={f} onForm={(u) => setF((cur) => (typeof u === 'function' ? (cur ? u(cur) : cur) : u))} persons={wardrobe?.persons ?? []} meId={me?.id ?? null}
-        wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }}
+        wishlists={wardrobe?.wishlists ?? []} current={{ a: null, b: null }} pics={{ a: picture, b: picB }} back={sides === 'back'} onBack={(on) => setSides(on ? 'back' : f.reversible ? 'reversible' : 'one')}
         onPic={(side, p) => { if (side === 'b') return setPicB(p); setPicture(p); if (!p) { run.current++; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); } }} hex={picture?.colors[0]?.h ?? null}
-        saving={saving} aiBusy={aiBusy} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); setStep('start'); }} onError={(m) => toast.show(m)}
+        saving={saving} aiBusy={aiBusy} onCancel={close} onSave={save} onChangePhoto={() => { run.current++; targetRef.current = 'a'; setAiBusy(null); setF((cur) => cur && dropImageSuggestions(cur)); setStep('start'); }} onError={(m) => toast.show(m)}
         set={{ draft: setDraft, onChange: setSetDraft, items: wardrobe?.items ?? [], currentId: null, setId: null }} />
       {toast.node}
     </View>
@@ -282,11 +323,12 @@ export default function Neu() {
           {step === 'start' && (
             <>
               {canCutout ? (
-                <PhotoPicker onPick={pick} label="Foto aufnehmen oder auswählen" style={{ marginTop: space.md }}>
+                <PhotoPicker onPickMany={pickMany} label="Foto aufnehmen oder auswählen" style={{ marginTop: space.md }}>
                   <View style={[s.drop, { borderColor: t.hairline, backgroundColor: t.surface }]}>
                     <View style={[s.dropIcon, { backgroundColor: '#FF641F' }]}><Icon name="plus" size="large" color="#2a1a1d" /></View>
                     <Text style={[s.dropTitle, { color: t.ink }]}>Foto aufnehmen{'\n'}oder auswählen</Text>
                     <Text style={[s.hint, { color: t.inkMuted }]}>Das Teil wird automatisch freigestellt. Am besten liegt es ganz im Bild auf ruhigem Untergrund.</Text>
+                    <Text style={[s.small, { color: t.inkMuted }]}>Backprint oder wendbar? Wähle gleich zwei Fotos: zuerst die Vorderseite, dann die Rückseite.</Text>
                   </View>
                 </PhotoPicker>
               ) : (
@@ -368,10 +410,10 @@ export default function Neu() {
 
           {step === 'review' && (
             <View style={{ gap: space.md, marginTop: space.md }}>
-              {picture ? (
+              {cand ? (
                 <View style={[s.stage, { backgroundColor: '#000', boxShadow: '0 2px 8px rgba(42,26,29,0.18)' }]}>
-                  <Image source={{ uri: picture.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} accessibilityLabel="Freigestelltes Bild" />
-                  <MirrorButton picture={picture} onChange={(p) => { keep(p.preview); setPicture(p); }} onError={(m) => toast.show(m)} />
+                  <Image source={{ uri: cand.preview }} resizeMode="contain" style={{ position: 'absolute', top: '6%', bottom: '6%', left: '6%', right: '6%' }} accessibilityLabel="Freigestelltes Bild" />
+                  <MirrorButton picture={cand} onChange={(p) => { keep(p.preview); setCand(p); }} onError={(m) => toast.show(m)} />
                 </View>
               ) : (
                 <View style={[s.stage, { backgroundColor: t.surface }]}>
@@ -382,16 +424,59 @@ export default function Neu() {
                   </View>
                 </View>
               )}
-              {picture && <Text style={[s.question, { color: t.ink }]}>Passt das so?</Text>}
-              {!!precutNote(picture) && <Text style={[s.small, { color: t.inkMuted, marginTop: -space.xs }]}>{precutNote(picture)}</Text>}
+              {cand && <Text style={[s.question, { color: t.ink }]}>{targetRef.current === 'b' ? (sides === 'back' ? 'Rückseite – passt das so?' : 'Seite B – passt das so?') : 'Passt das so?'}</Text>}
+              {!!precutNote(cand) && <Text style={[s.small, { color: t.inkMuted, marginTop: -space.xs }]}>{precutNote(cand)}</Text>}
               <View style={{ gap: space.xs }}>
-                {picture && <Btn primary label="Passt" onPress={() => afterPicture(picture)} />}
-                {!!precutNote(picture) && photo && <Btn label="Mit Modell freistellen" onPress={() => pick(photo.file, true)} />}
+                {cand && <Btn primary label="Passt" onPress={() => accept(cand)} />}
+                {!!precutNote(cand) && photo && <Btn label="Mit Modell freistellen" onPress={() => pick(photo.file, true)} />}
                 <Btn label="Original behalten" onPress={() => keepOriginal()} />
-                {!!web?.page?.images.length && <Btn label="Anderes Bild von der Seite" onPress={() => { run.current++; setStep('web'); }} />}
+                {!!web?.page?.images.length && <Btn label="Anderes Bild von der Seite" onPress={() => { run.current++; setStep(targetRef.current === 'b' ? 'side2' : 'web'); }} />}
                 <PhotoPicker onPick={pick} label="Nochmal mit neuem Foto">
-                  <Btn label={picture ? 'Nochmal (neues Foto)' : 'Anderes Foto'} />
+                  <Btn label={cand ? 'Nochmal (neues Foto)' : 'Anderes Foto'} />
                 </PhotoPicker>
+              </View>
+            </View>
+          )}
+
+          {step === 'sides' && (
+            <View style={{ gap: space.md, marginTop: space.md }}>
+              {picture && (
+                <View style={[s.mini, { alignSelf: 'center' }]}>
+                  <Image source={{ uri: picture.preview }} resizeMode="contain" style={StyleSheet.absoluteFill} accessibilityLabel="Vorderseite" />
+                </View>
+              )}
+              <View style={{ gap: 4 }}>
+                <Text style={[s.question, { color: t.ink }]}>{queued.current ? 'Was zeigt das zweite Foto?' : 'Hat das Teil eine zweite Seite?'}</Text>
+                <Text style={[s.small, { color: t.inkMuted }]}>Rückseite: z. B. ein Backprint – die KI sieht beide Seiten. Wendbar: beide Seiten sind tragbar und haben eigene Farben.</Text>
+              </View>
+              <View style={{ gap: space.xs }}>
+                <SideBtn icon="backside" label="Rückseite (z. B. Backprint)" onPress={() => answerSides('back')} />
+                <SideBtn icon="reversible" label="Wendbar" onPress={() => answerSides('reversible')} />
+                <Btn label={queued.current ? 'Nur die Vorderseite verwenden' : 'Nein, nur eine Seite'} onPress={() => answerSides('one')} />
+              </View>
+            </View>
+          )}
+
+          {step === 'side2' && (
+            <View style={{ gap: space.md, marginTop: space.md }}>
+              <View style={{ gap: 4 }}>
+                <Text style={[s.question, { color: t.ink }]}>{sides === 'back' ? 'Foto der Rückseite' : 'Foto der Seite B'}</Text>
+                <Text style={[s.small, { color: t.inkMuted }]}>{web?.page?.images.length ? 'Wähle ein Bild von der Seite oder ein eigenes Foto.' : 'Wird wie die Vorderseite freigestellt.'}</Text>
+              </View>
+              {!!web?.page?.images.length && (
+                <View style={s.grid}>
+                  {web.page.images.map((src) => (
+                    <Pressable key={src} onPress={() => pickWebImage(src)} disabled={!!web.loadingImg} accessibilityRole="button" accessibilityLabel="Dieses Bild als zweite Seite nehmen"
+                      style={({ pressed }) => [s.cell, { opacity: web.loadingImg && web.loadingImg !== src ? 0.4 : pressed ? 0.8 : 1 }]}>
+                      <Image source={{ uri: src }} resizeMode="contain" style={StyleSheet.absoluteFill} />
+                      {web.loadingImg === src && <View style={[StyleSheet.absoluteFill, s.cellBusy]}><ActivityIndicator color={accent} /></View>}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              <View style={{ gap: space.xs }}>
+                <PhotoPicker onPick={(file) => pick(file, false, 'b')} label="Foto der zweiten Seite"><Btn primary={!web?.page?.images.length} label={web?.page?.images.length ? 'Eigenes Foto wählen' : 'Foto aufnehmen oder auswählen'} /></PhotoPicker>
+                <Btn label="Später in Bearbeiten ergänzen" onPress={() => { targetRef.current = 'a'; afterSides(picture); }} />
               </View>
             </View>
           )}
@@ -431,6 +516,18 @@ export default function Neu() {
       </Page>
       {toast.node}
     </KeyboardAvoidingView>
+  );
+}
+
+/** Antwort-Knopf mit Symbol (Rückseite / Wendbar) */
+function SideBtn({ icon, label, onPress }: { icon: 'backside' | 'reversible'; label: string; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button"
+      style={({ pressed }) => [s.btn, { backgroundColor: t.surface, borderColor: t.hairline, opacity: pressed ? 0.8 : 1, flexDirection: 'row', gap: 10 }]}>
+      <Icon name={icon} size="row" color={t.ink} />
+      <Text style={{ fontSize: 17, fontWeight: '600', color: t.ink }}>{label}</Text>
+    </Pressable>
   );
 }
 

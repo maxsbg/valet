@@ -5,7 +5,7 @@
 // und BATCH_PER_DAY je Tag (Zähler je Gerät). Bei „rate_limited“ pausiert er; beim nächsten Start geht es weiter.
 import { useSyncExternalStore } from 'react';
 import { hasProfile, profileFilled, BATCH_MAX_REJECTED_RUN, BATCH_PER_DAY, BATCH_PER_MIN, batchChange, batchErrorKind, confirmedContext, kiMessage, batchPending, batchSkipped, batchSummary, batchUsed, failedPatch, reviewKey, reviewOpen, toEditForm, type EditForm, type EditRow, type ProfilePatchRow } from '@valet/core';
-import { loadItem } from './item';
+import { analysisPaths, loadItem } from './item';
 import { supabase } from './supabase';
 import { todayLocal } from './wardrobe';
 import { analyzeStored, kiError } from './ki';
@@ -68,22 +68,6 @@ export async function itemsWithoutProfile(wardrobeId: string): Promise<string[]>
   }
 }
 
-/** Hauptbild Seite A je Teil: freigestellt, sonst Original */
-async function loadPaths(ids: string[]): Promise<Map<string, string>> {
-  const best = new Map<string, { kind: string; path: string }>();
-  for (let i = 0; i < ids.length; i += 200) {
-    const { data, error } = await supabase.from('item_images').select('item_id,side,kind,storage_path')
-      .in('item_id', ids.slice(i, i + 200)).in('kind', ['cutout', 'original']);
-    if (error) throw error;
-    for (const r of data ?? []) {
-      if ((r.side ?? 'a').trim().toLowerCase() === 'b') continue;
-      const cur = best.get(r.item_id as string);
-      if (!cur || (cur.kind !== 'cutout' && r.kind === 'cutout')) best.set(r.item_id as string, { kind: r.kind as string, path: r.storage_path as string });
-    }
-  }
-  return new Map([...best].map(([k, v]) => [k, v.path]));
-}
-
 /** Ein Teil frisch laden (vor dem Speichern); gelöscht → null */
 async function loadRow(id: string): Promise<Row | null> {
   const { data, error } = await supabase.from('items').select('id,name,category,subcategory,pattern,materials,analysis,ai_pending').eq('id', id).maybeSingle();
@@ -125,13 +109,14 @@ export async function startBatch(wardrobeId: string) {
     const skipped = rows.filter((r) => batchSkipped(r.analysis)).length;
     set({ total: todo.length, skipped });
     if (!todo.length) { set({ phase: 'done', message: skipped ? batchSummary(0, 0, skipped) : 'Alle Teile haben ein Profil.' }); return; }
-    const paths = await loadPaths(todo.map((r) => r.id));
+    const paths = await analysisPaths(todo.map((r) => r.id));
     set({ phase: 'running' });
     let last = 0;
     let rejectedRun = 0;
     for (const r of todo) {
       if (stopFlag) { set({ phase: 'paused', message: 'Angehalten – „Weiter“ macht beim nächsten Teil weiter.' }); return; }
-      const path = paths.get(r.id);
+      const path = paths.get(r.id)?.path;
+      const backPath = paths.get(r.id)?.back ?? null;
       if (path && usedToday() >= BATCH_PER_DAY) { set({ phase: 'paused', message: `Tagesgrenze erreicht (${BATCH_PER_DAY}). Morgen geht es weiter.` }); return; }
       set({ processed: state.processed + 1 });
       if (!path) { // kein Bild: kein Aufruf, nur vermerken (frisch gelesen, falls inzwischen analysiert)
@@ -151,7 +136,7 @@ export async function startBatch(wardrobeId: string) {
       try {
         // bestätigte Werte als Kontext, damit das Profil zu ihnen passt (wie „Neu analysieren“)
         const before = await loadForm(r.id);
-        a = await analyzeStored(path, before ? confirmedContext(before) : '');
+        a = await analyzeStored(path, before ? confirmedContext(before) : '', backPath);
         countCall(); counted = true;
         // ohne Mode-Profil zählt die Antwort nicht als Ergänzung (sonst stünde ein leeres Profil als „analysiert“ da)
         if (!profileFilled(a)) throw new Error('empty_answer');

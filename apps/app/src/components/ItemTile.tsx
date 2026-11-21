@@ -62,6 +62,8 @@ export type TileItem = {
   colors?: readonly string[];
   status: ItemStatus | null;
   reversible: boolean;
+  /** Rückseite (Backprint): Plakette `backside` am Platz von Wendbar, Tippen dreht genauso */
+  back?: boolean;
   /** Set-Kennung (items.set_id) – Set-Plakette oben rechts links neben Wendbar */
   setId?: string | null;
   qty: number;
@@ -111,17 +113,20 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
   const photoShape = squarePhoto ? { kind: item.size ?? item.kind ?? item.category, width, height: h } : undefined;
   const glow = glowFor(item.colors, item.hex);
   const { linkDot } = useSettings();
-  const tr = topRightFor(item.reversible, item.qty, !!item.setId);
+  const tr = topRightFor(item.reversible, item.qty, !!item.setId, !!item.back);
   // Wunschliste: Preis unten links, Bedenkzeit oben rechts (vorerst aus, WISH_WAIT; nach Ablauf verschwindet sie)
   const price = item.isWish ? priceLabel(item.price) : null;
   const wait = item.isWish ? wishWait(item.createdAt) : null;
   const owners = ownersFor(item.owners.filter((id) => person(id)), me);
   const todayP = today ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
-  const flip = useFlip(tr?.reversible && item.thumbBack ? item.thumbBack : null, item.id);
+  const flip = useFlip((tr?.reversible || tr?.back) && item.thumbBack ? item.thumbBack : null, item.id);
+  const flipName = tr?.back ? 'Rückseite' : 'Wendbar';
+  const flipIcon = tr?.back ? 'backside' : 'reversible';
   const label = tileA11yLabel({
     name: item.name,
     status: item.status,
     reversible: item.reversible,
+    back: !!tr?.back,
     set: !!item.setId,
     qty: item.qty,
     today: todayP,
@@ -175,14 +180,14 @@ export function ItemTile({ item, width, height, me, person, today, selected, onP
             {tr.set && (
               <View style={[s.owner, { zIndex: 1 }]}><Glass label="Set"><TileIcon name="link" color={B.ink} /></Glass></View>
             )}
-            {tr.reversible && (
+            {(tr.reversible || tr.back) && (
               <View style={[s.owner, tr.set && s.overlap, { zIndex: 2 }]}>
                 {flip.can ? (
                   <Pressable onPress={flip.toggle} hitSlop={B.inset} accessibilityRole="button"
-                    accessibilityLabel={flip.back ? 'Wendbar – Vorderseite zeigen' : 'Wendbar – andere Seite zeigen'}>
-                    <Glass><Animated.View style={flip.iconStyle}><TileIcon name="reversible" color={B.ink} /></Animated.View></Glass>
+                    accessibilityLabel={flip.back ? `${flipName} – Vorderseite zeigen` : tr.back ? 'Rückseite zeigen' : 'Wendbar – andere Seite zeigen'}>
+                    <Glass><Animated.View style={flip.iconStyle}><TileIcon name={flipIcon} color={B.ink} /></Animated.View></Glass>
                   </Pressable>
-                ) : <Glass label="Wendbar"><TileIcon name="reversible" color={B.ink} /></Glass>}
+                ) : <Glass label={flipName}><TileIcon name={flipIcon} color={B.ink} /></Glass>}
               </View>
             )}
           </View>

@@ -31,6 +31,8 @@ export function countLabel(n: number | null | undefined): CountLabel | null {
 
 export type TopRight = {
   reversible: boolean;
+  /** Rückseite (Backprint): gleicher Platz wie Wendbar, anderes Symbol (`backside`); nie zusammen mit Wendbar */
+  back: boolean;
   /** Teil gehört zu einem Set – Plakette links neben Wendbar (leicht überlappt wie die Monogramme), ohne Wendbar in der Ecke */
   set: boolean;
   /** circle = allein in der Ecke (20 × 20); capsule = unter der Eck-Plakette (Wendbar bzw. Set, 20 × 14) */
@@ -42,10 +44,11 @@ export type TopRight = {
  * Wendbar immer in der Ecke und obenauf, links dahinter leicht überlappt das Set (wie die Monogramme);
  * ohne Wendbar sitzt das Set in der Ecke. Anzahl als Kapsel unter der Eck-Plakette – ohne beide als Kreis in der Ecke.
  */
-export function topRightFor(reversible: boolean, qty: number | null | undefined, set = false): TopRight | null {
+export function topRightFor(reversible: boolean, qty: number | null | undefined, set = false, back = false): TopRight | null {
   const c = countLabel(qty);
-  if (!reversible && !set && !c) return null;
-  return { reversible, set, count: c ? { ...c, n: qty!, shape: reversible || set ? 'capsule' : 'circle' } : null };
+  const b = back && !reversible;
+  if (!reversible && !b && !set && !c) return null;
+  return { reversible, back: b, set, count: c ? { ...c, n: qty!, shape: reversible || b || set ? 'capsule' : 'circle' } : null };
 }
 
 // ---------- Besitzer (Spec 5.4) ----------
@@ -76,6 +79,8 @@ export type TileA11y = {
   name: string;
   status?: ItemStatus | null;
   reversible?: boolean;
+  /** hat ein Foto der Rückseite (Backprint) */
+  back?: boolean;
   /** gehört zu einem Set */
   set?: boolean;
   qty?: number | null;
@@ -90,6 +95,7 @@ export function tileA11yLabel(t: TileA11y): string {
   const parts = [t.name];
   if (t.status) parts.push(TILE_STATUS[t.status].label);
   if (t.reversible) parts.push('Wendbar');
+  else if (t.back) parts.push('mit Rückseite');
   if (t.set) parts.push('Teil eines Sets');
   if (countLabel(t.qty)) parts.push(`${t.qty} Stück`);
   if (t.today) parts.push(t.today.name ? `heute: ${t.today.name}` : 'heute getragen');
