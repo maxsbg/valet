@@ -119,8 +119,10 @@ test('Passform-Begriffe: Skalen je Kategorie, Ersatzbegriffe, Umrechnen beim Kat
   assert.equal(fitIndex('top', 'width', 'skinny'), 0); // Slim
   assert.equal(fitIndex('shorts', 'length', 'regular'), 1); // Mid
   assert.equal(fitIndex('dress', 'length', 'cropped'), null);
-  // Oberteil Relaxed → Hose Relaxed, Oberteil Oversized → Hose Wide, Longline → Long
-  assert.deepEqual(convertFit('top', 'pants', { width: 2, length: 2, rise: null }), { width: 3, length: 2, rise: null });
+  // Oberteil Relaxed → Hose Relaxed, Oberteil Oversized → Hose Wide, Longline → Stacked (Hosenlänge seit 21.11.2026: Cropped · Ankle · Regular · Stacked)
+  assert.deepEqual(FIT_SCALES.pants![1]!.steps, ['Cropped', 'Ankle', 'Regular', 'Stacked']);
+  assert.deepEqual(convertFit('top', 'pants', { width: 2, length: 2, rise: null }), { width: 3, length: 3, rise: null });
+  assert.equal(fitIndex('pants', 'length', 'long'), 3); // alte KI-Antwort „long“ → Stacked
   assert.deepEqual(convertFit('top', 'pants', { width: 3, length: null, rise: null }), { width: 4, length: null, rise: null });
   // Hose Skinny → Oberteil Slim; Bund gibt es beim Oberteil nicht → bleibt versteckt gespeichert
   assert.deepEqual(convertFit('pants', 'top', { width: 0, length: 0, rise: 2 }), { width: 0, length: 0, rise: 2 });
@@ -128,4 +130,15 @@ test('Passform-Begriffe: Skalen je Kategorie, Ersatzbegriffe, Umrechnen beim Kat
   assert.deepEqual(convertFit('top', 'dress', { width: 1, length: 0, rise: null }), { width: 1, length: null, rise: null });
   // ohne Kategorie vorher bleibt alles
   assert.deepEqual(convertFit(null, 'top', { width: 3, length: null, rise: null }), { width: 3, length: null, rise: null });
+});
+
+import { legFromName } from '../src/ai/merge';
+import { emptyProfile } from '../src/ai/profile';
+test('Saum aus dem Namen (Max, 21.11.2026)', () => {
+  assert.equal(fitFromName('OPEN LEG JOGGER').hem, 'open');
+  assert.equal(fitFromName('Cuffed Sweatpants').hem, 'cuffed');
+  assert.equal(fitFromName('Chino mit Umschlag').hem, 'turn_up');
+  const ctx = { category: 'pants', sub: 'sweatpants', pattern: null, materials: [] };
+  assert.equal(legFromName(emptyProfile(), 'OPEN LEG JOGGER', ctx).hem, 'open');
+  assert.equal(legFromName(emptyProfile(), 'OPEN LEG SHORTS', { ...ctx, category: 'shorts' }).hem, null); // nur Hosen
 });

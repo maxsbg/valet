@@ -64,7 +64,7 @@ export const ANALYZE_ITEM_PROPS: Record<string, JsonSchema> = {
   closure: str(CLOSURES, 'Verschluss, nur wenn sichtbar'),
   strap: str(STRAPS, 'Trägerart, nur bei Taschen'),
   width: fitWord('width', 'Passform Weite; nur Oberteil, Hose, Shorts. Oberteil: slim, regular, relaxed, oversized. Hose: skinny, slim, regular, relaxed, wide. Shorts: slim, regular, relaxed, wide'),
-  length: fitWord('length', 'Länge; Oberteil: cropped, regular, longline (deutlich verlängert). Hose: cropped (Knöchel frei), regular, long. Shorts: short, mid, long (bis Knie). Kleid/Rock: mini, above_knee, knee, midi, maxi'),
+  length: fitWord('length', 'Länge; Oberteil: cropped, regular, longline (deutlich verlängert). Hose: cropped (deutlich über dem Knöchel), ankle (endet am Knöchel), regular (berührt den Schuh leicht), stacked (staucht sich über dem Schuh). Shorts: short, mid, long (bis Knie). Kleid/Rock: mini, above_knee, knee, midi, maxi'),
   rise: fitWord('rise', 'Bundhöhe low, regular, high; nur Hose, Shorts, Rock'),
   warmth: level(3, `Wärme: ${WARMTH.map((w, i) => `${i} ${w}`).join(', ')}`),
   rain: level(2, `Regentauglich: ${RAIN.map((r, i) => `${i} ${r}`).join(', ')}`),

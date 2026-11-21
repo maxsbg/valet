@@ -142,7 +142,7 @@ test('Typ Profile und Feldtabelle decken sich (zur Übersetzungszeit geprüft)',
   const keys: Record<keyof Profile, true> = {
     sheen: true, texture_intensity: true, visual_weight: true, pattern_contrast: true, structure: true, presence: true, versatility: true,
     formality: true, surface: true, opacity: true, pattern_scale: true, denim_wash: true, metal_tone: true, silhouette: true, shoulder: true,
-    leg: true, toe: true, shaft: true, sole: true, heel: true, bag_size: true, effects: true,
+    leg: true, hem: true, toe: true, shaft: true, sole: true, heel: true, bag_size: true, effects: true,
   };
   assert.deepEqual(PROFILE_FIELDS.map((f) => f.key).sort(), Object.keys(keys).sort());
 });
