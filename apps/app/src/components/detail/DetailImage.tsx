@@ -45,6 +45,7 @@ export function DetailImage({ item, width, me, person, today }: {
   const todayP = today && !wish ? (today.person ? person(today.person) : undefined) ?? { name: '', stroke: B.ink } : undefined;
   const flip = useFlip((tr?.reversible || tr?.back) && item.imageBack ? item.imageBack : null, item.id);
   const flipIcon = tr?.back ? 'backside' : 'reversible';
+  const sideLabel = (b: boolean) => (tr?.back ? (b ? 'Rückseite' : 'Vorderseite') : b ? 'Seite B' : 'Seite A');
   const label = wish ? [item.name, wish.tag ? wishTagLabel(wish.tag) : null, price ? `${price} Euro` : null].filter(Boolean).join(', ') : tileA11yLabel({
     name: item.name, status: item.status, reversible: item.reversible, back: !!tr?.back, set: !!item.setId, qty: item.qty, today: todayP,
     owners: owners.map((o) => ('more' in o ? o : { name: person(o.person)!.name })),
@@ -112,13 +113,13 @@ export function DetailImage({ item, width, me, person, today }: {
         <View pointerEvents="none" style={s.edge} />
       </View>
       {flip.can && (
-        <View style={s.sides} accessibilityLabel={flip.back ? 'Seite B' : 'Seite A'}>
+        <View style={s.sides} accessibilityLabel={sideLabel(flip.back)}>
           {[false, true].map((b) => (
-            <Pressable key={String(b)} accessibilityRole="button" accessibilityLabel={b ? 'Seite B' : 'Seite A'} onPress={() => flip.back !== b && flip.toggle()} style={s.dotHit}>
+            <Pressable key={String(b)} accessibilityRole="button" accessibilityLabel={sideLabel(b)} onPress={() => flip.back !== b && flip.toggle()} style={s.dotHit}>
               <View style={[s.dot, { width: flip.back === b ? 18 : 7, backgroundColor: flip.back === b ? t.ink : t.hairline }]} />
             </Pressable>
           ))}
-          <Text style={{ fontSize: 13, color: t.inkMuted, marginLeft: 4 }}>{flip.back ? 'Seite B' : 'Seite A'}</Text>
+          <Text style={{ fontSize: 13, color: t.inkMuted, marginLeft: 4 }}>{sideLabel(flip.back)}</Text>
         </View>
       )}
     </View>
