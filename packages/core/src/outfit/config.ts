@@ -17,6 +17,8 @@ export type OutfitConfig = {
   warmthMax: { hot: number; mild: number };
   /** Außenlage: Mindest-Wärme bei 3–9 ° bzw. unter 3 ° */
   outerWarmthMin: { cold: number; freezing: number };
+  /** Schuhe (°C): Zehen offen nicht darunter, gefüttert nicht darüber */
+  shoeTemp: { openMin: number; linedMax: number };
   /** Regen: Mindest-Regenschutz (0 schlecht · 1 mittel · 2 gut) für Außenlage/Schuhe */
   rainMin: Record<Exclude<RainLevel, 'none' | 'drizzle'>, { outer: number; shoe: number }>;
   /** Regen-Grenzen (mm/h) und Wahrscheinlichkeiten (%) */
@@ -53,6 +55,7 @@ export const DEFAULT_OUTFIT_CONFIG: OutfitConfig = {
   temp: { hot: 24, mild: 17, cool: 10, cold: 3, freezing: -99 },
   warmthMax: { hot: 1, mild: 2 },
   outerWarmthMin: { cold: 2, freezing: 3 },
+  shoeTemp: { openMin: 12, linedMax: 15 },
   rainMin: { rain: { outer: 1, shoe: 1 }, heavy: { outer: 2, shoe: 1 } },
   rainMm: { drizzle: 0.5, heavy: 4 },
   rainProb: { hard: 50, soft: 30 },

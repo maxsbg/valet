@@ -3,10 +3,10 @@
 
 /** Woher eine Info stammt: Text der Produktseite (Link), Bild eines Shops/einer Bestellung, Etikett */
 export type InfoSource = 'page' | 'screenshot' | 'label';
-/** Herkunft eines noch unbestätigten Werts: Bild, Begriffe im Namen oder eine Info */
-export type Origin = 'image' | 'name' | InfoSource;
+/** Herkunft eines noch unbestätigten Werts: Bild, Begriffe im Namen, eine Info oder aus Typ + Material berechnet (Wärme/Regen) */
+export type Origin = 'image' | 'name' | 'material' | InfoSource;
 /** Höher schlägt niedriger: Bild < Begriffe im Namen < Shopseite/Screenshot < Etikett */
-export const ORIGIN_RANK: Readonly<Record<Origin, number>> = { image: 0, name: 1, page: 2, screenshot: 2, label: 3 };
+export const ORIGIN_RANK: Readonly<Record<Origin, number>> = { image: 0, name: 1, material: 2, page: 2, screenshot: 2, label: 3 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isOrigin = (v: unknown): v is Origin => typeof v === 'string' && v in ORIGIN_RANK;

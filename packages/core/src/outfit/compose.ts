@@ -10,6 +10,7 @@ import type { OccasionKey } from '../occasions';
 import { DEFAULT_OUTFIT_CONFIG, type OutfitConfig, type RainLevel } from './config';
 import type { Range } from '../ai/profile';
 import { WADA } from './wadaData';
+import { weatherFrom } from '../weather';
 
 // ---------- Eingaben ----------
 
@@ -85,31 +86,22 @@ export function rainFromHours(hours: readonly { mm: number; prob: number; thunde
 
 // ---------- Schätzungen für fehlende Werte ----------
 
-const WARMTH_BY_SUB: Readonly<Record<string, number>> = {
-  sleeveless_shirt: 0, t_shirt: 1, long_sleeve: 1, shirt: 1, polo: 1, blouse: 1,
-  sweater: 2, sweatshirt: 2, hoodie: 2, cardigan: 2, sweat_jacket: 2, overshirt: 2, sports_jacket: 1, blouson: 2, varsity_jacket: 2,
-  trench_coat: 2, coat: 3, puffer_jacket: 3, shearling_jacket: 3,
-  trousers: 2, jeans: 2, sweatpants: 2, cargo_pants: 2,
+// Gleiche Regeln wie in Bearbeiten (weather.ts): Typ + Material + Stichwörter im Namen
+const calc = (i: OutfitItem) => weatherFrom({ category: i.category, subcategory: i.subcategory, type: i.item_type, name: i.name,
+  materials: matNames(i.materials).map((name) => ({ name, pct: pctOf(i.materials, name) })) });
+const pctOf = (m: OutfitItem['materials'], name: string): number | null => {
+  const x = (m ?? []).find((p) => typeof p !== 'string' && p?.name === name) as { pct?: unknown } | undefined;
+  return typeof x?.pct === 'number' ? x.pct : null;
 };
-const WARM_MATERIALS = new Set(['wool', 'cashmere', 'merino', 'alpaca', 'mohair', 'fleece', 'down', 'shearling', 'teddy', 'corduroy']);
-const LIGHT_MATERIALS = new Set(['linen', 'mesh', 'chiffon', 'seersucker']);
-
 /** Wärme 0–3 und ob geschätzt */
 export function warmthOf(i: OutfitItem): { v: number; est: boolean } {
   if (i.warmth != null) return { v: i.warmth, est: false };
-  let v = WARMTH_BY_SUB[i.subcategory ?? ''] ?? (i.category === 'shorts' ? 0 : i.category === 'outerwear' ? 2 : 1);
-  const m = matNames(i.materials);
-  if (m.some((x) => WARM_MATERIALS.has(x))) v += 1;
-  if (m.some((x) => LIGHT_MATERIALS.has(x))) v -= 1;
-  return { v: clamp(v, 0, 3), est: true };
+  return { v: calc(i).warmth ?? (i.category === 'shorts' ? 0 : i.category === 'outerwear' ? 2 : 1), est: true };
 }
-const RAIN_BY_SUB: Readonly<Record<string, number>> = { puffer_jacket: 2, trench_coat: 2, boot: 2, sneaker: 1, sports_shoe: 1, dress_shoe: 1, clog: 0, sandal: 0 };
 /** Regenschutz 0–2 und ob geschätzt */
 export function rainOf(i: OutfitItem): { v: number; est: boolean } {
   if (i.rain != null) return { v: i.rain, est: false };
-  const m = matNames(i.materials);
-  if (m.includes('suede')) return { v: 0, est: true };
-  return { v: RAIN_BY_SUB[i.subcategory ?? ''] ?? 1, est: true };
+  return { v: calc(i).rain ?? 0, est: true };
 }
 
 // ---------- Slots ----------
@@ -181,6 +173,11 @@ export function hardReason(i: OutfitItem, slot: Slot, ctx: DayContext, cfg: Outf
     if (slot === 'outer' && b === 'freezing' && w < cfg.outerWarmthMin.freezing) return 'Außenlage zu dünn';
     if (i.category === 'shorts' && (b === 'cool' || b === 'cold' || b === 'freezing')) return 'Shorts zu kalt';
     if (slot === 'open' && b === 'hot' && i.subcategory !== 'shirt') return 'bei Hitze nur Hemden offen';
+  } else {
+    // Schuhe hängen mehr am Wetter als an der Temperatur (Max, 21.11.2026): harte Grenzen nur an den Rändern
+    const w = warmthOf(i).v;
+    if (w === 0 && ctx.tempC < cfg.shoeTemp.openMin) return 'zu kalt für offene Schuhe';
+    if (w >= 3 && ctx.tempC > cfg.shoeTemp.linedMax) return 'gefütterte Schuhe zu warm';
   }
   if (ctx.rainOn && (ctx.rain === 'rain' || ctx.rain === 'heavy') && (slot === 'outer' || slot === 'shoes')) {
     const need = cfg.rainMin[ctx.rain][slot === 'outer' ? 'outer' : 'shoe'];
@@ -344,6 +341,13 @@ export function scoreOutfit(items: readonly OutfitItem[], ctx: DayContext, cfg: 
   }
   if (ctx.rainOn && ctx.rain === 'drizzle') for (const i of items) {
     if ((i.category === 'shoe' || i.category === 'outerwear') && rainOf(i).v === 0) { variety -= 0.2; notes.push(`Niesel: ${i.name ?? 'Teil'} nicht regenfest`); }
+  }
+  // Schuhe weich nach Temperatur: Stiefel bei Kälte leicht bevorzugt, bei Hitze leicht abgewertet
+  const shoeItem = items.find((i) => i.category === 'shoe');
+  if (shoeItem) {
+    const w = warmthOf(shoeItem).v, b = bandOf(ctx.tempC, cfg);
+    if (w >= 2 && (b === 'cold' || b === 'freezing')) variety += 0.1;
+    if (w >= 2 && b === 'hot') { variety -= 0.15; notes.push('Stiefel bei Hitze'); }
   }
   variety = clamp(variety);
 

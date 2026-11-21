@@ -5,6 +5,7 @@
 
 import { categoryName, fitIndex, fitScaleOf, fitScalesOf, fitWordLabel, subcategoryName, typeName, type CategoryPath, type FitScale } from '../categories';
 import { colorLabel, materialLabel, patternLabel, type Care, type CareGroup, type MaterialPart } from '../attributes';
+import { applyWeather } from '../weather';
 import { dropHidden, setField, setCategory, fitOpen, type EditForm } from '../edit';
 import { fieldsFor, matchSize } from '../fields';
 import { fitFromName, fitTermsIn, nameFitFor } from '../fitName';
@@ -248,7 +249,8 @@ export function mergeSources(form: EditForm, s: Sources, now: string = new Date(
     f = applyFacts(f, { ...NO_FACTS, fit: x.info.item.fit }, x.from);
     if (x.info.size) f = applyExtras(f, { ...noInfo(), size: x.info.size }, x.from);
   }
-  f = dropHidden(f);
+  // Wärme/Regen aus Typ + Material (über der Bildschätzung, nie über bestätigten Werten)
+  f = applyWeather(dropHidden(f));
   if (!s.image) return f;
   // Profil erst hier nach Kategorie bereinigen: mit dem endgültigen Pfad, Muster und Material (Spec 8)
   const ctx: Ctx = { category: f.category, sub: f.subcategory, type: f.type, pattern: f.pattern, materials: f.materials.map((m) => m.name) };
